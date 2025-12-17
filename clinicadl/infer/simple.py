@@ -1,17 +1,21 @@
-from typing import Any, Sequence, TypeVar, Union
+from logging import getLogger
+from typing import Any, Sequence, TypeVar, Union, overload
 
 import torch
 import torch.nn as nn
+import torchio as tio
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.handlers import Postprocessing
 from clinicadl.transforms.types import TransformOrConfig
-from clinicadl.utils.dictionary.words import IMAGE, OUTPUT
+from clinicadl.utils.dictionary.words import OUTPUT
 
 from .base import Inferer
 
+logger = getLogger("clinicadl.early_stopping")
 T = TypeVar("T", DataPoint, Batch)
+DataPointT = TypeVar("DataPointT", bound=DataPoint)
 
 
 class SimpleInferer(Inferer):
@@ -26,86 +30,76 @@ class SimpleInferer(Inferer):
             postprocessing = []
         self.postprocessing = Postprocessing(postprocessing)
 
+    @overload
     def __call__(
-        self, x: Union[DataPoint, Batch], network: nn.Module, *args: Any, **kwargs: Any
-    ) -> torch.Tensor:
-        """
-        Simple pass forward in the neural network.
+        self,
+        x: DataPointT,
+        network: nn.Module,
+        *args: Any,
+        **kwargs: Any,
+    ) -> DataPointT:
+        ...
 
-        Parameters
-        ----------
-        x : Union[DataPoint, Batch]
-            The input image(s). Can be a single 3D image in a :py:class:`~clinicadl.data.structures.DataPoint`
-            or a :py:class:`~clinicadl.data.dataloader.Batch` of images.
-        network : nn.Module
-            The neural network.
-        args : Any
-            Optional args to be passed to ``network``.
-        kwargs : Any
-            Optional keyword args to be passed to ``network``.
+    @overload
+    def __call__(
+        self,
+        x: Batch[DataPointT],
+        network: nn.Module,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Batch[DataPointT]:
+        ...
 
-        Returns
-        -------
-        torch.Tensor
-            The raw output of the neural network.
-        """
+    def __call__(
+        self,
+        x: Union[DataPointT, Batch[DataPointT]],
+        network: nn.Module,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[DataPointT, Batch[DataPointT]]:
         tensor = self._get_input_tensor(x)
 
         output = network(tensor, *args, **kwargs)
 
-        x = self._add_output(x, output)
+        self._add_output(x, output)
 
-        if isinstance(x, Sample):
-            x["output"] = output
-            return self.postprocessing.apply(input)
-        elif isinstance(x, Batch):
-            x.add_field("output", output)
-            return self.postprocessing.batch_apply(input)
+        return self._postprocess(x)
 
-    @staticmethod
-    def _get_input_tensor(x: Union[DataPoint, Batch]) -> torch.Tensor:
-        """
-        Gets the image(s) and returns a :py:class:`torch.Tensor`.
-        """
-        if isinstance(x, DataPoint):
-            tensor = x.image.tensor
-        elif isinstance(x, Batch):
-            tensor = x.get_field(IMAGE, torch.float32)
-        else:
-            raise TypeError(f"'x' can be either a DataPoint or a Batch. Got: {x}")
-
-        return tensor
-
-    @staticmethod
-    def _add_output(x: T, output: torch.Tensor) -> T:
+    @classmethod
+    def _add_output(cls, x: Union[DataPoint, Batch], output: torch.Tensor) -> None:
         """
         Adds the inference output in the origin data structure.
         """
         if isinstance(x, DataPoint):
-            x[OUTPUT] = tio.Sc
+            x[OUTPUT] = cls._format_output(x, output)
         elif isinstance(x, Batch):
-            x.add_field(OUTPUT, output)
-
-        return x
+            x.add_field(OUTPUT, [cls._format_output(x, out) for out in output])
 
     @staticmethod
-    def _add_scalar_output(x: T, output: torch.Tensor) -> T:
+    def _format_output(
+        x: DataPoint, output: torch.Tensor
+    ) -> Union[tio.Image, torch.Tensor]:
         """
-        Adds the inference output in the origin data structure.
+        Formats the output, i.e. puts it in a :py:class:`torchio.Image`, or leaves it as
+        a :py:class:`torch.Tensor`.
         """
-        if isinstance(x, DataPoint):
-            x[OUTPUT] = output
-        elif isinstance(x, Batch):
-            x.add_field(OUTPUT, output)
+        try:
+            if x.label is None:
+                return tio.ScalarImage(tensor=output, affine=x.image.affine)
+            elif isinstance(x.label, tio.LabelMap):
+                return tio.LabelMap(tensor=output, affine=x.label.affine)
+        except Exception:
+            logger.info(
+                "The Inferer tried to wrap the neural network output in a torchio.Image, but an error occurred."
+            )
 
-        return x
+        return output
 
-    def _postprocess(x: T) -> T:
+    def _postprocess(self, x: DataPointT) -> DataPointT:
         """
-        Gets the image(s) and returns a :py:class:`torch.Tensor`.
+        Applies postprocessing.
         """
         if isinstance(x, DataPoint):
             return self.postprocessing.apply(x)
         elif isinstance(x, Batch):
-            x.add_field("output", output)
-            return self.postprocessing.batch_apply(input)
+            return self.postprocessing.batch_apply(x)

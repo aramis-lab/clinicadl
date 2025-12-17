@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Any, Union, overload
+from typing import Any, Union
 
+import torch
 import torch.nn as nn
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
+from clinicadl.utils.dictionary.words import IMAGE
 from clinicadl.utils.objects import JsonReaderWriter
 
 
@@ -28,30 +29,10 @@ class Inferer(JsonReaderWriter, ABC):
         To feed 2D slices into the neural network and fuse the resulting scalar outputs.
     """
 
-    @overload
-    def __call__(
-        self,
-        x: Union[DataPoint, Sequence[DataPoint]],
-        network: nn.Module,
-        *args: Any,
-        **kwargs: Any,
-    ) -> DataPoint:
-        ...
-
-    @overload
-    def __call__(
-        self,
-        x: Union[Batch, Sequence[Batch]],
-        network: nn.Module,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Batch:
-        ...
-
     @abstractmethod
     def __call__(
         self,
-        x: Union[DataPoint, Sequence[DataPoint], Batch, Sequence[Batch]],
+        x: Union[DataPoint, Batch],
         network: nn.Module,
         *args: Any,
         **kwargs: Any,
@@ -59,18 +40,11 @@ class Inferer(JsonReaderWriter, ABC):
         """
         Defines the inference logic.
 
-        If the input is a :py:class:`~clinicadl.data.structures.DataPoint` or a sequence of ``DataPoint``
-        (e.g. the output of a :py:class:`~clinicadl.data.datasets.PairedDataset`), a unique ``DataPoint``
-        must be returned.
-
-        If the input is a :py:class:`~clinicadl.data.dataloader.Batch` or a sequence of ``Batch``,
-        a unique ``Batch`` must be returned.
-
         Parameters
         ----------
-        x : Union[DataPoint, Sequence[DataPoint], Batch, Sequence[Batch]]
-            The input image(s). Can be a :py:class:`~clinicadl.data.structures.DataPoint`
-            a :py:class:`~clinicadl.data.dataloader.Batch` of images, or a sequence of either.
+        x : Union[TDataPoint, Batch]
+            The input image(s). Can be a :py:class:`~clinicadl.data.structures.DataPoint` or
+            a :py:class:`~clinicadl.data.dataloader.Batch` of images.
         network : nn.Module
             The neural network.
         args : Any
@@ -80,7 +54,20 @@ class Inferer(JsonReaderWriter, ABC):
 
         Returns
         -------
-        Union[DataPoint, Batch]
-            A data structure containing the inference output. If ``DataPoint(s)`` were passed, a unique
-            output ``DataPoint`` is returned; if ``Batches(s)`` were passed, a unique ``Batch`` is returned.
+        Union[TDataPoint, Batch]
+            The same data structure as the input, containing the inference output.
         """
+
+    @staticmethod
+    def _get_input_tensor(x: Union[DataPoint, Batch]) -> torch.Tensor:
+        """
+        Gets the image(s) and returns a :py:class:`torch.Tensor`.
+        """
+        if isinstance(x, DataPoint):
+            tensor = x.image.tensor
+        elif isinstance(x, Batch):
+            tensor = x.get_field(IMAGE, torch.float32)
+        else:
+            raise TypeError(f"'x' can be either a DataPoint or a Batch. Got: {x}")
+
+        return tensor
