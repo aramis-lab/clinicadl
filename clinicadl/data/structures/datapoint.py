@@ -389,3 +389,16 @@ class DataPoint(tio.Subject):
         See :py:meth:`torchio.Subject.plot` for more details.
         """
         super().plot(**kwargs)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self.update_attributes()
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        if hasattr(self, key):
+            delattr(self, key)
+
+    def remove_image(self, image_name: str) -> None:
+        self._check_image_name(image_name)
+        del self[image_name]

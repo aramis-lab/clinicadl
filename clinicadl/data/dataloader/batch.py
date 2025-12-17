@@ -294,7 +294,6 @@ class Batch(list[T]):
         )
         for datapoint, value in zip(self, values):
             datapoint[field_name] = value
-            datapoint.update_attributes()
 
     @staticmethod
     def _get_field(datapoint: T, field_name: str) -> Any:
