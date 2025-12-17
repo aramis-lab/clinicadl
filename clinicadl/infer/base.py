@@ -1,35 +1,57 @@
-from abc import ABC, abstractmethod
-from typing import Any, Optional, Union
+from abc import abstractmethod
+from logging import getLogger
+from typing import Any, Optional, TypeVar, Union, overload
 
 import torch
 import torch.nn as nn
+import torchio as tio
+from pydantic import Field
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
-from clinicadl.utils.dictionary.words import IMAGE
-from clinicadl.utils.objects import JsonReaderWriter
+from clinicadl.transforms.handlers import Postprocessing
+from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import OUTPUT
+from clinicadl.utils.objects import HasConfig
+
+from .abstract import Inferer
+
+logger = getLogger("clinicadl.infer.base")
+
+T = TypeVar("T", DataPoint, Batch)
+DataPointT = TypeVar("DataPointT", bound=DataPoint)
 
 
-class Inferer(JsonReaderWriter, ABC):
-    """
-    Abstract class for ``Inferers``, which define how an image is passed in a neural network during
-    inference.
+class BaseInfererConfig(ObjectConfig["BaseInferer"]):
+    """Base config class for the inferers implemented in ``ClinicaDL``."""
 
-    The only method to override is :py:meth:`__call__`.
+    postprocessing: Postprocessing = Field(reader=Postprocessing.from_dict)
+    postprocessing_on_cpu: bool
 
-    See Also
-    --------
-    clinicadl.infer.PatchesToImage
-        To feed 3D patches into the neural network and merge the outputs in a 3D image.
-    clinicadl.infer.SlicesToImage
-        To feed 2D slices into the neural network and merge the outputs in a 3D image.
-    clinicadl.infer.PatchesToScalars
-        To feed 3D patches into the neural network and fuse the resulting scalar outputs.
-    clinicadl.infer.SlicesToScalars
-        To feed 2D slices into the neural network and fuse the resulting scalar outputs.
-    """
 
-    @abstractmethod
+class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
+    """Base class for the inferers implemented in ``ClinicaDL``."""
+
+    @overload
+    def __call__(
+        self,
+        x: DataPointT,
+        network: nn.Module,
+        input_dtype: Optional[torch.dtype] = None,
+        **kwargs: Any,
+    ) -> DataPointT:
+        ...
+
+    @overload
+    def __call__(
+        self,
+        x: Batch[DataPointT],
+        network: nn.Module,
+        input_dtype: Optional[torch.dtype] = None,
+        **kwargs: Any,
+    ) -> Batch[DataPointT]:
+        ...
+
     def __call__(
         self,
         x: Union[DataPoint, Batch],
@@ -37,41 +59,69 @@ class Inferer(JsonReaderWriter, ABC):
         input_dtype: Optional[torch.dtype] = None,
         **kwargs: Any,
     ) -> Union[DataPoint, Batch]:
-        """
-        Defines the inference logic.
+        tensor = self._get_input_tensor(x, input_dtype=input_dtype)
 
-        Parameters
-        ----------
-        x : Union[TDataPoint, Batch]
-            The input image(s). Can be a :py:class:`~clinicadl.data.structures.DataPoint` or
-            a :py:class:`~clinicadl.data.dataloader.Batch` of images.
-        network : nn.Module
-            The neural network.
-        input_dtype : Optional[torch.dtype], default=None
-            The data type to which the input image is converted before being processed by ``network``.
-            If ``None``, single precision (i.e. ``float32``) will be used (except if the inferer is run
-            in an :term:`AMP` context).
-        kwargs : Any
-            Optional keyword args to be passed to ``network``.
+        output = self._forward_pass(tensor, network, **kwargs)
 
-        Returns
-        -------
-        Union[TDataPoint, Batch]
-            The same data structure as the input, containing the inference output.
-        """
+        self._add_output(x, output)
 
-    @staticmethod
-    def _get_input_tensor(
-        x: Union[DataPoint, Batch], input_dtype: Optional[torch.dtype] = None
+        if self.config.postprocessing_on_cpu and self.config.postprocessing.transforms:
+            x.to(device="cpu")
+
+        return self._postprocess(x)
+
+    @abstractmethod
+    def _forward_pass(
+        self, tensor: torch.Tensor, network: nn.Module, **kwargs
     ) -> torch.Tensor:
         """
-        Gets the image(s) and returns a :py:class:`torch.Tensor`.
+        Defines how a whole image is passed in the neural network.
+        """
+
+    @classmethod
+    def _add_output(cls, x: Union[DataPoint, Batch], output: torch.Tensor) -> None:
+        """
+        Adds the inference output in the origin data structure.
         """
         if isinstance(x, DataPoint):
-            tensor = x.image.tensor.to(dtype=input_dtype)
+            x[OUTPUT] = cls._format_output(x, output)
         elif isinstance(x, Batch):
-            tensor = x.get_field(IMAGE, dtype=input_dtype)
-        else:
-            raise TypeError(f"'x' can be either a DataPoint or a Batch. Got: {x}")
+            x.add_field(
+                OUTPUT, [cls._format_output(x_, out_) for x_, out_ in zip(x, output)]
+            )
 
-        return tensor
+    @staticmethod
+    def _format_output(
+        x: DataPoint, output: torch.Tensor
+    ) -> Union[tio.Image, torch.Tensor]:
+        """
+        Formats the output, i.e. puts it in a :py:class:`torchio.Image`, or leaves it as
+        a :py:class:`torch.Tensor`.
+        """
+        try:
+            if x.label is None:
+                return tio.ScalarImage(tensor=output, affine=x.image.affine)
+            elif isinstance(x.label, tio.LabelMap):
+                return tio.LabelMap(tensor=output, affine=x.label.affine)
+        except Exception:
+            logger.info(
+                "The Inferer tried to wrap the neural network output in a torchio.Image, but an error occurred."
+            )
+
+        return output
+
+    def _postprocess(self, x: DataPointT) -> DataPointT:
+        """
+        Applies postprocessing.
+        """
+        if isinstance(x, DataPoint):
+            return self.config.postprocessing.apply(x)
+        elif isinstance(x, Batch):
+            return self.config.postprocessing.batch_apply(x)
+
+    @classmethod
+    def _from_config(cls, config):
+        return cls(
+            postprocessing=config.postprocessing.config.transforms.values,
+            **config.to_raw_dict(exclude=["postprocessing"]),
+        )  # not get_object here because we want to keep config classes as config classes
