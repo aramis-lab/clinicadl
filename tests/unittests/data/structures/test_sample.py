@@ -199,6 +199,9 @@ def test_sample_2d():
     assert not sample.squeeze
     assert sample.slice_direction == 0
     assert sample.sample_type == "slice"
+    assert sample.get_image_tensor("image").shape == (1, 1, 3, 3)
+    sample.squeeze = True
+    assert sample.get_image_tensor("image").shape == (1, 3, 3)
 
     with pytest.raises(
         ValidationError,

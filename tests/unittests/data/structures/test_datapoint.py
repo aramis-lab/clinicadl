@@ -101,6 +101,8 @@ def test_DataPoint():
     assert len(data_point.get_images_dict(intensity_only=False, include="image")) == 1
     assert len(data_point.get_images_dict(intensity_only=False, exclude="image")) == 6
 
+    assert data_point.get_image_tensor("image").shape == (1, 3, 3, 3)
+
     # test copy
     data_point = SubDataPoint(**data_point)
     c = copy(data_point)

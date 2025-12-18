@@ -5,6 +5,7 @@ import numpy as np
 import torchio as tio
 from numpy.typing import NDArray
 from pydantic import field_validator
+from torch import Tensor
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
@@ -296,6 +297,27 @@ class DataPoint(tio.Subject):
         :py:meth:`~DataPoint.get_images`
         """
         return super().get_images_dict(intensity_only, include, exclude)
+
+    def get_image_tensor(self, image_name: str) -> Tensor:
+        """
+        Returns a copy of the tensor associated to a field that is a :py:class:`torchio.Image`.
+
+        Parameters
+        ----------
+        image_name : str
+            The name of the image in the ``DataPoint``.
+
+        Returns
+        -------
+        torch.Tensor
+            The tensor image.
+        """
+        if not isinstance(field_value := self[image_name], tio.Image):
+            raise TypeError(
+                f"{image_name} is a {type(field_value)}, not a torchio.Image!"
+            )
+
+        return field_value.tensor.clone()
 
     def add_image(
         self, image: Union[tio.ScalarImage, PathType], image_name: str

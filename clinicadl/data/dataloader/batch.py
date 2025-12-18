@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 import torch
-import torchio as tio
 
 from clinicadl.utils.device import DeviceType, check_device
 
@@ -150,9 +149,9 @@ class Batch(list[T]):
         of the batch.
 
         The function will try to return the output as a batch-first :py:class:`~torch.Tensor`. If not possible,
-        it will return the list of the values.
+        it will return a list of the values, which are converted to ``Tensors`` if possible.
 
-        If the output is a ``Tensor``, it will respect the device and the memory format potentially
+        If the output is a unique ``Tensor``, it will respect the device and the memory format potentially
         specified with :py:meth:`to`. Besides, the desired data type can be specified here via ``dtype``.
 
         Parameters
@@ -204,33 +203,24 @@ class Batch(list[T]):
         """
         # collect all the values and try to convert them to tensors
         batch = []
-        try:
-            for datapoint in self:
-                value = self._get_field(datapoint, field_name)
+        all_tensors = True
+        for datapoint in self:
+            value = self._get_field(datapoint, field_name)
 
-                if (
-                    hasattr(datapoint, "squeeze")
-                    and hasattr(datapoint, "slice_direction")
-                    and getattr(datapoint, "squeeze")
-                ):
-                    squeezed_dim = getattr(datapoint, "slice_direction")
-                else:
-                    squeezed_dim = None
-
-                try:
-                    value = self._to_tensor(value, squeeze_img_dim=squeezed_dim)
-                except TypeError:
-                    raise StopIteration
-
-                batch.append(value)
-
-        except StopIteration:  # some field values cannot be converted to tensors
-            return [self._get_field(datapoint, field_name) for datapoint in self]
-        else:  # now let's merge in one tensor
             try:
-                batch = torch.stack(batch, dim=0)
-            except RuntimeError:  # not the same shape, batch as tensor is not possible
-                return [self._get_field(datapoint, field_name) for datapoint in self]
+                value = self._to_tensor(value)
+            except TypeError:
+                all_tensors = False
+
+            batch.append(value)
+
+        if not all_tensors:
+            return batch
+
+        try:
+            batch = torch.stack(batch, dim=0)
+        except RuntimeError:  # not the same shape, batch as tensor is not possible
+            return batch
 
         # format the batch tensor
         if len(batch.shape) == 1 and ensure_channel_dim:  # at least two dimensions
@@ -296,9 +286,11 @@ class Batch(list[T]):
             datapoint[field_name] = value
 
     @staticmethod
-    def _get_field(datapoint: T, field_name: str) -> Any:
-        """Returns the specified field."""
+    def _get_field(datapoint: DataPoint, field_name: str) -> Any:
+        """Returns the specified field and transforms images to tensors."""
         try:
+            if field_name in datapoint.get_images_names():
+                return datapoint.get_image_tensor(field_name)
             return datapoint[field_name]
         except KeyError as e:
             raise KeyError(
@@ -306,31 +298,22 @@ class Batch(list[T]):
             ) from e
 
     @classmethod
-    def _to_tensor(
-        cls, value: Any, squeeze_img_dim: Optional[int] = None
-    ) -> torch.Tensor:
+    def _to_tensor(cls, value: Any) -> torch.Tensor:
         """
         Tries to convert to a tensor.
         """
-        if isinstance(value, tio.Image):
-            tensor = value.tensor.clone()
-            if squeeze_img_dim is not None:
-                tensor.squeeze_(dim=squeeze_img_dim + 1)
-
-            if isinstance(value, tio.ScalarImage):
-                return tensor.float()
-            elif isinstance(value, tio.LabelMap):
-                return tensor.int()
-
-        elif isinstance(value, np.ndarray):
-            return torch.from_numpy(value)
+        print(value)
+        if isinstance(value, np.ndarray):
+            tensor = torch.from_numpy(value)
         elif isinstance(value, torch.Tensor):
-            return value.clone()
+            tensor = value
         else:
             try:
-                return torch.tensor(value)
+                tensor = torch.tensor(value)
             except (TypeError, ValueError, RuntimeError) as exc:
                 raise TypeError from exc
+
+        return tensor.clone()
 
     @staticmethod
     def _get_memory_format(

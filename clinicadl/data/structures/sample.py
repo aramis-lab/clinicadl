@@ -6,6 +6,7 @@ from typing import Any, Optional, Union
 
 import torchio as tio
 from pydantic import NonNegativeInt, field_validator, model_validator
+from torch import Tensor
 from typing_extensions import Self
 
 from clinicadl.utils.enum import SliceDirection
@@ -189,7 +190,7 @@ class Sample2D(Sample):
     A slice :py:class:`Sample`. Here ``sample_type="slice"`` and ``sample_position`` is the position
     of the slice in the original image.
 
-    Besides, there are two addition attribute:
+    Besides, there are two additional attribute:
 
     slice_direction : int
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal)
@@ -232,3 +233,26 @@ class Sample2D(Sample):
         )
         kwargs.update(config.to_raw_dict())
         super().__init__(**kwargs, check_consistency=check_consistency)
+
+    def get_image_tensor(self, image_name: str) -> Tensor:
+        """
+        Returns a copy of the tensor associated to a field that is a :py:class:`torchio.Image`.
+
+        If ``squeeze=True``, the output tensor will be squeezed.
+
+        Parameters
+        ----------
+        image_name : str
+            The name of the image in the ``DataPoint``.
+
+        Returns
+        -------
+        torch.Tensor
+            The tensor image.
+        """
+        tensor = super().get_image_tensor(image_name)
+
+        if self.squeeze:
+            tensor.squeeze_(dim=self.slice_direction + 1)
+
+        return tensor
