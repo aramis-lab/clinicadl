@@ -1,9 +1,7 @@
 from typing import Optional, Sequence
 
 import torch
-from pydantic import Field
 
-from clinicadl.transforms.handlers import Postprocessing
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.objects import HasConfig
 
@@ -13,9 +11,6 @@ from .base import BaseInferer, BaseInfererConfig
 class SimpleInfererConfig(BaseInfererConfig):
     """Config class for ``SimpleInferer``."""
 
-    postprocessing: Postprocessing = Field(reader=Postprocessing.from_dict)
-    postprocessing_on_cpu: bool
-
     @classmethod
     def _get_class(cls):
         return SimpleInferer
@@ -23,9 +18,19 @@ class SimpleInfererConfig(BaseInfererConfig):
 
 class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
     """
-    For classical inference, i.e. when the whole images are passed
-    in the neural network and the raw outputs are returned (with a potential
+    An :py:class:`clinicadl.infer.Inferer` for classical inference, i.e. when the whole image is passed
+    in the neural network and the raw output is returned (with a potential
     postprocessing).
+
+    The inference output will be added to the input :py:class:`~clinicadl.data.structures.DataPoint`
+    (or to each ``DataPoint`` of the input :py:class:`~clinicadl.data.dataloader.Batch`). The type of
+    the label of your input ``DataPoint`` determines the type of the output:
+
+    - if your label is ``None``, it is understood as reconstruction, so the output will be cast in a
+      :py:class:`torchio.ScalarImage` (if possible);
+    - if your label is :py:class:`torchio.LabelMap`, it is understood as segmentation, so the output will be cast in a
+      :py:class:`torchio.LabelMap` (if possible);
+    - otherwise, the output will be left unchanged (i.e. a :py:class:`torch.Tensor`).
 
     Parameters
     ----------
@@ -112,10 +117,7 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
     ):
-        if not postprocessing:
-            postprocessing = []
-        postprocessing = Postprocessing(postprocessing)
-        self.config = self._config_type(
+        super().__init__(
             postprocessing=postprocessing, postprocessing_on_cpu=postprocessing_on_cpu
         )
 

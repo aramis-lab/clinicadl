@@ -18,14 +18,12 @@ class Inferer(JsonReaderWriter, ABC):
 
     See Also
     --------
+    clinicadl.infer.SimpleInferer
+        For classical inference.
     clinicadl.infer.PatchesToImage
-        To feed 3D patches into the neural network and merge the outputs in a 3D image.
+        To feed 3D patches into a neural network and merge the outputs in a 3D image.
     clinicadl.infer.SlicesToImage
-        To feed 2D slices into the neural network and merge the outputs in a 3D image.
-    clinicadl.infer.PatchesToScalars
-        To feed 3D patches into the neural network and fuse the resulting scalar outputs.
-    clinicadl.infer.SlicesToScalars
-        To feed 2D slices into the neural network and fuse the resulting scalar outputs.
+        To feed 2D slices into a 2D neural network and merge the outputs in a 3D image.
     """
 
     @abstractmethod
@@ -59,9 +57,9 @@ class Inferer(JsonReaderWriter, ABC):
             The same data structure as the input, containing the inference output.
         """
 
-    @staticmethod
+    @classmethod
     def _get_input_tensor(
-        x: Union[DataPoint, Batch], input_dtype: Optional[torch.dtype] = None
+        cls, x: Union[DataPoint, Batch], input_dtype: Optional[torch.dtype] = None
     ) -> torch.Tensor:
         """
         Gets the image(s) and returns a :py:class:`torch.Tensor`.

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from logging import getLogger
-from typing import Any, Optional, TypeVar, Union, overload
+from typing import Any, Optional, Sequence, TypeVar, Union, overload
 
 import torch
 import torch.nn as nn
@@ -10,6 +10,7 @@ from pydantic import Field
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.handlers import Postprocessing
+from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import OUTPUT
 from clinicadl.utils.objects import HasConfig
@@ -31,6 +32,21 @@ class BaseInfererConfig(ObjectConfig["BaseInferer"]):
 
 class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
     """Base class for the inferers implemented in ``ClinicaDL``."""
+
+    def __init__(
+        self,
+        postprocessing: Optional[Sequence[TransformOrConfig]] = None,
+        postprocessing_on_cpu: bool = False,
+        **kwargs,
+    ):
+        if not postprocessing:
+            postprocessing = []
+        postprocessing = Postprocessing(postprocessing)
+        self.config = self._config_type(
+            postprocessing=postprocessing,
+            postprocessing_on_cpu=postprocessing_on_cpu,
+            **kwargs,
+        )
 
     @overload
     def __call__(
@@ -90,9 +106,9 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
                 OUTPUT, [cls._format_output(x_, out_) for x_, out_ in zip(x, output)]
             )
 
-    @staticmethod
+    @classmethod
     def _format_output(
-        x: DataPoint, output: torch.Tensor
+        cls, x: DataPoint, output: torch.Tensor
     ) -> Union[tio.Image, torch.Tensor]:
         """
         Formats the output, i.e. puts it in a :py:class:`torchio.Image`, or leaves it as
@@ -105,7 +121,7 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
                 return tio.LabelMap(tensor=output, affine=x.label.affine)
         except Exception:
             logger.info(
-                "The Inferer tried to wrap the neural network output in a torchio.Image, but an error occurred."
+                f"{cls.__name__} tried to wrap the neural network output in a torchio.Image, but an error occurred."
             )
 
         return output
