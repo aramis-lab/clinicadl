@@ -65,7 +65,7 @@ class Inferer(JsonReaderWriter, ABC):
         Gets the image(s) and returns a :py:class:`torch.Tensor`.
         """
         if isinstance(x, DataPoint):
-            tensor = x.image.tensor.to(dtype=input_dtype)
+            tensor = x.get_image_tensor(IMAGE).to(dtype=input_dtype)
         elif isinstance(x, Batch):
             tensor = x.get_field(IMAGE, dtype=input_dtype)
         else:

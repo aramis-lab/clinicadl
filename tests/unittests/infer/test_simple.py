@@ -12,13 +12,17 @@ from clinicadl.data.structures import DataPoint, Sample
 from clinicadl.infer import SimpleInferer
 from clinicadl.transforms.config import ActivationsConfig
 
+from .utils import NnWrapper
 
-def test_simple_inferer():
+
+def test_inferer():
     inferer = SimpleInferer(
         postprocessing=[ActivationsConfig(softmax=True, include=["output"])]
     )
     sample = Sample(
-        image=tio.ScalarImage(tensor=torch.randn(2, 3, 3, 3)),
+        image=tio.ScalarImage(
+            tensor=torch.randn(2, 3, 3, 3), affine=np.diag([1.2, 1.1, 1, 1])
+        ),
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
@@ -32,7 +36,7 @@ def test_simple_inferer():
             network,
         )
     assert str(out.image_path[0]) == "abc.nii.gz"
-    assert out["output"].shape == (2,)
+    assert out["output"].size() == torch.Size([2])
     torch.testing.assert_close(out["output"].sum(), torch.tensor(1.0))
     assert out is sample
 
@@ -46,16 +50,66 @@ def test_simple_inferer():
             input_dtype=torch.half,
         )
     assert str(out[0].image_path[0]) == "abc.nii.gz"
-    assert out[0]["output"].shape == (2,)
+    assert out[0]["output"].size() == torch.Size([2])
     torch.testing.assert_close(
         out[0]["output"].sum(), torch.tensor(1.0, dtype=torch.half)
     )
     assert out[0] is sample
 
-    # output format
+    # output format and name
     network = nn.Identity()
-    network.to(dtype=torch.float)
+    inferer = SimpleInferer(
+        output_name="my_output",
+        postprocessing=[ActivationsConfig(softmax=True, include=["my_output"])],
+        output_type="image",
+    )
 
+    with torch.no_grad():
+        out = inferer(
+            sample,
+            network,
+        )
+    assert isinstance(out["my_output"], tio.ScalarImage)
+    torch.testing.assert_close(out["my_output"].tensor.sum(), torch.tensor(27.0))
+    np.testing.assert_allclose(out["my_output"].affine, np.diag([1.2, 1.1, 1, 1]))
+
+    batch = Batch([sample, deepcopy(sample)])
+    with torch.no_grad():
+        out = inferer(
+            batch,
+            network,
+        )
+    assert isinstance(out[0]["my_output"], tio.ScalarImage)
+    torch.testing.assert_close(out[0]["my_output"].tensor.sum(), torch.tensor(27.0))
+    np.testing.assert_allclose(out[0]["my_output"].affine, np.diag([1.2, 1.1, 1, 1]))
+
+    # mask
+    inferer = SimpleInferer(
+        output_type="mask",
+    )
+    with torch.no_grad():
+        out = inferer(
+            sample,
+            network,
+        )
+    assert isinstance(out["output"], tio.LabelMap)
+    np.testing.assert_allclose(out["output"].affine, np.diag([1.2, 1.1, 1, 1]))
+
+    # tensor
+    inferer = SimpleInferer(
+        output_type="tensor",
+    )
+    with torch.no_grad():
+        out = inferer(
+            sample,
+            network,
+        )
+    assert isinstance(out["output"], torch.Tensor)
+
+    # output type inferred
+    inferer = SimpleInferer(
+        output_type=None,
+    )
     sample["label"] = tio.LabelMap(
         tensor=torch.randint(0, 2, (2, 3, 3, 3)), affine=np.diag([1.2, 1.1, 1, 1])
     )
@@ -65,19 +119,6 @@ def test_simple_inferer():
             network,
         )
     assert isinstance(out["output"], tio.LabelMap)
-    assert out["output"].shape == (2, 3, 3, 3)
-    np.testing.assert_allclose(out["output"].affine, np.diag([1.2, 1.1, 1, 1]))
-    torch.testing.assert_close(out["output"].tensor.sum(), torch.tensor(27.0))
-
-    batch = Batch([sample, deepcopy(sample)])
-    with torch.no_grad():
-        out = inferer(
-            batch,
-            network,
-        )
-    assert str(out[0].image_path[0]) == "abc.nii.gz"
-    assert isinstance(out[0]["output"], tio.LabelMap)
-    assert out[0]["output"].shape == (2, 3, 3, 3)
 
     sample["label"] = None
     with torch.no_grad():
@@ -86,7 +127,29 @@ def test_simple_inferer():
             network,
         )
     assert isinstance(out["output"], tio.ScalarImage)
-    assert out["output"].shape == (2, 3, 3, 3)
+
+    sample["label"] = 1
+    with torch.no_grad():
+        out = inferer(
+            sample,
+            network,
+        )
+    assert isinstance(out["output"], torch.Tensor)
+
+    # kwargs
+    network = NnWrapper(network)
+    inferer = SimpleInferer()
+    with torch.no_grad():
+        out = inferer(
+            sample,
+            network,
+        )
+        out_ = inferer(
+            deepcopy(sample),
+            network,
+            offset=1,
+        )
+    torch.testing.assert_close(out["output"] + 1, out_["output"])
 
 
 def test_from_to_dict():

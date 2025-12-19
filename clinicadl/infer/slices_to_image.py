@@ -1,21 +1,18 @@
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 import torch
-import torchio as tio
 from monai.inferers import SliceInferer
 from pydantic import PositiveInt
 
-from clinicadl.data.dataloader import Batch
-from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction.slice import SliceDirection
 from clinicadl.transforms.types import TransformOrConfig
-from clinicadl.utils.dictionary.words import IMAGE
+from clinicadl.utils.dictionary.words import IMAGE, OUTPUT
 from clinicadl.utils.objects import HasConfig
 
-from .base import BaseInferer, BaseInfererConfig
+from .utils import Batched3DTo3DInferer, Batched3DTo3DInfererConfig, ImageOutputType
 
 
-class SlicesToImageInfererConfig(BaseInfererConfig):
+class SlicesToImageInfererConfig(Batched3DTo3DInfererConfig):
     """Config class for ``SlicesToImageInferer``."""
 
     slice_direction: SliceDirection
@@ -26,7 +23,7 @@ class SlicesToImageInfererConfig(BaseInfererConfig):
         return SlicesToImageInferer
 
 
-class SlicesToImageInferer(BaseInferer, HasConfig[SlicesToImageInfererConfig]):
+class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererConfig]):
     """
     Splits a 3D volume into 2D slices, passes them in a 2D neural network, and merges
     the outputs in a 3D output volume.
@@ -34,10 +31,13 @@ class SlicesToImageInferer(BaseInferer, HasConfig[SlicesToImageInfererConfig]):
     See :py:class:`clinicadl.infer.Inferer` and :py:class:`clinicadl.infer.SimpleInferer`
     for more details and examples on ``Inferers``.
 
+    Adapted from :py:class:`monai.inferers.SliceInferer`.
+
     Parameters
     ----------
     slice_direction : SliceDirection, default=0
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
+
     batch_size : int, default=1
         The size of the batch passed to the neural network. If you pass a batch of images to
         the inferer, this batch will be rearranged to match ``batch_size``.
@@ -48,12 +48,7 @@ class SlicesToImageInferer(BaseInferer, HasConfig[SlicesToImageInfererConfig]):
 
     postprocessing : Optional[Sequence[TransformOrConfig]], default=None
         To apply postprocessing transformations (e.g. activations) after the pass forward
-        in the neural network and output fusion.
-
-        .. important::
-            If you postprocessing transform comes from :py:class:`clinicadl.transforms.config`,
-            do not forget to specify ``include=["output"]`` to apply the postprocessing to
-            the output of the neural network.
+        in the neural network.
 
     postprocessing_on_cpu : bool, default=False
         Whether to necessarily apply postprocessing on CPU. If ``False``, postprocessing will
@@ -62,6 +57,21 @@ class SlicesToImageInferer(BaseInferer, HasConfig[SlicesToImageInfererConfig]):
         .. important::
             ``postprocessing_on_cpu=True`` may potentially change the device on which
             are your input data.
+
+    output_name : str, default="output"
+        The name the give to the output in the ``DataPoint``.
+
+        .. important::
+            If you postprocessing transform comes from :py:class:`clinicadl.transforms.config`,
+            do not forget to specify ``include=["<output_name>"]`` to apply the postprocessing to
+            the output of the neural network.
+
+    output_type : Optional[OutputType], default="image"
+        Determines the data type of the output:
+
+        - if ``"image"``, the output will be converted to a :py:class:`torchio.ScalarImage`;
+        - if ``"mask"``, the output will be converted to a :py:class:`torchio.LabeMap`;
+        - if ``None``, the output type will be inferred from the label.
 
     Examples
     --------
@@ -75,12 +85,12 @@ class SlicesToImageInferer(BaseInferer, HasConfig[SlicesToImageInfererConfig]):
 
         net = ConvEncoder(spatial_dims=2, in_channels=1, channels=[2, 4], kernel_size=7)
         datapoint = ColinDataPoint()
+        inferer = SlicesToImageInferer(slice_direction=1, batch_size=16)
 
     .. code-block::
 
         >>> datapoint.image.shape
         (1, 181, 217, 181)
-        >>> inferer = SlicesToImageInferer(slice_direction=1, batch_size=16)
         >>> with torch.no_grad(): out = inferer(datapoint, net)
         >>> out["output"].shape
         (4, 169, 217, 169)  # 2D neural network applies to the 217 coronal slices
@@ -100,12 +110,16 @@ class SlicesToImageInferer(BaseInferer, HasConfig[SlicesToImageInfererConfig]):
         batch_size: int = 1,
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
+        output_name: str = OUTPUT,
+        output_type: Optional[ImageOutputType] = IMAGE,
     ):
         super().__init__(
             slice_direction=slice_direction,
             batch_size=batch_size,
             postprocessing=postprocessing,
             postprocessing_on_cpu=postprocessing_on_cpu,
+            output_name=output_name,
+            output_type=output_type,
         )
 
     def _forward_pass(
@@ -120,34 +134,4 @@ class SlicesToImageInferer(BaseInferer, HasConfig[SlicesToImageInfererConfig]):
             sw_batch_size=self.config.batch_size,
         )
 
-        return inferer(inputs=tensor, network=network)
-
-    @classmethod
-    def _get_input_tensor(
-        cls, x: Union[DataPoint, Batch], input_dtype: Optional[torch.dtype] = None
-    ) -> torch.Tensor:
-        tensor = super()._get_input_tensor(x, input_dtype)
-
-        if isinstance(x, DataPoint):
-            tensor = x.image.tensor.to(dtype=input_dtype)
-            assert (
-                len(tensor.shape) == 4
-            ), f"{cls.__name__} only accepts 4D images (including 1 channel dimension). Got shape: {tensor.shape}"
-            return tensor.unsqueeze(0)  # SliceInferer only accepts batched outputs
-
-        elif isinstance(x, Batch):
-            tensor = x.get_field(IMAGE, dtype=input_dtype)
-            assert (
-                len(tensor.shape) == 5
-            ), f"{cls.__name__} only accepts 4D images (including 1 channel dimension). Got a batch of images with shape: {tensor.shape[1:]}"
-
-        return tensor
-
-    @classmethod
-    def _format_output(
-        cls, x: DataPoint, output: torch.Tensor
-    ) -> Union[tio.Image, torch.Tensor]:
-        if isinstance(x, DataPoint):
-            output = output.squeeze(0)
-
-        return super()._format_output(x, output)
+        return inferer(inputs=tensor, network=network, **kwargs)

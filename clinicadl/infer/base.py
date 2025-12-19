@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from enum import Enum
 from logging import getLogger
 from typing import Any, Optional, Sequence, TypeVar, Union, overload
 
@@ -12,7 +13,6 @@ from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.handlers import Postprocessing
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ObjectConfig
-from clinicadl.utils.dictionary.words import OUTPUT
 from clinicadl.utils.objects import HasConfig
 
 from .abstract import Inferer
@@ -23,11 +23,21 @@ T = TypeVar("T", DataPoint, Batch)
 DataPointT = TypeVar("DataPointT", bound=DataPoint)
 
 
+class OutputType(str, Enum):
+    """Possible types of output."""
+
+    IMAGE = "image"
+    MASK = "mask"
+    TENSOR = "tensor"
+
+
 class BaseInfererConfig(ObjectConfig["BaseInferer"]):
     """Base config class for the inferers implemented in ``ClinicaDL``."""
 
     postprocessing: Postprocessing = Field(reader=Postprocessing.from_dict)
     postprocessing_on_cpu: bool
+    output_name: str
+    output_type: Optional[OutputType]
 
 
 class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
@@ -36,7 +46,6 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
     def __init__(
         self,
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
-        postprocessing_on_cpu: bool = False,
         **kwargs,
     ):
         if not postprocessing:
@@ -44,7 +53,6 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
         postprocessing = Postprocessing(postprocessing)
         self.config = self._config_type(
             postprocessing=postprocessing,
-            postprocessing_on_cpu=postprocessing_on_cpu,
             **kwargs,
         )
 
@@ -94,35 +102,33 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
         Defines how a whole image is passed in the neural network.
         """
 
-    @classmethod
-    def _add_output(cls, x: Union[DataPoint, Batch], output: torch.Tensor) -> None:
+    def _add_output(self, x: Union[DataPoint, Batch], output: torch.Tensor) -> None:
         """
         Adds the inference output in the origin data structure.
         """
         if isinstance(x, DataPoint):
-            x[OUTPUT] = cls._format_output(x, output)
+            x[self.config.output_name] = self._format_output(output, x)
         elif isinstance(x, Batch):
             x.add_field(
-                OUTPUT, [cls._format_output(x_, out_) for x_, out_ in zip(x, output)]
+                self.config.output_name,
+                [self._format_output(out_, x_) for out_, x_ in zip(output, x)],
             )
 
-    @classmethod
     def _format_output(
-        cls, x: DataPoint, output: torch.Tensor
+        self, output: torch.Tensor, x: DataPoint
     ) -> Union[tio.Image, torch.Tensor]:
         """
         Formats the output, i.e. puts it in a :py:class:`torchio.Image`, or leaves it as
         a :py:class:`torch.Tensor`.
         """
-        try:
-            if x.label is None:
-                return tio.ScalarImage(tensor=output, affine=x.image.affine)
-            elif isinstance(x.label, tio.LabelMap):
-                return tio.LabelMap(tensor=output, affine=x.label.affine)
-        except Exception:
-            logger.info(
-                f"{cls.__name__} tried to wrap the neural network output in a torchio.Image, but an error occurred."
-            )
+        if self.config.output_type == OutputType.IMAGE or (
+            self.config.output_type is None and x.label is None
+        ):
+            return tio.ScalarImage(tensor=output, affine=x.image.affine)
+        elif self.config.output_type == OutputType.MASK or (
+            self.config.output_type is None and isinstance(x.label, tio.LabelMap)
+        ):
+            return tio.LabelMap(tensor=output, affine=x.image.affine)
 
         return output
 

@@ -3,9 +3,10 @@ from typing import Optional, Sequence
 import torch
 
 from clinicadl.transforms.types import TransformOrConfig
+from clinicadl.utils.dictionary.words import OUTPUT, TENSOR
 from clinicadl.utils.objects import HasConfig
 
-from .base import BaseInferer, BaseInfererConfig
+from .base import BaseInferer, BaseInfererConfig, OutputType
 
 
 class SimpleInfererConfig(BaseInfererConfig):
@@ -38,11 +39,6 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
         To apply postprocessing transformations (e.g. activations) after the pass forward
         in the neural network.
 
-        .. important::
-            If you postprocessing transform comes from :py:class:`clinicadl.transforms.config`,
-            do not forget to specify ``include=["output"]`` to apply the postprocessing to
-            the output of the neural network.
-
     postprocessing_on_cpu : bool, default=False
         Whether to necessarily apply postprocessing on CPU. If ``False``, postprocessing will
         be applied on the device where are the data and the neural network.
@@ -50,6 +46,22 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
         .. important::
             ``postprocessing_on_cpu=True`` may potentially change the device on which
             are your input data.
+
+    output_name : str, default="output"
+        The name the give to the output in the ``DataPoint``.
+
+        .. important::
+            If you postprocessing transform comes from :py:class:`clinicadl.transforms.config`,
+            do not forget to specify ``include=["<output_name>"]`` to apply the postprocessing to
+            the output of the neural network.
+
+    output_type : Optional[OutputType], default="tensor"
+        Determines the data type of the neural network output:
+
+        - if ``"image"``, the output will be converted to a :py:class:`torchio.ScalarImage`;
+        - if ``"mask"``, the output will be converted to a :py:class:`torchio.LabeMap`;
+        - if ``"tensor"``, the output will stay a :py:class:`torch.Tensor`;
+        - if ``None``, the output type will be inferred from the label.
 
     Examples
     --------
@@ -116,9 +128,14 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
         self,
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
+        output_name: str = OUTPUT,
+        output_type: Optional[OutputType] = TENSOR,
     ):
         super().__init__(
-            postprocessing=postprocessing, postprocessing_on_cpu=postprocessing_on_cpu
+            postprocessing=postprocessing,
+            postprocessing_on_cpu=postprocessing_on_cpu,
+            output_name=output_name,
+            output_type=output_type,
         )
 
     def _forward_pass(

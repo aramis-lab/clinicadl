@@ -8,6 +8,8 @@ from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.infer import Inferer
 
+from .utils import NnWrapper
+
 
 class MyInferer(Inferer):
     def __call__(
@@ -35,7 +37,7 @@ def test_inferer():
         participant="abc",
         session="abc",
     )
-    network = nn.Sequential(nn.Flatten(), nn.Linear(3**3, 1))
+    network = NnWrapper(nn.Sequential(nn.Flatten(), nn.Linear(3**3, 1)))
     network.to(dtype=torch.half)
 
     with torch.no_grad():
@@ -47,6 +49,16 @@ def test_inferer():
     assert out["output"].shape == (1, 1)
     assert out is sample
 
+    # kwargs
+    with torch.no_grad():
+        out_ = inferer(
+            deepcopy(sample),
+            network,
+            offset=1,
+        )
+    torch.testing.assert_close(out["output"] + 1, out_["output"])
+
+    # batch
     batch = Batch([sample, deepcopy(sample)])
     with torch.no_grad():
         out = inferer(
