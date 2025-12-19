@@ -268,7 +268,7 @@ def test_gpu():
         participant="abc",
         session="abc",
     )
-    network = nn.Conv2d(2, 4, 3)
+    network = nn.Identity()
 
     inferer = PatchesToImageInferer(
         patch_size=(3, 2, 2),
