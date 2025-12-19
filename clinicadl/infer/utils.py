@@ -54,13 +54,9 @@ class Batched3DTo3DInferer(BaseInferer):
 
         super()._add_output(x, output)
 
-    def _format_output(
-        self, output: torch.Tensor, x: DataPoint
-    ) -> Union[tio.Image, torch.Tensor]:
-        output = super()._format_output(output, x)
-        if isinstance(output, torch.Tensor):
-            return tio.ScalarImage(
-                tensor=output, affine=x.image.affine
+    def _add_output_in_datapoint(self, output: torch.Tensor, x: DataPoint) -> None:
+        super()._add_output_in_datapoint(output, x)
+        if isinstance(x[self.config.output_name], torch.Tensor):
+            x.add_image(
+                output, self.config.output_name
             )  # default format is ScalarImage here
-
-        return output

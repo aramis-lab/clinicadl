@@ -49,9 +49,11 @@ def test_DataPoint():
     )
     data_point.add_image(image_path, "image_2")
     data_point.add_image(image, "image_3")
+    data_point.add_image(image.tensor, "image_4")
 
     data_point.add_mask(str(mask_path), "mask_2")
     data_point.add_mask(mask, "mask_3")
+    data_point.add_mask(image.tensor, "mask_4")
 
     assert isinstance(data_point.image, tio.ScalarImage)
     assert (
@@ -63,18 +65,23 @@ def test_DataPoint():
 
     assert isinstance(data_point["image_2"], tio.ScalarImage)
     assert isinstance(data_point["image_3"], tio.ScalarImage)
+    assert isinstance(data_point["image_4"], tio.ScalarImage)
     assert (
         data_point["image_2"].tensor
         == torch.from_numpy(nib.load(image_path).get_fdata())
     ).all()
     assert (data_point["image_3"].tensor == image.tensor).all()
+    assert (data_point["image_4"].tensor == image.tensor).all()
+    np.testing.assert_allclose(data_point["image_4"].affine, image.affine)
 
     assert isinstance(data_point["mask_2"], tio.LabelMap)
     assert isinstance(data_point["mask_3"], tio.LabelMap)
+    assert isinstance(data_point["mask_4"], tio.LabelMap)
     assert (
         data_point["mask_2"].tensor == torch.from_numpy(nib.load(mask_path).get_fdata())
     ).all()
     assert (data_point["mask_3"].tensor == mask.tensor).all()
+    np.testing.assert_allclose(data_point["mask_4"].affine, image.affine)
 
     assert data_point.participant == "sub-000"
     assert data_point.session == "ses-M000"
@@ -90,16 +97,16 @@ def test_DataPoint():
         data_point.shape
 
     # get images
-    assert len(data_point.get_images()) == 3
-    assert len(data_point.get_images(intensity_only=False)) == 7
-    assert len(data_point.get_images(intensity_only=False, include="image")) == 1
-    assert len(data_point.get_images(intensity_only=False, exclude="image")) == 6
-
-    assert len(data_point.get_images_dict()) == 3
-    assert set(data_point.get_images_dict().keys()) == {"image", "image_2", "image_3"}
-    assert len(data_point.get_images_dict(intensity_only=False)) == 7
-    assert len(data_point.get_images_dict(intensity_only=False, include="image")) == 1
-    assert len(data_point.get_images_dict(intensity_only=False, exclude="image")) == 6
+    assert len(data_point.get_images()) == 4
+    assert set(data_point.get_images_dict().keys()) == {
+        "image",
+        "image_2",
+        "image_3",
+        "image_4",
+    }
+    assert len(data_point.get_images(intensity_only=False)) == 9
+    assert len(data_point.get_images(intensity_only=False, include=["image"])) == 1
+    assert len(data_point.get_images(intensity_only=False, exclude=["image"])) == 8
 
     assert data_point.get_image_tensor("image").shape == (1, 3, 3, 3)
 

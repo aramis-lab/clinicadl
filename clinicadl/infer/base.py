@@ -107,30 +107,25 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
         Adds the inference output in the origin data structure.
         """
         if isinstance(x, DataPoint):
-            x[self.config.output_name] = self._format_output(output, x)
+            self._add_output_in_datapoint(output, x)
         elif isinstance(x, Batch):
-            x.add_field(
-                self.config.output_name,
-                [self._format_output(out_, x_) for out_, x_ in zip(output, x)],
-            )
+            for out_, x_ in zip(output, x):
+                self._add_output_in_datapoint(out_, x_)
 
-    def _format_output(
-        self, output: torch.Tensor, x: DataPoint
-    ) -> Union[tio.Image, torch.Tensor]:
+    def _add_output_in_datapoint(self, output: torch.Tensor, x: DataPoint) -> None:
         """
-        Formats the output, i.e. puts it in a :py:class:`torchio.Image`, or leaves it as
-        a :py:class:`torch.Tensor`.
+        Adds the output with the right format in the input DataPoint.
         """
         if self.config.output_type == OutputType.IMAGE or (
             self.config.output_type is None and x.label is None
         ):
-            return tio.ScalarImage(tensor=output, affine=x.image.affine)
+            x.add_image(output, self.config.output_name)
         elif self.config.output_type == OutputType.MASK or (
             self.config.output_type is None and isinstance(x.label, tio.LabelMap)
         ):
-            return tio.LabelMap(tensor=output, affine=x.image.affine)
-
-        return output
+            x.add_mask(output, self.config.output_name)
+        else:
+            x[self.config.output_name] = output
 
     def _postprocess(self, x: DataPointT) -> DataPointT:
         """

@@ -8,7 +8,7 @@ import torchio as tio
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.datatypes import DataType
-from clinicadl.data.structures import DataPoint, Sample
+from clinicadl.data.structures import DataPoint, Sample, Sample2D
 from clinicadl.infer import SimpleInferer
 from clinicadl.transforms.config import ActivationsConfig
 
@@ -150,6 +150,36 @@ def test_inferer():
             offset=1,
         )
     torch.testing.assert_close(out["output"] + 1, out_["output"])
+
+    # 2D
+    sample = Sample2D(
+        image=tio.ScalarImage(tensor=torch.randn(2, 5, 1, 5)),
+        participant="abc",
+        session="abc",
+        image_path="abc.nii.gz",
+        datatype=DataType(pattern="abc", key="abc"),
+        sample_position=0,
+        slice_direction=1,
+        squeeze=True,
+    )
+    network = nn.Conv2d(2, 4, 3)
+
+    inferer = SimpleInferer(output_type="image")
+    with torch.no_grad():
+        out = inferer(
+            sample,
+            network,
+        )
+    assert out["output"].shape == (4, 3, 1, 3)
+
+    inferer = SimpleInferer(output_type="mask")
+    batch = Batch([sample, deepcopy(sample)])
+    with torch.no_grad():
+        out = inferer(
+            batch,
+            network,
+        )
+    assert out[0]["output"].shape == (4, 3, 1, 3)
 
 
 def test_from_to_dict():
