@@ -19,6 +19,7 @@
             "name": "Crop",
             "include": null,
             "exclude": null,
+            "copy": false,
             "cropping": [
                 0,
                 1,

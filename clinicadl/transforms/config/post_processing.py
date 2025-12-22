@@ -83,7 +83,7 @@ class MonaiTransformConfig(TransformConfig):
 class _DimConfig(ClinicaDLConfig):
     """Config class for 'dim' parameter."""
 
-    dim: NonNegativeInt
+    dim: NonNegativeInt = 0
 
 
 class ActivationsConfig(MonaiTransformConfig, _DimConfig):

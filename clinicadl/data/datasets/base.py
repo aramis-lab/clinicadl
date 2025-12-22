@@ -426,7 +426,7 @@ class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
 
         # common masks (already loaded)
         for mask in self.common_masks:
-            datapoint.add_mask(mask.get_associated_mask(), mask.name)
+            datapoint.add_mask(deepcopy(mask.get_associated_mask()), mask.name)
 
         # columns
         for col in self.columns:
