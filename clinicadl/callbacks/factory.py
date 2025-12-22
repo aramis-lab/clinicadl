@@ -1,11 +1,11 @@
 from abc import ABC
 from typing import Any
 
-from .factory import *
-from .factory.base import Callback
-from .factory.logger import _Logger
-from .factory.monitor import _Monitor
-from .factory.training_loss import _TrainingLoss
+from .base import Callback
+from .implemented import *
+from .implemented.logger import _Logger
+from .implemented.monitor import _Monitor
+from .implemented.training_loss import _TrainingLoss
 
 
 def get_callback_from_dict(json_dict: dict[str, Any]) -> Callback:

@@ -2,7 +2,7 @@ import shutil
 
 import pandas as pd
 
-from clinicadl.callbacks.factory.model_selection import ModelSelection
+from clinicadl.callbacks.implemented.model_selection import ModelSelection
 from clinicadl.io.maps import Maps
 from clinicadl.train.trainer_state import TrainerState
 

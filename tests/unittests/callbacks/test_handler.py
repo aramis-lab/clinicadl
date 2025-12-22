@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from clinicadl.callbacks.factory.base import Callback
-from clinicadl.callbacks.factory.logger import _Logger
-from clinicadl.callbacks.factory.monitor import _Monitor
-from clinicadl.callbacks.factory.training_loss import _TrainingLoss
+from clinicadl.callbacks.base import Callback
 from clinicadl.callbacks.handler import _CallbacksHandler
+from clinicadl.callbacks.implemented.logger import _Logger
+from clinicadl.callbacks.implemented.monitor import _Monitor
+from clinicadl.callbacks.implemented.training_loss import _TrainingLoss
 from clinicadl.io.maps.training.splits import TrainingSplitDir
 
 

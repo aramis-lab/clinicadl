@@ -12,7 +12,7 @@ from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.json import read_json, write_json
 
-from .base import Callback
+from ..base import Callback
 
 logger = getLogger("clinicadl.early_stopping")
 

@@ -8,7 +8,7 @@ import torch.optim as optim
 from torch.amp import GradScaler
 
 from clinicadl.data.dataloader import Batch, BatchType
-from clinicadl.losses.types import Loss
+from clinicadl.losses.types import Loss, LossType
 from clinicadl.utils.objects import JsonReaderWriter
 
 
@@ -44,9 +44,7 @@ class Model(JsonReaderWriter, ABC, torch.nn.Module):
     """
 
     @abstractmethod
-    def forward_step(
-        self, batch: BatchType
-    ) -> Union[torch.Tensor, dict[str, torch.Tensor]]:
+    def forward_step(self, batch: BatchType) -> Union[LossType]:
         """
         Performs the training forward step using the provided batch of data and returns
         the computed loss.
@@ -75,7 +73,7 @@ class Model(JsonReaderWriter, ABC, torch.nn.Module):
     @abstractmethod
     def backward_step(
         self,
-        loss: Union[torch.Tensor, dict[str, torch.Tensor]],
+        loss: LossType,
         grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
     ) -> None:
         """

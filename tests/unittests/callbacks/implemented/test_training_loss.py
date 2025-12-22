@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from clinicadl.callbacks.factory.training_loss import _TrainingLoss
+from clinicadl.callbacks.implemented.training_loss import _TrainingLoss
 from clinicadl.utils.dictionary.words import BATCH, EPOCH, LOSS
 
 # -----------------------

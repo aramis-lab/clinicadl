@@ -21,7 +21,7 @@ from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import LossMetricConfig, MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
 from clinicadl.metrics.types import MetricOrConfig
-from clinicadl.models import Model
+from clinicadl.modelss import Model
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
@@ -44,7 +44,7 @@ class Trainer:
 
     This class encapsulates the training loop, evaluation, and prediction processes while
     integrating callback management, metric tracking, and mixed precision training support.
-    It leverages ClinicaDL's components like :py:class:`~clinicadl.models.clinicadl_model.Model`
+    It leverages ClinicaDL's components like :py:class:`~clinicadl.modelss.clinicadl_model.Model`
     and :py:class:`~clinicadl.io.maps.maps.Maps`,
     promoting modularity and extensibility primarily through callbacks.
 
@@ -61,7 +61,7 @@ class Trainer:
     ----------
     maps_path : PathType
         Directory path where training outputs, maps, and metrics will be saved.
-    model : :py:class:`~clinicadl.models.Model`
+    model : :py:class:`~clinicadl.modelss.Model`
         The deep learning model to train and evaluate.
     callbacks : list[:py:class:`~clinicadl.callbacks.base.Callback`], optional
         List of callback instances to execute during training and evaluation.
@@ -210,7 +210,12 @@ class Trainer:
         scaler = computational.get_scaler()
         self._write_training_infos(split=split)
 
-        self._call_event("on_train_begin", split=split)
+        self._call_event(
+            "on_train_begin",
+            split=split,
+            computational=computational,
+            optimization=OptimizationConfig,
+        )
 
         while not self.state.should_stop:
             self.state.current_epoch += 1
@@ -232,7 +237,9 @@ class Trainer:
                 ):
                     loss = self.model.forward_step(batch=batch)
 
-                self._call_event("on_backward_step_begin", loss=loss)
+                self._call_event(
+                    "on_backward_step_begin", loss=loss, grad_scaler=scaler
+                )
 
                 self.model.backward_step(loss, grad_scaler=scaler)
 
@@ -242,6 +249,7 @@ class Trainer:
                     self._call_event(
                         "on_optimization_step_begin",
                         optimizers=self.model.get_optimizers(),
+                        grad_scaler=scaler,
                     )
 
                     self.model.optimization_step(grad_scaler=scaler)
@@ -304,7 +312,12 @@ class Trainer:
 
         self.model.to(computational.device, non_blocking=computational.non_blocking)
 
-        self._validate(split, metrics=metrics)
+        self._validate(
+            split,
+            metrics=metrics,
+            computational=computational,
+            model_checkpoint=model_checkpoint,
+        )
 
         self._metrics_handler.merge(
             path=checkpoint_path.validation_metrics.aggregated,
@@ -317,6 +330,7 @@ class Trainer:
         model_checkpoint: str,
         group_name: str,
         metrics: Optional[Sequence[str]] = None,
+        save_outputs: bool = False,
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
         """
@@ -334,7 +348,13 @@ class Trainer:
 
         self._reset_test()
 
-        self._call_event("on_test_begin")
+        self._call_event(
+            "on_test_begin",
+            dataloader=dataloader,
+            model_checkpoint=model_checkpoint,
+            group_name=group_name,
+            computational=computational,
+        )
 
         self._evaluation_loop(dataloader)
 
@@ -358,7 +378,6 @@ class Trainer:
         dataloader: DataLoader,
         model_checkpoint: str,
         group_name: str,
-        metrics: Optional[Sequence[str]] = None,
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
         """
@@ -366,10 +385,33 @@ class Trainer:
         """
         self.maps.read()
 
-    def _validate(self, split: Split, metrics: Optional[Sequence[str]] = None) -> None:
+        self._call_event(
+            "on_prediction_begin",
+            dataloader=dataloader,
+            model_checkpoint=model_checkpoint,
+            group_name=group_name,
+            computational=computational,
+        )
+
+        self._call_event(
+            "on_prediction_end",
+        )
+
+    def _validate(
+        self,
+        split: Split,
+        metrics: Optional[Sequence[str]],
+        computational: ComputationalConfig,
+        model_checkpoint: Optional[str] = None,
+    ) -> None:
         self._reset_validation()
 
-        self._call_event("on_validation_begin", split=split)
+        self._call_event(
+            "on_validation_begin",
+            split=split,
+            model_checkpoint=model_checkpoint,
+            computational=computational,
+        )
 
         self._evaluation_loop(split.val_loader, metrics=metrics)
 
@@ -403,7 +445,6 @@ class Trainer:
 
                 self._call_event(
                     "on_evaluation_step_end",
-                    batch=batch,
                     output=output_batch,
                     metrics=metrics,
                 )

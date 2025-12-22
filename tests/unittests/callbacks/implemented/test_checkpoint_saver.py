@@ -4,9 +4,9 @@ from copy import deepcopy
 
 import pytest
 
-from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
-from clinicadl.callbacks.factory.lr_scheduler import LRScheduler
 from clinicadl.callbacks.handler import _CallbacksHandler
+from clinicadl.callbacks.implemented.checkpoint_saver import _CheckpointSaver
+from clinicadl.callbacks.implemented.lr_scheduler import LRScheduler
 from clinicadl.io.maps import Maps
 from clinicadl.train.trainer_state import TrainerState
 

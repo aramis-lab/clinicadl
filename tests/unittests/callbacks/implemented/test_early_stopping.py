@@ -3,7 +3,7 @@ import shutil
 import pandas as pd
 import pytest
 
-from clinicadl.callbacks.factory.early_stopping import (
+from clinicadl.callbacks.implemented.early_stopping import (
     EarlyStopping,
     OneMetricEarlyStopping,
 )

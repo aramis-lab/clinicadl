@@ -1,5 +1,5 @@
 """
-To monitor and customize the training process.
+To monitor and customize the training, evaluation, and prediction phases.
 """
-
-from .factory import *
+from .base import Callback
+from .implemented import *

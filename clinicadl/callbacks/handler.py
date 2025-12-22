@@ -7,12 +7,12 @@ from clinicadl.models import Model
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
+from .base import Callback
 from .config import get_callback_from_dict
-from .factory import *
-from .factory.base import Callback
-from .factory.logger import _Logger
-from .factory.monitor import _Monitor
-from .factory.training_loss import _TrainingLoss
+from .implemented import *
+from .implemented.logger import _Logger
+from .implemented.monitor import _Monitor
+from .implemented.training_loss import _TrainingLoss
 
 LOSS = "loss"
 

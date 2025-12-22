@@ -1,6 +1,6 @@
 import logging
 
-from clinicadl.callbacks.factory.logger import (
+from clinicadl.callbacks.implemented.logger import (
     ConsoleFormatter,
     StdLevelFilter,
     setup_logging,

@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from clinicadl.train.trainer_state import TrainerState
 
-from .base import Callback
+from ..base import Callback
 
 
 class StdLevelFilter(logging.Filter):

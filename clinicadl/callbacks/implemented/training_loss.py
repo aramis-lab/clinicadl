@@ -8,7 +8,7 @@ from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.dictionary.suffixes import TSV
 from clinicadl.utils.dictionary.words import BATCH, EPOCH, LOSS
 
-from .base import Callback
+from ..base import Callback
 
 
 class _TrainingLoss(Callback):

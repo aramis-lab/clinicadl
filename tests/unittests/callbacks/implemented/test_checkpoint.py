@@ -2,9 +2,9 @@ import shutil
 
 import pytest
 
-from clinicadl.callbacks.factory.checkpoint import Checkpoint
-from clinicadl.callbacks.factory.checkpoint_saver import _CheckpointSaver
 from clinicadl.callbacks.handler import _CallbacksHandler
+from clinicadl.callbacks.implemented.checkpoint import Checkpoint
+from clinicadl.callbacks.implemented.checkpoint_saver import _CheckpointSaver
 from clinicadl.io.maps import Maps
 from clinicadl.train.trainer_state import TrainerState
 

@@ -4,7 +4,7 @@ from typing import Any, Union
 from clinicadl.metrics.enum import Optimum
 from clinicadl.train.trainer_state import TrainerState
 
-from .base import Callback
+from ..base import Callback
 
 
 class ModelSelection(Callback):
