@@ -213,7 +213,7 @@ def test_add_field():
             for i in range(2)
         ]
     )
-    batch.add_field("abc", torch.tensor([1, 2]))
+    batch.add_field(torch.tensor([1, 2]), "abc")
     torch.testing.assert_close(batch[0]["abc"], torch.tensor(1))
     torch.testing.assert_close(batch[1]["abc"], torch.tensor(2))
     with pytest.raises(
@@ -221,3 +221,10 @@ def test_add_field():
         match="'values' must have the same length as the batch. Got 3 values, whereas the batch has only 2 elements",
     ):
         batch.add_field("bcd", [1, 2, 3])
+
+    batch.add_images(torch.randn(2, 1, 10, 10, 10), "new_image")
+    batch.add_masks(torch.randn(2, 1, 10, 10, 10), "new_mask")
+    assert isinstance(batch[0]["new_image"], tio.ScalarImage)
+    assert isinstance(batch[1]["new_image"], tio.ScalarImage)
+    assert isinstance(batch[0]["new_mask"], tio.LabelMap)
+    assert isinstance(batch[1]["new_mask"], tio.LabelMap)
