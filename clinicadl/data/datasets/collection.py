@@ -10,12 +10,12 @@ from clinicadl.utils.exceptions import TensorConversionError
 from clinicadl.utils.objects import HasConfig
 from clinicadl.utils.typing import DataFrameType
 
-from .abstract import ClinicaDLDataset
+from .abstract import Dataset
 from .multi_samples import MultiSamplesDataset
 from .tensor import TensorDataset
 
 
-def _get_dataset_from_dict(data: dict[str, Any]) -> ClinicaDLDataset:
+def _get_dataset_from_dict(data: dict[str, Any]) -> Dataset:
     """
     To avoid circular imports.
     """
@@ -58,9 +58,9 @@ class CollectionDatasetConfig(ObjectConfig["CollectionDataset"]):
         return datasets
 
 
-class CollectionDataset(HasConfig[CollectionDatasetConfig], ClinicaDLDataset):
+class CollectionDataset(HasConfig[CollectionDatasetConfig], Dataset):
     """
-    Abstract class defining some common logic for the :py:class:`~clinicadl.data.datasets.ClinicaDLDataset`
+    Abstract class defining some common logic for the :py:class:`~clinicadl.data.datasets.Dataset`
     that are a collections of :py:class:`~clinicadl.data.datasets.MultiSamplesDataset`.
     """
 
@@ -98,8 +98,8 @@ class CollectionDataset(HasConfig[CollectionDatasetConfig], ClinicaDLDataset):
         Returns
         -------
         tuple[dict[str, Any], ...]
-            The descriptions returned by :py:meth:`ClinicaDLDataset.describe
-            <clinicadl.data.datasets.ClinicaDLDataset.describe>` for each
+            The descriptions returned by :py:meth:`Dataset.describe
+            <clinicadl.data.datasets.Dataset.describe>` for each
             sub-dataset forming the current dataset.
         """
         return tuple([dataset.describe() for dataset in self.datasets])

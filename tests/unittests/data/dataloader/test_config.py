@@ -439,7 +439,7 @@ def test_serialize_deserialize(tmp_path):
 
 
 def test_custom_dataset():
-    from ..datasets.utils import CustomClinicaDLDataset
+    from ..datasets.utils import CustomDataset
 
     data = pd.DataFrame.from_records(
         [
@@ -450,7 +450,7 @@ def test_custom_dataset():
         ],
         columns=["participant_id", "session_id"],
     )
-    dataset = CustomClinicaDLDataset(data)
+    dataset = CustomDataset(data)
     dataloader = DataLoaderConfig(
         batch_size=2,
         shuffle=False,

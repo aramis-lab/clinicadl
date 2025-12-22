@@ -110,9 +110,9 @@ def test_single_split_unpaired():
 
 
 def test_custom_dataset():
-    from ...data.datasets.utils import CustomClinicaDLDataset
+    from ...data.datasets.utils import CustomDataset
 
-    custom = CustomClinicaDLDataset(CAPS.df)
+    custom = CustomDataset(CAPS.df)
     split = SPLITTER.get_split(custom)
     assert len(split.train_dataset) == 4
     assert len(split.val_dataset) == 2

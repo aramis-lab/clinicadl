@@ -13,7 +13,7 @@ from clinicadl.utils.typing import DataFrameType
 from ..structures import Sample
 
 
-class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sample]]]):
+class Dataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sample]]]):
     """
     Abstract class for ``ClinicaDL`` datasets, which inherits from :py:class:`torch.utils.data.Dataset`,
     to work with 3D neuroimaging data.
@@ -23,8 +23,8 @@ class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sam
     See Also
     --------
     :py:class:`~clinicadl.data.datasets.BaseDataset`
-        A ``ClinicaDLDataset`` with the base logic of all datasets implemented natively in ``ClinicaDL``.
-        May be easier to override than the plain ``ClinicaDLDataset``.
+        A ``Dataset`` with the base logic of all datasets implemented natively in ``ClinicaDL``.
+        May be easier to override than the plain ``Dataset``.
     """
 
     @property

@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 import torchio as tio
 
-from clinicadl.data.datasets import ClinicaDLDataset, MultiSamplesDataset
+from clinicadl.data.datasets import Dataset, MultiSamplesDataset
 from clinicadl.data.datatypes import T1Linear
 from clinicadl.data.structures import Sample
 
@@ -42,7 +42,7 @@ class CustomMultiSamplesDataset(MultiSamplesDataset):
         )
 
 
-class CustomClinicaDLDataset(ClinicaDLDataset):
+class CustomDataset(Dataset):
     def __init__(self, df):
         self._df = df
         self.evaluation = False

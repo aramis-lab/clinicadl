@@ -13,12 +13,12 @@ from clinicadl.utils.dictionary.words import (
 from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType
 
-from .abstract import ClinicaDLDataset
+from .abstract import Dataset
 
 
-class MultiSamplesDataset(ClinicaDLDataset):
+class MultiSamplesDataset(Dataset):
     """
-    An abstract :py:class:`~clinicadl.data.datasets.ClinicaDLDataset` to handle multiple samples per image.
+    An abstract :py:class:`~clinicadl.data.datasets.Dataset` to handle multiple samples per image.
 
     Here the size of the dataset is not equal to the number of images, since an image can contain multiple samples
     (e.g. patches or slices).

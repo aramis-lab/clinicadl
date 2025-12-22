@@ -130,9 +130,9 @@ def test_kfold_unpaired():
 
 
 def test_custom_dataset():
-    from ...data.datasets.utils import CustomClinicaDLDataset
+    from ...data.datasets.utils import CustomDataset
 
-    custom = CustomClinicaDLDataset(CAPS.df)
+    custom = CustomDataset(CAPS.df)
     splits = iter(SPLITTER.get_splits(custom))
     split = next(splits)
     assert len(split.train_dataset) == 2

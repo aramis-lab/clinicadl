@@ -252,7 +252,7 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
 
 class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
     """
-    Abstract class with the main logic of all the :py:class:` ~clinicadl.data.datasets.ClinicaDLDataset`
+    Abstract class with the main logic of all the :py:class:` ~clinicadl.data.datasets.Dataset`
     natively implemented in ``ClinicaDL``.
     """
 

@@ -13,7 +13,7 @@ from torch.amp.autocast_mode import autocast
 
 from clinicadl.callbacks.handler import Callback, _CallbacksHandler
 from clinicadl.data.dataloader import Batch, BatchType, DataLoader
-from clinicadl.data.datasets import CapsDataset, ClinicaDLDataset
+from clinicadl.data.datasets import CapsDataset, Dataset
 from clinicadl.io.maps.maps import Maps
 from clinicadl.io.maps.training.splits.models import ModelDir
 from clinicadl.losses.config import LossConfig

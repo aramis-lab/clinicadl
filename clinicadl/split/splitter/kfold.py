@@ -3,7 +3,7 @@ from typing import Generator, Optional, Sequence
 
 from pydantic import PositiveInt, field_validator
 
-from clinicadl.data.datasets import ClinicaDLDataset
+from clinicadl.data.datasets import Dataset
 from clinicadl.split.split import Split
 from clinicadl.split.splitter.splitter import (
     Splitter,
@@ -64,7 +64,7 @@ class KFold(Splitter):
     To handle a K-Fold cross-validator.
 
     This object will read a split directory returned by :py:func:`~clinicadl.split.make_kfold`,
-    and can then be used to split any :py:class:`~clinicadl.data.datasets.ClinicaDLDataset` using :py:meth:`~KFold.get_splits`,
+    and can then be used to split any :py:class:`~clinicadl.data.datasets.Dataset` using :py:meth:`~KFold.get_splits`,
     provided that all the (participant, session) pairs in the dataset are mentioned in the split directory.
 
     Parameters
@@ -86,8 +86,8 @@ class KFold(Splitter):
 
     def get_splits(
         self,
-        dataset: ClinicaDLDataset,
-        eval_dataset: Optional[ClinicaDLDataset] = None,
+        dataset: Dataset,
+        eval_dataset: Optional[Dataset] = None,
         splits: Optional[Sequence[int]] = None,
     ) -> Generator[Split, None, None]:
         """
@@ -96,9 +96,9 @@ class KFold(Splitter):
 
         Parameters
         ----------
-        dataset : ClinicaDLDataset
+        dataset : Dataset
             The :py:class:`~clinicadl.data.datasets.CapsDataset` to split.
-        eval_dataset : Optional[ClinicaDLDataset], default=None
+        eval_dataset : Optional[Dataset], default=None
             If not ``None``, it will be understood as the dataset from which the validation dataset should be created, and
             ``dataset`` will be the dataset from which the training dataset will be created (see examples). If ``None``, both
             training and validation datasets are built from ``dataset``.

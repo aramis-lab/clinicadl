@@ -13,7 +13,7 @@ from clinicadl.data.datasets import (
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.seed import pl_worker_init_function
 
-from ..datasets import ClinicaDLDataset
+from ..datasets import Dataset
 from .collate import CollateFn, ToBatch, ToBatches
 from .collate.factory import get_collate_from_dict
 
@@ -137,7 +137,7 @@ class DataLoaderConfig(ClinicaDLConfig):
 
     def get_object(
         self,
-        dataset: ClinicaDLDataset,
+        dataset: Dataset,
         dp_degree: Optional[int] = None,
         rank: Optional[int] = None,
     ) -> DataLoader:
@@ -298,7 +298,7 @@ class DataLoaderConfig(ClinicaDLConfig):
 
     def _generate_sampler(
         self,
-        dataset: ClinicaDLDataset,
+        dataset: Dataset,
         dp_degree: int,
         rank: int,
     ) -> Sampler:
@@ -324,7 +324,7 @@ class DataLoaderConfig(ClinicaDLConfig):
         return sampler
 
     @staticmethod
-    def _get_weights(dataset: ClinicaDLDataset, weights_name: str) -> list[float]:
+    def _get_weights(dataset: Dataset, weights_name: str) -> list[float]:
         """
         Gets the list of weights from the column of the dataframe.
         """

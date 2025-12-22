@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic import model_validator
 from typing_extensions import Self
 
-from clinicadl.data.datasets import ClinicaDLDataset
+from clinicadl.data.datasets import Dataset
 from clinicadl.split.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.dictionary.suffixes import JSON, TSV
@@ -147,8 +147,8 @@ class Splitter(ABC):
 
     def _get_split(
         self,
-        dataset: ClinicaDLDataset,
-        eval_dataset: Optional[ClinicaDLDataset] = None,
+        dataset: Dataset,
+        eval_dataset: Optional[Dataset] = None,
         split_id: int = 0,
     ) -> Split:
         """

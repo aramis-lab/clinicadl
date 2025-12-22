@@ -93,7 +93,7 @@ class SampleConfig(DataPointConfig):
 
 class Sample(DataPoint, ABC):
     """
-    The output of :py:class:`~clinicadl.data.datasets.ClinicaDLDataset`.
+    The output of :py:class:`~clinicadl.data.datasets.Dataset`.
 
     It is a :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`, with additional attributes.
 
