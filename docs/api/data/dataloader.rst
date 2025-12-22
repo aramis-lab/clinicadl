@@ -30,6 +30,6 @@ Collate functions
     :template: autosummary/class.rst
 
     CollateFn
-    ToBatch
-    ToBatches
-    MergeBatches
+    ToBatchCollate
+    ToBatchesCollate
+    MergeBatchesCollate

@@ -1,10 +1,11 @@
 from abc import abstractmethod
 from logging import getLogger
-from typing import Any, Optional
+from typing import Any, Optional, Sequence, Union
 
 import monai.metrics
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
+from clinicadl.transforms.handlers import Postprocessing
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 from clinicadl.utils.dictionary.words import LABEL, OUTPUT
@@ -23,7 +24,9 @@ class MetricConfig(ObjectConfig[Metric]):
 
     pred_key: str = OUTPUT
     label_key: Optional[str] = LABEL
-    postprocessing: list[TransformOrConfig] = []
+    postprocessing: Union[list[TransformOrConfig], Postprocessing] = Field(
+        default=[], reader=Postprocessing.from_dict
+    )
 
     def get_object(self, **kwargs: Any) -> Metric:
         """
@@ -46,6 +49,18 @@ class MetricConfig(ObjectConfig[Metric]):
             postprocessing=self.postprocessing,
         )
         return metric
+
+    @field_validator("postprocessing", mode="after")
+    @classmethod
+    def _validate_postprocessing(
+        cls, postprocessing: Union[Sequence[TransformOrConfig], Postprocessing]
+    ) -> Postprocessing:
+        """
+        Puts postprocessing transforms in a Postprocessing object.
+        """
+        if isinstance(postprocessing, list):
+            return Postprocessing(postprocessing)
+        return postprocessing
 
     @classmethod
     def _get_class(cls) -> type[monai.metrics.metric.CumulativeIterationMetric]:

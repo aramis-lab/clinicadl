@@ -5,7 +5,7 @@ import torchio as tio
 
 from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.datatypes import T1Linear
-from clinicadl.data.structures import DataPoint, Sample
+from clinicadl.data.structures import DataPoint, Sample, Sample2D
 
 
 def test_init():
@@ -51,7 +51,7 @@ def test_get_field():
     assert labels.size() == (2, 1, 3, 4, 5)
 
     # tensors and different shapes
-    batch[-1] = DataPoint(
+    batch[1] = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 6)),
         label=tio.LabelMap(tensor=torch.ones(1, 3, 4, 6)),
         participant="sub-1",
@@ -60,33 +60,40 @@ def test_get_field():
     labels = batch.get_field("label")
     images = batch.get_field("image")
     assert isinstance(images, list)
-    assert isinstance(images[0], tio.ScalarImage)
-    assert isinstance(images[-1], tio.ScalarImage)
+    assert images[0].size() == torch.Size((1, 3, 4, 5))
+    assert images[1].size() == torch.Size((1, 3, 4, 6))
     assert isinstance(labels, list)
-    assert isinstance(labels[0], tio.LabelMap)
-    assert labels[-1].shape == (1, 3, 4, 6)
+    assert labels[0].size() == torch.Size((1, 3, 4, 5))
 
     # numpy and list
     batch[0]["label"] = np.ones((1, 3, 4, 5)).tolist()
-    batch[-1]["label"] = np.ones((1, 3, 4, 5))
+    batch[1]["label"] = np.ones((1, 3, 4, 5))
     labels = batch.get_field("label")
     assert labels.size() == (2, 1, 3, 4, 5)
 
     # None
-    batch[-1]["label"] = None
+    batch[1]["label"] = None
     labels = batch.get_field("label")
     assert isinstance(labels, list)
-    assert isinstance(labels[0], list)
-    assert labels[-1] is None
+    assert labels[0].size() == torch.Size((1, 3, 4, 5))
+    assert labels[1] is None
+
+    # inhomogeneous numerics
+    batch[0]["label"] = [0, 1, 2]
+    batch[1]["label"] = [0, 1]
+    labels = batch.get_field("label")
+    assert isinstance(labels, list)
+    assert labels[0].size() == torch.Size((3,))
+    assert labels[1].size() == torch.Size((2,))
 
     # homogeneous numerics
     batch[0]["label"] = 0
-    batch[-1]["label"] = 1
+    batch[1]["label"] = 1
     labels = batch.get_field("label")
     torch.testing.assert_close(labels, torch.tensor([0, 1], dtype=torch.int64))
 
     batch[0]["label"] = 0.0
-    batch[-1]["label"] = 1.0
+    batch[1]["label"] = 1.0
     labels = batch.get_field("label")
     torch.testing.assert_close(labels, torch.tensor([0.0, 1.0], dtype=torch.float32))
 
@@ -103,13 +110,16 @@ def test_get_field():
     # slices
     batch = Batch(
         [
-            DataPoint(
+            Sample2D(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 5)),
                 label=tio.LabelMap(tensor=torch.ones(1, 3, 1, 5)),
                 participant=f"sub-{i}",
                 session=f"ses-{i}",
+                image_path="abc.nii.gz",
+                datatype=T1Linear(),
                 squeeze=False,
                 slice_direction=1,
+                sample_position=0,
             )
             for i in range(2)
         ]
@@ -203,7 +213,7 @@ def test_add_field():
             for i in range(2)
         ]
     )
-    batch.add_field("abc", torch.tensor([1, 2]))
+    batch.add_field(torch.tensor([1, 2]), "abc")
     torch.testing.assert_close(batch[0]["abc"], torch.tensor(1))
     torch.testing.assert_close(batch[1]["abc"], torch.tensor(2))
     with pytest.raises(
@@ -211,3 +221,10 @@ def test_add_field():
         match="'values' must have the same length as the batch. Got 3 values, whereas the batch has only 2 elements",
     ):
         batch.add_field("bcd", [1, 2, 3])
+
+    batch.add_images(torch.randn(2, 1, 10, 10, 10), "new_image")
+    batch.add_masks(torch.randn(2, 1, 10, 10, 10), "new_mask")
+    assert isinstance(batch[0]["new_image"], tio.ScalarImage)
+    assert isinstance(batch[1]["new_image"], tio.ScalarImage)
+    assert isinstance(batch[0]["new_mask"], tio.LabelMap)
+    assert isinstance(batch[1]["new_mask"], tio.LabelMap)

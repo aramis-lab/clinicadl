@@ -393,6 +393,7 @@ def test_to_tensors(tmp_path):
             "name": "Crop",
             "exclude": None,
             "include": None,
+            "copy": False,
             "cropping": [0, 1, 0, 1, 0, 1],
         },
         "Clamp(out_min=None, out_max=10)",
@@ -406,7 +407,7 @@ def test_to_tensors(tmp_path):
             ["sub-010", "ses-M003"],
         ]
     )
-    print(conversion_info)
+
     #       check files
     assert (
         tmp_path

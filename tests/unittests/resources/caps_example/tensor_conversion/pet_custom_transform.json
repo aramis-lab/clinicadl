@@ -22,6 +22,7 @@
             "name": "RescaleIntensity",
             "include": null,
             "exclude": null,
+            "copy": false,
             "masking_method": null,
             "out_min_max": [
                 0.0,

@@ -111,7 +111,6 @@ MANDATORY_ARGS = {
 def test_get_network_from_dict(config):
     c = config(**MANDATORY_ARGS[config._get_name()])
     config_dict = c.to_dict()
-    print(config_dict)
     c = get_network_from_dict(config_dict)
     assert isinstance(c, config)
 

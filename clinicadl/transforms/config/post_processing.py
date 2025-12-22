@@ -14,7 +14,8 @@ from pydantic import (
 )
 
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
-from clinicadl.utils.dictionary.words import EXCLUDE, INCLUDE
+from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.dictionary.words import COPY_, EXCLUDE, INCLUDE
 from clinicadl.utils.factories import get_defaults_from
 
 from ..homemade import Format
@@ -63,10 +64,13 @@ class MonaiTransformConfig(TransformConfig):
             The associated transform.
         """
         monai_transform = self._get_class()(
-            **self.to_raw_dict(exclude={INCLUDE, EXCLUDE})
+            **self.to_raw_dict(exclude={INCLUDE, EXCLUDE, COPY_})
         )
         transform = MonaiTransformWrapper(
-            monai_transform, include=self.include, exclude=self.exclude
+            monai_transform,
+            include=self.include,
+            exclude=self.exclude,
+            copy=self.copy_,
         )
         return transform
 
@@ -76,7 +80,13 @@ class MonaiTransformConfig(TransformConfig):
         return getattr(transforms, cls._get_name())
 
 
-class ActivationsConfig(MonaiTransformConfig):
+class _DimConfig(ClinicaDLConfig):
+    """Config class for 'dim' parameter."""
+
+    dim: NonNegativeInt = 0
+
+
+class ActivationsConfig(MonaiTransformConfig, _DimConfig):
     """
     Config class for :py:class:`monai.transforms.Activations`.
     """
@@ -102,7 +112,7 @@ class ActivationsConfig(MonaiTransformConfig):
         return self
 
 
-class AsDiscreteConfig(MonaiTransformConfig):
+class AsDiscreteConfig(MonaiTransformConfig, _DimConfig):
     """
     Config class for :py:class:`monai.transforms.AsDiscrete`.
     """

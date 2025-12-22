@@ -18,7 +18,7 @@ from .multi_samples import MultiSamplesDataset
 
 class SamplerDataset(MultiSamplesDataset):
     """
-    An abstract :py:class:`~clinicadl.data.datasets.ClinicaDLDataset` that can sample 3D patches or 2D slices from
+    An abstract :py:class:`~clinicadl.data.datasets.Dataset` that can sample 3D patches or 2D slices from
     a 3D image.
 
     It inherits from :py:class:`~clinicadl.data.datasets.MultiSamplesDataset`, so the length of the dataset depends

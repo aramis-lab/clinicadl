@@ -15,6 +15,7 @@
             "name": "RescaleIntensity",
             "include": null,
             "exclude": null,
+            "copy": false,
             "masking_method": null,
             "out_min_max": [
                 0.0,
@@ -30,6 +31,7 @@
             "name": "Clamp",
             "include": null,
             "exclude": null,
+            "copy": false,
             "out_min": -10.0,
             "out_max": 10.0
         }

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import numpy as np
 import torch
@@ -12,6 +12,8 @@ from monai.transforms import Transform as MonaiTransform
 
 if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
+
+DataPointT = TypeVar("DataPointT", bound="DataPoint")
 
 
 class MonaiTransformWrapper:
@@ -33,6 +35,8 @@ class MonaiTransformWrapper:
     exclude : Optional[Sequence[str]], default=None
         The key(s) of the ``DataPoints`` to which the transform will **not** be applied.
         ``exclude`` cannot be passed with ``include``.
+    copy : bool, default=False
+        Whether to make a deepcopy of the input before applying the transforms.
 
     Raises
     ------
@@ -45,21 +49,24 @@ class MonaiTransformWrapper:
         transform: MonaiTransform,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
+        copy: bool = False,
     ) -> None:
         self.transform = transform
         if include and exclude:
             raise ValueError("You cannot pass both 'include' and 'exclude'.")
         self.include = include
         self.exclude = exclude if exclude else []
+        self.copy = copy
 
     def __repr__(self):
         return f"{self.__class__.__name__}(transform={repr(self.transform)}, include={self.include})"
 
-    def __call__(self, datapoint: DataPoint) -> DataPoint:
+    def __call__(self, datapoint: DataPointT) -> DataPointT:
         """
         Applies the transform to the fields in 'include'.
         """
-        datapoint = deepcopy(datapoint)
+        if self.copy:
+            datapoint = deepcopy(datapoint)
 
         for key, value in datapoint.items():
             if key in self.exclude:
@@ -85,8 +92,6 @@ class MonaiTransformWrapper:
                     raise Exception(
                         f"An error occurred while transforming the field '{key}'."
                     ) from e
-
-        datapoint.update_attributes()  # so that datapoint.label matches datapoint["label"]
 
         return datapoint
 

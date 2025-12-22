@@ -21,6 +21,7 @@ from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 
 BAD_INPUTS = [
     ({}, ActivationsConfig),
+    ({"dim": -1}, [ActivationsConfig, AsDiscreteConfig]),
     ({"softmax": True, "sigmoid": True}, ActivationsConfig),
     ({"to_onehot": 0}, AsDiscreteConfig),
     ({"rounding": "abc"}, AsDiscreteConfig),
@@ -69,7 +70,13 @@ GOOD_INPUTS = [
         ],
     ),
     (
-        {"sigmoid": False, "softmax": False, "other": lambda x: x, "exclude": ["abc"]},
+        {
+            "sigmoid": False,
+            "softmax": False,
+            "other": lambda x: x,
+            "exclude": ["abc"],
+            "dim": 1,
+        },
         ActivationsConfig,
     ),
     ({"softmax": True, "other": None, "include": ["abc"]}, ActivationsConfig),
@@ -81,6 +88,7 @@ GOOD_INPUTS = [
             "rounding": None,
             "include": ["abc"],
             "dtype": torch.int,
+            "dim": 1,
         },
         AsDiscreteConfig,
     ),
@@ -239,11 +247,11 @@ def test_good_inputs(args: dict, configs):
     "args,config,transform",
     [
         (
-            {"softmax": True},
+            {"softmax": True, "dim": 3},
             ActivationsConfig,
             transforms.Activations,
         ),
-        ({"argmax": True}, AsDiscreteConfig, transforms.AsDiscrete),
+        ({"argmax": True, "dim": 3}, AsDiscreteConfig, transforms.AsDiscrete),
         (
             {},
             KeepLargestConnectedComponentConfig,
@@ -270,9 +278,14 @@ def test_good_inputs(args: dict, configs):
     ],
 )
 def test_get_object(args, config, transform):
-    c = config(**args)
+    c = config(**args, copy=True)
     transform_from_config = c.get_object()
     assert isinstance(transform_from_config, MonaiTransformWrapper)
     assert isinstance(transform_from_config.transform, transform)
     output = transform_from_config(X)
     assert isinstance(output, DataPoint)
+    assert output is not X
+
+    # test dim
+    if "dim" in args:
+        transform_from_config.transform.kwargs["dim"] == args["dim"]

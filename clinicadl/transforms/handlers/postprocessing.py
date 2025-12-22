@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence, TypeVar
 
 import torchio as tio
 from pydantic import Field, ValidationInfo, field_validator
@@ -18,8 +17,12 @@ if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
     from clinicadl.data.structures import DataPoint
 
+DataPointT = TypeVar("DataPointT", bound="DataPoint")
+
 
 class PostprocessingConfig(ObjectConfig["Postprocessing"]):
+    """Config class for ``Postprocessing``."""
+
     transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
         reader=SequenceOfObjects.build_reader(get_transform_from_dict)
     )
@@ -54,7 +57,9 @@ class Postprocessing(HasConfig[PostprocessingConfig]):
         self.config = PostprocessingConfig(
             transforms=transforms,
         )
-        self.transforms = tio.Compose(self.config.transforms.get_object())
+        self.transforms = tio.Compose(
+            self.config.transforms.get_object(), copy=False
+        )  # copy is specified in the transforms
 
     def __str__(self) -> str:
         """
@@ -70,13 +75,23 @@ class Postprocessing(HasConfig[PostprocessingConfig]):
 
         return str_
 
-    def apply(self, datapoint: DataPoint) -> DataPoint:
+    def apply(self, datapoint: DataPointT) -> DataPointT:
         """
         Applies the transforms and returns the output.
+
+        Parameters
+        ----------
+        datapoint : DataPoint
+            A :py:class:`~clinicadl.data.structures.DataPoint`.
+
+        Returns
+        -------
+        DataPoint
+            The transformed ``DataPoint``.
         """
         return self.transforms(datapoint)
 
-    def batch_apply(self, batch: Batch) -> Batch:
+    def batch_apply(self, batch: Batch[DataPointT]) -> Batch[DataPointT]:
         """
         Applies the transformations to a batch of
         :py:class:`~clinicadl.data.structures.DataPoint`.
@@ -92,7 +107,6 @@ class Postprocessing(HasConfig[PostprocessingConfig]):
         Batch
             The transformed batch.
         """
-        batch = deepcopy(batch)
         for i, datapoint in enumerate(batch):
             batch[i] = self.apply(datapoint)
 

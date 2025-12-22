@@ -81,7 +81,6 @@ def test_df():
     caps_t1.read_tensor_conversion()
     caps_pet.read_tensor_conversion()
     unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
-    print(unpaired.df)
     assert unpaired.df.fillna("nan").equals(ref_df)
     unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=False)
     assert unpaired.df.fillna("nan").equals(ref_df)

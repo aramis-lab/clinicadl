@@ -275,7 +275,6 @@ def test__getitem__():
     caps_t1.read_tensor_conversion()
     caps_pet.read_tensor_conversion()
     multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-    print(multimodal_dataset.df)
     assert multimodal_dataset[0].participant == "sub-000"
     assert multimodal_dataset[0].session == "ses-M000"
     assert multimodal_dataset[0].sample_type == "slice"

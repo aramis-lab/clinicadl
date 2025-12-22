@@ -18,6 +18,7 @@ functions may not be enough to give full guidelines on their use.
 
    callbacks
    data
+   infer
    io
    losses
    metrics

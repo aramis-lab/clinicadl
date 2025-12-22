@@ -6,7 +6,7 @@ import torch
 
 from clinicadl.utils.objects import HasConfig
 
-from .base import ClinicaDLModel
+from .base import Model
 from .supervised import SupervisedModel, SupervisedModelConfig
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ class ReconstructionModelConfig(SupervisedModelConfig):
     """
 
     @classmethod
-    def _get_class(cls) -> type[ClinicaDLModel]:
+    def _get_class(cls) -> type[Model]:
         """Returns the class associated to this config class."""
         return ReconstructionModel
 

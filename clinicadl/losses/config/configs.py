@@ -54,7 +54,7 @@ class LossConfig(ObjectConfig[torch.nn.Module]):
         torch.nn.Module:
             The PyTorch loss function.
         """
-        params = self.model_dump(exclude="name")
+        params = self.to_raw_dict()
         if "weight" in params and params["weight"]:
             params["weight"] = torch.Tensor(params["weight"])
         if "pos_weight" in params and params["pos_weight"]:

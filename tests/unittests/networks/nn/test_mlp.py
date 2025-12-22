@@ -9,21 +9,21 @@ from clinicadl.networks.nn.layers.utils import ActFunction, NormLayer
 
 @pytest.fixture
 def input_tensor():
-    return torch.randn(8, 10)
+    return torch.randn(2, 1, 3, 3)
 
 
 @pytest.mark.parametrize("act", [act for act in ActFunction] + [None])
 def test_activations(input_tensor, act):
-    net = MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], act=act, output_act=act)
-    assert net(input_tensor).shape == (8, 2)
+    net = MLP(num_inputs=9, num_outputs=3, hidden_dims=[6, 4], act=act, output_act=act)
+    assert net(input_tensor).shape == (2, 3)
 
 
 @pytest.mark.parametrize("norm", [norm for norm in NormLayer] + [None])
 def test_norms(input_tensor, norm):
     if norm == "group":
         norm = ("group", {"num_groups": 1})
-    net = MLP(num_inputs=10, num_outputs=2, hidden_dims=[6, 4], norm=norm)
-    assert net(input_tensor).shape == (8, 2)
+    net = MLP(num_inputs=9, num_outputs=3, hidden_dims=[6, 4], norm=norm)
+    assert net(input_tensor).shape == (2, 3)
 
 
 @pytest.mark.parametrize(
@@ -57,8 +57,8 @@ def test_checks(args):
 )
 def test_params(input_tensor, dropout, norm, bias, adn_ordering):
     net = MLP(
-        num_inputs=10,
-        num_outputs=2,
+        num_inputs=9,
+        num_outputs=3,
         hidden_dims=[6, 4],
         dropout=dropout,
         norm=norm,
@@ -66,7 +66,7 @@ def test_params(input_tensor, dropout, norm, bias, adn_ordering):
         bias=bias,
         adn_ordering=adn_ordering,
     )
-    assert net(input_tensor).shape == (8, 2)
+    assert net(input_tensor).shape == (2, 3)
     assert isinstance(net.output.linear, Linear)
 
     if bias:

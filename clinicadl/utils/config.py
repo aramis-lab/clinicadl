@@ -17,6 +17,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pydantic.fields import FieldInfo
 from typing_extensions import Self
 
 from clinicadl.utils.dictionary.words import NAME, READER
@@ -48,7 +49,7 @@ class ClinicaDLConfig(BaseModel):
     )
 
     @classmethod
-    def get_fields(cls, computed: bool = False) -> list[str]:
+    def get_fields(cls, computed: bool = False, alias: bool = False) -> list[str]:
         """
         Gets the list of the fields in the config class.
 
@@ -56,13 +57,18 @@ class ClinicaDLConfig(BaseModel):
         ----------
         computed : bool, default=False
             Whether to also return computed fields.
+        alias : bool, default=False
+            Whether to return the aliases of the fields.
 
         Returns
         -------
         list[str]
             The list of the field names.
         """
-        fields = list(cls.model_fields.keys())
+        fields = [
+            field.alias or name if alias else name
+            for name, field in cls.model_fields.items()
+        ]
         if computed:
             fields += list(cls.model_computed_fields.keys())
 
@@ -82,7 +88,7 @@ class ClinicaDLConfig(BaseModel):
         dict[str, Any]
             The raw config class as a dict.
         """
-        fields = self.get_fields()
+        fields = self.get_fields(alias=False)
         d = {
             field: value for field, value in self if field in fields
         }  # do not take private fields
@@ -109,7 +115,9 @@ class ClinicaDLConfig(BaseModel):
         kwargs
             Any argument accepted by :py:method:`pydantic.BaseModel.model_dump`.
         """
-        return _order_dict(self.model_dump(**kwargs, serialize_as_any=True))
+        return _order_dict(
+            self.model_dump(**kwargs, serialize_as_any=True, by_alias=True)
+        )
 
     def to_json(self, json_path: PathType, overwrite: bool = False, **kwargs) -> None:
         """
@@ -220,7 +228,7 @@ class ClinicaDLConfig(BaseModel):
         Checks the input of :py:meth:`from_dict`.
         """
         fields_in_dict = set(dict_)
-        expected_fields = set(cls.get_fields())
+        expected_fields = set(cls.get_fields(alias=True))
 
         if diff := list(expected_fields.difference(fields_in_dict)):
             raise MissingFieldsError(fields=diff)
@@ -274,10 +282,25 @@ class ClinicaDLConfig(BaseModel):
     @classmethod
     def _get_reader(cls, field: str) -> Optional[FieldReaderType]:
         """Gets the reader for a field."""
-        if cls.model_fields[field].json_schema_extra:  # pylint: disable=unsubscriptable-object
+        field_info = cls._resolve_field(field)
+        if field_info.json_schema_extra:  # pylint: disable=unsubscriptable-object
             return cls.model_fields[field].json_schema_extra.get(READER, None)  # pylint: disable=no-member, disable=unsubscriptable-object
 
         return None
+
+    @classmethod
+    def _resolve_field(cls, field: str) -> FieldInfo:
+        """
+        Resolves a field name or alias to the FieldInfo.
+        """
+        if field in cls.model_fields:
+            return cls.model_fields[field]
+
+        for f in cls.model_fields.values():  # alias
+            if f.alias == field:
+                return f
+
+        raise KeyError(f"Field '{field}' not found")
 
 
 class ConfigWithName(ClinicaDLConfig):
@@ -731,7 +754,7 @@ class KwargsConfig(ObjectConfig[T]):
 
     def to_raw_dict(self, exclude: Optional[Sequence[str]] = None) -> dict[str, Any]:
         dict_ = super().to_raw_dict(exclude)
-        main_field_name = self.get_fields()[0]
+        main_field_name = self.get_fields(alias=False)[0]
 
         return dict_[main_field_name]
 

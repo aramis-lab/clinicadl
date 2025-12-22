@@ -55,7 +55,7 @@ class Maps(Directory):
             :icon: file
             :color: light
 
-            Details on the neural network architecture, provided by :py:meth:`ClinicaDLModel.get_architecture <clinicadl.models.ClinicaDLModel.get_architecture>`.
+            Details on the neural network architecture, provided by :py:meth:`Model.get_architecture <clinicadl.models.Model.get_architecture>`.
 
         .. dropdown:: environment.txt → ``maps.environment_txt``
             :icon: file
@@ -73,7 +73,7 @@ class Maps(Directory):
             :icon: file
             :color: light
 
-            Details on the :py:meth:`~clinicadl.models.ClinicaDLModel`.
+            Details on the :py:meth:`~clinicadl.models.Model`.
 
         .. dropdown:: summary.log → ``maps.summary_log``
             :icon: file
@@ -85,7 +85,7 @@ class Maps(Directory):
             :icon: file
             :color: light
 
-            Summary of the neural network provided by :py:meth:`ClinicaDLModel.get_summary <clinicadl.models.ClinicaDLModel.get_summary>`.
+            Summary of the neural network provided by :py:meth:`Model.get_summary <clinicadl.models.Model.get_summary>`.
 
         .. dropdown:: **training**
             :icon: file-directory

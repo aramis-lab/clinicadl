@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 from pydantic import NonNegativeFloat, ValidationInfo, field_validator
 
-from clinicadl.data.datasets import ClinicaDLDataset
+from clinicadl.data.datasets import Dataset
 from clinicadl.split.split import Split
 from clinicadl.split.splitter.splitter import (
     Splitter,
@@ -44,7 +44,7 @@ class SingleSplit(Splitter):
     that can handle several splits.
 
     This object will read a split directory returned by :py:func:`~clinicadl.split.make_split`,
-    and can then be used to split any :py:class:`~clinicadl.data.datasets.ClinicaDLDataset` using :py:meth:`~SingleSplit.get_split`,
+    and can then be used to split any :py:class:`~clinicadl.data.datasets.Dataset` using :py:meth:`~SingleSplit.get_split`,
     provided that all the (participant, session) pairs in the dataset are mentioned in the split directory.
 
     Parameters
@@ -61,7 +61,7 @@ class SingleSplit(Splitter):
     _config_type = SingleSplitConfig
 
     def get_split(
-        self, dataset: ClinicaDLDataset, eval_dataset: Optional[ClinicaDLDataset] = None
+        self, dataset: Dataset, eval_dataset: Optional[Dataset] = None
     ) -> Split:
         """
         Splits a dataset according to the split found
@@ -69,9 +69,9 @@ class SingleSplit(Splitter):
 
         Parameters
         ----------
-        dataset : ClinicaDLDataset
-            The :py:class:`~clinicadl.data.datasets.ClinicaDLDataset` to split.
-        eval_dataset : Optional[ClinicaDLDataset], default=None
+        dataset : Dataset
+            The :py:class:`~clinicadl.data.datasets.Dataset` to split.
+        eval_dataset : Optional[Dataset], default=None
             If not ``None``, it will be understood as the dataset from which the validation dataset should be created, and
             ``dataset`` will be the dataset from which the training dataset will be created (see examples). If ``None``, both
             training and validation datasets are built from ``dataset``.

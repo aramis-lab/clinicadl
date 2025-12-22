@@ -7,7 +7,12 @@ import torch
 from pydantic import ValidationError
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
-from clinicadl.data.dataloader import DataLoaderConfig, MergeBatches, ToBatch, ToBatches
+from clinicadl.data.dataloader import (
+    DataLoaderConfig,
+    MergeBatchesCollate,
+    ToBatchCollate,
+    ToBatchesCollate,
+)
 from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.datasets import (
     CapsDataset,
@@ -42,7 +47,7 @@ GOOD_INPUTS = [
         "persistent_workers": True,
     },
     {"sampling_weights": None, "num_workers": 1},
-    {"collate_fn": ToBatch()},
+    {"collate_fn": ToBatchCollate()},
 ]
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
@@ -124,7 +129,7 @@ def test_get_object():
     assert batch[0].get_field("label") == torch.tensor([5.0])
     assert batch[1].get_field("label") == [None]
 
-    dataloader_config = DataLoaderConfig(shuffle=False, collate_fn=ToBatch())
+    dataloader_config = DataLoaderConfig(shuffle=False, collate_fn=ToBatchCollate())
     dataloader = dataloader_config.get_object(ConcatDataset([CAPS, CAPS_WITHOUT_LABEL]))
     assert isinstance(dataloader.sampler, DistributedSampler)
     assert not dataloader.sampler.shuffle
@@ -170,9 +175,9 @@ def test_get_object():
         dataloader_config.get_object(CAPS, rank=2, dp_degree=2)
 
     # tets other datasets
-    dataloader = DataLoaderConfig(batch_size=2, collate_fn=ToBatches()).get_object(
-        UnpairedDataset([CAPS, CAPS_WITHOUT_LABEL])
-    )
+    dataloader = DataLoaderConfig(
+        batch_size=2, collate_fn=ToBatchesCollate()
+    ).get_object(UnpairedDataset([CAPS, CAPS_WITHOUT_LABEL]))
     dataloader.set_epoch(5)
     batch = next(iter(dataloader))
     assert isinstance(batch, (list, tuple))
@@ -181,7 +186,7 @@ def test_get_object():
     assert batch[1].get_field("label") == [None, None]
 
     dataloader = DataLoaderConfig(
-        batch_size=5, shuffle=True, collate_fn=MergeBatches()
+        batch_size=5, shuffle=True, collate_fn=MergeBatchesCollate()
     ).get_object(PairedDataset([CAPS, CAPS_WITHOUT_LABEL]))
     batch = next(iter(dataloader))
     assert len(batch) == 5
@@ -431,15 +436,15 @@ def test_serialize_deserialize(tmp_path):
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         shuffle=False,
-        collate_fn=MergeBatches(),
+        collate_fn=MergeBatchesCollate(),
     )
     dataloader_config.to_json(tmp_path / "dataloader.json", overwrite=True)
     dataloader_config = DataLoaderConfig.from_json(tmp_path / "dataloader.json")
-    assert isinstance(dataloader_config.collate_fn, MergeBatches)
+    assert isinstance(dataloader_config.collate_fn, MergeBatchesCollate)
 
 
 def test_custom_dataset():
-    from ..datasets.utils import CustomClinicaDLDataset
+    from ..datasets.utils import CustomDataset
 
     data = pd.DataFrame.from_records(
         [
@@ -450,7 +455,7 @@ def test_custom_dataset():
         ],
         columns=["participant_id", "session_id"],
     )
-    dataset = CustomClinicaDLDataset(data)
+    dataset = CustomDataset(data)
     dataloader = DataLoaderConfig(
         batch_size=2,
         shuffle=False,

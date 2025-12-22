@@ -153,7 +153,7 @@ class LRScheduler(Callback):
             optimizer = optimizers[self.optimizer_name]
         except KeyError as exc:
             raise ClinicaDLArgumentError(
-                f"In LRScheduler, optimizer_name='{self.optimizer_name}' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
+                f"In LRScheduler, optimizer_name='{self.optimizer_name}' but there is no such optimizer (returned by the 'get_optimizers' method of you Model). "
                 f"Optimizers are: {list(optimizers.keys())}"
             ) from exc
 
@@ -163,7 +163,7 @@ class LRScheduler(Callback):
             if optimizer is not self.scheduler.optimizer:
                 raise ClinicaDLConfigurationError(
                     f"The optimizer associated to the LR scheduler '{type(self.scheduler).__name__}' is not the same as "
-                    f"'{self.optimizer_name}' (returned by the 'get_optimizers' method of you ClinicaDLModel)."
+                    f"'{self.optimizer_name}' (returned by the 'get_optimizers' method of you Model)."
                 )
             self.scheduler.load_state_dict(self._initial_state)
 

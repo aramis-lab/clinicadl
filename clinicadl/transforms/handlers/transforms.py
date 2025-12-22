@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from logging import getLogger
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence, TypeVar
 
 import torchio as tio
 from pydantic import Field, ValidationInfo, field_validator, model_validator
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.transforms.extraction import Extraction, Image
 from clinicadl.utils.config import ObjectConfig, SequenceOfObjects
@@ -18,10 +17,17 @@ from ..factory import get_transform_from_dict
 from ..types import Transform, TransformOrConfig
 from .utils import get_transform_name
 
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
+
 logger = getLogger("clinicadl.transforms.Transforms")
+
+DataPointT = TypeVar("DataPointT", bound="DataPoint")
 
 
 class TransformsConfig(ObjectConfig["Transforms"]):
+    """Config class for ``Transforms``."""
+
     extraction: Extraction = Field(reader=get_extraction_from_dict)
     image_transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
         reader=SequenceOfObjects.build_reader(get_transform_from_dict)
@@ -153,9 +159,15 @@ class Transforms(HasConfig[TransformsConfig]):
             augmentations=augmentations,
         )
         self.extraction = self.config.extraction
-        self.image_transforms = tio.Compose(self.config.image_transforms.get_object())
-        self.sample_transforms = tio.Compose(self.config.sample_transforms.get_object())
-        self.augmentations = tio.Compose(self.config.augmentations.get_object())
+        self.image_transforms = tio.Compose(
+            self.config.image_transforms.get_object(), copy=False
+        )  # copy is specified in the transforms
+        self.sample_transforms = tio.Compose(
+            self.config.sample_transforms.get_object(), copy=False
+        )
+        self.augmentations = tio.Compose(
+            self.config.augmentations.get_object(), copy=False
+        )
 
     def __str__(self) -> str:
         """
@@ -200,31 +212,71 @@ class Transforms(HasConfig[TransformsConfig]):
 
         return transform_str
 
-    def apply_image_transforms(self, datapoint: DataPoint) -> DataPoint:
+    def apply_image_transforms(self, datapoint: DataPointT) -> DataPointT:
         """
         Applies the transforms passed in ``image_transforms`` and returns the
         output.
+
+        Parameters
+        ----------
+        datapoint : DataPoint
+            A :py:class:`~clinicadl.data.structures.DataPoint`.
+
+        Returns
+        -------
+        DataPoint
+            The transformed ``DataPoint``.
         """
         return self.image_transforms(datapoint)
 
-    def extract_sample(self, datapoint: DataPoint, sample_index: int) -> DataPoint:
+    def extract_sample(self, datapoint: DataPointT, sample_index: int) -> DataPointT:
         """
         Extracts the sample.
 
         See: :py:class:`clinicadl.transforms.extraction.Extraction`.
+
+        Parameters
+        ----------
+        datapoint : DataPoint
+            A :py:class:`~clinicadl.data.structures.DataPoint`.
+
+        Returns
+        -------
+        DataPoint
+            The sample in a ``DataPoint``.
         """
         return self.extraction(datapoint, sample_index)
 
-    def apply_sample_transforms(self, datapoint: DataPoint) -> DataPoint:
+    def apply_sample_transforms(self, datapoint: DataPointT) -> DataPointT:
         """
         Applies the transforms passed in ``sample_transforms`` and returns the
         output.
+
+        Parameters
+        ----------
+        datapoint : DataPoint
+            A :py:class:`~clinicadl.data.structures.DataPoint`.
+
+        Returns
+        -------
+        DataPoint
+            The transformed ``DataPoint``.
         """
         return self.sample_transforms(datapoint)
 
-    def apply_augmentations(self, datapoint: DataPoint) -> DataPoint:
+    def apply_augmentations(self, datapoint: DataPointT) -> DataPointT:
         """
         Applies the transforms passed in ``augmentations`` and returns the
         output.
+
+        Parameters
+        ----------
+        datapoint : DataPoint
+            A :py:class:`~clinicadl.data.structures.DataPoint`.
+
+        Returns
+        -------
+        DataPoint
+            The transformed ``DataPoint``.
         """
         return self.augmentations(datapoint)

@@ -229,7 +229,7 @@ class UnpairedDataset(CollectionDataset):
         If the information cannot be found for a sub-sample (because all the underlying datasets don't
         necessarily contain the same information), ``get_sample_info`` will return ``None`` for this sub-sample.
 
-        See :py:meth:`ClinicaDLDataset.get_sample_info <clinicadl.data.datasets.ClinicaDLDataset.get_sample_info>`
+        See :py:meth:`Dataset.get_sample_info <clinicadl.data.datasets.Dataset.get_sample_info>`
         for more details.
 
         Parameters

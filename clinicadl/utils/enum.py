@@ -59,6 +59,15 @@ class SliceDirection(int, Enum):
     AXIAL = 2
 
 
+class PadMode(str, Enum):
+    "Padding mode."
+
+    CONSTANT = "constant"
+    REFLECT = "reflect"
+    REPLICATE = "replicate"
+    CIRCULAR = "circular"
+
+
 class SliceMode(str, Enum):
     RGB = "rgb"
     SINGLE = "single"

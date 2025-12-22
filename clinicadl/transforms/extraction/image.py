@@ -1,16 +1,22 @@
 from __future__ import annotations
 
 from logging import getLogger
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import torch
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import SAMPLE_POSITION, SAMPLE_TYPE
 
 from .base import Extraction, ImplementedExtraction
 
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
+
+
 logger = getLogger("clinicadl.transforms.extraction.image")
+
+DataPointT = TypeVar("DataPointT", bound="DataPoint")
 
 
 class ImageConfig(ObjectConfig["Image"]):
@@ -41,6 +47,13 @@ class Image(Extraction[ImageConfig]):
         The type of the sample returned by this extraction, among {"image", "slice", "patch"}.
         """
         return ImplementedExtraction.IMAGE.value.lower()
+
+    def _extract_datapoint_from_position(
+        self, data_point: DataPointT, sample_position: Any
+    ) -> DataPointT:
+        self._add_info(data_point, sample_position)
+
+        return data_point
 
     def _extract_tensor_sample(
         self,

@@ -22,12 +22,12 @@ from clinicadl.utils.exceptions import (
 )
 
 
-class ClinicaDLModel:
+class Model:
     def get_loss_functions(self):
         return {"loss": BCELoss()}
 
 
-MODEL = ClinicaDLModel()
+MODEL = Model()
 
 DATAPOINTS = [
     DataPoint(
@@ -431,7 +431,7 @@ def test_read_write_json(tmp_path):
                 "get_not_nans": False,
                 "pred_key": "output",
                 "label_key": "label",
-                "postprocessing": [],
+                "postprocessing": {"name": "Postprocessing", "transforms": []},
                 "reduction": "mean",
             },
             "my_metric": "CustomMetric",

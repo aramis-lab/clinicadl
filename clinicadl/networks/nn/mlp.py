@@ -31,7 +31,7 @@ class MLP(BaseMLP):
     """Simple fully-connected neural network (or Multi-Layer Perceptron) with linear, normalization, activation
     and dropout layers.
 
-    Works with 2D data (including batch dimension).
+    It contains a flattening layer, so it works with images (only batched images).
 
     Parameters
     ----------

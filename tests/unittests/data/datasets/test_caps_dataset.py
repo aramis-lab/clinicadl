@@ -485,7 +485,6 @@ def test_get_sample_info():
     ):
         caps_dataset.get_sample_info(8, "age")
     caps_dataset.read_tensor_conversion("t1_transform")
-    print(caps_dataset.df)
     assert caps_dataset.get_sample_info(7, "age") == 1.0
     assert caps_dataset.get_sample_info(8, "age") == 2.0
 

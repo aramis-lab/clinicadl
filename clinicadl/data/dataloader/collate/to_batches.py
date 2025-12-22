@@ -14,17 +14,17 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="Sample")
 
 
-class ToBatchesConfig(ObjectConfig["ToBatches"]):
+class ToBatchesCollateConfig(ObjectConfig["ToBatchesCollate"]):
     """
-    Config class for ``ToBatches``.
+    Config class for ``ToBatchesCollate``.
     """
 
     @classmethod
-    def _get_class(cls) -> type[ToBatches]:
-        return ToBatches
+    def _get_class(cls) -> type[ToBatchesCollate]:
+        return ToBatchesCollate
 
 
-class ToBatches(HasConfig[ToBatchesConfig], CollateFn):
+class ToBatchesCollate(HasConfig[ToBatchesCollateConfig], CollateFn):
     """
     To return a sequence of batches.
 
@@ -35,14 +35,14 @@ class ToBatches(HasConfig[ToBatchesConfig], CollateFn):
 
     .. code-block::
 
-        from clinicadl.data.dataloader import ToBatches
+        from clinicadl.data.dataloader import ToBatchesCollate
         from clinicadl.data.structures.examples import ColinSample
 
         sample_1 = ColinSample(participant="sub-001")
         sample_2 = ColinSample(participant="sub-002")
         sample_3 = ColinSample(participant="sub-003")
         sample_4 = ColinSample(participant="sub-004")
-        batch = ToBatches()([(sample_1, sample_2), (sample_3, sample_4)])
+        batch = ToBatchesCollate()([(sample_1, sample_2), (sample_3, sample_4)])
 
     .. code-block::
 
@@ -56,12 +56,12 @@ class ToBatches(HasConfig[ToBatchesConfig], CollateFn):
 
     See Also
     --------
-    ~clinicadl.data.dataloader.MergeBatches
+    ~clinicadl.data.dataloader.MergeBatchesCollate
         To merge several batches into a single batch.
     """
 
-    config = ToBatchesConfig()
-    _config_type = ToBatchesConfig
+    config = ToBatchesCollateConfig()
+    _config_type = ToBatchesCollateConfig
 
     def __call__(self, samples: Sequence[Sequence[T]]) -> tuple[Batch[T], ...]:
         """

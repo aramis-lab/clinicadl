@@ -14,17 +14,17 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="Sample")
 
 
-class ToBatchConfig(ObjectConfig["ToBatch"]):
+class ToBatchCollateConfig(ObjectConfig["ToBatchCollate"]):
     """
-    Config class for ``ToBatch``.
+    Config class for ``ToBatchCollate``.
     """
 
     @classmethod
-    def _get_class(cls) -> type[ToBatch]:
-        return ToBatch
+    def _get_class(cls) -> type[ToBatchCollate]:
+        return ToBatchCollate
 
 
-class ToBatch(HasConfig[ToBatchConfig], CollateFn):
+class ToBatchCollate(HasConfig[ToBatchCollateConfig], CollateFn):
     """
     To simply collate a sequence of samples in a single batch.
 
@@ -35,12 +35,12 @@ class ToBatch(HasConfig[ToBatchConfig], CollateFn):
 
     .. code-block::
 
-        from clinicadl.data.dataloader import ToBatch
+        from clinicadl.data.dataloader import ToBatchCollate
         from clinicadl.data.structures.examples import ColinSample
 
         sample_1 = ColinSample(participant="sub-001")
         sample_2 = ColinSample(participant="sub-002")
-        batch = ToBatch()([sample_1, sample_2])
+        batch = ToBatchCollate()([sample_1, sample_2])
 
     .. code-block::
 
@@ -53,8 +53,8 @@ class ToBatch(HasConfig[ToBatchConfig], CollateFn):
         'sub-002'
     """
 
-    config = ToBatchConfig()
-    _config_type = ToBatchConfig
+    config = ToBatchCollateConfig()
+    _config_type = ToBatchCollateConfig
 
     def __call__(self, samples: Sequence[T]) -> Batch[T]:
         """

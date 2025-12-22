@@ -7,7 +7,7 @@ from pydantic import Field, NonNegativeInt, field_validator
 from typing_extensions import Self
 
 from clinicadl.data.dataloader import DataLoader, DataLoaderConfig
-from clinicadl.data.datasets import ClinicaDLDataset
+from clinicadl.data.datasets import Dataset
 from clinicadl.data.datasets.factory import get_dataset_from_dict
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
@@ -29,8 +29,8 @@ class SplitConfig(ObjectConfig["Split"]):
 
     index: NonNegativeInt
     split_dir: Path
-    train_dataset: ClinicaDLDataset = Field(reader=get_dataset_from_dict)
-    val_dataset: ClinicaDLDataset = Field(reader=get_dataset_from_dict)
+    train_dataset: Dataset = Field(reader=get_dataset_from_dict)
+    val_dataset: Dataset = Field(reader=get_dataset_from_dict)
     train_loader_config: Optional[DataLoaderConfig] = Field(
         default=None, reader=_read_dataloader
     )
@@ -73,8 +73,8 @@ class Split(HasConfig[SplitConfig]):
         self,
         index: int,
         split_dir: Path,
-        train_dataset: ClinicaDLDataset,
-        val_dataset: ClinicaDLDataset,
+        train_dataset: Dataset,
+        val_dataset: Dataset,
     ):
         self.config = self._config_type(
             index=index,
@@ -96,12 +96,12 @@ class Split(HasConfig[SplitConfig]):
         return self.config.split_dir
 
     @property
-    def train_dataset(self) -> ClinicaDLDataset:
+    def train_dataset(self) -> Dataset:
         """The training set."""
         return self.config.train_dataset
 
     @property
-    def val_dataset(self) -> ClinicaDLDataset:
+    def val_dataset(self) -> Dataset:
         """The validation set."""
         return self.config.val_dataset
 

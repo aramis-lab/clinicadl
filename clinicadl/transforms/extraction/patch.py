@@ -1,35 +1,28 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from enum import Enum
 from logging import getLogger
-from typing import Any, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import torch
 from monai.data.utils import iter_patch_position
 from pydantic import (
     NonNegativeFloat,
-    NonNegativeInt,
     PositiveInt,
     field_validator,
 )
 
-from clinicadl.data.structures import DataPoint
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import SAMPLE_POSITION, SAMPLE_TYPE
+from clinicadl.utils.enum import PadMode
 
 from .base import Extraction, ImplementedExtraction
 
+if TYPE_CHECKING:
+    from clinicadl.data.structures import DataPoint
+
+
 logger = getLogger("clinicadl.transforms.extraction.patch")
-
-
-class PadMode(str, Enum):
-    "Padding mode for Patch extraction."
-
-    CONSTANT = "constant"
-    REFLECT = "reflect"
-    REPLICATE = "replicate"
-    CIRCULAR = "circular"
 
 
 class PatchConfig(ObjectConfig["Patch"]):
@@ -37,11 +30,8 @@ class PatchConfig(ObjectConfig["Patch"]):
     Config class for patch extraction.
     """
 
-    patch_size: Tuple[PositiveInt, PositiveInt, PositiveInt]
-    overlap: Union[
-        Tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat],
-        Tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt],
-    ]
+    patch_size: tuple[PositiveInt, PositiveInt, PositiveInt]
+    overlap: tuple[NonNegativeFloat, NonNegativeFloat, NonNegativeFloat]
     pad_mode: Optional[PadMode]
     pad_value: float
 
@@ -63,10 +53,9 @@ class PatchConfig(ObjectConfig["Patch"]):
     def _overlap_validator(cls, value: tuple) -> tuple:
         """Checks that overlap is between 0 and 1 if it is a float."""
         for v in value:
-            if isinstance(v, float):
-                assert (
-                    0 <= v < 1
-                ), f"If 'overlap' is a float, it must be between 0 (included) and 1 (excluded). Got {v}"
+            assert (
+                0 <= v < 1
+            ), f"If 'overlap' is a float, it must be between 0 (included) and 1 (excluded). Got {v}"
         return value
 
     @classmethod
@@ -89,12 +78,12 @@ class Patch(Extraction[ObjectConfig]):
 
     Parameters
     ----------
-    patch_size : Union[int, Tuple[int, int, int]]
+    patch_size : Union[int, tuple[int, int, int]]
         The size of the patches. If a single value is passed, the same patch size will be used for the three
         spatial dimensions.
-    overlap: Union[float, Tuple[float, float, NonNegativeFloat], float, Tuple[int, int, int]], default=0.0
-        The amount of overlap between patches. It can be either a ``float`` in :math:`[0.0, 1.0)` that defines relative overlap, or a non-negative ``int`` that defines the
-        number of pixels overlapping. If a single value is passed, the same overlap will be used for the three spatial dimensions.
+    overlap: Union[float, tuple[float, float, float]], default=0.0
+        A ``float`` in :math:`[0.0, 1.0)` that defines relative patch overlap in each dimension.
+        If a single value is passed, the same overlap will be used for the three spatial dimensions.
     pad_mode : Optional[PadMode], default="constant"
         A padding mode accepted by :py:func:`torch.nn.functional.pad`, i.e. one of ``"constant"``, ``"reflect"``, ``"replicate"`` or ``"circular"``.
         If ``None``, no padding will be applied, so the patches that cross the border of the image will be dropped.
@@ -107,13 +96,10 @@ class Patch(Extraction[ObjectConfig]):
 
     def __init__(
         self,
-        *,
-        patch_size: Union[int, Tuple[int, int, int]],
+        patch_size: Union[int, tuple[int, int, int]],
         overlap: Union[
             float,
-            Tuple[float, float, float],
-            int,
-            Tuple[int, int, int],
+            tuple[float, float, float],
         ] = 0.0,
         pad_mode: Optional[PadMode] = PadMode.CONSTANT,
         pad_value: float = 0.0,
@@ -231,9 +217,6 @@ class Patch(Extraction[ObjectConfig]):
             self.config.patch_size,
             self.config.overlap,
         ):
-            if isinstance(ov, float):
-                pad_size[i] = (ps - sh) % round(ps - (ps * ov))
-            else:
-                pad_size[i] = (ps - sh) % round(ps - ov)
+            pad_size[i] = (ps - sh) % round(ps - (ps * ov))
 
         return pad_size

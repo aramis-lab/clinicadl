@@ -7,6 +7,8 @@ import torch.nn as nn
 import torch.optim as optim
 from pydantic import Field, field_validator
 
+from clinicadl.infer import Inferer, SimpleInferer
+from clinicadl.infer.factory import get_inferer_from_dict
 from clinicadl.losses.config import LossConfig
 from clinicadl.losses.factory import get_loss_function_from_dict
 from clinicadl.losses.types import Loss, LossOrConfig
@@ -19,9 +21,10 @@ from clinicadl.utils.config import (
     ObjectConfig,
     ObjectOrConfig,
 )
+from clinicadl.utils.dictionary.words import IMAGE, LABEL, OPTIMIZER
 from clinicadl.utils.objects import HasConfig
 
-from .base import ClinicaDLModel
+from .base import Model
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
@@ -45,6 +48,7 @@ class SupervisedModelConfig(ObjectConfig["SupervisedModel"]):
     optimizer: ObjectOrConfig[optim.Optimizer, OptimizerConfig] = Field(
         reader=ObjectOrConfig.build_reader(get_optimizer_from_dict)
     )
+    inferer: Inferer = Field(reader=get_inferer_from_dict)
 
     @field_validator("network", "loss", "optimizer", mode="before")
     @classmethod
@@ -55,12 +59,12 @@ class SupervisedModelConfig(ObjectConfig["SupervisedModel"]):
         return ObjectOrConfig.from_value(v)
 
     @classmethod
-    def _get_class(cls) -> type[ClinicaDLModel]:
+    def _get_class(cls) -> type[Model]:
         """Returns the class associated to this config class."""
         return SupervisedModel
 
 
-class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
+class SupervisedModel(HasConfig[SupervisedModelConfig], Model):
     """
     A vanilla supervised model, for usual **classification**, **regression**,
     or **segmentation** task.
@@ -98,12 +102,16 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         network: NetworkOrConfig,
         loss: LossOrConfig,
         optimizer: OptimizerConfig,
+        inferer: Inferer = SimpleInferer(),
     ):
         super().__init__()
-        self.config = self._config_type(network=network, loss=loss, optimizer=optimizer)
+        self.config = self._config_type(
+            network=network, loss=loss, optimizer=optimizer, inferer=inferer
+        )
         self.network = self.config.network.get_object()
         self.loss = self.config.loss.get_object()
         self.optimizer = self.config.optimizer.get_object(network=self.network)
+        self.inferer = self.config.inferer
 
     def forward_step(self, batch: Batch) -> torch.Tensor:
         """
@@ -119,8 +127,8 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         torch.Tensor
             The computed loss, as a **1-item** :py:class:`torch.Tensor`.
         """
-        images = batch.get_field("image", dtype=torch.float32)
-        labels = batch.get_field("label", ensure_channel_dim=True, dtype=torch.float32)
+        images = batch.get_field(IMAGE, dtype=torch.float32)
+        labels = batch.get_field(LABEL, ensure_channel_dim=True, dtype=torch.float32)
 
         outputs = self.network(images)
 
@@ -161,7 +169,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         grad_scaler : GradScaler, default=GradScaler(enabled=False)
             A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
-        grad_scaler.step(optimizers["optimizer"])
+        grad_scaler.step(optimizers[OPTIMIZER])
 
     def evaluation_step(self, batch: Batch) -> Batch:
         """
@@ -178,11 +186,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
         Batch
             The output :py:class:`~clinicadl.data.dataloader.Batch`.
         """
-        images = batch.get_field("image", dtype=torch.float32)
-        outputs = self.network(images)
-        batch.add_field("output", outputs)
-
-        return batch
+        return self.inferer(batch, self.network, input_dtype=torch.float32)
 
     def prediction_step(self, batch: Batch) -> Batch:
         """

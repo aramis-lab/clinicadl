@@ -4,8 +4,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Union
 
+import torch
 import torchio as tio
 from pydantic import NonNegativeInt, field_validator, model_validator
+from torch import Tensor
 from typing_extensions import Self
 
 from clinicadl.utils.enum import SliceDirection
@@ -91,7 +93,7 @@ class SampleConfig(DataPointConfig):
 
 class Sample(DataPoint, ABC):
     """
-    The output of :py:class:`~clinicadl.data.datasets.ClinicaDLDataset`.
+    The output of :py:class:`~clinicadl.data.datasets.Dataset`.
 
     It is a :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`, with additional attributes.
 
@@ -189,7 +191,7 @@ class Sample2D(Sample):
     A slice :py:class:`Sample`. Here ``sample_type="slice"`` and ``sample_position`` is the position
     of the slice in the original image.
 
-    Besides, there are two addition attribute:
+    Besides, there are two additional attribute:
 
     slice_direction : int
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal)
@@ -232,3 +234,92 @@ class Sample2D(Sample):
         )
         kwargs.update(config.to_raw_dict())
         super().__init__(**kwargs, check_consistency=check_consistency)
+
+    def get_image_tensor(self, image_name: str) -> Tensor:
+        """
+        Returns a copy of the tensor associated to a field that is a :py:class:`torchio.Image`.
+
+        If ``squeeze=True``, the output tensor will be squeezed.
+
+        Parameters
+        ----------
+        image_name : str
+            The name of the image in the ``DataPoint``.
+
+        Returns
+        -------
+        torch.Tensor
+            The tensor image.
+        """
+        tensor = super().get_image_tensor(image_name)
+
+        if self.squeeze:
+            tensor.squeeze_(dim=self.slice_direction + 1)
+
+        return tensor
+
+    def add_image(
+        self,
+        image: Union[tio.ScalarImage, PathType, torch.Tensor],
+        image_name: str,
+    ) -> None:
+        """
+        To add an image to the ``Sample``.
+
+        Parameters
+        ----------
+        image : Union[tio.ScalarImage, PathType, torch.Tensor]
+            The image to add, as a :py:class:`torchio.ScalarImage``, a path to the file containing the image,
+            or a :py:class:`torch.Tensor`. In the latter case, it is expected to be a 4D ``Tensor`` (including one channel dimension)
+            if ``squeeze=False``, or a 3D ``Tensor`` if ``squeeze=True``.
+
+            If a ``Tensor`` is passed, the same affine matrix as ``"image"`` will be used.
+        image_name : str
+            The name that the image will take in the ``Sample``.
+
+        See Also
+        --------
+        :py:meth:`DataPoint.add_image <clinicadl.data.structures.DataPoint.add_image>`
+        """
+        if isinstance(image, torch.Tensor):
+            self._unsqueeze_tensor(image)
+
+        super().add_image(image, image_name)
+
+    def add_mask(self, mask: Union[tio.LabelMap, PathType], mask_name: str) -> None:
+        """
+        To add a mask to the ``Sample``.
+
+        Parameters
+        ----------
+        mask : Union[tio.ScalarImage, PathType, torch.Tensor]
+            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the file containing the image,
+            or a :py:class:`torch.Tensor`. In the latter case, it is expected to be a 4D ``Tensor`` (including one channel dimension)
+            if ``squeeze=False``, or a 3D ``Tensor`` if ``squeeze=True``.
+
+            If a ``Tensor`` is passed, the same affine matrix as ``"image"`` will be used.
+        mask_name : str
+            The name that the image will take in the ``Sample``.
+
+        See Also
+        --------
+        :py:meth:`DataPoint.add_mask <clinicadl.data.structures.DataPoint.add_mask>`
+        """
+        if isinstance(mask, torch.Tensor):
+            self._unsqueeze_tensor(mask)
+
+        super().add_mask(mask, mask_name)
+
+    def _unsqueeze_tensor(self, tensor: torch.Tensor) -> None:
+        """
+        Unsqueeze tensors if squeeze=True.
+        """
+        if self.squeeze:
+            assert (
+                len(tensor.shape) == 3
+            ), f"If squeeze=True, a 3D tensor is expected (including one channel dimension). Got: {tensor.shape}"
+            tensor.unsqueeze_(dim=self.slice_direction + 1)
+        else:
+            assert (
+                len(tensor.shape) == 4
+            ), f"If squeeze=False, a 4D tensor is expected (including one channel dimension). Got: {tensor.shape}"

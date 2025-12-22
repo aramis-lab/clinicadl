@@ -4,12 +4,13 @@ from typing import TYPE_CHECKING, Any, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 import torch
-import torchio as tio
 
 from clinicadl.utils.device import DeviceType, check_device
 
 if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
+
+BatchType = Union["Batch", Sequence["Batch"], dict[Any, "Batch"]]
 
 T = TypeVar("T", bound="DataPoint")
 
@@ -148,9 +149,9 @@ class Batch(list[T]):
         of the batch.
 
         The function will try to return the output as a batch-first :py:class:`~torch.Tensor`. If not possible,
-        it will return the list of the values.
+        it will return a list of the values, which are converted to ``Tensors`` if possible.
 
-        If the output is a ``Tensor``, it will respect the device and the memory format potentially
+        If the output is a unique ``Tensor``, it will respect the device and the memory format potentially
         specified with :py:meth:`to`. Besides, the desired data type can be specified here via ``dtype``.
 
         Parameters
@@ -202,33 +203,24 @@ class Batch(list[T]):
         """
         # collect all the values and try to convert them to tensors
         batch = []
-        try:
-            for datapoint in self:
-                value = self._get_field(datapoint, field_name)
+        all_tensors = True
+        for datapoint in self:
+            value = self._get_field(datapoint, field_name)
 
-                if (
-                    hasattr(datapoint, "squeeze")
-                    and hasattr(datapoint, "slice_direction")
-                    and getattr(datapoint, "squeeze")
-                ):
-                    squeezed_dim = getattr(datapoint, "slice_direction")
-                else:
-                    squeezed_dim = None
-
-                try:
-                    value = self._to_tensor(value, squeeze_img_dim=squeezed_dim)
-                except TypeError:
-                    raise StopIteration
-
-                batch.append(value)
-
-        except StopIteration:  # some field values cannot be converted to tensors
-            return [self._get_field(datapoint, field_name) for datapoint in self]
-        else:  # now let's merge in one tensor
             try:
-                batch = torch.stack(batch, dim=0)
-            except RuntimeError:  # not the same shape, batch as tensor is not possible
-                return [self._get_field(datapoint, field_name) for datapoint in self]
+                value = self._to_tensor(value)
+            except TypeError:
+                all_tensors = False
+
+            batch.append(value)
+
+        if not all_tensors:
+            return batch
+
+        try:
+            batch = torch.stack(batch, dim=0)
+        except RuntimeError:  # not the same shape, batch as tensor is not possible
+            return batch
 
         # format the batch tensor
         if len(batch.shape) == 1 and ensure_channel_dim:  # at least two dimensions
@@ -245,7 +237,7 @@ class Batch(list[T]):
             memory_format=memory_format,
         )
 
-    def add_field(self, field_name: str, values: Sequence[Any]) -> None:
+    def add_field(self, values: Sequence[Any], field_name: str) -> None:
         """
         To add a field to the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`
         inside the current ``Batch``.
@@ -255,11 +247,11 @@ class Batch(list[T]):
 
         Parameters
         ----------
-        field_name : str
-            The name fo the field.
         values : Sequence[Any]
             The values of the field for each element of the ``Batch``. Obviously, the sequence must
             be the same size as the ``Batch``.
+        field_name : str
+            The name fo the field.
 
         Examples
         --------
@@ -279,7 +271,7 @@ class Batch(list[T]):
         .. code-block:: python
 
             >>> import torch
-            >>> batch.add_field("output", torch.randn(2, 1, 3, 3, 3))
+            >>> batch.add_field(torch.randn(2, 1, 3, 3, 3), "output")
             >>> batch[0]
             ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head', 'output'); images: 3)
             >>> batch[0]["output"].shape
@@ -292,12 +284,93 @@ class Batch(list[T]):
         )
         for datapoint, value in zip(self, values):
             datapoint[field_name] = value
-            datapoint.update_attributes()
+
+    def add_images(self, images: torch.Tensor, image_name: str) -> None:
+        """
+        To add an image to the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`
+        inside the current ``Batch``.
+
+        The images are expected to be passed via a batched :py:class:`torch.Tensor`.
+
+        Parameters
+        ----------
+        images : torch.Tensor
+            The 4D images to add, as a 5D batched :py:class:`torch.Tensor`.
+        image_name : str
+            The name that the image will take in the ``DataPoints``.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            import torch
+            from clinicadl.data.structures.examples import ColinDataPoint
+            from clinicadl.data.dataloader import Batch
+
+            batch = Batch([ColinDataPoint(), ColinDataPoint()])
+
+        .. code-block:: python
+
+            >>> batch.add_images(torch.randn(2, 1, 10, 10, 10), "new_image")
+            >>> batch[0]["new_image"]
+            ScalarImage(shape: (1, 10, 10, 10); spacing: (1.00, 1.00, 1.00); orientation: RAS+; dtype: torch.FloatTensor; memory: 3.9 KiB)
+
+        See Also
+        --------
+        :py:meth:`add_field>`
+            To add any kind of field to the ``Batch``.
+        :py:meth:`DataPoint.add_image <clinicadl.data.structures.DataPoint.add_image>`
+            To add an image to a ``DataPoint``.
+        """
+        for datapoint, value in zip(self, images):
+            datapoint.add_image(value, image_name)
+
+    def add_masks(self, masks: torch.Tensor, mask_name: str) -> None:
+        """
+        To add a mask to the :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`
+        inside the current ``Batch``.
+
+        The masks are expected to be passed via a batched :py:class:`torch.Tensor`.
+
+        Parameters
+        ----------
+        masks : torch.Tensor
+            The 4D masks to add, as a 5D batched :py:class:`torch.Tensor`.
+        mask_name : str
+            The name that the mask will take in the ``DataPoints``.
+
+        Examples
+        --------
+        .. code-block:: python
+
+            import torch
+            from clinicadl.data.structures.examples import ColinDataPoint
+            from clinicadl.data.dataloader import Batch
+
+            batch = Batch([ColinDataPoint(), ColinDataPoint()])
+
+        .. code-block:: python
+
+            >>> batch.add_masks(torch.randint(0, 2, (2, 1, 10, 10, 10)), "new_mask")
+            >>> batch[0]["new_mask"]
+            LabelMap(shape: (1, 10, 10, 10); spacing: (1.00, 1.00, 1.00); orientation: RAS+; dtype: torch.LongTensor; memory: 7.8 KiB)
+
+        See Also
+        --------
+        :py:meth:`add_field>`
+            To add any kind of field to the ``Batch``.
+        :py:meth:`DataPoint.add_mask <clinicadl.data.structures.DataPoint.add_mask>`
+            To add a mask to a ``DataPoint``.
+        """
+        for datapoint, value in zip(self, masks):
+            datapoint.add_mask(value, mask_name)
 
     @staticmethod
-    def _get_field(datapoint: T, field_name: str) -> Any:
-        """Returns the specified field."""
+    def _get_field(datapoint: DataPoint, field_name: str) -> Any:
+        """Returns the specified field and transforms images to tensors."""
         try:
+            if field_name in datapoint.get_images_names():
+                return datapoint.get_image_tensor(field_name)
             return datapoint[field_name]
         except KeyError as e:
             raise KeyError(
@@ -305,31 +378,21 @@ class Batch(list[T]):
             ) from e
 
     @classmethod
-    def _to_tensor(
-        cls, value: Any, squeeze_img_dim: Optional[int] = None
-    ) -> torch.Tensor:
+    def _to_tensor(cls, value: Any) -> torch.Tensor:
         """
         Tries to convert to a tensor.
         """
-        if isinstance(value, tio.Image):
-            tensor = value.tensor.clone()
-            if squeeze_img_dim is not None:
-                tensor.squeeze_(dim=squeeze_img_dim + 1)
-
-            if isinstance(value, tio.ScalarImage):
-                return tensor.float()
-            elif isinstance(value, tio.LabelMap):
-                return tensor.int()
-
-        elif isinstance(value, np.ndarray):
-            return torch.from_numpy(value)
+        if isinstance(value, np.ndarray):
+            tensor = torch.from_numpy(value)
         elif isinstance(value, torch.Tensor):
-            return value.clone()
+            tensor = value
         else:
             try:
-                return torch.tensor(value)
+                tensor = torch.tensor(value)
             except (TypeError, ValueError, RuntimeError) as exc:
                 raise TypeError from exc
+
+        return tensor.clone()
 
     @staticmethod
     def _get_memory_format(
@@ -346,16 +409,3 @@ class Batch(list[T]):
                 return torch.channels_last_3d
         else:
             return torch.contiguous_format
-
-
-BatchType = Union[Batch, tuple[Batch, ...]]
-
-
-def simple_collate_fn(batch: Sequence[T]) -> Batch[T]:
-    """For datasets that returns a single Sample."""
-    return Batch(batch)
-
-
-def tuple_collate_fn(batch: Sequence[tuple[T, ...]]) -> tuple[Batch[T], ...]:
-    """For datasets that returns a tuple of Samples."""
-    return tuple(Batch(data) for data in zip(*batch))

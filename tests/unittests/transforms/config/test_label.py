@@ -42,7 +42,7 @@ def test_good_inputs(args: dict, config):
     ],
 )
 def test_get_object(args, config, transform):
-    c = config(**args)
+    c = config(**args, copy=True)
     transform_from_config = c.get_object()
     assert isinstance(transform_from_config, transform)
     assert isinstance(transform_from_config(X), tio.Subject)

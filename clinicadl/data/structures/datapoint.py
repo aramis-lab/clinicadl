@@ -2,9 +2,11 @@ from pathlib import Path
 from typing import Any, Optional, Sequence, Union
 
 import numpy as np
+import torch
 import torchio as tio
 from numpy.typing import NDArray
 from pydantic import field_validator
+from torch import Tensor
 
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
@@ -51,7 +53,7 @@ class DataPoint(tio.Subject):
     Data structure that gathers an image, the associated label, and any other relevant information
     associated to the image.
 
-    It inherits from :py:class:`torchio.Subject`.
+    It inherits from :py:class:`torchio.Subject`, which inherits itself from Python's ``dict``.
 
     A DataPoint has the following attributes:
         - ``image``: the image, as a :py:class:`torchio.ScalarImage`;
@@ -72,16 +74,18 @@ class DataPoint(tio.Subject):
         >>> datapoint.session
         'ses-M000'
 
-    Besides, a ``DataPoint`` is dictionary-like object. So, you can easily add a key-value pair
-    to it:
+    However, **use the attribute notation only to access an attribute**.
+    To modify, add, or delete a field, use the standard dictionary syntax:
 
     .. code-block:: python
 
         >>> datapoint["age"] = 55
-        >>> datapoint["age"]    # the attribute notation won't work here
+        >>> datapoint["age"]
+        55
+        >>> datapoint.age
         55
 
-    However, to add an image or a mask to the ``DataPoint``, prefer :py:func:`~add_image`
+    To add an image or a mask to the ``DataPoint``, prefer :py:func:`~add_image`
     and :py:func:`~add_mask`.
 
     To get all the images in your DataPoint, you can use :py:func:`get_images` or :py:func:`get_images_dict`.
@@ -295,18 +299,43 @@ class DataPoint(tio.Subject):
         """
         return super().get_images_dict(intensity_only, include, exclude)
 
+    def get_image_tensor(self, image_name: str) -> Tensor:
+        """
+        Returns a copy of the tensor associated to a field that is a :py:class:`torchio.Image`.
+
+        Parameters
+        ----------
+        image_name : str
+            The name of the image in the ``DataPoint``.
+
+        Returns
+        -------
+        torch.Tensor
+            The tensor image.
+        """
+        if not isinstance(field_value := self[image_name], tio.Image):
+            raise TypeError(
+                f"{image_name} is a {type(field_value)}, not a torchio.Image!"
+            )
+
+        return field_value.tensor.clone()
+
     def add_image(
-        self, image: Union[tio.ScalarImage, PathType], image_name: str
+        self,
+        image: Union[tio.ScalarImage, PathType, torch.Tensor],
+        image_name: str,
     ) -> None:
         """
         To add an image to the ``DataPoint``.
 
         Parameters
         ----------
-        image : Union[tio.ScalarImage, PathType]
-            The image to add, as a :py:class:`torchio.ScalarImage` or a ``path`` to a file.
+        image : Union[tio.ScalarImage, PathType, torch.Tensor]
+            The image to add, as a :py:class:`torchio.ScalarImage``, a path to the file containing the image,
+            or a 4D :py:class:`torch.Tensor` (including one channel dimension). If a ``Tensor`` is passed, the same affine matrix as ``"image"``
+            will be used.
         image_name : str
-            The name that the image will take in the DataPoint.
+            The name that the image will take in the ``DataPoint``.
 
         Examples
         --------
@@ -326,16 +355,23 @@ class DataPoint(tio.Subject):
         """
         if isinstance(image, (Path, str)):
             image = tio.ScalarImage(path=image)
+        elif isinstance(image, torch.Tensor):
+            image = tio.ScalarImage(tensor=image, affine=self.image.affine)
+
         super().add_image(image, image_name)
 
-    def add_mask(self, mask: Union[tio.LabelMap, PathType], mask_name: str) -> None:
+    def add_mask(
+        self, mask: Union[tio.ScalarImage, PathType, torch.Tensor], mask_name: str
+    ) -> None:
         """
         To add a mask to the ``DataPoint``.
 
         Parameters
         ----------
-        mask : Union[tio.LabelMap, PathType]
-            The mask to add, as a :py:class:`torchio.LabelMap` or a ``path`` to a file.
+        mask : Union[tio.ScalarImage, PathType, torch.Tensor]
+            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the file containing the image,
+            or a 4D :py:class:`torch.Tensor` (including one channel dimension). If a ``Tensor`` is passed, the same affine matrix as ``"image"``
+            will be used.
         mask_name : str
             The name that the mask will take in the ``DataPoint``.
 
@@ -357,6 +393,9 @@ class DataPoint(tio.Subject):
         """
         if isinstance(mask, (Path, str)):
             mask = tio.LabelMap(path=mask)
+        elif isinstance(mask, torch.Tensor):
+            mask = tio.LabelMap(tensor=mask, affine=self.image.affine)
+
         super().add_image(mask, mask_name)
 
     def get_applied_transforms(
@@ -389,3 +428,16 @@ class DataPoint(tio.Subject):
         See :py:meth:`torchio.Subject.plot` for more details.
         """
         super().plot(**kwargs)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self.update_attributes()
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        if hasattr(self, key):
+            delattr(self, key)
+
+    def remove_image(self, image_name: str) -> None:
+        self._check_image_name(image_name)
+        del self[image_name]

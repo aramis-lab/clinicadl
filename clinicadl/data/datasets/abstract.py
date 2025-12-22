@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
 import pandas as pd
-from torch.utils.data import Dataset
+import torch.utils.data
 from typing_extensions import Self
 
 from clinicadl.utils.objects import JsonReaderWriter
@@ -13,7 +13,9 @@ from clinicadl.utils.typing import DataFrameType
 from ..structures import Sample
 
 
-class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sample]]]):
+class Dataset(
+    JsonReaderWriter, ABC, torch.utils.data.Dataset[Union[Sample, Sequence[Sample]]]
+):
     """
     Abstract class for ``ClinicaDL`` datasets, which inherits from :py:class:`torch.utils.data.Dataset`,
     to work with 3D neuroimaging data.
@@ -23,8 +25,8 @@ class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sam
     See Also
     --------
     :py:class:`~clinicadl.data.datasets.BaseDataset`
-        A ``ClinicaDLDataset`` with the base logic of all datasets implemented natively in ``ClinicaDL``.
-        May be easier to override than the plain ``ClinicaDLDataset``.
+        A ``Dataset`` with the base logic of all datasets implemented natively in ``ClinicaDL``.
+        May be easier to override than the plain ``Dataset``.
     """
 
     @property
@@ -144,7 +146,9 @@ class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sam
         """
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Union[Sample, Sequence[Sample]]:
+    def __getitem__(
+        self, idx: int
+    ) -> Union[Sample, Sequence[Sample], dict[Any, Sample]]:
         """
         Retrieves the sample at a given index.
 
@@ -155,9 +159,9 @@ class ClinicaDLDataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sam
 
         Returns
         -------
-        Union[Sample, Sequence[Sample]]
+        Union[Sample, Sequence[Sample], dict[Any, Sample]]
             A structured output containing the processed data and metadata, as a
-            :py:class:`~clinicadl.data.datasets.output.Sample`, or a sequence
+            :py:class:`~clinicadl.data.datasets.output.Sample`, or a sequence or dictionary
             of such outputs.
         """
 

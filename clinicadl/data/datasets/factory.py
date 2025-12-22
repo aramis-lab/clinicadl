@@ -4,7 +4,7 @@ from typing import Any
 from clinicadl.utils.factories import factory_from_dict, factory_from_json
 from clinicadl.utils.typing import PathType
 
-from .abstract import ClinicaDLDataset
+from .abstract import Dataset
 
 # pylint: disable=unused-import
 from .caps import CapsDataset
@@ -14,7 +14,7 @@ from .unpaired import UnpairedDataset
 
 
 class ImplementedDataset(str, Enum):
-    """Implemented ClinicaDLDatasets."""
+    """Implemented Datasets."""
 
     CAPS = "CapsDataset"
     CONCAT = "ConcatDataset"
@@ -23,15 +23,15 @@ class ImplementedDataset(str, Enum):
 
 
 @factory_from_json(
-    object_type=ClinicaDLDataset,
+    object_type=Dataset,
     enum=ImplementedDataset,
     context=globals(),
     config=False,
 )
-def get_dataset_from_json(data: PathType) -> ClinicaDLDataset:
+def get_dataset_from_json(data: PathType) -> Dataset:
     """
-    Factory function to get a :py:class:`ClinicaDLDataset` from the
-    file saved with :py:meth:`ClinicaDLDataset.to_json`.
+    Factory function to get a :py:class:`Dataset` from the
+    file saved with :py:meth:`Dataset.to_json`.
 
     Parameters
     ----------
@@ -40,21 +40,21 @@ def get_dataset_from_json(data: PathType) -> ClinicaDLDataset:
 
     Returns
     -------
-    ClinicaDLDataset
+    Dataset
         The object, parametrized with the file content.
     """
 
 
 @factory_from_dict(
-    object_type=ClinicaDLDataset,
+    object_type=Dataset,
     enum=ImplementedDataset,
     context=globals(),
     config=False,
 )
-def get_dataset_from_dict(data: dict[str, Any]) -> ClinicaDLDataset:
+def get_dataset_from_dict(data: dict[str, Any]) -> Dataset:
     """
-    Factory function to get a :py:class:`ClinicaDLDataset` from the
-    dictionary returned by :py:meth:`ClinicaDLDataset.to_dict`.
+    Factory function to get a :py:class:`Dataset` from the
+    dictionary returned by :py:meth:`Dataset.to_dict`.
 
     Parameters
     ----------
@@ -63,6 +63,6 @@ def get_dataset_from_dict(data: dict[str, Any]) -> ClinicaDLDataset:
 
     Returns
     -------
-    ClinicaDLDataset
+    Dataset
         The object, parametrized with the input dictionary.
     """
