@@ -75,7 +75,7 @@ def test_on_train_begin():
         ClinicaDLArgumentError,
         match=(
             re.escape(
-                "In LRScheduler, optimizer_name='optimizer_' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
+                "In LRScheduler, optimizer_name='optimizer_' but there is no such optimizer (returned by the 'get_optimizers' method of you Model). "
                 "Optimizers are: ['optimizer']"
             )
         ),
@@ -91,7 +91,7 @@ def test_on_train_begin():
         match=(
             re.escape(
                 "The optimizer associated to the LR scheduler 'ConstantLR' is not the same as "
-                "'optimizer' (returned by the 'get_optimizers' method of you ClinicaDLModel)."
+                "'optimizer' (returned by the 'get_optimizers' method of you Model)."
             )
         ),
     ):
@@ -117,7 +117,7 @@ def test_on_train_begin():
         ClinicaDLArgumentError,
         match=(
             re.escape(
-                "In LRScheduler, optimizer_name='optimizer_' but there is no such optimizer (returned by the 'get_optimizers' method of you ClinicaDLModel). "
+                "In LRScheduler, optimizer_name='optimizer_' but there is no such optimizer (returned by the 'get_optimizers' method of you Model). "
                 "Optimizers are: ['optimizer']"
             )
         ),

@@ -12,11 +12,11 @@ from clinicadl.losses.types import Loss
 from clinicadl.utils.objects import JsonReaderWriter
 
 
-class ClinicaDLModel(JsonReaderWriter, ABC, torch.nn.Module):
+class Model(JsonReaderWriter, ABC, torch.nn.Module):
     """
     The base model from which every model that works with ``ClinicaDL`` must inherit.
 
-    ``ClinicaDLModel`` inherits itself from :py:class:`torch.nn.Module`. So you can classically define
+    ``Model`` inherits itself from :py:class:`torch.nn.Module`. So you can classically define
     your neural networks in the ``__init__`` method (don't forget to call ``super().__init__()`` first!).
 
     Besides, the following methods must be overwritten:
@@ -32,15 +32,15 @@ class ClinicaDLModel(JsonReaderWriter, ABC, torch.nn.Module):
     You can also overwrite :py:meth:`get_summary` to give a description of your neural network(s).
 
     .. tip::
-        Since rewriting all these methods can be tedious, feel free to inherit from an existing ``ClinicaDLModel`` with shared logic,
+        Since rewriting all these methods can be tedious, feel free to inherit from an existing ``Model`` with shared logic,
         and rewrite only the relevant methods.
 
     See Also
     --------
     :py:class:`~clinicadl.models.SupervisedModel`
-        A ``ClinicaDLModel`` for supervised training.
+        A ``Model`` for supervised training.
     :py:class:`~clinicadl.models.ReconstructionModel`
-        A ``ClinicaDLModel`` for image reconstruction.
+        A ``Model`` for image reconstruction.
     """
 
     @abstractmethod

@@ -22,12 +22,12 @@ from clinicadl.utils.exceptions import (
 )
 
 
-class ClinicaDLModel:
+class Model:
     def get_loss_functions(self):
         return {"loss": BCELoss()}
 
 
-MODEL = ClinicaDLModel()
+MODEL = Model()
 
 DATAPOINTS = [
     DataPoint(

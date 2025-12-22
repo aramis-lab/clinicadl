@@ -16,7 +16,7 @@ from ..monai_wrapper import MonaiMetricWrapper
 from .base import MetricConfig, _GetNotNansConfig
 
 if TYPE_CHECKING:
-    from clinicadl.models import ClinicaDLModel
+    from clinicadl.models import Model
 
 logger = getLogger("clinicadl.metrics.loss")
 
@@ -36,15 +36,15 @@ class LossMetricConfig(MetricConfig, _GetNotNansConfig):
         """The optimum of the metric."""
         return Optimum.MIN
 
-    def get_object(self, model: ClinicaDLModel) -> Metric:
+    def get_object(self, model: Model) -> Metric:
         """
         Returns the metric associated to this configuration,
         parametrized with the parameters passed by the user.
 
         Parameters
         ----------
-        model : ClinicaDLModel
-            The :py:class:`clinicadl.model.ClinicaDLModel` where the loss is.
+        model : Model
+            The :py:class:`clinicadl.model.Model` where the loss is.
 
         Returns
         -------
@@ -56,7 +56,7 @@ class LossMetricConfig(MetricConfig, _GetNotNansConfig):
             loss = losses[self.loss_name]
         except KeyError as exc:
             raise ClinicaDLArgumentError(
-                f"In LossMetricConfig, loss_name='{self.loss_name}' but there is no such loss (returned by the 'get_loss_functions' method of you ClinicaDLModel). "
+                f"In LossMetricConfig, loss_name='{self.loss_name}' but there is no such loss (returned by the 'get_loss_functions' method of you Model). "
                 f"Losses are: {list(losses.keys())}"
             ) from exc
 
@@ -80,7 +80,7 @@ class LossMetricConfig(MetricConfig, _GetNotNansConfig):
             loss_reduction = getattr(loss, "reduction")
         except AttributeError as exc:
             raise ClinicaDLArgumentError(
-                f"The loss '{self.loss_name}' (returned by the 'get_loss_functions' method of you ClinicaDLModel) "
+                f"The loss '{self.loss_name}' (returned by the 'get_loss_functions' method of you Model) "
                 "doesn't have a 'reduction' attribute, so ClinicaDL can't compute the validation loss at the image level."
             ) from exc
 

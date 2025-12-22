@@ -17,18 +17,18 @@ class Batch(list):
         return torch.Tensor([[data[key]] for data in self])
 
 
-class ClinicaDLModel:
+class Model:
     def get_loss_functions(self):
         return {"loss": MSELoss(reduction="sum")}
 
 
-class ClinicaDLModelBis:
+class ModelBis:
     def get_loss_functions(self):
         return {"loss": lambda x: x}
 
 
-MODEL = ClinicaDLModel()
-MODEL_BIS = ClinicaDLModelBis()
+MODEL = Model()
+MODEL_BIS = ModelBis()
 
 
 def test_loss_metric():
@@ -37,7 +37,7 @@ def test_loss_metric():
         ClinicaDLArgumentError,
         match=(
             re.escape(
-                "In LossMetricConfig, loss_name='loss_' but there is no such loss (returned by the 'get_loss_functions' method of you ClinicaDLModel). "
+                "In LossMetricConfig, loss_name='loss_' but there is no such loss (returned by the 'get_loss_functions' method of you Model). "
                 "Losses are: ['loss']"
             )
         ),
@@ -71,7 +71,7 @@ def test_loss_metric():
     with pytest.raises(
         ClinicaDLArgumentError,
         match=re.escape(
-            "The loss 'loss' (returned by the 'get_loss_functions' method of you ClinicaDLModel) "
+            "The loss 'loss' (returned by the 'get_loss_functions' method of you Model) "
             "doesn't have a 'reduction' attribute, so ClinicaDL can't compute the validation loss at the image level.",
         ),
     ):

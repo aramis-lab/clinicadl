@@ -10,6 +10,6 @@
    :nosignatures:
    :template: autosummary/models.rst
 
-    ClinicaDLModel
+    Model
     SupervisedModel
     ReconstructionModel

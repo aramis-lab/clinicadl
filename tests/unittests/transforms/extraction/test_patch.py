@@ -10,12 +10,12 @@ from clinicadl.transforms.extraction import Patch
 
 BAD_INPUTS = [
     {"patch_size": 0},
-    {"patch_size": 1, "overlap": 1.1},
+    {"patch_size": 1, "overlap": 1},
     {"patch_size": 1, "pad_mode": "abc"},
 ]
 GOOD_INPUTS = [
-    {"patch_size": 1, "overlap": 2, "pad_mode": "constant"},
     {"patch_size": 1, "overlap": 0.5, "pad_mode": "reflect"},
+    {"patch_size": 1, "pad_mode": "constant"},
     {"patch_size": 1, "pad_mode": "replicate"},
     {"patch_size": 1, "pad_mode": "circular"},
     {"patch_size": 1, "pad_mode": None},
@@ -72,10 +72,10 @@ def test_num_samples_per_image():
         )
     )
 
-    patch = Patch(patch_size=(3, 4, 2), overlap=(2, 1, 1))
+    patch = Patch(patch_size=(3, 4, 2), overlap=0.5)
     assert patch.num_samples_per_image(data_point) == len(
         list(
-            SlidingWindowSplitter(patch_size=(3, 4, 2), overlap=(2, 1, 1))(
+            SlidingWindowSplitter(patch_size=(3, 4, 2), overlap=0.5)(
                 data_point.image.tensor.unsqueeze(0)
             )
         )
@@ -83,8 +83,8 @@ def test_num_samples_per_image():
 
 
 def test_extract_sample():
-    patch = Patch(patch_size=(2, 3, 2), overlap=1)
-    monai_patch = SlidingWindowSplitter(patch_size=(2, 3, 2), overlap=1)
+    patch = Patch(patch_size=(2, 3, 2), overlap=0.7)
+    monai_patch = SlidingWindowSplitter(patch_size=(2, 3, 2), overlap=0.7)
 
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(1, 5, 7, 3)

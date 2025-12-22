@@ -24,7 +24,7 @@ from clinicadl.utils.config import (
 from clinicadl.utils.dictionary.words import IMAGE, LABEL, OPTIMIZER
 from clinicadl.utils.objects import HasConfig
 
-from .base import ClinicaDLModel
+from .base import Model
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
@@ -59,12 +59,12 @@ class SupervisedModelConfig(ObjectConfig["SupervisedModel"]):
         return ObjectOrConfig.from_value(v)
 
     @classmethod
-    def _get_class(cls) -> type[ClinicaDLModel]:
+    def _get_class(cls) -> type[Model]:
         """Returns the class associated to this config class."""
         return SupervisedModel
 
 
-class SupervisedModel(HasConfig[SupervisedModelConfig], ClinicaDLModel):
+class SupervisedModel(HasConfig[SupervisedModelConfig], Model):
     """
     A vanilla supervised model, for usual **classification**, **regression**,
     or **segmentation** task.

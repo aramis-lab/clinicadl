@@ -25,7 +25,7 @@ from .types import MetricOrConfig
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
-    from clinicadl.models import ClinicaDLModel
+    from clinicadl.models import Model
 
 
 class MetricsHandlerConfig(KwargsConfig["MetricsHandler"]):
@@ -93,13 +93,13 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         self._df = self._init_df()
         self._detailed_df = self._init_detailed_df()
 
-    def init_metrics(self, model: Optional[ClinicaDLModel] = None) -> None:
+    def init_metrics(self, model: Optional[Model] = None) -> None:
         """
         Instantiates the metrics from their config classes.
 
         Parameters
         ----------
-        model : Optional[ClinicaDLModel], default=None
+        model : Optional[Model], default=None
             The model that contains the potential losses to compute
             on the validation set.
         """

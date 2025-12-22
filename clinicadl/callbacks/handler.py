@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from clinicadl.io import Maps
 from clinicadl.metrics.handler import MetricsHandler
-from clinicadl.models import ClinicaDLModel
+from clinicadl.models import Model
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
@@ -200,9 +200,7 @@ class _CallbacksHandler:
         """
         return list(self.callbacks.keys())
 
-    def call_event(
-        self, event: str, model: ClinicaDLModel, maps: Maps, **kwargs
-    ) -> None:
+    def call_event(self, event: str, model: Model, maps: Maps, **kwargs) -> None:
         """
         Call a specific event method on all callbacks.
 

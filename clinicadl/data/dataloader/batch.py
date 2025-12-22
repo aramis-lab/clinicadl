@@ -302,7 +302,6 @@ class Batch(list[T]):
         """
         Tries to convert to a tensor.
         """
-        print(value)
         if isinstance(value, np.ndarray):
             tensor = torch.from_numpy(value)
         elif isinstance(value, torch.Tensor):

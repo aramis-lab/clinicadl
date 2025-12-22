@@ -21,7 +21,7 @@ from clinicadl.losses.types import Loss
 from clinicadl.metrics.config import LossMetricConfig, MetricConfig
 from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
 from clinicadl.metrics.types import MetricOrConfig
-from clinicadl.models import ClinicaDLModel
+from clinicadl.models import Model
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.predictor.predictor import Predictor
 from clinicadl.split.split import Split
@@ -44,7 +44,7 @@ class Trainer:
 
     This class encapsulates the training loop, evaluation, and prediction processes while
     integrating callback management, metric tracking, and mixed precision training support.
-    It leverages ClinicaDL's components like :py:class:`~clinicadl.models.clinicadl_model.ClinicaDLModel`
+    It leverages ClinicaDL's components like :py:class:`~clinicadl.models.clinicadl_model.Model`
     and :py:class:`~clinicadl.io.maps.maps.Maps`,
     promoting modularity and extensibility primarily through callbacks.
 
@@ -61,7 +61,7 @@ class Trainer:
     ----------
     maps_path : PathType
         Directory path where training outputs, maps, and metrics will be saved.
-    model : :py:class:`~clinicadl.models.ClinicaDLModel`
+    model : :py:class:`~clinicadl.models.Model`
         The deep learning model to train and evaluate.
     callbacks : list[:py:class:`~clinicadl.callbacks.base.Callback`], optional
         List of callback instances to execute during training and evaluation.
@@ -87,7 +87,7 @@ class Trainer:
     def __init__(
         self,
         maps_path: PathType,
-        model: ClinicaDLModel,
+        model: Model,
         callbacks: Optional[list[Callback]] = None,
         metrics: dict[str, MetricOrConfig] = {
             "loss": LossMetricConfig(loss_name="loss")
@@ -121,11 +121,11 @@ class Trainer:
             comp_config = ComputationalConfig.from_json(
                 maps.training.computational_json
             )
-            model = ClinicaDLModel.from_json(maps.model_json)
+            model = Model.from_json(maps.model_json)
 
         self._state: TrainerState = TrainerState(num_epochs=self._optim_config.epochs)
 
-        self._model: ClinicaDLModel = model
+        self._model: Model = model
         self._maps: Maps = maps
         self._metrics_handler: MetricsHandler = MetricsHandler(**metrics)
         self._metrics_handler.init_metrics(self._model)
@@ -159,7 +159,7 @@ class Trainer:
         maps = Maps(maps_path)
         maps.read()
 
-        model = ClinicaDLModel.from_json(maps.model_json)
+        model = Model.from_json(maps.model_json)
         optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
         metrics = MetricsHandler.from_json(maps.metrics_json)
         callbacks = _CallbacksHandler.from_json(maps.training.callbacks_json)
