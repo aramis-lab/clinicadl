@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Union
 
 import torch
 from monai.metrics import CumulativeIterationMetric
@@ -48,7 +48,9 @@ class MonaiMetricWrapper(Metric):
         optimum: Optimum,
         pred_key: str,
         label_key: Optional[str] = None,
-        postprocessing: Optional[Sequence[TransformOrConfig]] = None,
+        postprocessing: Optional[
+            Union[Sequence[TransformOrConfig], Postprocessing]
+        ] = None,
     ) -> None:
         super().__init__()
         self.pred_key = pred_key
@@ -58,7 +60,11 @@ class MonaiMetricWrapper(Metric):
         self._optimum = optimum
         if not postprocessing:
             postprocessing = []
-        self.postprocessing = Postprocessing(postprocessing)
+        self.postprocessing = (
+            postprocessing
+            if isinstance(postprocessing, Postprocessing)
+            else Postprocessing(postprocessing)
+        )
 
     def __repr__(self):
         return (
