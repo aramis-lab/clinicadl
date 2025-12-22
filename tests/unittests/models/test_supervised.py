@@ -4,6 +4,7 @@ import torchio as tio
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
+from clinicadl.infer import SimpleInferer
 from clinicadl.losses.config import BCEWithLogitsLossConfig
 from clinicadl.models import SupervisedModel
 from clinicadl.networks.config import ConvEncoderConfig
@@ -32,7 +33,8 @@ def test_SupervisedModel(tmp_path):
     network = torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 1))
     loss = BCEWithLogitsLossConfig()
     optimizer = AdamConfig()
-    model = SupervisedModel(network, loss, optimizer)
+    inferer = SimpleInferer(output_name="my_output")
+    model = SupervisedModel(network, loss, optimizer, inferer=inferer)
     optimizers = model.build_optimizers()
 
     # forward step
@@ -53,12 +55,12 @@ def test_SupervisedModel(tmp_path):
     # evaluation step
     out_batch = model.evaluation_step(BATCH)
     assert isinstance(out_batch, Batch)
-    assert out_batch[0]["output"].shape == (1,)
+    assert out_batch[0]["my_output"].shape == (1,)
 
     # prediction step
     out_batch = model.prediction_step(BATCH)
     assert isinstance(out_batch, Batch)
-    assert out_batch[0]["output"].shape == (1,)
+    assert out_batch[0]["my_output"].shape == (1,)
 
     # get losses
     assert model.get_loss_functions() == {"loss": model.loss}
