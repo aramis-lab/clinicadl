@@ -19,13 +19,17 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="DataPoint")
 
 
-class CollateSeqSamplesToBatchConfig(ObjectConfig["CollateSeqSamplesToBatch"]):
+class CollateSeqSamplesToBatchCollateConfig(
+    ObjectConfig["CollateSeqSamplesToBatchCollate"]
+):
     @classmethod
-    def _get_class(cls) -> type[CollateSeqSamplesToBatch]:
-        return CollateSeqSamplesToBatch
+    def _get_class(cls) -> type[CollateSeqSamplesToBatchCollate]:
+        return CollateSeqSamplesToBatchCollate
 
 
-class CollateSeqSamplesToBatch(HasConfig[CollateSeqSamplesToBatchConfig], CollateFn):
+class CollateSeqSamplesToBatchCollate(
+    HasConfig[CollateSeqSamplesToBatchCollateConfig], CollateFn
+):
     def __init__(self, merge_only: Optional[Sequence[str]]):
         self.merge_only = merge_only
 

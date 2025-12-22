@@ -29,25 +29,25 @@ T = TypeVar("T", bound="Sample")
 FieldT = TypeVar("FieldT")
 
 
-class MergeBatchesConfig(ObjectConfig["MergeBatches"]):
+class MergeBatchesCollateConfig(ObjectConfig["MergeBatchesCollate"]):
     """
-    Config class for ``MergeBatches``.
+    Config class for ``MergeBatchesCollate``.
     """
 
     ignore: Optional[Sequence[str]]
 
     @classmethod
-    def _get_class(cls) -> type[MergeBatches]:
-        return MergeBatches
+    def _get_class(cls) -> type[MergeBatchesCollate]:
+        return MergeBatchesCollate
 
 
-class MergeBatches(HasConfig[MergeBatchesConfig], CollateFn):
+class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
     """
     To merge several batches into a single batch.
 
     This collating mode is typically to get a single batch from the outputs
     of a :py:mod:`dataset <clinicadl.data.datasets` returning a sequence of samples.
-    ``MergeBatches`` will try to merge this sequence of samples by merging each field
+    ``MergeBatchesCollate`` will try to merge this sequence of samples by merging each field
     of the samples, except those in ``ignore``.
 
     More precisely, images will be concatenated along the channel dimension and numeric
@@ -68,7 +68,7 @@ class MergeBatches(HasConfig[MergeBatchesConfig], CollateFn):
 
     .. code-block::
 
-        from clinicadl.data.dataloader import MergeBatches
+        from clinicadl.data.dataloader import MergeBatchesCollate
         from clinicadl.data.structures.examples import ColinSample
         import numpy as np
 
@@ -77,7 +77,7 @@ class MergeBatches(HasConfig[MergeBatchesConfig], CollateFn):
         sample_2 = ColinSample()
         sample_2_bis = ColinSample()
 
-        batch = MergeBatches(ignore=["to_ignore"])([(sample_1, sample_1_bis), (sample_2, sample_2_bis)])
+        batch = MergeBatchesCollate(ignore=["to_ignore"])([(sample_1, sample_1_bis), (sample_2, sample_2_bis)])
 
     .. code-block::
 
@@ -96,14 +96,14 @@ class MergeBatches(HasConfig[MergeBatchesConfig], CollateFn):
 
     See Also
     --------
-    ~clinicadl.data.dataloader.ToBatches
+    ~clinicadl.data.dataloader.ToBatchesCollate
         To return a sequence of batches.
     """
 
-    _config_type = MergeBatchesConfig
+    _config_type = MergeBatchesCollateConfig
 
     def __init__(self, ignore: Optional[Sequence[str]] = None):
-        self.config = MergeBatchesConfig(ignore=ignore)
+        self.config = MergeBatchesCollateConfig(ignore=ignore)
 
     def __call__(self, samples: Sequence[Sequence[T]]) -> Batch[T]:
         """
@@ -114,7 +114,7 @@ class MergeBatches(HasConfig[MergeBatchesConfig], CollateFn):
             - :py:class:`torchio.Images <torchio.Image>` will be concatenated along the channel dimension;
             - :py:class:`numpy.ndarrays <numpy.ndarray>` and :py:class:`torch.Tensors <torch.Tensors>`
               will be stacked along a new dimension;
-            - ``MergeBatches`` doesn't support the merger of other types of data. So, if a field of the :py:class:`Samples <~clinicadl.data.datasets.Sample>` contains
+            - ``MergeBatchesCollate`` doesn't support the merger of other types of data. So, if a field of the :py:class:`Samples <~clinicadl.data.datasets.Sample>` contains
               other type of data, the merger will be successful only if a single value is passed (see examples).
 
         Parameters
@@ -229,7 +229,7 @@ class MergeBatches(HasConfig[MergeBatchesConfig], CollateFn):
             return values.pop()
         else:
             raise TypeError(
-                f"MergeBatches can only merge torchio.Image, numpy.ndarray, or torch.Tensor. For '{field_name}', got: {values}"
+                f"MergeBatchesCollate can only merge torchio.Image, numpy.ndarray, or torch.Tensor. For '{field_name}', got: {values}"
             )
 
     def _merge_tio(self, values: Sequence[tio.Image]) -> tio.Image:

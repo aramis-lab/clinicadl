@@ -4,9 +4,9 @@ from typing import Any
 from clinicadl.utils.factories import factory_from_dict
 
 from .base import CollateFn
-from .merge_batches import MergeBatches
-from .to_batch import ToBatch
-from .to_batches import ToBatches
+from .merge_batches import MergeBatchesCollate
+from .to_batch import ToBatchCollate
+from .to_batches import ToBatchesCollate
 
 
 class ImplementedCollateFn(str, Enum):
@@ -14,9 +14,9 @@ class ImplementedCollateFn(str, Enum):
     Collate mode supported natively in ``ClinicaDL``.
     """
 
-    TO_BATCH = "ToBatch"
-    TO_BATCHES = "ToBatches"
-    MERGE_BATCH = "MergeBatches"
+    TO_BATCH = "ToBatchCollate"
+    TO_BATCHES = "ToBatchesCollate"
+    MERGE_BATCH = "MergeBatchesCollate"
 
 
 @factory_from_dict(

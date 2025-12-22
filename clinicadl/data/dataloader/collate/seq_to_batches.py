@@ -14,14 +14,16 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="DataPoint")
 
 
-class CollateSeqSamplesToBatchesConfig(ObjectConfig["CollateSeqSamplesToBatches"]):
+class CollateSeqSamplesToBatchesCollateConfig(
+    ObjectConfig["CollateSeqSamplesToBatchesCollate"]
+):
     @classmethod
-    def _get_class(cls) -> type[CollateSeqSamplesToBatches]:
-        return CollateSeqSamplesToBatches
+    def _get_class(cls) -> type[CollateSeqSamplesToBatchesCollate]:
+        return CollateSeqSamplesToBatchesCollate
 
 
-class CollateSeqSamplesToBatches(
-    HasConfig[CollateSeqSamplesToBatchesConfig], CollateFn
+class CollateSeqSamplesToBatchesCollate(
+    HasConfig[CollateSeqSamplesToBatchesCollateConfig], CollateFn
 ):
     def __call__(self, datapoints: Sequence[Sequence[T]]) -> tuple[Batch[T], ...]:
         return tuple(Batch(data) for data in zip(*datapoints))

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
 import pandas as pd
-from torch.utils.data import Dataset
+import torch.utils.data
 from typing_extensions import Self
 
 from clinicadl.utils.objects import JsonReaderWriter
@@ -13,7 +13,9 @@ from clinicadl.utils.typing import DataFrameType
 from ..structures import Sample
 
 
-class Dataset(JsonReaderWriter, ABC, Dataset[Union[Sample, Sequence[Sample]]]):
+class Dataset(
+    JsonReaderWriter, ABC, torch.utils.data.Dataset[Union[Sample, Sequence[Sample]]]
+):
     """
     Abstract class for ``ClinicaDL`` datasets, which inherits from :py:class:`torch.utils.data.Dataset`,
     to work with 3D neuroimaging data.

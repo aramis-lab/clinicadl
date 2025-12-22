@@ -6,7 +6,11 @@ import pytest
 import torch
 import torchio as tio
 
-from clinicadl.data.dataloader import MergeBatches, ToBatch, ToBatches
+from clinicadl.data.dataloader import (
+    MergeBatchesCollate,
+    ToBatchCollate,
+    ToBatchesCollate,
+)
 from clinicadl.data.dataloader.collate.factory import get_collate_from_dict
 from clinicadl.data.datatypes import T1Linear
 from clinicadl.data.structures import Sample, Sample2D
@@ -38,7 +42,7 @@ SAMPLE_2["session"] = str(2)
 
 
 def test_to_batch():
-    collate = ToBatch()
+    collate = ToBatchCollate()
     batch = collate([SAMPLE_1, SAMPLE_2])
     assert len(batch) == 2
     assert batch[0].participant == "1"
@@ -46,7 +50,7 @@ def test_to_batch():
 
 
 def test_to_batches():
-    collate = ToBatches()
+    collate = ToBatchesCollate()
     batch = collate([(SAMPLE_1, SAMPLE_2), (SAMPLE_1, SAMPLE_2), (SAMPLE_1, SAMPLE_2)])
     assert len(batch[0]) == 3
     assert len(batch[1]) == 3
@@ -55,7 +59,7 @@ def test_to_batches():
 
 
 def test_merge_batches():
-    collate = MergeBatches()
+    collate = MergeBatchesCollate()
     batch = collate([(SAMPLE_1, SAMPLE_1_BIS), (SAMPLE_1, SAMPLE_1_BIS)])
     assert len(batch) == 2
     assert batch[0].image.shape == (3, 3, 3, 3)
@@ -73,7 +77,7 @@ def test_merge_batches():
     assert batch[0].other_field
 
     ###
-    collate = MergeBatches(ignore=["other_field", "participant"])
+    collate = MergeBatchesCollate(ignore=["other_field", "participant"])
     assert batch[0].participant == "1"
     assert "other_field" not in batch
 
@@ -87,12 +91,12 @@ def test_merge_batches():
     sample["np_field"] = [0, 1, 2]
     with pytest.raises(
         TypeError,
-        match="MergeBatches can only merge torchio.Image, numpy.ndarray, or torch.Tensor. For 'np_field', got:.*",
+        match="MergeBatchesCollate can only merge torchio.Image, numpy.ndarray, or torch.Tensor. For 'np_field', got:.*",
     ):
         collate([(SAMPLE_1, sample), (SAMPLE_1, sample)])
 
     ###
-    collate = MergeBatches(ignore=["np_field"])
+    collate = MergeBatchesCollate(ignore=["np_field"])
     sample.update({"sample_position": 0})
     sample.pop("sample_type")
     sample["image"] = tio.ScalarImage(tensor=torch.randn(2, 1, 3, 3), affine=np.eye(4))
@@ -121,9 +125,9 @@ def test_merge_batches():
 @pytest.mark.parametrize(
     "collate",
     [
-        ToBatch,
-        ToBatches,
-        MergeBatches,
+        ToBatchCollate,
+        ToBatchesCollate,
+        MergeBatchesCollate,
     ],
 )
 def test_get_collate_from_dict(collate):
@@ -132,6 +136,6 @@ def test_get_collate_from_dict(collate):
     c = get_collate_from_dict(dict_)
     assert isinstance(c, collate)
 
-    if collate is MergeBatches:
-        c = MergeBatches(ignore=["abc"])
+    if collate is MergeBatchesCollate:
+        c = MergeBatchesCollate(ignore=["abc"])
         assert get_collate_from_dict(c.to_dict()).config.ignore == ["abc"]
