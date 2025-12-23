@@ -13,12 +13,13 @@ from pydantic import Field, NonNegativeFloat, PositiveInt, model_validator
 from typing_extensions import Self
 
 from clinicadl.utils.config import ObjectConfig
-from clinicadl.utils.dictionary.words import EPOCH
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
+from .utils import get_metric_key_error, get_metric_value
 
 if TYPE_CHECKING:
+    from clinicadl.metrics import Metric
     from clinicadl.train import TrainerState
 
 
@@ -38,7 +39,7 @@ class _OneMetricEarlyStoppingConfig(ObjectConfig["_OneMetricEarlyStopping"]):
     metric: str
     patience: PositiveInt
     min_delta: NonNegativeFloat
-    mode: Mode
+    mode: Optional[Mode]  # we may not know the mode at first
     check_finite: bool
     upper_bound: Optional[float]
     lower_bound: Optional[float]
@@ -57,7 +58,7 @@ class _OneMetricEarlyStoppingConfig(ObjectConfig["_OneMetricEarlyStopping"]):
         return _OneMetricEarlyStopping
 
 
-class _OneMetricEarlyStopping(Callback, HasConfig[_OneMetricEarlyStoppingConfig]):
+class _OneMetricEarlyStopping(HasConfig[_OneMetricEarlyStoppingConfig]):
     """
     Early stopping for a single metric.
     """
@@ -103,11 +104,13 @@ class _OneMetricEarlyStopping(Callback, HasConfig[_OneMetricEarlyStoppingConfig]
 
         self.num_bad_epochs = 0
 
-    def should_stop_training(self, metrics: pd.DataFrame, state: TrainerState) -> bool:
+    def step(self, metrics_df: pd.DataFrame, state: TrainerState) -> bool:
         """
         Check if training should stop at the end of an epoch.
         """
-        value = self._get_value(metrics, state)
+        value = get_metric_value(
+            metrics_df, metric_name=self.config.metric, epoch=state.current_epoch
+        )
 
         if self.config.check_finite and (math.isinf(value) or math.isnan(value)):
             logger.warning(
@@ -158,23 +161,6 @@ class _OneMetricEarlyStopping(Callback, HasConfig[_OneMetricEarlyStoppingConfig]
 
         return False
 
-    def _get_value(self, metrics: pd.DataFrame, state: TrainerState) -> float:
-        """Gets the metric value."""
-        assert (
-            self.config.metric in metrics
-        ), f"'{self.config.metric}' not found in the validation metrics!"
-
-        value = metrics.set_index(EPOCH).loc[state.current_epoch, self.config.metric]
-
-        try:
-            value = float(value)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(
-                f"Value for metric '{self.config.metric}' at epoch {state.current_epoch} is not numeric."
-            ) from exc
-
-        return value
-
     def state_dict(self) -> Mapping[str, Any]:
         return {"best": self.best, "num_bad_epochs": self.num_bad_epochs}
 
@@ -201,7 +187,6 @@ class EarlyStoppingCallbackConfig(ObjectConfig["EarlyStoppingCallback"]):
         metric: Union[str, Sequence[str]],
         patience: Union[int, Sequence[int]],
         min_delta: Union[float, Sequence[float]],
-        mode: Union[Mode, Sequence[Mode]],
         check_finite: Union[bool, Sequence[bool]],
         upper_bound: Union[Optional[float], Sequence[Optional[float]]],
         lower_bound: Union[Optional[float], Sequence[Optional[float]]],
@@ -216,11 +201,10 @@ class EarlyStoppingCallbackConfig(ObjectConfig["EarlyStoppingCallback"]):
         )
         n = len(metric)
         configs = []
-        for m, p, m_d, md, c_f, u_b, l_b in zip(
+        for m, p, m_d, c_f, u_b, l_b in zip(
             metric,
             cls._ensure_sequence(patience, n, "patience"),
             cls._ensure_sequence(min_delta, n, "min_delta"),
-            cls._ensure_sequence(mode, n, "mode"),
             cls._ensure_sequence(check_finite, n, "check_finite"),
             cls._ensure_sequence(upper_bound, n, "upper_bound"),
             cls._ensure_sequence(lower_bound, n, "lower_bound"),
@@ -230,10 +214,10 @@ class EarlyStoppingCallbackConfig(ObjectConfig["EarlyStoppingCallback"]):
                     metric=m,
                     patience=p,
                     min_delta=m_d,
-                    mode=md,
                     check_finite=c_f,
                     upper_bound=u_b,
                     lower_bound=l_b,
+                    mode=None,
                 )
             )
 
@@ -289,8 +273,6 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         Number of evaluation phases with no improvement after which training will be stopped.
     min_delta : Union[float, Sequence[float]], default=0.0
         Minimum absolute change in a monitored metric to qualify as an improvement.
-    mode : Union[Mode, Sequence[Mode]], default="min"
-        Whether to minimize or maximize the metric.
     check_finite : Union[bool, Sequence[bool]], default=True
         Whether to stop if the metric becomes NaN or infinite.
     upper_bound : Union[Optional[float], Sequence[Optional[float]]], default=None
@@ -306,7 +288,6 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         metric: Union[str, Sequence[str]],
         patience: Union[int, Sequence[int]] = 3,
         min_delta: Union[float, Sequence[float]] = 0.0,
-        mode: Union[Mode, Sequence[Mode]] = Mode.MIN,
         check_finite: Union[bool, Sequence[bool]] = True,
         upper_bound: Union[Optional[float], Sequence[Optional[float]]] = None,
         lower_bound: Union[Optional[float], Sequence[Optional[float]]] = None,
@@ -315,13 +296,32 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
             metric=metric,
             patience=patience,
             min_delta=min_delta,
-            mode=mode,
             check_finite=check_finite,
             upper_bound=upper_bound,
             lower_bound=lower_bound,
         )
+        self.stoppers: Optional[list[_OneMetricEarlyStopping]] = None
+        self._activated: bool = False  # to prevent from calling in validation only
+
+    def _init_stoppers(self) -> None:
+        """
+        Initializes all the underlying early stoppers.
+        """
+        have_modes = all([stopper.mode is not None for stopper in self.config.stoppers])
+        if not have_modes:
+            raise RuntimeError(
+                "Cannot initialize early stoppers because their modes "
+                "need to be specified. E.g. by calling on_validation_begin"
+            )
+
         self.stoppers = [config.get_object() for config in self.config.stoppers]
-        self._activated = False  # to prevent from calling in validation only
+
+    def _add_modes(self, modes: dict[str, Mode]) -> None:
+        """
+        Adds their modes to the early stoppers.
+        """
+        for config in self.config.stoppers:
+            config.mode = modes[config.metric]
 
     def reset(self) -> None:
         """
@@ -334,15 +334,22 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
     def on_train_begin(self, **kwargs):
         self._activated = True
 
+    def on_validation_begin(self, *, metrics: dict[str, Metric], **kwargs) -> None:
+        if self.stoppers is None and self._activated:
+            modes = {name: metric.optimum for name, metric in metrics.items()}
+            try:
+                self._add_modes(modes)
+            except KeyError as exc:
+                raise get_metric_key_error(exc.args[0]) from exc
+            self._init_stoppers()
+
     def on_validation_end(
-        self, *, state: TrainerState, metrics: pd.DataFrame, **kwargs
+        self, *, state: TrainerState, metrics_df: pd.DataFrame, **kwargs
     ) -> None:
         if not self._activated:
             return
 
-        should_stops = [
-            stopper.should_stop_training(metrics, state) for stopper in self.stoppers
-        ]
+        should_stops = [stopper.step(metrics_df, state) for stopper in self.stoppers]
         should_stop = all(should_stops)
         if should_stop:
             logger.info(
@@ -351,15 +358,17 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         state.should_stop = should_stop
 
     def state_dict(self) -> Mapping[str, Any]:
-        checkpoints = {}
-        for stopper in self.stoppers:
-            checkpoints[stopper.config.metric] = stopper.state_dict()
+        if self.stoppers is None:
+            return {}
 
-        return checkpoints
+        return {
+            stopper.config.metric: stopper.state_dict() for stopper in self.stoppers
+        }
 
     def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
-        for stopper in self.stoppers:
-            stopper.load_state_dict(state_dict[stopper.config.metric])
+        if self.stoppers is not None and state_dict:
+            for stopper in self.stoppers:
+                stopper.load_state_dict(state_dict[stopper.config.metric])
 
     @classmethod
     def _from_config(cls, config):
@@ -369,4 +378,16 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
             for k, v in stopper:
                 args[k].append(v)
 
-        return cls(**args)
+        args.pop("mode")
+
+        early_stopper = cls(**args)
+
+        modes = {stopper.metric: stopper.mode for stopper in config.stoppers}
+        early_stopper._add_modes(modes)
+
+        try:
+            early_stopper._init_stoppers()
+        except RuntimeError:
+            pass
+
+        return early_stopper

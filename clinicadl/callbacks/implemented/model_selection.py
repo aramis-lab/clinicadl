@@ -1,13 +1,29 @@
 import shutil
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
+
+import pandas as pd
+from pydantic import PositiveInt
 
 from clinicadl.metrics.enum import Optimum
-from clinicadl.train.trainer_state import TrainerState
+from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import EPOCH
+from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
 
+if TYPE_CHECKING:
+    from clinicadl.io import Maps
+    from clinicadl.train import TrainerState
 
-class ModelSelection(Callback):
+
+class ModelCheckpointCallbackConfig(ObjectConfig["ModelCheckpointCallback"]):
+    """Config class for ``ModelCheckpointCallback``."""
+
+    metric: str
+    epochs: list[PositiveInt]
+
+
+class ModelCheckpointCallback(Callback):
     """
     Callback that manages model checkpoint selection based on specified metrics.
 
@@ -59,35 +75,36 @@ class ModelSelection(Callback):
             metrics=metrics,
             callbacks=[selection]
         )
-    """
 
-    def __init__(
-        self,
-        metrics: Union[str, list[str]],
-    ):
-        """
         Parameters
         ----------
         metrics : str or list of str
             Name(s) of the metric(s) to monitor for model selection. These should match
             keys present in the `MetricsHandler` dictionary. If a single string is provided,
             it is converted to a list internally.
-        """
-        self.metrics = metrics if isinstance(metrics, list) else [metrics]
+    """
 
-    def on_train_begin(self, config: TrainerState, **kwargs) -> None:
-        """
-        Initialize storage structures for best metrics and create necessary folders.
-        """
+    def __init__(
+        self,
+        metric: str,
+        epochs: Sequence[int],
+        mode: Union[Mode, Sequence[Mode]] = Mode.MIN,
+    ):
+        self._activated = False  # to prevent from calling in validation only
 
-        # config.maps.training.create_split(config.split)
-        for metric in self.metrics:
-            config.maps.training.splits[config.split.index]._create_best_metrics(
-                metric=metric
-            )
-        # config.split.write_json(config.maps.training.splits[config.split.index].caps_dataset_json)
+    # pylint: disable=arguments-differ, unused-argument
+    def on_train_begin(self, maps: Maps, state: TrainerState, **kwargs) -> None:
+        for metric in self.metric:
+            maps.training.splits[state.split_idx].models.best_models(metric=metric)
+        self._activated = True
 
-    def on_epoch_end(self, config: TrainerState, **kwargs) -> None:
+    def on_validation_end(
+        self, *, state: TrainerState, metrics: pd.DataFrame, **kwargs
+    ) -> None:
+        if not self._activated:
+            return
+
+    def on_epoch_end(self, maps: Maps, state: TrainerState, **kwargs) -> None:
         """
         At each epoch, check whether any metric has improved. If so, copy the current
         model and optimizer checkpoints into the best directory for that metric.
@@ -124,15 +141,19 @@ class ModelSelection(Callback):
 
                 shutil.copyfile(tmp_dir.model, metric_dir.model)
 
-    def to_dict(self) -> dict[str, Any]:
-        """
-        Convert the callback to a dictionary representation.
+    def _get_value(self, metrics: pd.DataFrame, state: TrainerState) -> float:
+        """Gets the metric value."""
+        assert (
+            self.config.metric in metrics
+        ), f"'{self.config.metric}' not found in the validation metrics!"
 
-        Returns
-        -------
-        dict
-            Dictionary representation of the callback.
-        """
-        json_dict = super().to_dict()
-        json_dict.update({"metrics": self.metrics})
-        return json_dict
+        value = metrics.set_index(EPOCH).loc[state.current_epoch, self.config.metric]
+
+        try:
+            value = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Value for metric '{self.config.metric}' at epoch {state.current_epoch} is not numeric."
+            ) from exc
+
+        return value

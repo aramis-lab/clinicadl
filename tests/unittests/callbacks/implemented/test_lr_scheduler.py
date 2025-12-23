@@ -165,25 +165,23 @@ def test_steps_scheduler():
     metric_scheduler.scheduler.step.assert_not_called()
 
     state = TrainerState(current_epoch=1)
-    epoch_scheduler.on_validation_end(state=state, metrics=metrics)
-    step_scheduler.on_validation_end(state=state, metrics=metrics)
-    metric_scheduler.on_validation_end(state=state, metrics=metrics)
+    epoch_scheduler.on_validation_end(state=state, metrics_df=metrics)
+    step_scheduler.on_validation_end(state=state, metrics_df=metrics)
+    metric_scheduler.on_validation_end(state=state, metrics_df=metrics)
 
     epoch_scheduler.scheduler.step.assert_called_once()
     step_scheduler.scheduler.step.assert_called_once()
     metric_scheduler.scheduler.step.assert_called_once_with(1.1)
 
-    with pytest.raises(
-        AssertionError, match="'mse' not found in the validation metrics!"
-    ):
-        metric_scheduler.on_validation_end(state=state, metrics=wrong_metrics)
+    with pytest.raises(KeyError, match="'mse' not found in the validation metrics!"):
+        metric_scheduler.on_validation_end(state=state, metrics_df=wrong_metrics)
 
     # only validation
     metric_scheduler = LRSchedulerCallback(
         ReduceLROnPlateauConfig(), scheduler_type="metric-based", metric_name="mse"
     )
     metric_scheduler.scheduler = MagicMock()
-    metric_scheduler.on_validation_end(state=state, metrics=metrics)
+    metric_scheduler.on_validation_end(state=state, metrics_df=metrics)
     metric_scheduler.scheduler.step.assert_not_called()
 
 
@@ -193,7 +191,8 @@ def test_from_dict_to_dict():
         optimizer_name="my_optimizer",
     )
     assert isinstance(
-        new_scheduler := scheduler.from_dict(scheduler.to_dict()), LRSchedulerCallback
+        new_scheduler := LRSchedulerCallback.from_dict(scheduler.to_dict()),
+        LRSchedulerCallback,
     )
     assert new_scheduler.config.optimizer_name == "my_optimizer"
     assert new_scheduler.config.scheduler.value.step_size == 3
@@ -205,8 +204,7 @@ def test_from_dict_to_dict():
         scheduler_type="metric-based",
         metric_name="abc",
     )
-    dict_ = scheduler.to_dict()
-    new_scheduler = scheduler.from_dict(scheduler.to_dict())
+    new_scheduler = LRSchedulerCallback.from_dict(scheduler.to_dict())
     assert new_scheduler.config.scheduler_type == "metric-based"
     assert new_scheduler.config.metric_name == "abc"
 

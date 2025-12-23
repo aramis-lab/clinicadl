@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch, BatchType, DataLoader
     from clinicadl.io import Maps
     from clinicadl.losses.types import LossType
+    from clinicadl.metrics import Metric
     from clinicadl.models import Model
     from clinicadl.optim.config import OptimizationConfig
     from clinicadl.split import Split
@@ -288,6 +289,7 @@ class Callback(ABC):
         maps: Maps,
         state: TrainerState,
         split: Split,
+        metrics: dict[str, Metric],
         model_checkpoint: Optional[str],
         computational: ComputationalConfig,
     ) -> None:
@@ -305,6 +307,8 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         split : Split
             The :py:class:`clinicadl.split.Split` on which validation is performed.
+        metrics : dict[str, Metric]
+            The :py:class:`clinicadl.metrics.Metric` that will be computed during validation.
         model_checkpoint : Optional[str]
             The model checkpoint currently being validated. In :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`,
             it will be ``None``.
@@ -319,8 +323,8 @@ class Callback(ABC):
         model: Model,
         maps: Maps,
         state: TrainerState,
-        metrics: pd.DataFrame,
-        detailed_metrics: pd.DataFrame,
+        metrics_df: pd.DataFrame,
+        detailed_metrics_df: pd.DataFrame,
     ) -> None:
         """
         Called once at the end of :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`
@@ -334,9 +338,9 @@ class Callback(ABC):
             The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
         state : TrainerState
             The current :py:class:`clinicadl.train.TrainerState`.
-        metrics : pd.DataFrame
+        metrics_df : pd.DataFrame
             The aggregated validation metrics.
-        detailed_metrics : pd.DataFrame
+        detailed_metrics_df : pd.DataFrame
             The detailed validation metrics (i.e. the metrics for each image).
         """
 
@@ -372,7 +376,7 @@ class Callback(ABC):
         maps: Maps,
         state: TrainerState,
         output: Batch,
-        metrics: pd.DataFrame,
+        detailed_metrics_df: pd.DataFrame,
     ) -> None:
         """
         Called every time :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>` has just
@@ -389,7 +393,7 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         output : Batch
             The :py:class:`clinicadl.data.dataloader.Batch` output by :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>`.
-        metrics : pd.DataFrame
+        detailed_metrics_df : pd.DataFrame
             The evaluation metrics on the batch.
         """
 
@@ -434,8 +438,8 @@ class Callback(ABC):
         model: Model,
         maps: Maps,
         state: TrainerState,
-        metrics: pd.DataFrame,
-        detailed_metrics: pd.DataFrame,
+        metrics_df: pd.DataFrame,
+        detailed_metrics_df: pd.DataFrame,
     ) -> None:
         """
         Called once at the end of :py:meth:`Trainer.test <clinicadl.train.Trainer.test>`.
@@ -448,9 +452,9 @@ class Callback(ABC):
             The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
         state : TrainerState
             The current :py:class:`clinicadl.train.TrainerState`.
-        metrics : pd.DataFrame
+        metrics_df : pd.DataFrame
             The aggregated test metrics.
-        detailed_metrics : pd.DataFrame
+        detailed_metrics_df : pd.DataFrame
             The detailed test metrics (i.e. the metrics for each image).
         """
 

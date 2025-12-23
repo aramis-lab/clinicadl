@@ -15,7 +15,7 @@ from clinicadl.optim.lr_schedulers.config import (
 from clinicadl.optim.lr_schedulers.factory import get_lr_scheduler_from_dict
 from clinicadl.optim.lr_schedulers.types import LRSchedulerOrConfig
 from clinicadl.utils.config import ObjectConfig, ObjectOrConfig
-from clinicadl.utils.dictionary.words import EPOCH, OPTIMIZER
+from clinicadl.utils.dictionary.words import OPTIMIZER
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
@@ -23,6 +23,7 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
+from .utils import get_metric_value
 
 if TYPE_CHECKING:
     from clinicadl.train import TrainerState
@@ -162,15 +163,14 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
             self.scheduler.step()
 
     def on_validation_end(
-        self, *, state: TrainerState, metrics: pd.DataFrame, **kwargs
+        self, *, state: TrainerState, metrics_df: pd.DataFrame, **kwargs
     ) -> None:
         if self._activated and (self.config.scheduler_type == LRSchedulerType.METRIC):
-            assert (
-                self.config.metric_name in metrics
-            ), f"'{self.config.metric_name}' not found in the validation metrics!"
-            val_metric = metrics.set_index(EPOCH).loc[
-                state.current_epoch, self.config.metric_name
-            ]
+            val_metric = get_metric_value(
+                metrics_df,
+                metric_name=self.config.metric_name,
+                epoch=state.current_epoch,
+            )
             self.scheduler.step(val_metric)
 
     def state_dict(self) -> Mapping[str, Any]:
