@@ -25,12 +25,7 @@ from clinicadl.utils.objects import HasConfig
 from ..base import Callback
 
 if TYPE_CHECKING:
-    from clinicadl.io import Maps
-    from clinicadl.models import Model
-    from clinicadl.optim.config import OptimizationConfig
-    from clinicadl.split import Split
     from clinicadl.train import TrainerState
-    from clinicadl.train.computational import ComputationalConfig
 
 
 class LRSchedulerCallbackConfig(ObjectConfig["LRSchedulerCallback"]):
@@ -122,7 +117,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         self.scheduler: Optional[LRScheduler] = None
 
         self._initial_state: Optional[dict] = None
-        self._activated = False  # to prevent from calling in validation
+        self._activated = False  # to prevent from calling in validation only
 
         scheduler = self.config.scheduler.value
         if isinstance(scheduler, LRScheduler):
@@ -131,15 +126,12 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         elif isinstance(scheduler, LRSchedulerConfig):
             self.scheduler_config = scheduler
 
+    # pylint: disable=arguments-differ, unused-argument
     def on_train_begin(
         self,
-        model: Model,
-        maps: Maps,
-        state: TrainerState,
-        split: Split,
+        *,
         optimizers: dict[str, torch.optim.Optimizer],
-        computational: ComputationalConfig,
-        optimization: OptimizationConfig,
+        **kwargs,
     ) -> None:
         try:
             optimizer = optimizers[self.config.optimizer_name]
@@ -161,28 +153,16 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
 
         self._activated = True
 
-    def on_optimization_step_end(
-        self,
-        model: Model,
-        maps: Maps,
-        state: TrainerState,
-        optimizers: dict[str, torch.optim.Optimizer],
-        grad_scaler: torch.amp.GradScaler,
-    ) -> None:
+    def on_optimization_step_end(self, **kwargs) -> None:
         if self.config.scheduler_type == LRSchedulerType.STEP:
             self.scheduler.step()
 
-    def on_epoch_end(self, model: Model, maps: Maps, state: TrainerState) -> None:
+    def on_epoch_end(self, **kwargs) -> None:
         if self.config.scheduler_type == LRSchedulerType.EPOCH:
             self.scheduler.step()
 
     def on_validation_end(
-        self,
-        model: Model,
-        maps: Maps,
-        state: TrainerState,
-        metrics: pd.DataFrame,
-        detailed_metrics: pd.DataFrame,
+        self, *, state: TrainerState, metrics: pd.DataFrame, **kwargs
     ) -> None:
         if self._activated and (self.config.scheduler_type == LRSchedulerType.METRIC):
             assert (

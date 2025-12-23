@@ -1,150 +1,338 @@
-import shutil
+import logging
+import re
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from clinicadl.callbacks.implemented.early_stopping import (
-    EarlyStopping,
-    OneMetricEarlyStopping,
-)
-from clinicadl.io.maps import Maps
+from clinicadl.callbacks import EarlyStoppingCallback
 from clinicadl.train.trainer_state import TrainerState
 
-from ...resources.objects import COMP, MAPS_DIR, METRICS_HANDLER, MODEL, OPTIM, SPLIT
-
-GOOD_INPUTS = [
-    (["mae", "loss"], 5, 0.0, "min", True, None, None),
-    (
-        ["mae", "loss"],
-        [3, 7],
-        [0.0, 0.1],
-        ["min", "max"],
-        [True, False],
-        [None, None],
-        [None, None],
-    ),
-    (["mae", "mse"], [3, 7], 0.1, ["min", "max"], True, [None, None], [None, None]),
-]
-
-metrics_df = pd.DataFrame(
+METRICS = pd.DataFrame(
     {
-        "epoch": [0, 1, 2, 3],
-        "mae": [0.1, 0.2, 0.3, 0.4],
-        "loss": [0.1, 0.2, 0.3, 0.4],
-        "mse": [0.1, 0.2, 0.3, 0.4],
+        "epoch": [0, 2, 4, 6, 9],
+        "mae": [np.inf, np.nan, 10.1, -10.1, -np.inf],
+        "loss": [-1.0, -1.11, -1.2, -5, -10],
+        "loss_overfit": [-1.0, -1.11, -1.2, -1.11, -1.0],
+        "mse": [1.0, 0.8, 1.11, 1.20, 0.16],
+        "bad": ["a", "b", "c", "d", "e"],
     }
 )
-metrics_df.set_index("epoch", inplace=True)
+LOGGER = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize(
-    "metrics,patience,min_delta,mode,check_finite,upper_bound,lower_bound", GOOD_INPUTS
-)
-def test_good_inputs(
-    tmp_path, metrics, patience, min_delta, mode, check_finite, upper_bound, lower_bound
-):
-    shutil.copytree(MAPS_DIR, tmp_path / "maps")
-    MAPS = Maps(tmp_path / "maps")
-
-    es_ = EarlyStopping(
-        metrics=metrics,
-        patience=patience,
-        min_delta=min_delta,
-        mode=mode,
-        check_finite=check_finite,
-        upper_bound=upper_bound,
-        lower_bound=lower_bound,
+def test_inputs():
+    es = EarlyStoppingCallback(
+        metric=["mae", "loss"],
+        patience=5,
+        min_delta=(0.0, 0.1),
+        mode="min",
+        check_finite=True,
+        upper_bound=None,
+        lower_bound=0.1,
     )
-    assert isinstance(es_.patience, list)
-    assert isinstance(es_.min_delta, list)
-    assert isinstance(es_.mode, list)
-    assert isinstance(es_.check_finite, list)
-    assert isinstance(es_.upper_bound, list)
-    assert isinstance(es_.lower_bound, list)
-
-    for oes_ in es_.early_stoppers:
-        assert isinstance(oes_.patience, int)
-        assert isinstance(oes_.min_delta, float)
-        assert isinstance(oes_.mode, str)
-        assert isinstance(oes_.check_finite, bool)
-        assert isinstance(oes_, OneMetricEarlyStopping)
-
-    _ts = TrainerState(
-        maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
+    assert (es.stoppers[0].config.metric, es.stoppers[1].config.metric) == (
+        "mae",
+        "loss",
     )
-    _ts.reset(SPLIT)
-    _ts.metrics._df = metrics_df
-
-    es_.on_epoch_end(_ts)
-    assert not _ts.stop
-
-    # TODO : NEED TO ADD TEST WHEN EARLY STOPPING IS TRIGGERED
-
-
-def test_bad_inputs(tmp_path):
-    shutil.copytree(MAPS_DIR, tmp_path / "maps")
-    MAPS = Maps(tmp_path / "maps")
-
-    with pytest.raises(ValueError):
-        EarlyStopping(
-            metrics=["mae"],
-            patience=3,
-            min_delta=0.1,
-            mode="min",
-            check_finite=True,
-            upper_bound=0.2,
-            lower_bound=0.3,
-        )
-
-    with pytest.raises(ValueError):
-        EarlyStopping(
-            metrics=["mae"],
-            patience=3,
-            min_delta=0.1,
-            mode="minmax",
-        )
-
-    es = EarlyStopping(metrics=["mae"])
-
-    _ts = TrainerState(
-        maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
+    assert (es.stoppers[0].config.patience, es.stoppers[1].config.patience) == (5, 5)
+    assert (es.stoppers[0].config.min_delta, es.stoppers[1].config.min_delta) == (
+        0.0,
+        0.1,
     )
-    _ts.reset(SPLIT)
-
-    with pytest.raises(ValueError):
-        _ts.metrics.df.loc[_ts.epoch, "mae"] = pd.NA
-        es.on_epoch_end(_ts)
-
-    with pytest.raises(ValueError):
-        _ts.metrics.df.loc[_ts.epoch, "mae"] = pd.NA
-        es.on_epoch_end(_ts)
-
-    with pytest.raises(ValueError):
-        es.on_epoch_end(_ts)
-
-
-def test_load_save_checkpoint(tmp_path):
-    shutil.copytree(MAPS_DIR, tmp_path / "maps")
-    MAPS = Maps(tmp_path / "maps")
-
-    _ts = TrainerState(
-        maps=MAPS, metrics=METRICS_HANDLER, model=MODEL, optim=OPTIM, comp=COMP
+    assert (es.stoppers[0].config.mode, es.stoppers[1].config.mode) == ("min", "min")
+    assert (es.stoppers[0].config.check_finite, es.stoppers[1].config.check_finite) == (
+        True,
+        True,
     )
-    _ts.metrics._df = pd.DataFrame(
-        {"epoch": [_ts.epoch, _ts.epoch + 1], "mae": [0.3, 0.4], "loss": [0.3, 0.2]}
+    assert (es.stoppers[0].config.upper_bound, es.stoppers[1].config.upper_bound) == (
+        None,
+        None,
+    )
+    assert (es.stoppers[0].config.lower_bound, es.stoppers[1].config.lower_bound) == (
+        0.1,
+        0.1,
     )
 
-    early_stopping = EarlyStopping(metrics=["mae", "loss"], patience=10, mode="min")
+    es = EarlyStoppingCallback(
+        metric=["mae", "loss"],
+        patience=[3, 7],
+        min_delta=0,
+        mode=["min", "max"],
+        check_finite=[True, False],
+        upper_bound=[None, 0.1],
+        lower_bound=[None, None],
+    )
+    assert (es.stoppers[0].config.metric, es.stoppers[1].config.metric) == (
+        "mae",
+        "loss",
+    )
+    assert (es.stoppers[0].config.patience, es.stoppers[1].config.patience) == (3, 7)
+    assert (es.stoppers[0].config.min_delta, es.stoppers[1].config.min_delta) == (
+        0.0,
+        0.0,
+    )
+    assert (es.stoppers[0].config.mode, es.stoppers[1].config.mode) == ("min", "max")
+    assert (es.stoppers[0].config.check_finite, es.stoppers[1].config.check_finite) == (
+        True,
+        False,
+    )
+    assert (es.stoppers[0].config.upper_bound, es.stoppers[1].config.upper_bound) == (
+        None,
+        0.1,
+    )
+    assert (es.stoppers[0].config.lower_bound, es.stoppers[1].config.lower_bound) == (
+        None,
+        None,
+    )
 
-    early_stopping.on_epoch_end(_ts)
-    _ts.epoch += 1
-    early_stopping.on_epoch_end(_ts)
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "For EarlyStoppingCallback, there are 2 metrics, but you passed 3 'patience': [1, 2, 3]"
+        ),
+    ):
+        EarlyStoppingCallback(metric=["mae", "loss"], patience=[1, 2, 3])
 
-    early_stopping.save_checkpoint(tmp_path / "early_stopping")
 
-    early_stopping = EarlyStopping(metrics=["mae", "loss"], patience=10, mode="min")
-    early_stopping.load_checkpoint(tmp_path / "early_stopping")
-    early_stopping.early_stoppers[0].best == 0.3
-    early_stopping.early_stoppers[1].best == 0.2
-    early_stopping.early_stoppers[0].num_bad_epochs == 1
-    early_stopping.early_stoppers[1].num_bad_epochs == 0
+def test_numeric():
+    early_stopping = EarlyStoppingCallback(metric="bad")
+    early_stopping.on_train_begin()
+    with pytest.raises(
+        ValueError, match="Value for metric 'bad' at epoch 0 is not numeric."
+    ):
+        early_stopping.on_validation_end(state=TrainerState(), metrics=METRICS)
+
+
+def test_one_metric(caplog):
+    state = TrainerState()
+    early_stopping = EarlyStoppingCallback(
+        metric="mae", check_finite=True, upper_bound=10, lower_bound=-10
+    )
+
+    state.should_stop = False
+    state.current_epoch = 0
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+    early_stopping.on_train_begin()
+
+    state.should_stop = False
+    state.current_epoch = 0
+    with caplog.at_level(logging.WARNING):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert (
+        "Metric 'mae' value at epoch 0 is not a finite float. Stopping training."
+        in caplog.text
+    )
+    assert state.should_stop
+
+    state.should_stop = False
+    state.current_epoch = 2
+    with caplog.at_level(logging.WARNING):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert (
+        "Metric 'mae' value at epoch 2 is not a finite float. Stopping training."
+        in caplog.text
+    )
+    assert state.should_stop
+
+    state.should_stop = False
+    state.current_epoch = 4
+    with caplog.at_level(logging.WARNING):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert (
+        "Metric 'mae' value 10.1 exceeds upper bound 10.0 at epoch 4. Stopping training."
+        in caplog.text
+    )
+    assert state.should_stop
+
+    state.should_stop = False
+    state.current_epoch = 6
+    with caplog.at_level(logging.WARNING):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert (
+        "Metric 'mae' value -10.1 falls below lower bound -10.0 at epoch 6. Stopping training."
+        in caplog.text
+    )
+    assert state.should_stop
+
+    state.should_stop = False
+    state.current_epoch = 9
+    with caplog.at_level(logging.WARNING):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert (
+        "Metric 'mae' value at epoch 2 is not a finite float. Stopping training."
+        in caplog.text
+    )
+    assert state.should_stop
+
+    state = TrainerState()
+    early_stopping = EarlyStoppingCallback(
+        metric="mse", patience=2, min_delta=0.1, mode="max"
+    )
+    early_stopping.on_train_begin()
+
+    state.should_stop = False
+    state.current_epoch = 0
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert early_stopping.stoppers[0].best == 1.0
+    assert not state.should_stop
+
+    state.current_epoch = 2
+    with caplog.at_level(logging.DEBUG):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert "No improvement in 'mse' for 1 evaluation step(s)." in caplog.text
+    assert not state.should_stop
+
+    state.current_epoch = 4
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 6
+    with caplog.at_level(logging.DEBUG):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert "No improvement in 'mse' for 1 evaluation step(s)." in caplog.text
+    assert not state.should_stop
+
+    state.current_epoch = 9
+    with caplog.at_level(logging.INFO):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert (
+        "Early stopping triggered on metric 'mse' after 2 evaluation(s) without improvement."
+        in caplog.text
+    )
+    assert (
+        "Early stopping criteria met for all monitored metrics. Stopping training."
+        in caplog.text
+    )
+    assert state.should_stop
+
+    state = TrainerState()
+    early_stopping = EarlyStoppingCallback(
+        metric="loss", patience=1, min_delta=0.1, mode="min"
+    )
+    early_stopping.on_train_begin()
+
+    state.should_stop = False
+    state.current_epoch = 0
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 2
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 4
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert state.should_stop
+
+
+def test_mutiple_metrics(caplog):
+    state = TrainerState()
+    early_stopping = EarlyStoppingCallback(
+        metric=["mse", "loss"], patience=[2, 1], min_delta=0.1, mode=["max", "min"]
+    )
+    early_stopping.on_train_begin()
+
+    state.should_stop = False
+    state.current_epoch = 0
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 2
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 4
+    with caplog.at_level(logging.INFO):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert (
+        "Early stopping triggered on metric 'loss' after 1 evaluation(s) without improvement."
+        in caplog.text
+    )
+    assert not state.should_stop
+
+    state.current_epoch = 6
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 9
+    with caplog.at_level(logging.INFO):
+        early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert (
+        "Early stopping triggered on metric 'mse' after 2 evaluation(s) without improvement."
+        in caplog.text
+    )
+    assert not state.should_stop  # loss restarted to decrease
+
+    ###
+    state = TrainerState()
+    early_stopping = EarlyStoppingCallback(
+        metric=["mse", "loss_overfit"],
+        patience=[2, 1],
+        min_delta=0.1,
+        mode=["max", "min"],
+    )
+    early_stopping.on_train_begin()
+
+    state.should_stop = False
+    state.current_epoch = 0
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 2
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 4
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 6
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert not state.should_stop
+
+    state.current_epoch = 9
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+    assert state.should_stop
+
+
+def test_from_dict_to_dict():
+    early_stopping = EarlyStoppingCallback(
+        metric=["mse", "loss"], patience=[2, 1], min_delta=0.1
+    )
+    assert isinstance(
+        new_early_stopping := early_stopping.from_dict(early_stopping.to_dict()),
+        EarlyStoppingCallback,
+    )
+    assert new_early_stopping.stoppers[0].config.metric == "mse"
+    assert new_early_stopping.stoppers[1].config.metric == "loss"
+    assert new_early_stopping.stoppers[0].config.patience == 2
+    assert new_early_stopping.stoppers[1].config.patience == 1
+    assert new_early_stopping.stoppers[0].config.min_delta == 0.1
+    assert new_early_stopping.stoppers[1].config.min_delta == 0.1
+
+
+def test_state_dict():
+    state = TrainerState()
+    early_stopping = EarlyStoppingCallback(
+        metric=["mse", "loss"], patience=3, min_delta=0.1, mode=["max", "min"]
+    )
+    early_stopping.on_train_begin()
+
+    state.current_epoch = 0
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+
+    state.current_epoch = 2
+    early_stopping.on_validation_end(state=state, metrics=METRICS)
+
+    state_dict = early_stopping.state_dict()
+
+    early_stopping = EarlyStoppingCallback(
+        metric=["mse", "loss"], patience=3, min_delta=0.1, mode=["max", "min"]
+    )
+    early_stopping.load_state_dict(state_dict)
+    assert early_stopping.stoppers[0].best == 1.0
+    assert early_stopping.stoppers[0].num_bad_epochs == 1
+    assert early_stopping.stoppers[1].best == -1.11
+    assert early_stopping.stoppers[1].num_bad_epochs == 0

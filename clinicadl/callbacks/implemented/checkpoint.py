@@ -5,6 +5,23 @@ from clinicadl.train.trainer_state import TrainerState
 
 from ..base import Callback
 
+"""
+.. note::
+
+    Behavior regarding interaction with ``ModelSelection``:
+
+    - If neither ``EarlyStopping`` nor ``ModelSelection`` are used:
+        the final model and the best-loss model are saved, but no early stopping is applied.
+    - If ``EarlyStopping`` is used without ``ModelSelection``:
+        training stops when all monitored metrics stop improving.
+        For each metric, a ``ModelSelection`` object is automatically created.
+    - If ``ModelSelection`` is used without ``EarlyStopping``:
+        best models are saved based on monitored metrics, but training completes all epochs.
+    - If both are used:
+        ``EarlyStopping`` metrics are automatically tracked by ``ModelSelection``,
+        ensuring best-performing models are saved.
+"""
+
 
 class Checkpoint(Callback):
     """

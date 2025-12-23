@@ -71,6 +71,7 @@ class Callback(ABC):
 
     def on_train_begin(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -105,6 +106,7 @@ class Callback(ABC):
 
     def on_train_end(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -122,7 +124,7 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         """
 
-    def on_epoch_begin(self, model: Model, maps: Maps, state: TrainerState) -> None:
+    def on_epoch_begin(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
         """
         Called at the beginning of an epoch in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
 
@@ -136,7 +138,7 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         """
 
-    def on_epoch_end(self, model: Model, maps: Maps, state: TrainerState) -> None:
+    def on_epoch_end(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
         """
         Called at the end of an epoch in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
 
@@ -151,7 +153,7 @@ class Callback(ABC):
         """
 
     def on_forward_step_begin(
-        self, model: Model, maps: Maps, state: TrainerState, batch: BatchType
+        self, *, model: Model, maps: Maps, state: TrainerState, batch: BatchType
     ) -> None:
         """
         Called every time :py:meth:`Model.forward_step <clinicadl.models.Model.forward_step>` will
@@ -171,6 +173,7 @@ class Callback(ABC):
 
     def on_backward_step_begin(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -201,6 +204,7 @@ class Callback(ABC):
 
     def on_backward_step_end(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -221,6 +225,7 @@ class Callback(ABC):
 
     def on_optimization_step_begin(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -248,6 +253,7 @@ class Callback(ABC):
 
     def on_optimization_step_end(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -277,6 +283,7 @@ class Callback(ABC):
 
     def on_validation_begin(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -308,6 +315,7 @@ class Callback(ABC):
 
     def on_validation_end(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -334,6 +342,7 @@ class Callback(ABC):
 
     def on_evaluation_step_begin(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -358,6 +367,7 @@ class Callback(ABC):
 
     def on_evaluation_step_end(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -387,6 +397,7 @@ class Callback(ABC):
 
     def on_test_begin(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -419,6 +430,7 @@ class Callback(ABC):
 
     def on_test_end(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -446,6 +458,7 @@ class Callback(ABC):
 
     def on_predict_begin(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
@@ -478,6 +491,7 @@ class Callback(ABC):
 
     def on_prediction_end(
         self,
+        *,
         model: Model,
         maps: Maps,
         state: TrainerState,
