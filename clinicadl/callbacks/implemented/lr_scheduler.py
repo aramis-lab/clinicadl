@@ -128,7 +128,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
             self.scheduler_config = scheduler
 
     # pylint: disable=arguments-differ, unused-argument
-    def on_train_begin(
+    def on_train_start(
         self,
         *,
         optimizers: dict[str, torch.optim.Optimizer],

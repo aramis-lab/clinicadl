@@ -211,7 +211,7 @@ class Trainer:
         self._write_training_infos(split=split)
 
         self._call_event(
-            "on_train_begin",
+            "on_train_start",
             split=split,
             computational=computational,
             optimization=OptimizationConfig,
@@ -220,7 +220,7 @@ class Trainer:
         while not self.state.should_stop:
             self.state.current_epoch += 1
 
-            self._call_event("on_epoch_begin")
+            self._call_event("on_epoch_start")
 
             split.train_loader.set_epoch(self.state.current_epoch)
 
@@ -229,7 +229,7 @@ class Trainer:
 
                 self._send_to_device(batch)
 
-                self._call_event("on_forward_step_begin", batch=batch)
+                self._call_event("on_forward_step_start", batch=batch)
 
                 with autocast(
                     device_type=computational.device.type,
@@ -238,7 +238,7 @@ class Trainer:
                     loss = self.model.forward_step(batch=batch)
 
                 self._call_event(
-                    "on_backward_step_begin", loss=loss, grad_scaler=scaler
+                    "on_backward_step_start", loss=loss, grad_scaler=scaler
                 )
 
                 self.model.backward_step(loss, grad_scaler=scaler)
@@ -247,7 +247,7 @@ class Trainer:
 
                 if batch_idx % self.optimization_config.accumulation_steps == 0:
                     self._call_event(
-                        "on_optimization_step_begin",
+                        "on_optimization_step_start",
                         optimizers=self.model.get_optimizers(),
                         grad_scaler=scaler,
                     )
@@ -349,7 +349,7 @@ class Trainer:
         self._reset_test()
 
         self._call_event(
-            "on_test_begin",
+            "on_test_start",
             dataloader=dataloader,
             model_checkpoint=model_checkpoint,
             group_name=group_name,
@@ -386,7 +386,7 @@ class Trainer:
         self.maps.read()
 
         self._call_event(
-            "on_prediction_begin",
+            "on_prediction_start",
             dataloader=dataloader,
             model_checkpoint=model_checkpoint,
             group_name=group_name,
@@ -407,7 +407,7 @@ class Trainer:
         self._reset_validation()
 
         self._call_event(
-            "on_validation_begin",
+            "on_validation_start",
             split=split,
             model_checkpoint=model_checkpoint,
             computational=computational,
@@ -433,7 +433,7 @@ class Trainer:
 
                 self._send_to_device(batch)
 
-                self._call_event("on_evaluation_step_begin", batch=batch)
+                self._call_event("on_evaluation_step_start", batch=batch)
 
                 output_batch = self.model.evaluation_step(
                     batch

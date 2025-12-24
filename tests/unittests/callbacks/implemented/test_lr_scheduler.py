@@ -64,7 +64,7 @@ def test__init__():
     )
 
 
-def test_on_train_begin():
+def test_on_train_start():
     # raw scheduler
     optimizer = build_optimizer("my_optimizer")
     raw_scheduler = StepLR(optimizer["my_optimizer"], step_size=1)
@@ -81,7 +81,7 @@ def test_on_train_begin():
             )
         ),
     ):
-        scheduler.on_train_begin(optimizers=optimizer)
+        scheduler.on_train_start(optimizers=optimizer)
 
     scheduler = LRSchedulerCallback(
         scheduler=deepcopy(raw_scheduler),
@@ -97,19 +97,19 @@ def test_on_train_begin():
             )
         ),
     ):
-        scheduler.on_train_begin(optimizers=optimizer)
+        scheduler.on_train_start(optimizers=optimizer)
 
     scheduler = LRSchedulerCallback(
         scheduler=raw_scheduler,
         scheduler_type="epoch-based",
         optimizer_name="my_optimizer",
     )
-    scheduler.on_train_begin(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer)
     optimizer["my_optimizer"].step()
     scheduler.scheduler.step()
     assert scheduler.scheduler.state_dict()["_last_lr"] == [0.0001]
 
-    scheduler.on_train_begin(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer)
     assert scheduler.scheduler.state_dict()["_last_lr"] == [0.001]
 
     # config
@@ -117,7 +117,7 @@ def test_on_train_begin():
     scheduler = LRSchedulerCallback(
         scheduler=StepLRConfig(step_size=1),
     )
-    scheduler.on_train_begin(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer)
     assert isinstance(scheduler.scheduler, StepLR)
     assert scheduler.scheduler.optimizer is optimizer["optimizer"]
     optimizer["optimizer"].step()
@@ -125,7 +125,7 @@ def test_on_train_begin():
     assert scheduler.scheduler.state_dict()["_last_lr"] == [0.0001]
 
     optimizer = build_optimizer()
-    scheduler.on_train_begin(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer)
     assert scheduler.scheduler.state_dict()["_last_lr"] == [0.001]
 
 
@@ -140,9 +140,9 @@ def test_steps_scheduler():
         ReduceLROnPlateauConfig(), scheduler_type="metric-based", metric_name="mse"
     )
 
-    epoch_scheduler.on_train_begin(optimizers=optimizer)
-    step_scheduler.on_train_begin(optimizers=optimizer)
-    metric_scheduler.on_train_begin(optimizers=optimizer)
+    epoch_scheduler.on_train_start(optimizers=optimizer)
+    step_scheduler.on_train_start(optimizers=optimizer)
+    metric_scheduler.on_train_start(optimizers=optimizer)
 
     epoch_scheduler.scheduler.step = MagicMock()
     step_scheduler.scheduler.step = MagicMock()
@@ -214,7 +214,7 @@ def test_state_dict():
     scheduler = LRSchedulerCallback(
         scheduler=StepLRConfig(step_size=1),
     )
-    scheduler.on_train_begin(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer)
     assert scheduler.scheduler.state_dict()["_last_lr"] == [0.001]
     optimizer["optimizer"].step()
     scheduler.scheduler.step()

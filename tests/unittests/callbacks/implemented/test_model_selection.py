@@ -36,7 +36,7 @@ def test_good_inputs(tmp_path):
             "mae",
         ]  # ??
 
-        # ms_callback.on_train_begin(_ts)
+        # ms_callback.on_train_start(_ts)
         # assert _ts.maps.training.splits[_ts.split.index].best_metrics[metric].exists()
 
         # ms_callback.on_train_end(_ts)

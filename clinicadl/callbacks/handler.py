@@ -207,7 +207,7 @@ class _CallbacksHandler:
         Parameters
         ----------
         event : str
-            Name of the event method to call (e.g. 'on_train_begin').
+            Name of the event method to call (e.g. 'on_train_start').
 
         kwargs : dict
             Keyword arguments passed to each callback's event method.

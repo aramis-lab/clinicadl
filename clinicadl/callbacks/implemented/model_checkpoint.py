@@ -101,7 +101,7 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         )
 
     # pylint: disable=arguments-differ, unused-argument
-    def on_train_begin(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
+    def on_train_start(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
         if self.config.metric:
             maps.training.splits[state.split_idx].models.best_models.create_metric(
                 metric=self.config.metric, exist_ok=True
@@ -109,7 +109,7 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
 
         self._activated = True
 
-    def on_validation_begin(self, *, metrics: dict[str, Metric], **kwargs) -> None:
+    def on_validation_start(self, *, metrics: dict[str, Metric], **kwargs) -> None:
         if self.config.metric and self.metric_monitoring is None and self._activated:
             try:
                 mode = metrics[self.config.metric].optimum

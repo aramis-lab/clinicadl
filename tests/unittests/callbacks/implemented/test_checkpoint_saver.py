@@ -46,8 +46,8 @@ def test_checkpoint_multiple_epochs(tmp_path):
         comp=COMP,
     )
     _ts.reset(deepcopy(SPLIT))
-    callbacks.on_train_begin(_ts)
-    cs_callback.on_train_begin(_ts)
+    callbacks.on_train_start(_ts)
+    cs_callback.on_train_start(_ts)
 
     assert _ts.split
 
@@ -94,11 +94,11 @@ def test_bad_checkpoint(tmp_path):
     )
 
     with pytest.raises(ValueError):
-        cs_callback.on_train_begin(_ts)
+        cs_callback.on_train_start(_ts)
 
     _ts.reset(deepcopy(SPLIT))
     assert _ts.split
     _ts.split.train_loader = None
 
     with pytest.raises(ValueError):
-        cs_callback.on_train_begin(_ts)
+        cs_callback.on_train_start(_ts)

@@ -39,8 +39,8 @@ def test_inputs():
         upper_bound=None,
         lower_bound=0.1,
     )
-    es.on_train_begin()
-    es.on_validation_begin(metrics={"psnr": PSNR, "mse": MSE})
+    es.on_train_start()
+    es.on_validation_start(metrics={"psnr": PSNR, "mse": MSE})
     assert (es.stoppers[0].config.metric, es.stoppers[1].config.metric) == (
         "psnr",
         "mse",
@@ -72,10 +72,10 @@ def test_inputs():
         upper_bound=[None, 0.1],
         lower_bound=[None, None],
     )
-    es.on_train_begin()
+    es.on_train_start()
     with pytest.raises(KeyError, match="'psnr' not found in the validation metrics!"):
-        es.on_validation_begin(metrics={"mse": MSE})
-    es.on_validation_begin(metrics={"psnr": PSNR, "mse": MSE})
+        es.on_validation_start(metrics={"mse": MSE})
+    es.on_validation_start(metrics={"psnr": PSNR, "mse": MSE})
 
     assert (es.stoppers[0].config.patience, es.stoppers[1].config.patience) == (3, 7)
     assert (es.stoppers[0].config.min_delta, es.stoppers[1].config.min_delta) == (
@@ -106,8 +106,8 @@ def test_inputs():
 
 def test_numeric():
     early_stopping = EarlyStoppingCallback(metric="bad")
-    early_stopping.on_train_begin()
-    early_stopping.on_validation_begin(metrics={"bad": PSNR})
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"bad": PSNR})
     with pytest.raises(
         ValueError, match="Value for metric 'bad' at epoch 0 is not numeric."
     ):
@@ -125,8 +125,8 @@ def test_one_metric(caplog):
     early_stopping.on_validation_end(state=state, metrics_df=METRICS)
     assert not state.should_stop
 
-    early_stopping.on_train_begin()
-    early_stopping.on_validation_begin(metrics={"mae": MAE})
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"mae": MAE})
 
     state.should_stop = False
     state.current_epoch = 0
@@ -180,8 +180,8 @@ def test_one_metric(caplog):
 
     state = TrainerState()
     early_stopping = EarlyStoppingCallback(metric="psnr", patience=2, min_delta=0.1)
-    early_stopping.on_train_begin()
-    early_stopping.on_validation_begin(metrics={"psnr": PSNR})
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"psnr": PSNR})
 
     state.should_stop = False
     state.current_epoch = 0
@@ -220,8 +220,8 @@ def test_one_metric(caplog):
 
     state = TrainerState()
     early_stopping = EarlyStoppingCallback(metric="mse", patience=1, min_delta=0.1)
-    early_stopping.on_train_begin()
-    early_stopping.on_validation_begin(metrics={"mse": MSE})
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"mse": MSE})
 
     state.should_stop = False
     state.current_epoch = 0
@@ -242,8 +242,8 @@ def test_mutiple_metrics(caplog):
     early_stopping = EarlyStoppingCallback(
         metric=["psnr", "mse"], patience=[2, 1], min_delta=0.1
     )
-    early_stopping.on_train_begin()
-    early_stopping.on_validation_begin(metrics={"mse": MSE, "psnr": PSNR})
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"mse": MSE, "psnr": PSNR})
 
     state.should_stop = False
     state.current_epoch = 0
@@ -283,8 +283,8 @@ def test_mutiple_metrics(caplog):
         patience=[2, 1],
         min_delta=0.1,
     )
-    early_stopping.on_train_begin()
-    early_stopping.on_validation_begin(metrics={"mse_overfit": MSE, "psnr": PSNR})
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"mse_overfit": MSE, "psnr": PSNR})
 
     state.should_stop = False
     state.current_epoch = 0
@@ -323,8 +323,8 @@ def test_from_dict_to_dict():
     assert new_early_stopping.config.stoppers[0].min_delta == 0.1
     assert new_early_stopping.config.stoppers[1].min_delta == 0.1
 
-    early_stopping.on_train_begin()
-    early_stopping.on_validation_begin(metrics={"psnr": PSNR, "mse": MSE})
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"psnr": PSNR, "mse": MSE})
     new_early_stopping = EarlyStoppingCallback.from_dict(early_stopping.to_dict())
     assert new_early_stopping.stoppers[0].config.metric == "psnr"
     assert new_early_stopping.stoppers[1].config.metric == "mse"
@@ -343,8 +343,8 @@ def test_state_dict():
     )
     assert early_stopping.state_dict() == dict()
 
-    early_stopping.on_train_begin()
-    early_stopping.on_validation_begin(metrics={"psnr": PSNR, "mse": MSE})
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"psnr": PSNR, "mse": MSE})
 
     state.current_epoch = 0
     early_stopping.on_validation_end(state=state, metrics_df=METRICS)

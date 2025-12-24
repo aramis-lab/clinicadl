@@ -23,30 +23,30 @@ class Events(str, Enum):
     """Events that can trigger an action from a :py:class:`clinicadl.callbacks.Callback`."""
 
     # Training
-    TRAIN_BEGIN = "on_train_begin"
+    TRAIN_BEGIN = "on_train_start"
     TRAIN_END = "on_train_end"
-    EPOCH_BEGIN = "on_epoch_begin"
+    EPOCH_BEGIN = "on_epoch_start"
     EPOCH_END = "on_epoch_end"
-    FORWARD_BEGIN = "on_forward_step_begin"
-    BACKWARD_BEGIN = "on_backward_step_begin"
+    FORWARD_BEGIN = "on_forward_step_start"
+    BACKWARD_BEGIN = "on_backward_step_start"
     BACKWARD_END = "on_backward_step_end"
-    OPTIM_STEP_BEGIN = "on_optimization_step_begin"
+    OPTIM_STEP_BEGIN = "on_optimization_step_start"
     OPTIM_STEP_END = "on_optimization_step_end"
 
     # Validation
-    VAL_BEGIN = "on_validation_begin"
+    VAL_BEGIN = "on_validation_start"
     VAL_END = "on_validation_end"
-    EVAL_BEGIN = "on_evaluation_step_begin"
+    EVAL_BEGIN = "on_evaluation_step_start"
     EVAL_END = "on_evaluation_step_end"
 
     # Test
-    TEST_BEGIN = "on_test_begin"
+    TEST_BEGIN = "on_test_start"
     TEST_END = "on_test_end"
 
     # Predict
-    PREDICT_BEGIN = "on_test_begin"
+    PREDICT_BEGIN = "on_test_start"
     PREDICT_END = "on_test_end"
-    PREDICTION_BEGIN = "on_prediction_step_begin"
+    PREDICTION_BEGIN = "on_prediction_step_start"
     PREDICTION_END = "on_prediction_step_end"
 
 
@@ -70,7 +70,7 @@ class Callback(ABC):
 
     # Train
 
-    def on_train_begin(
+    def on_train_start(
         self,
         *,
         model: Model,
@@ -125,7 +125,7 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         """
 
-    def on_epoch_begin(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
+    def on_epoch_start(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
         """
         Called at the beginning of an epoch in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
 
@@ -153,7 +153,7 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         """
 
-    def on_forward_step_begin(
+    def on_forward_step_start(
         self, *, model: Model, maps: Maps, state: TrainerState, batch: BatchType
     ) -> None:
         """
@@ -172,7 +172,7 @@ class Callback(ABC):
             The batch input to :py:meth:`Model.forward_step <clinicadl.models.Model.forward_step>`.
         """
 
-    def on_backward_step_begin(
+    def on_backward_step_start(
         self,
         *,
         model: Model,
@@ -224,7 +224,7 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         """
 
-    def on_optimization_step_begin(
+    def on_optimization_step_start(
         self,
         *,
         model: Model,
@@ -282,7 +282,7 @@ class Callback(ABC):
 
     # Evaluate
 
-    def on_validation_begin(
+    def on_validation_start(
         self,
         *,
         model: Model,
@@ -344,7 +344,7 @@ class Callback(ABC):
             The detailed validation metrics (i.e. the metrics for each image).
         """
 
-    def on_evaluation_step_begin(
+    def on_evaluation_step_start(
         self,
         *,
         model: Model,
@@ -399,7 +399,7 @@ class Callback(ABC):
 
     # Test
 
-    def on_test_begin(
+    def on_test_start(
         self,
         *,
         model: Model,
@@ -460,7 +460,7 @@ class Callback(ABC):
 
     # Predict
 
-    def on_predict_begin(
+    def on_predict_start(
         self,
         *,
         model: Model,

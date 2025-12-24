@@ -37,8 +37,8 @@ def test_good_checkpoint(tmp_path, patience, epochs):
 
     for epoch in range(OPTIM.epochs):
         _ts.epoch = epoch
-        _saver.on_train_begin(_ts)
-        _saver.on_epoch_begin(_ts)
+        _saver.on_train_start(_ts)
+        _saver.on_epoch_start(_ts)
 
         _saver.on_epoch_end(_ts, callbacks=callbacks)
         checkpoint.on_epoch_end(_ts)
