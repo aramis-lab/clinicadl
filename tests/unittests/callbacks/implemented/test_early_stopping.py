@@ -179,7 +179,7 @@ def test_one_metric(caplog):
     assert state.should_stop
 
     state = TrainerState()
-    early_stopping = EarlyStoppingCallback(metric="psnr", patience=2, min_delta=0.1)
+    early_stopping = EarlyStoppingCallback(metric="psnr", patience=1, min_delta=0.1)
     early_stopping.on_train_start()
     early_stopping.on_validation_start(metrics={"psnr": PSNR})
 
@@ -219,7 +219,7 @@ def test_one_metric(caplog):
     assert state.should_stop
 
     state = TrainerState()
-    early_stopping = EarlyStoppingCallback(metric="mse", patience=1, min_delta=0.1)
+    early_stopping = EarlyStoppingCallback(metric="mse", patience=0, min_delta=0.1)
     early_stopping.on_train_start()
     early_stopping.on_validation_start(metrics={"mse": MSE})
 
@@ -240,7 +240,7 @@ def test_one_metric(caplog):
 def test_mutiple_metrics(caplog):
     state = TrainerState()
     early_stopping = EarlyStoppingCallback(
-        metric=["psnr", "mse"], patience=[2, 1], min_delta=0.1
+        metric=["psnr", "mse"], patience=[1, 0], min_delta=0.1
     )
     early_stopping.on_train_start()
     early_stopping.on_validation_start(metrics={"mse": MSE, "psnr": PSNR})
@@ -280,7 +280,7 @@ def test_mutiple_metrics(caplog):
     state = TrainerState()
     early_stopping = EarlyStoppingCallback(
         metric=["psnr", "mse_overfit"],
-        patience=[2, 1],
+        patience=[1, 0],
         min_delta=0.1,
     )
     early_stopping.on_train_start()

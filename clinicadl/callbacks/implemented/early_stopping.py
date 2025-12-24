@@ -7,7 +7,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, Mapping, Optional, TypeVar, Union
 
 import pandas as pd
-from pydantic import Field, NonNegativeFloat, PositiveInt, model_validator
+from pydantic import Field, NonNegativeFloat, NonNegativeInt, model_validator
 from typing_extensions import Self
 
 from clinicadl.metrics.enum import Optimum
@@ -29,7 +29,7 @@ class OneMetricEarlyStoppingConfig(ObjectConfig["OneMetricEarlyStopping"]):
     """Config class for ``OneMetricEarlyStopping``."""
 
     metric: str
-    patience: PositiveInt
+    patience: NonNegativeInt
     min_delta: NonNegativeFloat
     mode: Optional[Optimum]  # we may not know the mode at first
     check_finite: bool
@@ -135,7 +135,7 @@ class OneMetricEarlyStopping(
 
         super().step(value, log=True)
 
-        if self.num_non_improvements >= self.config.patience:
+        if self.num_non_improvements > self.config.patience:
             logger.info(
                 "Early stopping triggered on metric '%s' after %s evaluation(s) without improvement.",
                 self.config.metric,
@@ -251,7 +251,8 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
     metric : Union[str, Sequence[str]]
         Metric(s) to monitor.
     patience : Union[int, Sequence[int]], default=3
-        Number of evaluation phases with no improvement after which training will be stopped.
+        The number of allowed evaluation phases with no improvement. For example, if ``patience=0``
+        the stop signal is triggered as soon as the monitored quantity is not improved.
     min_delta : Union[float, Sequence[float]], default=0.0
         Minimum absolute change in a monitored metric to qualify as an improvement.
     check_finite : Union[bool, Sequence[bool]], default=True
@@ -288,7 +289,7 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         """
         Initializes all the underlying early stoppers.
         """
-        have_modes = all([stopper.mode is not None for stopper in self.config.stoppers])
+        have_modes = all(stopper.mode is not None for stopper in self.config.stoppers)
         if not have_modes:
             raise RuntimeError(
                 "Cannot initialize early stoppers because their modes "
