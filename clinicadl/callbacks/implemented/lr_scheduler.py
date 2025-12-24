@@ -118,7 +118,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         self.scheduler: Optional[LRScheduler] = None
 
         self._initial_state: Optional[dict] = None
-        self._activated = False  # to prevent from calling in validation only
+        self._activated = False  # to prevent from calling in validation-only
 
         scheduler = self.config.scheduler.value
         if isinstance(scheduler, LRScheduler):

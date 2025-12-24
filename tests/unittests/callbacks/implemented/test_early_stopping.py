@@ -73,6 +73,8 @@ def test_inputs():
         lower_bound=[None, None],
     )
     es.on_train_begin()
+    with pytest.raises(KeyError, match="'psnr' not found in the validation metrics!"):
+        es.on_validation_begin(metrics={"mse": MSE})
     es.on_validation_begin(metrics={"psnr": PSNR, "mse": MSE})
 
     assert (es.stoppers[0].config.patience, es.stoppers[1].config.patience) == (3, 7)
@@ -361,6 +363,6 @@ def test_state_dict():
     new_early_stopping = EarlyStoppingCallback.from_dict(early_stopping.to_dict())
     new_early_stopping.load_state_dict(state_dict)
     assert new_early_stopping.stoppers[0].best == 1.0
-    assert new_early_stopping.stoppers[0].num_bad_epochs == 1
+    assert new_early_stopping.stoppers[0].num_non_improvements == 1
     assert new_early_stopping.stoppers[1].best == -1.11
-    assert new_early_stopping.stoppers[1].num_bad_epochs == 0
+    assert new_early_stopping.stoppers[1].num_non_improvements == 0

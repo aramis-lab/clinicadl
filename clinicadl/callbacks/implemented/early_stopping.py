@@ -3,20 +3,19 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from collections.abc import Sequence
-from enum import Enum
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Mapping, Optional, TypeVar, Union
 
-import numpy as np
 import pandas as pd
 from pydantic import Field, NonNegativeFloat, PositiveInt, model_validator
 from typing_extensions import Self
 
+from clinicadl.metrics.enum import Optimum
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
-from .utils import get_metric_key_error, get_metric_value
+from .utils import QuantityMonitoring, build_metric_key_error, get_metric_value
 
 if TYPE_CHECKING:
     from clinicadl.metrics import Metric
@@ -26,20 +25,13 @@ if TYPE_CHECKING:
 logger = getLogger("clinicadl.early_stopping")
 
 
-class Mode(str, Enum):
-    """Supported mode for Early Stopping."""
-
-    MIN = "min"
-    MAX = "max"
-
-
-class _OneMetricEarlyStoppingConfig(ObjectConfig["_OneMetricEarlyStopping"]):
-    """Config class for ``_OneMetricEarlyStopping``."""
+class OneMetricEarlyStoppingConfig(ObjectConfig["OneMetricEarlyStopping"]):
+    """Config class for ``OneMetricEarlyStopping``."""
 
     metric: str
     patience: PositiveInt
     min_delta: NonNegativeFloat
-    mode: Optional[Mode]  # we may not know the mode at first
+    mode: Optional[Optimum]  # we may not know the mode at first
     check_finite: bool
     upper_bound: Optional[float]
     lower_bound: Optional[float]
@@ -55,22 +47,24 @@ class _OneMetricEarlyStoppingConfig(ObjectConfig["_OneMetricEarlyStopping"]):
 
     @classmethod
     def _get_class(cls):
-        return _OneMetricEarlyStopping
+        return OneMetricEarlyStopping
 
 
-class _OneMetricEarlyStopping(HasConfig[_OneMetricEarlyStoppingConfig]):
+class OneMetricEarlyStopping(
+    QuantityMonitoring, HasConfig[OneMetricEarlyStoppingConfig]
+):
     """
     Early stopping for a single metric.
     """
 
-    _config_type = _OneMetricEarlyStoppingConfig
+    _config_type = OneMetricEarlyStoppingConfig
 
     def __init__(
         self,
         metric: str,
         patience: int,
         min_delta: float,
-        mode: Mode,
+        mode: Optimum,
         check_finite: bool,
         upper_bound: Optional[float],
         lower_bound: Optional[float],
@@ -84,29 +78,28 @@ class _OneMetricEarlyStopping(HasConfig[_OneMetricEarlyStoppingConfig]):
             upper_bound=upper_bound,
             lower_bound=lower_bound,
         )
+        super().__init__(
+            name=self.config.metric,
+            min_delta=self.config.min_delta,
+            mode=self.config.mode,
+        )
 
-        self.is_better = self._get_comparison_function()
-        self.reset()
-
-    def _get_comparison_function(self) -> Callable:
-        """Return the function to compare current and best metric values."""
-        if self.config.mode == Mode.MIN:
-            return lambda value, best: value < best - self.config.min_delta
-        elif self.config.mode == Mode.MAX:
-            return lambda value, best: value > best + self.config.min_delta
-
-    def reset(self) -> None:
-        """Resets the best metric and counter."""
-        if self.config.mode == Mode.MIN:
-            self.best = np.inf
-        elif self.config.mode == Mode.MAX:
-            self.best = -np.inf
-
-        self.num_bad_epochs = 0
-
+    # pylint: disable=arguments-renamed
     def step(self, metrics_df: pd.DataFrame, state: TrainerState) -> bool:
         """
-        Check if training should stop at the end of an epoch.
+        Checks if training should stop.
+
+        Parameters
+        ----------
+        metrics_df : pd.DataFrame
+            The DataFrame containing the validation metrics.
+        state : TrainerState
+            The state of the trainer.
+
+        Returns
+        -------
+        bool
+            The decision.
         """
         value = get_metric_value(
             metrics_df, metric_name=self.config.metric, epoch=state.current_epoch
@@ -140,33 +133,17 @@ class _OneMetricEarlyStopping(HasConfig[_OneMetricEarlyStoppingConfig]):
             )
             return True
 
-        if self.is_better(value, self.best):
-            self.num_bad_epochs = 0
-            self.best = value
-        else:
-            self.num_bad_epochs += 1
-            logger.debug(
-                "No improvement in '%s' for %s evaluation step(s).",
-                self.config.metric,
-                self.num_bad_epochs,
-            )
+        super().step(value, log=True)
 
-        if self.num_bad_epochs >= self.config.patience:
+        if self.num_non_improvements >= self.config.patience:
             logger.info(
                 "Early stopping triggered on metric '%s' after %s evaluation(s) without improvement.",
                 self.config.metric,
-                self.num_bad_epochs,
+                self.num_non_improvements,
             )
             return True
 
         return False
-
-    def state_dict(self) -> Mapping[str, Any]:
-        return {"best": self.best, "num_bad_epochs": self.num_bad_epochs}
-
-    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
-        self.best = state_dict["best"]
-        self.num_bad_epochs = state_dict["num_bad_epochs"]
 
 
 T = TypeVar("T")
@@ -175,9 +152,9 @@ T = TypeVar("T")
 class EarlyStoppingCallbackConfig(ObjectConfig["EarlyStoppingCallback"]):
     """Config class for ``EarlyStoppingCallback``."""
 
-    stoppers: Sequence[_OneMetricEarlyStoppingConfig] = Field(
+    stoppers: Sequence[OneMetricEarlyStoppingConfig] = Field(
         reader=lambda stoppers: list(
-            map(_OneMetricEarlyStoppingConfig.from_dict, stoppers)
+            map(OneMetricEarlyStoppingConfig.from_dict, stoppers)
         )
     )
 
@@ -210,7 +187,7 @@ class EarlyStoppingCallbackConfig(ObjectConfig["EarlyStoppingCallback"]):
             cls._ensure_sequence(lower_bound, n, "lower_bound"),
         ):
             configs.append(
-                _OneMetricEarlyStoppingConfig(
+                OneMetricEarlyStoppingConfig(
                     metric=m,
                     patience=p,
                     min_delta=m_d,
@@ -265,6 +242,10 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         training when **any** of them has met its stopping criterion, you can instantiate
         multiple ``EarlyStoppingCallbacks`` that will monitor each metric independently.
 
+    .. note::
+        No need to specify if the monitored quantity should be minimized or maximized,
+        it is specified in :py:attr:`clinicadl.metric.Metric.optimum`.
+
     Parameters
     ----------
     metric : Union[str, Sequence[str]]
@@ -300,8 +281,8 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
             upper_bound=upper_bound,
             lower_bound=lower_bound,
         )
-        self.stoppers: Optional[list[_OneMetricEarlyStopping]] = None
-        self._activated: bool = False  # to prevent from calling in validation only
+        self.stoppers: Optional[list[OneMetricEarlyStopping]] = None
+        self._activated: bool = False  # to prevent from calling in validation-only
 
     def _init_stoppers(self) -> None:
         """
@@ -316,7 +297,7 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
 
         self.stoppers = [config.get_object() for config in self.config.stoppers]
 
-    def _add_modes(self, modes: dict[str, Mode]) -> None:
+    def _add_modes(self, modes: dict[str, Optimum]) -> None:
         """
         Adds their modes to the early stoppers.
         """
@@ -340,7 +321,7 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
             try:
                 self._add_modes(modes)
             except KeyError as exc:
-                raise get_metric_key_error(exc.args[0]) from exc
+                raise build_metric_key_error(exc.args[0]) from exc
             self._init_stoppers()
 
     def on_validation_end(

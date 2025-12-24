@@ -725,7 +725,7 @@ class Maps(Directory):
                     },
                 }
             }
-            >>> maps.load_file(maps.training.splits[0].models.checkpoints.epochs[0].model)
+            >>> maps.load_file(maps.training.splits[0].models.checkpoints.epochs[1].model)
             OrderedDict([('conv0.weight',
               tensor([[[[ 7.2531e-03,  5.7384e-03,  1.4988e-02,  ..., -3.1380e-02,
                          -2.2103e-02,  5.8432e-02],
