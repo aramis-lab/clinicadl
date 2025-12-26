@@ -105,11 +105,13 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
     .. code-block::
         from clinicadl.callbacks import LRSchedulerCallback
         from clinicadl.train import Trainer
+        from clinicadl.models import SupervisedModel
         from clinicadl.optim.lr_schedulers.config import StepLRConfig
         ...
 
+        model = SupervisedModel(...)    # there is only one optimizer named 'optimizer'
         trainer = Trainer(
-            callbacks=[LRSchedulerCallback(scheduler=StepLRConfig(step_size=5))],
+            callbacks=[LRSchedulerCallback(scheduler=StepLRConfig(step_size=5), optimizer_name="optimizer")],
             ...
         )
 
@@ -120,7 +122,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
 
         trainer = Trainer(
             metrics={"loss": LossMetricConfig(), "mse": MSEMetricConfig()},
-            callbacks=[LRSchedulerCallback(scheduler=ReduceLROnPlateauConfig(mode="min"), metric_name="mse")],
+            callbacks=[LRSchedulerCallback(scheduler=ReduceLROnPlateauConfig(mode="min"), metric_name="mse", optimizer_name="optimizer")],
             ...
         )
 

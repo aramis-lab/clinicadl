@@ -44,7 +44,7 @@ class Model(JsonReaderWriter, ABC, torch.nn.Module):
     """
 
     @abstractmethod
-    def forward_step(self, batch: BatchType) -> Union[LossType]:
+    def forward_step(self, batch: BatchType) -> LossType:
         """
         Performs the training forward step using the provided batch of data and returns
         the computed loss.

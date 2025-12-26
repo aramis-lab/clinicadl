@@ -1,71 +1,97 @@
-"""Callback to record training loss per batch and epoch."""
+from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 import pandas as pd
+import torch
 
-from clinicadl.train.trainer_state import TrainerState
-from clinicadl.utils.dictionary.suffixes import TSV
-from clinicadl.utils.dictionary.words import BATCH, EPOCH, LOSS
+from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import BATCH, EPOCH
+from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
 
+if TYPE_CHECKING:
+    from clinicadl.io import Maps
+    from clinicadl.losses.types import LossType
+    from clinicadl.models import Model
+    from clinicadl.train import TrainerState
 
-class _TrainingLoss(Callback):
-    """
-    Callback to record training loss per batch and epoch into a pandas DataFrame,
-    and save it to a TSV file at the end of training.
 
-    Attributes
-    ----------
-    df : pd.DataFrame
-        DataFrame indexed by (epoch, batch) storing the training loss values.
+class TrainingLossCallbackConfig(ObjectConfig["TrainingLossCallback"]):
+    """Config class for ``TrainingLossCallback``."""
+
+    @classmethod
+    def _get_class(cls):
+        return TrainingLossCallback
+
+
+class TrainingLossCallback(Callback, HasConfig[TrainingLossCallbackConfig]):
     """
+    To record batch training losses in a :py:class:`pd.DataFrame`,
+    and save them in a ``TSV`` file at the end of training.
+    """
+
+    _config_type = TrainingLossCallbackConfig
 
     def __init__(self):
-        """
-        Initialize the DataFrame to record training loss with MultiIndex (epoch, batch).
-        """
-        self.df = pd.DataFrame(columns=[EPOCH, BATCH, LOSS])
-        self.df.set_index([EPOCH, BATCH], inplace=True)
-        # self.df.at[(0, 0), LOSS] = 1.0
+        self.df: Optional[pd.DataFrame] = None
+        self.config = self._config_type()
 
-    def on_batch_end(self, config: TrainerState, loss: float, **kwargs) -> None:
-        """
-        Called at the end of each batch to log the training loss.
+    # pylint: disable=arguments-differ, unused-argument
+    def on_train_start(self, model: Model, **kwargs) -> None:
+        losses = list(model.get_loss_functions().keys())
+        assert losses, "get_loss_functions method of you clinicadl.models.Model should return a dictionary with at least one key."
+        self.df = pd.DataFrame(columns=[EPOCH, BATCH] + losses)
+        self.df = self.df.set_index([EPOCH, BATCH]).astype(dtype=float)
 
-        Parameters
-        ----------
-        config : TrainerState
-            Current training state.
-        loss : float
-            Loss value for the current batch.
-        """
-        self.df.at[(config.epoch, config.batch), LOSS] = loss
-
-    def on_train_end(self, config: TrainerState, **kwargs) -> None:
-        """
-        Called at the end of training to save the recorded losses to a TSV file.
-        """
-        training_tsv = config.maps.training.splits[config.split.index].logs.training_tsv
-        training_tsv.parent.mkdir(parents=True, exist_ok=True)
-        self.df.to_csv(training_tsv, sep="\t", index=True)
-
-    def save_checkpoint(
+    def on_backward_step_start(
         self,
-        checkpoint_path: Path,
-        **kwargs,
+        *,
+        state: TrainerState,
+        loss: LossType,
     ) -> None:
-        """To save the losses so far."""
-        filename = checkpoint_path.with_suffix(TSV)
-        self.df.to_csv(filename, sep="\t", index=True)
+        if isinstance(loss, torch.Tensor):
+            if len(self.df.columns) > 1:
+                raise ValueError(
+                    f"clinicadl.models.Model.forward_step returns a single loss, whereas clinicadl.models.Model.get_loss_functions "
+                    f"returns {len(self.df.columns)} loss function(s) {sorted(self.df.columns.to_list())}"
+                )
+            losses = {self.df.columns[0]: loss.item()}
 
-    def load_checkpoint(
-        self,
-        checkpoint_path: Path,
-        **kwargs,
-    ) -> None:
-        """To load a checkpoint saved with 'save_checkpoint'."""
-        filename = checkpoint_path.with_suffix(TSV)
-        self.df: pd.DataFrame = pd.read_csv(filename, sep="\t")
-        self.df.set_index([EPOCH, BATCH], inplace=True)
+        elif isinstance(loss, dict):
+            assert all(
+                isinstance(value, torch.Tensor) for value in loss.values()
+            ), f"forward_step should return a Tensor, or a dict of Tensors. Got: {loss}"
+            losses = {col: value.item() for col, value in loss.items()}
+
+        else:
+            raise ValueError(
+                f"forward_step should return a Tensor, or a dict of Tensors. Got: {loss}"
+            )
+
+        if (keys := set(losses.keys())) != (
+            excepted_keys := set(self.df.columns.to_list())
+        ):
+            raise ValueError(
+                f"clinicadl.models.Model.forward_step returns loss(es) named {sorted(list(keys))}, whereas clinicadl.models.Model.get_loss_functions "
+                f"returns {sorted(list(excepted_keys))} loss function(s)"
+            )
+
+        for name, value in losses.items():
+            self.df.at[(state.current_epoch, state.current_train_batch), name] = value
+
+    def on_train_end(self, maps: Maps, state: TrainerState, **kwargs) -> None:
+        maps.save_file(
+            self.df,
+            path=maps.training.splits[state.split_idx].logs.training_loss,
+            overwrite=True,
+        )
+
+    def state_dict(self) -> Mapping[str, Any]:
+        if self.df is None:
+            return {}
+        return self.df.to_dict()
+
+    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
+        self.df = pd.DataFrame.from_dict(state_dict)
