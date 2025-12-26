@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from logging import getLogger
 from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 import pandas as pd
 import torch
 from pydantic import Field, field_validator, model_validator
-from torch.optim.lr_scheduler import LRScheduler
+from torch.optim.lr_scheduler import LRScheduler, ReduceLROnPlateau
 from typing_extensions import Self
 
 from clinicadl.optim.lr_schedulers.config import (
@@ -23,10 +24,13 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
-from .utils import get_metric_value
+from .utils import build_metric_key_error, get_metric_value
 
 if TYPE_CHECKING:
+    from clinicadl.metrics import Metric
     from clinicadl.train import TrainerState
+
+logger = getLogger("clinicadl.callbacks.LRSchedulerCallback")
 
 
 class LRSchedulerCallbackConfig(ObjectConfig["LRSchedulerCallback"]):
@@ -96,6 +100,30 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
     metric_name : Optional[str], default=None
         If ``scheduler_type="metric-based"``, it is the name of the metric to monitor.
 
+    Examples
+    --------
+    .. code-block::
+        from clinicadl.callbacks import LRSchedulerCallback
+        from clinicadl.train import Trainer
+        from clinicadl.optim.lr_schedulers.config import StepLRConfig
+        ...
+
+        trainer = Trainer(
+            callbacks=[LRSchedulerCallback(scheduler=StepLRConfig(step_size=5))],
+            ...
+        )
+
+    .. code-block::
+
+        from clinicadl.metrics.config import MSEMetricConfig, LossMetricConfig
+        from clinicadl.optim.lr_schedulers.config import ReduceLROnPlateauConfig
+
+        trainer = Trainer(
+            metrics={"loss": LossMetricConfig(), "mse": MSEMetricConfig()},
+            callbacks=[LRSchedulerCallback(scheduler=ReduceLROnPlateauConfig(mode="min"), metric_name="mse")],
+            ...
+        )
+
     """
 
     _config_type = LRSchedulerCallbackConfig
@@ -153,6 +181,23 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
             self.scheduler.load_state_dict(self._initial_state)
 
         self._activated = True
+
+    def on_validation_start(self, *, metrics: dict[str, Metric], **kwargs) -> None:
+        if self._activated and self.config.scheduler_type == LRSchedulerType.METRIC:
+            try:
+                opt = metrics[self.config.metric_name].optimum
+            except KeyError as exc:
+                raise build_metric_key_error(self.config.metric_name) from exc
+
+            if isinstance(self.scheduler, ReduceLROnPlateau):
+                if self.scheduler.mode != opt:
+                    logger.warning(
+                        "Found mode='%s' in ReduceLROnPlateau, but found optimum='%s' in '%s'. "
+                        "This may be an error.",
+                        self.scheduler.mode,
+                        opt.value,
+                        self.config.metric_name,
+                    )
 
     def on_optimization_step_end(self, **kwargs) -> None:
         if self.config.scheduler_type == LRSchedulerType.STEP:

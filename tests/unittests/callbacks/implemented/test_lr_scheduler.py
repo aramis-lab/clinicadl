@@ -1,3 +1,4 @@
+import logging
 import re
 from copy import deepcopy
 from unittest.mock import MagicMock
@@ -12,6 +13,7 @@ from torch.optim.lr_scheduler import (
 )
 
 from clinicadl.callbacks import LRSchedulerCallback
+from clinicadl.metrics.config import MSEMetricConfig
 from clinicadl.optim.lr_schedulers.config import (
     ConstantLRConfig,
     ReduceLROnPlateauConfig,
@@ -22,6 +24,8 @@ from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
 )
+
+MSE = MSEMetricConfig().get_object()
 
 
 def build_optimizer(key="optimizer"):
@@ -183,6 +187,26 @@ def test_steps_scheduler():
     metric_scheduler.scheduler = MagicMock()
     metric_scheduler.on_validation_end(state=state, metrics_df=metrics)
     metric_scheduler.scheduler.step.assert_not_called()
+
+
+def test_on_validation_start(caplog):
+    metric_scheduler = LRSchedulerCallback(
+        ReduceLROnPlateauConfig(mode="max"),
+        scheduler_type="metric-based",
+        metric_name="mse",
+    )
+
+    metric_scheduler.on_validation_start(metrics={"mae": MSE})
+
+    metric_scheduler.on_train_start(optimizers=build_optimizer())
+    with pytest.raises(KeyError, match="'mse' not found in the validation metrics!"):
+        metric_scheduler.on_validation_start(metrics={"mae": MSE})
+    with caplog.at_level(logging.WARNING):
+        metric_scheduler.on_validation_start(metrics={"mse": MSE})
+    assert (
+        "Found mode='max' in ReduceLROnPlateau, but found optimum='min' in 'mse'. This may be an error."
+        in caplog.text
+    )
 
 
 def test_from_dict_to_dict():

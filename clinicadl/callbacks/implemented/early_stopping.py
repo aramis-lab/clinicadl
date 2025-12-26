@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from clinicadl.train import TrainerState
 
 
-logger = getLogger("clinicadl.early_stopping")
+logger = getLogger("clinicadl.callbacks.EarlyStoppingCallback")
 
 
 class OneMetricEarlyStoppingConfig(ObjectConfig["OneMetricEarlyStopping"]):
@@ -261,6 +261,20 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         Optional upper threshold that will trigger stopping if exceeded.
     lower_bound : Union[Optional[float], Sequence[Optional[float]]], default=None
         Optional lower threshold that triggers stopping when the value falls below it.
+
+    Examples
+    --------
+    .. code-block::
+        from clinicadl.callbacks import EarlyStoppingCallback
+        from clinicadl.train import Trainer
+        from clinicadl.metrics.config import MSEMetricConfig, LossMetricConfig
+        ...
+
+        trainer = Trainer(
+            metrics={"loss": LossMetricConfig(), "mse": MSEMetricConfig()},
+            callbacks=[EarlyStoppingCallback(metric="mse", patience=5)],
+            ...
+        )
     """
 
     _config_type = EarlyStoppingCallbackConfig

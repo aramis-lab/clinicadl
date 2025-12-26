@@ -406,6 +406,7 @@ class Callback(ABC):
         maps: Maps,
         state: TrainerState,
         dataloader: DataLoader,
+        metrics: dict[str, Metric],
         model_checkpoint: str,
         group_name: str,
         computational: ComputationalConfig,
@@ -423,6 +424,8 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         dataloader : DataLoader
             The dataloader on which the test is performed.
+        metrics : dict[str, Metric]
+            The :py:class:`clinicadl.metrics.Metric` that will be computed during test.
         model_checkpoint : Optional[str]
             The model checkpoint currently being tested.
         group_name : str

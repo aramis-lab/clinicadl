@@ -75,6 +75,21 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
 
     save_last : bool
         Whether to save the neural network weights after the last epoch.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.callbacks import ModelCheckpointCallback
+        from clinicadl.train import Trainer
+        from clinicadl.metrics.config import MSEMetricConfig, LossMetricConfig
+        ...
+
+        trainer = Trainer(
+            metrics={"loss": LossMetricConfig(), "mse": MSEMetricConfig()},
+            callbacks=[ModelCheckpointCallback(metric="mse", epochs=range(1, 100, step=10), save_last=True)],
+            ...
+        )
     """
 
     _config_type = ModelCheckpointCallbackConfig
