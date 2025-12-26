@@ -104,6 +104,17 @@ def test_inputs():
         EarlyStoppingCallback(metric=["psnr", "mse"], patience=[1, 2, 3])
 
 
+def test_on_train_start():
+    state = TrainerState()
+    early_stopping = EarlyStoppingCallback(metric="psnr", patience=1, min_delta=0.1)
+    early_stopping.on_train_start()
+    early_stopping.on_validation_start(metrics={"mse": MSE, "psnr": PSNR})
+    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+
+    early_stopping.on_train_start()
+    assert early_stopping.stoppers[0].best == -np.inf
+
+
 def test_numeric():
     early_stopping = EarlyStoppingCallback(metric="bad")
     early_stopping.on_train_start()

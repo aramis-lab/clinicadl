@@ -323,12 +323,14 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         """
         To reset metrics monitoring.
         """
-        for stopper in self.stoppers:
-            stopper.reset()
+        if self.stoppers:
+            for stopper in self.stoppers:
+                stopper.reset()
 
     # pylint: disable=arguments-differ, unused-argument
     def on_train_start(self, **kwargs):
         self._activated = True
+        self.reset()
 
     def on_validation_start(self, *, metrics: dict[str, Metric], **kwargs) -> None:
         if self.stoppers is None and self._activated:

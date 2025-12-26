@@ -122,6 +122,9 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
                 metric=self.config.metric, exist_ok=True
             )
 
+        if self.metric_monitoring:
+            self.metric_monitoring.reset()
+
         self._activated = True
 
     def on_validation_start(self, *, metrics: dict[str, Metric], **kwargs) -> None:

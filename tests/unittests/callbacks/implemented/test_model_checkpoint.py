@@ -131,6 +131,28 @@ def test_inputs(tmp_path):
     assert chkpt.metric_monitoring.mode == "min"
 
 
+def test_on_train_start(tmp_path):
+    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    state = TrainerState(current_epoch=1, split_idx=1)
+    maps.training.create_split(state.split_idx)
+    model = Mock()
+    model.state_dict.return_value = {}
+    chkpt = ModelCheckpointCallback(metric="psnr")
+
+    chkpt.on_train_start(maps=maps, state=state)
+    chkpt.on_validation_start(metrics={"psnr": PSNR})
+    chkpt.on_validation_end(
+        model=model,
+        maps=maps,
+        state=state,
+        metrics_df=METRICS,
+        detailed_metrics_df=DETAILED_METRICS,
+    )
+    chkpt.on_train_start(maps=maps, state=state)
+    assert chkpt.metric_monitoring.best == -np.inf
+
+
 def test_metric(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
