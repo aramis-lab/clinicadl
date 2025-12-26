@@ -204,12 +204,12 @@ class Maps(Directory):
 
                         Training loss for each batch seen during training.
 
-                    .. dropdown:: **tensorboard** → maps.training.splits[0].logs.tensorboard
+                    .. dropdown:: **learning_rates** → maps.training.splits[0].logs.learning_rates
                         :icon: file-directory
                         :color: muted
 
-                        Where `TensorBoard <https://docs.pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html>`_ files are saved.
-                        To configure ``TensorBoard``, use :py:class:`clinicadl.callbacks.TensorBoard`.
+                        If one or several :py:mod:`~clinicadl.callbacks.LRSchedulerCallback` are activated,
+                        this is where the history of the learning rates will be saved.
 
                 .. dropdown:: **models**
                     :icon: file-directory

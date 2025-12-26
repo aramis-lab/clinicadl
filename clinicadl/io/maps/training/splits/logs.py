@@ -4,8 +4,8 @@ from pathlib import Path
 
 from clinicadl.utils.dictionary.suffixes import TSV
 from clinicadl.utils.dictionary.words import (
+    LEARNING_RATES,
     LOSS,
-    TENSORBOARD,
     TRAINING,
 )
 
@@ -18,5 +18,5 @@ class LogsDir(Directory):
         return (self.path / f"{TRAINING}_{LOSS}").with_suffix(TSV)
 
     @property
-    def tensorboard(self) -> Path:
-        return self.path / TENSORBOARD
+    def learning_rates(self) -> Path:
+        return self.path / LEARNING_RATES

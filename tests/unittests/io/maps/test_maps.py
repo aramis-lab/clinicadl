@@ -58,10 +58,10 @@ def test_maps(tmp_path: Path):
     assert maps.training.splits[0].logs.training_loss == (
         maps_path / "training" / "split-0" / "logs" / "training_loss.tsv"
     )
-    assert maps.training.splits[0].logs.tensorboard == (
-        maps_path / "training" / "split-0" / "logs" / "tensorboard"
+    assert maps.training.splits[0].logs.learning_rates == (
+        maps_path / "training" / "split-0" / "logs" / "learning_rates"
     )
-    assert (maps_path / "training" / "split-0" / "logs" / "tensorboard").exists()
+    assert (maps_path / "training" / "split-0" / "logs" / "learning_rates").exists()
 
     # training - splits - tmp
     assert (maps_path / "training" / "split-0" / "tmp").exists()

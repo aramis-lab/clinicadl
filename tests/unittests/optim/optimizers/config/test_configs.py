@@ -222,6 +222,11 @@ def test_get_object(config, expected_class, network):
         assert not optimizer.param_groups[2]["differentiable"]
         assert not optimizer.param_groups[3]["differentiable"]
 
+        assert optimizer.param_groups[0]["name"] == "dense1"
+        assert optimizer.param_groups[1]["name"] == "final.dense3.bias"
+        assert optimizer.param_groups[2]["name"] == "final.dense3.weight"
+        assert optimizer.param_groups[3]["name"] == "ELSE"
+
         # special case
         c = AdagradConfig(
             lr_decay={"ELSE": 100},
@@ -240,6 +245,25 @@ def test_get_object(config, expected_class, network):
             assert param.requires_grad
         for param in network.dense1.parameters():
             assert param.requires_grad
+
+
+def test_get_parameters_group():
+    optimizer = SGDConfig(
+        weight_decay={"param_1": 0, "param_0": 0, "ELSE": 0},
+        momentum={"param_1": 0, "param_3.linear": 0, "ELSE": 0},
+    )
+    assert optimizer.get_parameter_groups() == [
+        "param_0",
+        "param_1",
+        "param_3.linear",
+        "ELSE",
+    ]
+
+    optimizer = SGDConfig(
+        weight_decay=0,
+        momentum=0,
+    )
+    assert optimizer.get_parameter_groups() == []
 
 
 def test_name():

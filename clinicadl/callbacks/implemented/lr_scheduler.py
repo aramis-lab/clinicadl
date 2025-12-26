@@ -16,7 +16,8 @@ from clinicadl.optim.lr_schedulers.config import (
 from clinicadl.optim.lr_schedulers.factory import get_lr_scheduler_from_dict
 from clinicadl.optim.lr_schedulers.types import LRSchedulerOrConfig
 from clinicadl.utils.config import ObjectConfig, ObjectOrConfig
-from clinicadl.utils.dictionary.words import OPTIMIZER
+from clinicadl.utils.dictionary.suffixes import TSV
+from clinicadl.utils.dictionary.words import BATCH, EPOCH, NAME, OPTIMIZER
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
@@ -27,7 +28,9 @@ from ..base import Callback
 from .utils import build_metric_key_error, get_metric_value
 
 if TYPE_CHECKING:
+    from clinicadl.io import Maps
     from clinicadl.metrics import Metric
+    from clinicadl.models import Model
     from clinicadl.train import TrainerState
 
 logger = getLogger("clinicadl.callbacks.LRSchedulerCallback")
@@ -149,6 +152,9 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
 
         self._initial_state: Optional[dict] = None
         self._activated = False  # to prevent from calling in validation-only
+        self._last_lrs: Optional[list[float]] = None
+        self._lrs: dict[tuple[int, int], list[float]] = {}
+        self._param_groups: Optional[list[str]] = None
 
         scheduler = self.config.scheduler.value
         if isinstance(scheduler, LRScheduler):
@@ -183,6 +189,9 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
             self.scheduler.load_state_dict(self._initial_state)
 
         self._activated = True
+        self._lrs = {}
+        self._last_lrs = self.scheduler.get_last_lr()
+        self._param_groups = self._get_param_groups(optimizer)
 
     def on_validation_start(self, *, metrics: dict[str, Metric], **kwargs) -> None:
         if self._activated and self.config.scheduler_type == LRSchedulerType.METRIC:
@@ -201,13 +210,9 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
                         self.config.metric_name,
                     )
 
-    def on_optimization_step_end(self, **kwargs) -> None:
+    def on_optimization_step_end(self, state: TrainerState, **kwargs) -> None:
         if self.config.scheduler_type == LRSchedulerType.STEP:
-            self.scheduler.step()
-
-    def on_epoch_end(self, **kwargs) -> None:
-        if self.config.scheduler_type == LRSchedulerType.EPOCH:
-            self.scheduler.step()
+            self._scheduler_step(state=state)
 
     def on_validation_end(
         self, *, state: TrainerState, metrics_df: pd.DataFrame, **kwargs
@@ -218,10 +223,66 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
                 metric_name=self.config.metric_name,
                 epoch=state.current_epoch,
             )
-            self.scheduler.step(val_metric)
+            self._scheduler_step(val_metric, state=state)
+
+    def on_epoch_end(self, state: TrainerState, **kwargs) -> None:
+        if self.config.scheduler_type == LRSchedulerType.EPOCH:
+            self._scheduler_step(state=state)
+
+    def on_train_end(
+        self,
+        *,
+        maps: Maps,
+        state: TrainerState,
+    ) -> None:
+        df = pd.DataFrame.from_dict(self._lrs, orient="index")
+        df.index = pd.MultiIndex.from_tuples(df.index)
+        df = df.rename_axis([EPOCH, BATCH], axis=0)
+        if self._param_groups:
+            df.columns = self._param_groups
+        print(df)
+        df = df.reindex(
+            pd.MultiIndex.from_product(
+                [
+                    range(1, state.current_epoch + 1),
+                    range(1, state.num_train_batches + 1),
+                ]
+            ),
+        )
+        print(df)
+        df = df.backfill()
+
+        maps.save_file(
+            df.reset_index(),
+            path=(
+                maps.training.splits[state.split_idx].logs.learning_rates
+                / self.config.optimizer_name
+            ).with_suffix(TSV),
+            overwrite=True,
+        )
 
     def state_dict(self) -> Mapping[str, Any]:
         return self.scheduler.state_dict()
 
     def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
         self.scheduler.load_state_dict(state_dict)
+
+    def _scheduler_step(self, *args, state: TrainerState) -> None:
+        self.scheduler.step(*args)
+        self._lrs[(state.current_epoch, state.current_train_batch)] = self._last_lrs
+        self._last_lrs = self.scheduler.get_last_lr()
+
+    @staticmethod
+    def _get_param_groups(optimizer: torch.optim.Optimizer) -> list[str]:
+        """Retrieves all parameter groups."""
+        names = []
+        for group in optimizer.param_groups:
+            try:
+                names.append(group[NAME])
+            except KeyError:
+                return []
+
+        if len(names) == 1:
+            return []
+
+        return names

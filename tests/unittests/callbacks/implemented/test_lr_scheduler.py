@@ -1,6 +1,8 @@
 import logging
 import re
+import shutil
 from copy import deepcopy
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -13,6 +15,7 @@ from torch.optim.lr_scheduler import (
 )
 
 from clinicadl.callbacks import LRSchedulerCallback
+from clinicadl.io import Maps
 from clinicadl.metrics.config import MSEMetricConfig
 from clinicadl.optim.lr_schedulers.config import (
     ConstantLRConfig,
@@ -26,6 +29,7 @@ from clinicadl.utils.exceptions import (
 )
 
 MSE = MSEMetricConfig().get_object()
+MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
 
 
 def build_optimizer(key="optimizer"):
@@ -135,6 +139,7 @@ def test_on_train_start():
 
 def test_steps_scheduler():
     optimizer = build_optimizer()
+    state = TrainerState()
     wrong_metrics = pd.DataFrame({"epoch": [0, 1], "loss": [0.1, 0.5]})
     metrics = pd.DataFrame({"epoch": [0, 1], "mse": [0.7, 1.1], "loss": [0.1, 0.5]})
     sched = StepLR(optimizer["optimizer"], step_size=1)
@@ -152,17 +157,17 @@ def test_steps_scheduler():
     step_scheduler.scheduler.step = MagicMock()
     metric_scheduler.scheduler.step = MagicMock()
 
-    epoch_scheduler.on_optimization_step_end(optimizers=optimizer)
-    step_scheduler.on_optimization_step_end(optimizers=optimizer)
-    metric_scheduler.on_optimization_step_end(optimizers=optimizer)
+    epoch_scheduler.on_optimization_step_end(optimizers=optimizer, state=state)
+    step_scheduler.on_optimization_step_end(optimizers=optimizer, state=state)
+    metric_scheduler.on_optimization_step_end(optimizers=optimizer, state=state)
 
     epoch_scheduler.scheduler.step.assert_not_called()
     step_scheduler.scheduler.step.assert_called_once()
     metric_scheduler.scheduler.step.assert_not_called()
 
-    epoch_scheduler.on_epoch_end()
-    step_scheduler.on_epoch_end()
-    metric_scheduler.on_epoch_end()
+    epoch_scheduler.on_epoch_end(state=state)
+    step_scheduler.on_epoch_end(state=state)
+    metric_scheduler.on_epoch_end(state=state)
 
     epoch_scheduler.scheduler.step.assert_called_once()
     step_scheduler.scheduler.step.assert_called_once()
@@ -206,6 +211,56 @@ def test_on_validation_start(caplog):
     assert (
         "Found mode='max' in ReduceLROnPlateau, but found optimum='min' in 'mse'. This may be an error."
         in caplog.text
+    )
+
+
+def test_on_train_end(tmp_path):
+    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.training.create_split(1)
+    optimizer = torch.optim.SGD(
+        [
+            {
+                "params": torch.nn.Linear(1, 1).parameters(),
+                "lr": 0.1,
+                "name": "param_1",
+            },
+            {
+                "params": torch.nn.Linear(1, 1).parameters(),
+                "lr": 0.01,
+                "name": "param_2",
+            },
+        ]
+    )
+    scheduler = LRSchedulerCallback(StepLRConfig(step_size=1), optimizer_name="my_opt")
+    scheduler.on_train_start(optimizers={"my_opt": optimizer})
+
+    state = TrainerState(
+        current_epoch=1,
+        current_train_batch=4,
+        split_idx=1,
+        num_epochs=3,
+        num_train_batches=4,
+    )
+    scheduler.on_epoch_end(state=state)
+
+    state = TrainerState(current_epoch=2, current_train_batch=2, split_idx=1)
+    scheduler.on_epoch_end(state=state)
+
+    state = TrainerState(current_epoch=3, current_train_batch=4, split_idx=1)
+    scheduler.on_train_end(maps=maps, state=state)
+    df = maps.load_file(maps.training.splits[1].logs.learning_rates / "my_opt.tsv")
+    print(df)
+    pd.testing.assert_frame_equal(
+        df,
+        pd.DataFrame(
+            {
+                "epoch": [1, 2],
+                "batch": [3, 2],
+                "param_1": [0.1, 0.01],
+                "param_2": [0.01, 0.001],
+            }
+        ),
     )
 
 
