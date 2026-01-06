@@ -14,6 +14,7 @@ from clinicadl.utils.dictionary.words import (
 )
 
 from ....base import Directory
+from ....utils import mandatory
 from ...metrics import MetricsDir
 from ...utils import EpochsDir
 
@@ -26,22 +27,27 @@ class EpochTmpDir(Directory):
         )
 
     @property
+    @mandatory
     def callbacks(self) -> Path:
         return self.path / CALLBACKS
 
     @property
+    @mandatory
     def validation_metrics(self) -> MetricsDir:
         return self._validation_metrics
 
     @property
+    @mandatory
     def model(self) -> Path:
         return (self.path / MODEL).with_suffix(PTH + TAR)
 
     @property
+    @mandatory
     def scaler(self) -> Path:
         return (self.path / SCALER).with_suffix(JSON)
 
     @property
+    @mandatory
     def state(self) -> Path:
         return (self.path / STATE).with_suffix(JSON)
 

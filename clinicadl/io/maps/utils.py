@@ -141,3 +141,13 @@ class BestModelsDir(CollectionOfDirs[DirType, str]):
     @classmethod
     def _items_dict_private_name(cls) -> str:
         return "_" + METRICS
+
+
+class LogsDir(Directory):
+    @property
+    def outputs(self) -> Path:
+        return (self.path / "logs").with_suffix(".out")
+
+    @property
+    def errors(self) -> Path:
+        return (self.path / "logs").with_suffix(".err")

@@ -9,10 +9,10 @@ from clinicadl.utils.dictionary.words import (
     TRAINING,
 )
 
-from ....base import Directory
+from ...utils import LogsDir
 
 
-class LogsDir(Directory):
+class TrainingLogsDir(LogsDir):
     @property
     def training_loss(self) -> Path:
         return (self.path / f"{TRAINING}_{LOSS}").with_suffix(TSV)

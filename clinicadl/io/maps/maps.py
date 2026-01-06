@@ -26,6 +26,7 @@ from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
 from ..base import Directory
+from ..utils import mandatory
 from .inference import PredictionDir, TestDir
 from .training import TrainingDir
 
@@ -418,88 +419,92 @@ class Maps(Directory):
                     Details on the :py:class:`dataset <clinicadl.data.datasets>` used
                     for the group ``"X"``.
 
-                .. dropdown:: **split-0**
+                .. dropdown:: **results**
                     :icon: file-directory
                     :color: muted
 
-                    Results of test on the group ``"X"`` obtained with models trained on split ``0``
-                    (i.e. the models in ``maps_dir/training/split-0/models``).
-
-                    .. dropdown:: **epoch-10**
+                    .. dropdown:: **split-0**
                         :icon: file-directory
                         :color: muted
 
-                        Results obtained with the model at epoch ``10``, trained on split ``0``
-                        (i.e. the model in ``maps_dir/training/split-0/models/checkpoints/epoch-10``).
+                        Results of test on the group ``"X"`` obtained with models trained on split ``0``
+                        (i.e. the models in ``maps_dir/training/split-0/models``).
 
-                        .. dropdown:: **metrics**
+                        .. dropdown:: **epoch-10**
                             :icon: file-directory
                             :color: muted
 
-                            Metrics on the group ``"X"``.
+                            Results obtained with the model at epoch ``10``, trained on split ``0``
+                            (i.e. the model in ``maps_dir/training/split-0/models/checkpoints/epoch-10``).
 
-                            .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].splits[0].models["epoch-10"].metrics.aggregated``
-                                :icon: file
-                                :color: light
+                            .. dropdown:: **metrics**
+                                :icon: file-directory
+                                :color: muted
 
-                                Aggregated metrics.
+                                Metrics on the group ``"X"``.
 
-                            .. dropdown:: details.tsv → ``maps.test.groups["X"].splits[0].models["epoch-10"].metrics.details``
-                                :icon: file
-                                :color: light
+                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].metrics.aggregated``
+                                    :icon: file
+                                    :color: light
 
-                                Metrics for each image.
+                                    Aggregated metrics.
+
+                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].metrics.details``
+                                    :icon: file
+                                    :color: light
+
+                                    Metrics for each image.
 
 
-                    .. dropdown:: **final**
-                        :icon: file-directory
-                        :color: muted
-
-                        Results obtained with the final model trained on the split ``0``
-                        (i.e. the model in ``maps_dir/training/split-0/models/final``).
-
-                        .. dropdown:: **metrics**
+                        .. dropdown:: **final**
                             :icon: file-directory
                             :color: muted
 
-                            Metrics on the group ``"X"``.
+                            Results obtained with the final model trained on the split ``0``
+                            (i.e. the model in ``maps_dir/training/split-0/models/final``).
 
-                            .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].splits[0].models["final"].metrics.aggregated``
-                                :icon: file
-                                :color: light
+                            .. dropdown:: **metrics**
+                                :icon: file-directory
+                                :color: muted
 
-                                Aggregated metrics.
+                                Metrics on the group ``"X"``.
 
-                            .. dropdown:: details.tsv → ``maps.test.groups["X"].splits[0].models["final"].metrics.details``
-                                :icon: file
-                                :color: light
+                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["final"].metrics.aggregated``
+                                    :icon: file
+                                    :color: light
 
-                                Metrics for each image.
+                                    Aggregated metrics.
 
-                    .. dropdown:: **best-mse**
-                        :icon: file-directory
-                        :color: muted
+                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["final"].metrics.details``
+                                    :icon: file
+                                    :color: light
 
-                        Results obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
-                        (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
+                                    Metrics for each image.
 
-                        .. dropdown:: **metrics**
+                        .. dropdown:: **best-mse**
                             :icon: file-directory
                             :color: muted
 
-                            Metrics on the group ``"X"``.
+                            Results obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
+                            (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
 
-                            .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].splits[0].models["best-mse"].metrics.aggregated``
-                                :icon: file
-                                :color: light
+                            .. dropdown:: **metrics**
+                                :icon: file-directory
+                                :color: muted
 
-                                Aggregated metrics.
+                                Metrics on the group ``"X"``.
 
-                            .. dropdown:: details.tsv → ``maps.test.groups["X"].splits[0].models["best-mse"].metrics.details``
-                                :icon: file
-                                :color: light
+                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["best-mse"].metrics.aggregated``
+                                    :icon: file
+                                    :color: light
 
-                                Metrics for each image.
+                                    Aggregated metrics.
+
+                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["best-mse"].metrics.details``
+                                    :icon: file
+                                    :color: light
+
+                                    Metrics for each image.
 
         .. dropdown:: **prediction**
             :icon: file-directory
@@ -526,70 +531,74 @@ class Maps(Directory):
                     Details on the :py:class:`dataset <clinicadl.data.datasets>` used
                     for the group ``"X"``.
 
-                .. dropdown:: **split-0**
+                .. dropdown:: **results**
                     :icon: file-directory
                     :color: muted
 
-                    Inferences on the group ``"X"`` obtained with models trained on split ``0``
-                    (i.e. the models in ``maps_dir/training/split-0/models``).
-
-                    .. dropdown:: **epoch-10**
+                    .. dropdown:: **split-0**
                         :icon: file-directory
                         :color: muted
 
-                        Inferences obtained with the model at epoch ``10``, trained on split ``0``
-                        (i.e. the model in ``maps_dir/training/split-0/models/checkpoints/epoch-10``).
+                        Inferences on the group ``"X"`` obtained with models trained on split ``0``
+                        (i.e. the models in ``maps_dir/training/split-0/models``).
 
-                        .. dropdown:: output.tsv → ``maps.prediction.groups["X"].splits[0].models["epoch-10"].output_tsv``
-                            :icon: file
-                            :color: light
-
-                            If outputs of the model are scalars, they will be stored in this DataFrame.
-
-                        .. dropdown:: **caps_output** → maps.prediction.groups["X"].splits[0].models["epoch-10"].caps_output
+                        .. dropdown:: **epoch-10**
                             :icon: file-directory
                             :color: muted
 
-                            If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
+                            Inferences obtained with the model at epoch ``10``, trained on split ``0``
+                            (i.e. the model in ``maps_dir/training/split-0/models/checkpoints/epoch-10``).
+
+                            .. dropdown:: output.tsv → ``maps.prediction.groups["X"].results.splits[0].models["epoch-10"].output_tsv``
+                                :icon: file
+                                :color: light
+
+                                If outputs of the model are scalars, they will be stored in this DataFrame.
+
+                            .. dropdown:: **caps_output** → maps.prediction.groups["X"].results.splits[0].models["epoch-10"].caps_output
+                                :icon: file-directory
+                                :color: muted
+
+                                If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
 
 
-                    .. dropdown:: **final**
-                        :icon: file-directory
-                        :color: muted
-
-                        Inferences obtained with the final model trained on the split ``0``
-                        (i.e. the model in ``maps_dir/training/split-0/models/final``).
-
-                        .. dropdown:: output.tsv → ``maps.prediction.groups["X"].splits[0].models["final"].output_tsv``
-                            :icon: file
-                            :color: light
-
-                            If outputs of the model are scalars, they will be stored in this DataFrame.
-
-                        .. dropdown:: **caps_output** → maps.prediction.groups["X"].splits[0].models["final"].caps_output
+                        .. dropdown:: **final**
                             :icon: file-directory
                             :color: muted
 
-                            If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
+                            Inferences obtained with the final model trained on the split ``0``
+                            (i.e. the model in ``maps_dir/training/split-0/models/final``).
 
-                    .. dropdown:: **best-mse**
-                        :icon: file-directory
-                        :color: muted
+                            .. dropdown:: output.tsv → ``maps.prediction.groups["X"].results.splits[0].models["final"].output_tsv``
+                                :icon: file
+                                :color: light
 
-                        Inferences obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
-                        (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
+                                If outputs of the model are scalars, they will be stored in this DataFrame.
 
-                        .. dropdown:: output.tsv → ``maps.prediction.groups["X"].splits[0].models["best-mse"].output_tsv``
-                            :icon: file
-                            :color: light
+                            .. dropdown:: **caps_output** → maps.prediction.groups["X"].results.splits[0].models["final"].caps_output
+                                :icon: file-directory
+                                :color: muted
 
-                            If outputs of the model are scalars, they will be stored in this DataFrame.
+                                If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
 
-                        .. dropdown:: **caps_output** → maps.prediction.groups["X"].splits[0].models["best-mse"].caps_output
+                        .. dropdown:: **best-mse**
                             :icon: file-directory
                             :color: muted
 
-                            If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
+                            Inferences obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
+                            (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
+
+                            .. dropdown:: output.tsv → ``maps.prediction.groups["X"].results.splits[0].models["best-mse"].output_tsv``
+                                :icon: file
+                                :color: light
+
+                                If outputs of the model are scalars, they will be stored in this DataFrame.
+
+                            .. dropdown:: **caps_output** → maps.prediction.groups["X"].results.splits[0].models["best-mse"].caps_output
+                                :icon: file-directory
+                                :color: muted
+
+                                If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
 
 
     Examples
@@ -646,14 +655,17 @@ class Maps(Directory):
         return (self.path / ARCHITECTURE).with_suffix(LOG)
 
     @property
+    @mandatory
     def model_json(self) -> Path:
         return (self.path / MODEL).with_suffix(JSON)
 
     @property
+    @mandatory
     def metrics_json(self) -> Path:
         return (self.path / METRICS).with_suffix(JSON)
 
     @property
+    @mandatory
     def environment_txt(self) -> Path:
         return (self.path / ENVIRONMENT).with_suffix(TXT)
 
