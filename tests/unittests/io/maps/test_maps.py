@@ -25,6 +25,7 @@ def test_maps(tmp_path: Path):
     assert maps.model_json == (maps_path / "model.json")
     assert maps.metrics_json == (maps_path / "metrics.json")
     assert maps.nn_summary_txt == (maps_path / "nn_summary.txt")
+    assert maps.callbacks_json == (maps_path / "callbacks.json")
 
     # training
     maps.training.create()
@@ -32,7 +33,6 @@ def test_maps(tmp_path: Path):
     assert maps.training.optimization_json == (
         maps_path / "training" / "optimization.json"
     )
-    assert maps.training.callbacks_json == (maps_path / "training" / "callbacks.json")
 
     # training - splits
     maps.training.create_split(0)
@@ -419,18 +419,19 @@ def test_read(tmp_path):
                 with pytest.raises(FileNotFoundError):
                     maps.read()
 
+    # mandatory dirs
     shutil.copytree(MINIMAL_MAPS, maps_path, dirs_exist_ok=True)
     maps = Maps(maps_path)
     shutil.rmtree(maps.test.path)
     shutil.rmtree(maps.prediction.path)
     maps.read()
+
     shutil.rmtree(maps.training.data.train.splits[0].path)
     with pytest.raises(
         FileNotFoundError, match="split-0 not found in the training data .*"
     ):
         maps.read()
 
-    # mandatory dirs
     shutil.copytree(MINIMAL_MAPS, maps_path, dirs_exist_ok=True)
     shutil.rmtree(maps.training.data.validation.splits[0].path)
     with pytest.raises(
@@ -447,6 +448,11 @@ def test_read(tmp_path):
 
     shutil.copytree(MINIMAL_MAPS, maps_path, dirs_exist_ok=True)
     shutil.rmtree(maps.training.data.validation.path)
+    with pytest.raises(FileNotFoundError):
+        maps.read()
+
+    shutil.copytree(MINIMAL_MAPS, maps_path, dirs_exist_ok=True)
+    shutil.rmtree(maps.training.path)
     with pytest.raises(FileNotFoundError):
         maps.read()
 
@@ -558,3 +564,82 @@ def test_iterdir(tmp_path):
     assert next(gen).path == (maps_path / "training" / "split-0" / "tmp" / "epoch-2")
     with pytest.raises(StopIteration):
         next(gen)
+
+
+def test_get_checkpoint_path():
+    maps = Maps(REFERENCE_MAPS)
+    maps.read()
+    models = maps.training.splits[0].models
+
+    assert (
+        models.get_checkpoint_path("best-loss").path
+        == models.best_models.metrics["loss"].path
+    )
+    with pytest.raises(
+        KeyError,
+        match=f"No checkpoint associated to the metric 'mse' in {str(models.best_models.path)}",
+    ):
+        models.get_checkpoint_path("best-mse")
+
+    assert (
+        models.get_checkpoint_path("epoch-0").path == models.checkpoints.epochs[0].path
+    )
+    with pytest.raises(
+        KeyError,
+        match=f"No checkpoint associated to epoch abc in {str(models.checkpoints.path)}",
+    ):
+        models.get_checkpoint_path("epoch-abc")
+    with pytest.raises(
+        KeyError,
+        match=f"No checkpoint associated to epoch 1 in {str(models.checkpoints.path)}",
+    ):
+        models.get_checkpoint_path("epoch-1")
+
+    assert models.get_checkpoint_path("final").path == models.final.path
+
+    with pytest.raises(
+        ValueError,
+        match="The name of the checkpoint must be like 'best-...', 'epoch-...' or 'final'. Got: abc",
+    ):
+        models.get_checkpoint_path("abc")
+
+    # models from split
+    assert (
+        maps.training.get_checkpoint_path("split-0_best-loss").path
+        == models.best_models.metrics["loss"].path
+    )
+    assert (
+        maps.training.get_checkpoint_path("split-0_epoch-0").path
+        == models.checkpoints.epochs[0].path
+    )
+    assert maps.training.get_checkpoint_path("split-0_final").path == models.final.path
+
+    with pytest.raises(
+        ValueError,
+        match="The name of the checkpoint must be like 'split-..._best-...', 'split-..._epoch-...' or 'split-..._final'. Got: split-0-best-loss",
+    ):
+        maps.training.get_checkpoint_path("split-0-best-loss")
+    with pytest.raises(
+        ValueError,
+        match="The name of the checkpoint must be like 'split-..._best-...', 'split-..._epoch-...' or 'split-..._final'. Got: split-0_abc",
+    ):
+        maps.training.get_checkpoint_path("split-0_abc")
+    with pytest.raises(
+        KeyError,
+        match=f"No checkpoint associated to split 1 in {str(maps.training.path)}",
+    ):
+        maps.training.get_checkpoint_path("split-1_best-loss")
+    with pytest.raises(
+        KeyError,
+        match=f"No checkpoint associated to the metric 'mse' in {str(models.best_models.path)}",
+    ):
+        maps.training.get_checkpoint_path("split-0_best-mse")
+
+
+def test_read_checkpoint_name():
+    maps = Maps(REFERENCE_MAPS)
+    maps.read()
+
+    assert maps.training.read_checkpoint_name("split-0_best-loss") == (0, "best-loss")
+    assert maps.training.read_checkpoint_name("split-0_epoch-0") == (0, "epoch-0")
+    assert maps.training.read_checkpoint_name("split-0_final") == (0, "final")

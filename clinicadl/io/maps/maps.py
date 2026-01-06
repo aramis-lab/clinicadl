@@ -13,6 +13,7 @@ from clinicadl.utils.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV, TXT
 from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.dictionary.words import (
     ARCHITECTURE,
+    CALLBACKS,
     ENVIRONMENT,
     METRICS,
     MODEL,
@@ -64,6 +65,12 @@ class Maps(Directory):
 
             The Python environment when the ``Maps`` was created.
 
+        .. dropdown:: callback.json → ``maps.callbacks_json``
+            :icon: file
+            :color: light
+
+            Details on the :py:mod:`~clinicadl.callbacks` used.
+
         .. dropdown:: metrics.json → ``maps.metrics_json``
             :icon: file
             :color: light
@@ -94,12 +101,6 @@ class Maps(Directory):
 
             Here are stored the outputs and the information related to :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` and
             :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
-
-            .. dropdown:: callback.json → ``maps.training.callbacks_json``
-                :icon: file
-                :color: light
-
-                Details on the :py:mod:`~clinicadl.callbacks` used during training.
 
             .. dropdown:: optimization.json → ``maps.training.optimization_json``
                 :icon: file
@@ -222,7 +223,7 @@ class Maps(Directory):
                         :icon: file-directory
                         :color: muted
 
-                        Best models obtained with respect to the metrics monitored in :py:class:`~clinicadl.callbacks.Checkpoint`.
+                        Best models obtained with respect to the metrics monitored in :py:class:`~clinicadl.callbacks.ModelCheckpointCallback`.
 
                         .. dropdown:: **best-mse**
                             :icon: file-directory
@@ -258,7 +259,7 @@ class Maps(Directory):
                         :icon: file-directory
                         :color: muted
 
-                        The model at the epochs defined in :py:class:`~clinicadl.callbacks.Checkpoint`.
+                        The model at the epochs defined in :py:class:`~clinicadl.callbacks.ModelCheckpointCallback`.
 
                         .. dropdown:: **epoch-10**
                             :icon: file-directory
@@ -636,6 +637,7 @@ class Maps(Directory):
         self._prediction = PredictionDir(path=self.path / PREDICTION)
 
     @property
+    @mandatory
     def training(self) -> TrainingDir:
         """Directory containing the information on trainings."""
         return self._training
@@ -676,6 +678,11 @@ class Maps(Directory):
     @property
     def nn_summary_txt(self) -> Path:
         return (self.path / f"{NN}_{SUMMARY}").with_suffix(TXT)
+
+    @property
+    @mandatory
+    def callbacks_json(self) -> Path:
+        return (self.path / CALLBACKS).with_suffix(JSON)
 
     def create(self, overwrite: bool = False, exist_ok: bool = False) -> None:
         """

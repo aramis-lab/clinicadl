@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Generator, Generic, TypeVar
 
-from clinicadl.utils.dictionary.words import BEST, EPOCH, METRICS, SPLIT
+from clinicadl.utils.dictionary.words import EPOCH, SPLIT
 
 from ..base import Directory
 
@@ -116,31 +116,6 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
         self, epoch: int, overwrite: bool = False, exist_ok: bool = False
     ) -> None:
         self._create_item(epoch, overwrite=overwrite, exist_ok=exist_ok)
-
-
-class BestModelsDir(CollectionOfDirs[DirType, str]):
-    _item_key = BEST
-
-    def __init__(self, path: Path):
-        super().__init__(path)
-        self._metrics: dict[str, DirType] = {}
-
-    @property
-    def metrics(self) -> dict[str, DirType]:
-        return self._metrics
-
-    @property
-    def metrics_list(self) -> list[str]:
-        return self._items_list
-
-    def create_metric(
-        self, metric: str, overwrite: bool = False, exist_ok: bool = False
-    ) -> None:
-        self._create_item(metric, overwrite=overwrite, exist_ok=exist_ok)
-
-    @classmethod
-    def _items_dict_private_name(cls) -> str:
-        return "_" + METRICS
 
 
 class LogsDir(Directory):
