@@ -15,6 +15,7 @@ from clinicadl.utils.dictionary.words import (
     ARCHITECTURE,
     CALLBACKS,
     ENVIRONMENT,
+    EXEC,
     METRICS,
     MODEL,
     NN,
@@ -28,6 +29,7 @@ from clinicadl.utils.typing import PathType
 
 from ..base import Directory
 from ..utils import mandatory
+from .exec import ExecDir
 from .inference import PredictionDir, TestDir
 from .training import TrainingDir
 
@@ -601,6 +603,36 @@ class Maps(Directory):
 
                                 If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
 
+        .. dropdown:: **exec**
+            :icon: file-directory
+            :color: muted
+
+            Logging messages saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``).
+
+            .. dropdown:: **run-train_2025_12_31_23_59_59**
+                :icon: file-directory
+                :color: muted
+
+                Logging messages saved when :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` was run
+                (the end of the filename is the date).
+
+                .. dropdown:: logs.debug → ``maps.exec.runs["train_2025_12_31_23_59_59"].logs.debug``
+                    :icon: file
+                    :color: light
+
+                    Debug logs (if ``debug=True`` in :py:class:`clinicadl.callbacks.LoggerCallback`).
+
+                .. dropdown:: logs.err → ``maps.exec.runs["train_2025_12_31_23_59_59"].logs.errors``
+                    :icon: file
+                    :color: light
+
+                    Error logs.
+
+                .. dropdown:: logs.out → ``maps.exec.runs["train_2025_12_31_23_59_59"].logs.outputs``
+                    :icon: file
+                    :color: light
+
+                    Output logs.
 
     Examples
     --------
@@ -635,22 +667,24 @@ class Maps(Directory):
         self._training = TrainingDir(path=self.path / TRAINING)
         self._test = TestDir(path=self.path / TEST)
         self._prediction = PredictionDir(path=self.path / PREDICTION)
+        self._exec = ExecDir(path=self.path / EXEC)
 
     @property
     @mandatory
     def training(self) -> TrainingDir:
-        """Directory containing the information on trainings."""
         return self._training
 
     @property
     def test(self) -> TestDir:
-        """Directory containing the information of tests."""
         return self._test
 
     @property
     def prediction(self) -> PredictionDir:
-        """Directory containing the information of predictions."""
         return self._prediction
+
+    @property
+    def exec(self) -> ExecDir:
+        return self._exec
 
     @property
     def architecture_log(self) -> Path:

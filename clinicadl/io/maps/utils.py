@@ -126,3 +126,7 @@ class LogsDir(Directory):
     @property
     def errors(self) -> Path:
         return (self.path / "logs").with_suffix(".err")
+
+    @property
+    def debug(self) -> Path:
+        return (self.path / "logs").with_suffix(".debug")

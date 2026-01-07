@@ -13,6 +13,20 @@ REFERENCE_MAPS = Path(__file__).parents[2] / "resources" / "maps_example"
 MINIMAL_MAPS = Path(__file__).parents[2] / "resources" / "maps_minimal"
 
 
+def _build_pattern(prefix: Path, suffix: str) -> re.Pattern:
+    sep = re.escape(os.sep)
+    prefix = re.escape(str(prefix))
+    suffix = re.escape(suffix)
+
+    pattern = (
+        rf"^{prefix}{sep}"
+        r"run\-train_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}"
+        rf"{sep}logs\.{suffix}$"
+    )
+    print(pattern)
+    return re.compile(pattern)
+
+
 def test_maps(tmp_path: Path):
     maps_path = tmp_path / "maps"
     maps = Maps(maps_path)
@@ -27,8 +41,26 @@ def test_maps(tmp_path: Path):
     assert maps.nn_summary_txt == (maps_path / "nn_summary.txt")
     assert maps.callbacks_json == (maps_path / "callbacks.json")
 
+    # runs
+    maps.exec.create_run(process_called="train")
+    run = maps.exec.runs_list[0]
+    pattern = r"^train_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}$"
+    assert re.match(pattern, run)
+    assert re.match(
+        _build_pattern(prefix=maps_path / "exec", suffix="err"),
+        str(maps.exec.runs[run].errors),
+    )
+    assert re.match(
+        _build_pattern(prefix=maps_path / "exec", suffix="debug"),
+        str(maps.exec.runs[run].debug),
+    )
+    assert re.match(
+        _build_pattern(prefix=maps_path / "exec", suffix="out"),
+        str(maps.exec.runs[run].outputs),
+    )
+
     # training
-    maps.training.create()
+    maps.training.create(exist_ok=True)
 
     assert maps.training.optimization_json == (
         maps_path / "training" / "optimization.json"
@@ -60,12 +92,6 @@ def test_maps(tmp_path: Path):
     )
     assert maps.training.splits[0].logs.learning_rates == (
         maps_path / "training" / "split-0" / "logs" / "learning_rates"
-    )
-    assert maps.training.splits[0].logs.outputs == (
-        maps_path / "training" / "split-0" / "logs" / "logs.out"
-    )
-    assert maps.training.splits[0].logs.errors == (
-        maps_path / "training" / "split-0" / "logs" / "logs.err"
     )
 
     # training - splits - tmp
@@ -390,7 +416,14 @@ def test_read(tmp_path):
         .models.best_models.metrics["loss"]
         .validation_metrics.aggregated.is_file()
     )
+    assert (
+        maps.training.splits[0]
+        .models.checkpoints.epochs[0]
+        .validation_metrics.aggregated.is_file()
+    )
+    assert maps.training.splits[0].tmp.epochs[0].validation_metrics.aggregated.is_file()
     assert maps.training.data.train.splits[0].data_tsv.is_file()
+    assert maps.training.data.validation.splits[0].data_tsv.is_file()
     assert (
         maps.prediction.groups["X"]
         .results.splits[0]
@@ -403,6 +436,7 @@ def test_read(tmp_path):
         .models["best-loss"]
         .metrics.aggregated.is_file()
     )
+    assert maps.exec.runs["train_2025_12_31_23_59_59"].debug.is_file()
 
     maps_path = tmp_path / "minimal_maps"
     shutil.copytree(MINIMAL_MAPS, maps_path)
