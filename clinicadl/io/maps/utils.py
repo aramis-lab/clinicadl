@@ -116,17 +116,3 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
         self, epoch: int, overwrite: bool = False, exist_ok: bool = False
     ) -> None:
         self._create_item(epoch, overwrite=overwrite, exist_ok=exist_ok)
-
-
-class LogsDir(Directory):
-    @property
-    def outputs(self) -> Path:
-        return (self.path / "logs").with_suffix(".out")
-
-    @property
-    def errors(self) -> Path:
-        return (self.path / "logs").with_suffix(".err")
-
-    @property
-    def debug(self) -> Path:
-        return (self.path / "logs").with_suffix(".debug")
