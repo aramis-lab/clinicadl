@@ -7,6 +7,7 @@ from pydantic import PositiveInt, field_validator, model_validator
 from typing_extensions import Self
 
 from clinicadl.metrics.enum import Optimum
+from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
@@ -106,7 +107,6 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         self.metric_monitoring: Optional[QuantityMonitoring] = None
         self._metrics_df = pd.DataFrame()
         self._detailed_metrics_df = pd.DataFrame()
-        self._activated = False  # to prevent from calling in validation-only
 
     def _init_metric_monitoring(self, mode: Optimum) -> None:
         """Initialize metric monitoring with the mode."""
@@ -125,10 +125,14 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         if self.metric_monitoring:
             self.metric_monitoring.reset()
 
-        self._activated = True
-
-    def on_validation_start(self, *, metrics: dict[str, Metric], **kwargs) -> None:
-        if self.config.metric and self.metric_monitoring is None and self._activated:
+    def on_validation_start(
+        self, *, state: TrainerState, metrics: dict[str, Metric], **kwargs
+    ) -> None:
+        if (
+            self.config.metric
+            and self.metric_monitoring is None
+            and state.called == TrainerCall.TRAIN
+        ):
             try:
                 mode = metrics[self.config.metric].optimum
             except KeyError as exc:
@@ -146,7 +150,7 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         detailed_metrics_df: pd.DataFrame,
         **kwargs,
     ) -> None:
-        if not self._activated:
+        if state.called != TrainerCall.TRAIN:
             return
 
         self._metrics_df = metrics_df
@@ -167,9 +171,6 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
     def on_epoch_end(
         self, *, model: Model, maps: Maps, state: TrainerState, **kwargs
     ) -> None:
-        if not self._activated:
-            return
-
         if state.current_epoch in self.config.epochs:
             maps.training.splits[state.split_idx].models.checkpoints.create_epoch(
                 state.current_epoch
@@ -188,9 +189,6 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         state: TrainerState,
         **kwargs,
     ) -> None:
-        if not self._activated:
-            return
-
         if self.config.save_last:
             model_dir = maps.training.splits[state.split_idx].models.final
             self._save_files(model, maps, state, model_dir)
@@ -212,6 +210,7 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         """
         Saves the model and the validation metrics.
         """
+        model_dir.validation_metrics.create(exist_ok=True)
         maps.save_file(model.state_dict(), path=model_dir.model, overwrite=True)
         maps.save_file(
             get_metric_values(self._metrics_df, epoch=state.current_epoch),

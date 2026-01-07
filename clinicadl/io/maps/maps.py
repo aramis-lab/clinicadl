@@ -800,13 +800,13 @@ class Maps(Directory):
 
         if path.suffix == JSON:
             return read_json(path)
-        elif path.suffix == LOG or path.suffix == TXT:
-            with path.open("r", encoding="utf-8") as f:
-                return f.read()
         elif path.suffix == TSV:
             return pd.read_csv(path, sep=SEP)
         elif path.suffix == TAR and path.with_suffix("").suffix == PTH:
             return torch_load(path)
+        else:
+            with path.open("r", encoding="utf-8") as f:
+                return f.read()
 
     @staticmethod
     def save_file(obj: Any, path: PathType, overwrite: bool = False) -> None:

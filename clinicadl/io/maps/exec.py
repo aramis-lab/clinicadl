@@ -38,6 +38,9 @@ class ExecDir(CollectionOfDirs[RunDir, str]):
     def runs_list(self) -> list[str]:
         return self._items_list
 
-    def create_run(self, process_called: str) -> None:
+    def create_run(self, process_called: str) -> str:
         datetime = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
-        self._create_item(f"{process_called}_{datetime}", overwrite=True, exist_ok=True)
+        run_name = f"{process_called}_{datetime}"
+        self._create_item(run_name, overwrite=True, exist_ok=True)
+
+        return run_name

@@ -21,7 +21,8 @@ class Split:
 
 def test_trainer_state():
     state = TrainerState()
-    state.stage = "test"
+    state.stage = "training"
+    state.called = "train"
     state.current_train_batch = 1
     state.current_pred_batch = 1
     state.current_val_batch = 1
@@ -33,7 +34,8 @@ def test_trainer_state():
 
     state_dict = state.state_dict()
     assert state_dict == {
-        "stage": "test",
+        "called": "train",
+        "stage": "training",
         "should_stop": True,
         "current_train_batch": 1,
         "num_train_batches": 0,
@@ -53,20 +55,15 @@ def test_trainer_state():
     assert state.num_pred_batches == 2
     assert state.split_idx is None
     assert state.stage == "prediction"
+    assert state.called == "predict"
     assert state.current_train_batch == 1
 
     state.reset_validation(split=Split())
     assert state.current_val_batch == 0
     assert state.num_val_batches == 2
     assert state.split_idx == 1
-    assert state.stage == "validation"
-    assert state.current_train_batch == 1
-
-    state.reset_test(dataloader=DataLoader())
-    assert state.current_test_batch == 0
-    assert state.num_test_batches == 2
-    assert state.split_idx is None
-    assert state.stage == "test"
+    assert state.stage == "evaluation"
+    assert state.called == "predict"
     assert state.current_train_batch == 1
 
     state.reset_training(split=Split(index=2, len_=3), num_epochs=5)
@@ -76,13 +73,23 @@ def test_trainer_state():
     assert state.num_val_batches == 3
     assert state.split_idx == 2
     assert state.stage == "training"
+    assert state.called == "train"
     assert not state.should_stop
     assert state.current_epoch == 0
     assert state.num_epochs == 5
     assert state.optim_step == 0
 
+    state.reset_test(dataloader=DataLoader())
+    assert state.current_test_batch == 0
+    assert state.num_test_batches == 2
+    assert state.split_idx is None
+    assert state.stage == "evaluation"
+    assert state.called == "test"
+    assert state.current_train_batch == 0
+
     state.load_state_dict(state_dict)
-    assert state.stage == "test"
+    assert state.stage == "training"
+    assert state.called == "train"
     assert state.current_train_batch == 1
     assert state.current_pred_batch == 1
     assert state.current_val_batch == 1

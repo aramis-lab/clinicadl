@@ -11,6 +11,7 @@ from pydantic import Field, NonNegativeFloat, NonNegativeInt, model_validator
 from typing_extensions import Self
 
 from clinicadl.metrics.enum import Optimum
+from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
@@ -297,7 +298,6 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
             lower_bound=lower_bound,
         )
         self.stoppers: Optional[list[OneMetricEarlyStopping]] = None
-        self._activated: bool = False  # to prevent from calling in validation-only
 
     def _init_stoppers(self) -> None:
         """
@@ -329,11 +329,12 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
 
     # pylint: disable=arguments-differ, unused-argument
     def on_train_start(self, **kwargs):
-        self._activated = True
         self._reset()
 
-    def on_validation_start(self, *, metrics: dict[str, Metric], **kwargs) -> None:
-        if self.stoppers is None and self._activated:
+    def on_validation_start(
+        self, *, state: TrainerState, metrics: dict[str, Metric], **kwargs
+    ) -> None:
+        if self.stoppers is None and state.called == TrainerCall.TRAIN:
             modes = {name: metric.optimum for name, metric in metrics.items()}
             try:
                 self._add_modes(modes)
@@ -344,7 +345,7 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
     def on_validation_end(
         self, *, state: TrainerState, metrics_df: pd.DataFrame, **kwargs
     ) -> None:
-        if not self._activated:
+        if state.called != TrainerCall.TRAIN:
             return
 
         should_stops = [stopper.step(metrics_df, state) for stopper in self.stoppers]

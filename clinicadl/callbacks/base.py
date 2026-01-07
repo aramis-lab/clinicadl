@@ -23,31 +23,31 @@ class Events(str, Enum):
     """Events that can trigger an action from a :py:class:`clinicadl.callbacks.Callback`."""
 
     # Training
-    TRAIN_BEGIN = "on_train_start"
+    TRAIN_START = "on_train_start"
     TRAIN_END = "on_train_end"
-    EPOCH_BEGIN = "on_epoch_start"
+    EPOCH_START = "on_epoch_start"
     EPOCH_END = "on_epoch_end"
-    FORWARD_BEGIN = "on_forward_step_start"
-    BACKWARD_BEGIN = "on_backward_step_start"
+    BATCH_START = "on_batch_start"
+    BATCH_END = "on_batch_end"
+    FORWARD_START = "on_forward_step_start"
+    BACKWARD_START = "on_backward_step_start"
     BACKWARD_END = "on_backward_step_end"
-    OPTIM_STEP_BEGIN = "on_optimization_step_start"
+    OPTIM_STEP_START = "on_optimization_step_start"
     OPTIM_STEP_END = "on_optimization_step_end"
 
     # Validation
-    VAL_BEGIN = "on_validation_start"
+    VAL_START = "on_validation_start"
     VAL_END = "on_validation_end"
-    EVAL_BEGIN = "on_evaluation_step_start"
+    EVAL_START = "on_evaluation_step_start"
     EVAL_END = "on_evaluation_step_end"
 
     # Test
-    TEST_BEGIN = "on_test_start"
+    TEST_START = "on_test_start"
     TEST_END = "on_test_end"
 
     # Predict
-    PREDICT_BEGIN = "on_test_start"
-    PREDICT_END = "on_test_end"
-    PREDICTION_BEGIN = "on_prediction_step_start"
-    PREDICTION_END = "on_prediction_step_end"
+    PREDICT_START = "on_predict_start"
+    PREDICT_END = "on_predict_end"
 
 
 class Callback(ABC):
@@ -142,6 +142,57 @@ class Callback(ABC):
     def on_epoch_end(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
         """
         Called at the end of an epoch in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
+        """
+
+    def on_batch_start(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        batch: BatchType,
+    ) -> None:
+        """
+        Called every time a new batch has been loaded in training, validation, test or prediction phases.
+
+        .. note::
+            This event may be redundant with other events: e.g., in evaluation phases, it is equivalent
+            to :py:meth:`on_evaluation_start` (except if the batch is sent to another device).
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
+        batch : BatchType
+            The batch input to :py:meth:`Model.forward_step <clinicadl.models.Model.forward_step>`.
+        """
+
+    def on_batch_end(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+    ) -> None:
+        """
+        Called every time the processing of a batch is complete in training, validation, test or prediction phases.
+
+        .. note::
+            This event may be redundant with other events: e.g., in evaluation phases, it is equivalent
+            to :py:meth:`on_evaluation_end`.
 
         Parameters
         ----------
@@ -290,8 +341,8 @@ class Callback(ABC):
         state: TrainerState,
         split: Split,
         metrics: dict[str, Metric],
-        model_checkpoint: Optional[str],
         computational: ComputationalConfig,
+        model_checkpoint: Optional[str] = None,
     ) -> None:
         """
         Called once at the beginning of :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`
@@ -309,12 +360,12 @@ class Callback(ABC):
             The :py:class:`clinicadl.split.Split` on which validation is performed.
         metrics : dict[str, Metric]
             The :py:class:`clinicadl.metrics.Metric` that will be computed during validation.
-        model_checkpoint : Optional[str]
-            The model checkpoint currently being validated. In :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`,
-            it will be ``None``.
         computational : ComputationalConfig
             The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
             of the validation phase.
+        model_checkpoint : Optional[str], default=None
+            The model checkpoint currently being validated. In :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`,
+            it will be ``None``.
         """
 
     def on_validation_end(
@@ -496,7 +547,7 @@ class Callback(ABC):
             of the prediction phase.
         """
 
-    def on_prediction_end(
+    def on_predict_end(
         self,
         *,
         model: Model,
@@ -504,7 +555,7 @@ class Callback(ABC):
         state: TrainerState,
     ) -> None:
         """
-        Called once at the end of :py:meth:`Trainer.test <clinicadl.train.Trainer.test>`.
+        Called once at the end of :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`.
 
         Parameters
         ----------

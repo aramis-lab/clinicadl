@@ -47,7 +47,7 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
                     f"split-{split} not found in the validation data ({str(self._data._validation.path)})"
                 )
 
-    def get_checkpoint_path(self, checkpoint_name: str) -> ModelDir:
+    def get_checkpoint_dir(self, checkpoint_name: str) -> ModelDir:
         """
         To get the directory of a model checkpoint from a descriptive name of this
         checkpoint.
@@ -68,7 +68,7 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
         """
         split, name = self.read_checkpoint_name(checkpoint_name)
 
-        return self.splits[split].models.get_checkpoint_path(name)
+        return self.splits[split].models.get_checkpoint_dir(name)
 
     def read_checkpoint_name(self, checkpoint_name: str) -> tuple[int, str]:
         """
@@ -102,7 +102,7 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
                         f"No checkpoint associated to split {split_idx} in {str(self.path)}"
                     ) from e
                 try:
-                    split_dir.models.get_checkpoint_path(name)
+                    split_dir.models.get_checkpoint_dir(name)
                 except ValueError:
                     pass
                 else:

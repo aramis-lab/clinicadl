@@ -83,7 +83,7 @@ class ModelsDir(Directory):
     def final(self) -> ModelDir:
         return self._final
 
-    def get_checkpoint_path(self, checkpoint_name: str) -> ModelDir:
+    def get_checkpoint_dir(self, checkpoint_name: str) -> ModelDir:
         """
         To get the directory of a model checkpoint from a descriptive name of this
         checkpoint.

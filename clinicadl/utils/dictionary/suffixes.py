@@ -8,3 +8,6 @@ TAR = ".tar"
 NII = ".nii"
 GZ = ".gz"
 NII_GZ = NII + GZ
+OUT = ".out"
+DEBUG = ".debug"
+ERR = ".err"

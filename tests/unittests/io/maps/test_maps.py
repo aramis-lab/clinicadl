@@ -42,8 +42,7 @@ def test_maps(tmp_path: Path):
     assert maps.callbacks_json == (maps_path / "callbacks.json")
 
     # runs
-    maps.exec.create_run(process_called="train")
-    run = maps.exec.runs_list[0]
+    run = maps.exec.create_run(process_called="train")
     pattern = r"^train_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}$"
     assert re.match(pattern, run)
     assert re.match(
@@ -606,68 +605,68 @@ def test_get_checkpoint_path():
     models = maps.training.splits[0].models
 
     assert (
-        models.get_checkpoint_path("best-loss").path
+        models.get_checkpoint_dir("best-loss").path
         == models.best_models.metrics["loss"].path
     )
     with pytest.raises(
         KeyError,
         match=f"No checkpoint associated to the metric 'mse' in {str(models.best_models.path)}",
     ):
-        models.get_checkpoint_path("best-mse")
+        models.get_checkpoint_dir("best-mse")
 
     assert (
-        models.get_checkpoint_path("epoch-0").path == models.checkpoints.epochs[0].path
+        models.get_checkpoint_dir("epoch-0").path == models.checkpoints.epochs[0].path
     )
     with pytest.raises(
         KeyError,
         match=f"No checkpoint associated to epoch abc in {str(models.checkpoints.path)}",
     ):
-        models.get_checkpoint_path("epoch-abc")
+        models.get_checkpoint_dir("epoch-abc")
     with pytest.raises(
         KeyError,
         match=f"No checkpoint associated to epoch 1 in {str(models.checkpoints.path)}",
     ):
-        models.get_checkpoint_path("epoch-1")
+        models.get_checkpoint_dir("epoch-1")
 
-    assert models.get_checkpoint_path("final").path == models.final.path
+    assert models.get_checkpoint_dir("final").path == models.final.path
 
     with pytest.raises(
         ValueError,
         match="The name of the checkpoint must be like 'best-...', 'epoch-...' or 'final'. Got: abc",
     ):
-        models.get_checkpoint_path("abc")
+        models.get_checkpoint_dir("abc")
 
     # models from split
     assert (
-        maps.training.get_checkpoint_path("split-0_best-loss").path
+        maps.training.get_checkpoint_dir("split-0_best-loss").path
         == models.best_models.metrics["loss"].path
     )
     assert (
-        maps.training.get_checkpoint_path("split-0_epoch-0").path
+        maps.training.get_checkpoint_dir("split-0_epoch-0").path
         == models.checkpoints.epochs[0].path
     )
-    assert maps.training.get_checkpoint_path("split-0_final").path == models.final.path
+    assert maps.training.get_checkpoint_dir("split-0_final").path == models.final.path
 
     with pytest.raises(
         ValueError,
         match="The name of the checkpoint must be like 'split-..._best-...', 'split-..._epoch-...' or 'split-..._final'. Got: split-0-best-loss",
     ):
-        maps.training.get_checkpoint_path("split-0-best-loss")
+        maps.training.get_checkpoint_dir("split-0-best-loss")
     with pytest.raises(
         ValueError,
         match="The name of the checkpoint must be like 'split-..._best-...', 'split-..._epoch-...' or 'split-..._final'. Got: split-0_abc",
     ):
-        maps.training.get_checkpoint_path("split-0_abc")
+        maps.training.get_checkpoint_dir("split-0_abc")
     with pytest.raises(
         KeyError,
         match=f"No checkpoint associated to split 1 in {str(maps.training.path)}",
     ):
-        maps.training.get_checkpoint_path("split-1_best-loss")
+        maps.training.get_checkpoint_dir("split-1_best-loss")
     with pytest.raises(
         KeyError,
         match=f"No checkpoint associated to the metric 'mse' in {str(models.best_models.path)}",
     ):
-        maps.training.get_checkpoint_path("split-0_best-mse")
+        maps.training.get_checkpoint_dir("split-0_best-mse")
 
 
 def test_read_checkpoint_name():
