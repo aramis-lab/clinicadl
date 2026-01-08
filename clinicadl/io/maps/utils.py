@@ -121,5 +121,5 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
 
 class ModelDir(Directory):
     @property
-    def warning(self) -> Path:
+    def warning_log(self) -> Path:
         return (self.path / WARNING).with_suffix(LOG)

@@ -10,15 +10,15 @@ from .utils import CollectionOfDirs
 
 class RunDir(Directory):
     @property
-    def info(self) -> Path:
+    def info_log(self) -> Path:
         return (self.path / INFO).with_suffix(LOG)
 
     @property
-    def error(self) -> Path:
+    def error_log(self) -> Path:
         return (self.path / ERROR).with_suffix(LOG)
 
     @property
-    def debug(self) -> Path:
+    def debug_log(self) -> Path:
         return (self.path / DEBUG).with_suffix(LOG)
 
 

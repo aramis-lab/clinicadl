@@ -11,6 +11,7 @@ from clinicadl.utils.dictionary.words import (
     SUMMARY,
     TMP,
     VALIDATION,
+    WARNING,
 )
 
 from ....base import Directory
@@ -29,6 +30,10 @@ class TrainingSplitDir(Directory):
         )
         self._logs = TrainingLogsDir(path=self.path / LOGS)
         self._tmp = TmpDir(path=self.path / TMP)
+
+    @property
+    def warning_log(self) -> Path:
+        return (self.path / WARNING).with_suffix(LOG)
 
     @property
     def models(self) -> ModelsDir:

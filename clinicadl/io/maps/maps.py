@@ -196,6 +196,13 @@ class Maps(Directory):
 
                     Summary of the training of split ``0``.
 
+                .. dropdown:: warning.log → ``maps.training.splits[0].warning_log``
+                    :icon: file
+                    :color: light
+
+                    Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                    have been raised when training.
+
                 .. dropdown:: **logs**
                     :icon: file-directory
                     :color: muted
@@ -298,6 +305,13 @@ class Maps(Directory):
                         :color: muted
 
                         The model at the end of training.
+
+                        .. dropdown:: warning.log → ``maps.training.splits[0].models.final.warning_log``
+                            :icon: file
+                            :color: light
+
+                            Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                            have been raised when evaluating this model.
 
                         .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.final.model``
                             :icon: file
@@ -439,6 +453,13 @@ class Maps(Directory):
 
                             Results obtained with the model at epoch ``10``, trained on split ``0``
                             (i.e. the model in ``maps_dir/training/split-0/models/checkpoints/epoch-10``).
+
+                            .. dropdown:: warning.log → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].warning_log``
+                                :icon: file
+                                :color: light
+
+                                Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                                have been raised when evaluating this model.
 
                             .. dropdown:: **metrics**
                                 :icon: file-directory
@@ -591,6 +612,13 @@ class Maps(Directory):
                             Inferences obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
                             (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
 
+                            .. dropdown:: warning.log → ``maps.prediction.groups["X"].results.splits[0].models["best-mse"].warning_log``
+                                :icon: file
+                                :color: light
+
+                                Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                                have been raised when evaluating this model.
+
                             .. dropdown:: output.tsv → ``maps.prediction.groups["X"].results.splits[0].models["best-mse"].output_tsv``
                                 :icon: file
                                 :color: light
@@ -616,23 +644,23 @@ class Maps(Directory):
                 Logging messages saved when :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` was run
                 (the end of the filename is the date).
 
-                .. dropdown:: logs.debug → ``maps.exec.runs["train_2025_12_31_23_59_59"].logs.debug``
+                .. dropdown:: debug.log → ``maps.exec.runs["train_2025_12_31_23_59_59"].debug_log``
                     :icon: file
                     :color: light
 
                     Debug logs (if ``debug=True`` in :py:class:`clinicadl.callbacks.LoggerCallback`).
 
-                .. dropdown:: logs.err → ``maps.exec.runs["train_2025_12_31_23_59_59"].logs.errors``
+                .. dropdown:: error.log → ``maps.exec.runs["train_2025_12_31_23_59_59"].error_log``
                     :icon: file
                     :color: light
 
                     Error logs.
 
-                .. dropdown:: logs.out → ``maps.exec.runs["train_2025_12_31_23_59_59"].logs.outputs``
+                .. dropdown:: info.log → ``maps.exec.runs["train_2025_12_31_23_59_59"].info_log``
                     :icon: file
                     :color: light
 
-                    Output logs.
+                    Info and warning logs.
 
     Examples
     --------

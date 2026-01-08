@@ -3,11 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from clinicadl.utils.dictionary.suffixes import TSV
-from clinicadl.utils.dictionary.words import (
-    LEARNING_RATES,
-    LOSS,
-    TRAINING,
-)
+from clinicadl.utils.dictionary.words import LEARNING_RATES, LOSS, TRAINING
 
 from ....base import Directory
 

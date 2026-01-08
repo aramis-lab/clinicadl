@@ -47,15 +47,15 @@ def test_maps(tmp_path: Path):
     assert re.match(pattern, run)
     assert re.match(
         _build_pattern(prefix=maps_path / "exec", suffix="error"),
-        str(maps.exec.runs[run].error),
+        str(maps.exec.runs[run].error_log),
     )
     assert re.match(
         _build_pattern(prefix=maps_path / "exec", suffix="debug"),
-        str(maps.exec.runs[run].debug),
+        str(maps.exec.runs[run].debug_log),
     )
     assert re.match(
         _build_pattern(prefix=maps_path / "exec", suffix="info"),
-        str(maps.exec.runs[run].info),
+        str(maps.exec.runs[run].info_log),
     )
 
     # training
@@ -75,6 +75,9 @@ def test_maps(tmp_path: Path):
     )
     assert maps.training.splits[0].summary_log == (
         maps_path / "training" / "split-0" / "summary.log"
+    )
+    assert maps.training.splits[0].warning_log == (
+        maps_path / "training" / "split-0" / "warning.log"
     )
 
     # training - splits - validation_metrics
@@ -148,7 +151,7 @@ def test_maps(tmp_path: Path):
         / "best-loss"
         / "model.pth.tar"
     )
-    assert maps.training.splits[0].models.best_models.metrics["loss"].warning == (
+    assert maps.training.splits[0].models.best_models.metrics["loss"].warning_log == (
         maps_path
         / "training"
         / "split-0"
@@ -200,7 +203,7 @@ def test_maps(tmp_path: Path):
         / "epoch-0"
         / "model.pth.tar"
     )
-    assert maps.training.splits[0].models.checkpoints.epochs[0].warning == (
+    assert maps.training.splits[0].models.checkpoints.epochs[0].warning_log == (
         maps_path
         / "training"
         / "split-0"
@@ -240,7 +243,7 @@ def test_maps(tmp_path: Path):
     assert maps.training.splits[0].models.final.model == (
         maps_path / "training" / "split-0" / "models" / "final" / "model.pth.tar"
     )
-    assert maps.training.splits[0].models.final.warning == (
+    assert maps.training.splits[0].models.final.warning_log == (
         maps_path / "training" / "split-0" / "models" / "final" / "warning.log"
     )
 
@@ -317,7 +320,7 @@ def test_maps(tmp_path: Path):
     assert (
         maps_path / "test" / "group-X" / "results" / "split-0" / "best-loss"
     ).exists()
-    assert maps.test.groups["X"].results.splits[0].models["best-loss"].warning == (
+    assert maps.test.groups["X"].results.splits[0].models["best-loss"].warning_log == (
         maps_path
         / "test"
         / "group-X"
@@ -378,7 +381,7 @@ def test_maps(tmp_path: Path):
     ).exists()
     assert maps.prediction.groups["X"].results.splits[0].models[
         "best-loss"
-    ].warning == (
+    ].warning_log == (
         maps_path
         / "prediction"
         / "group-X"
@@ -476,7 +479,7 @@ def test_read(tmp_path):
         .models["best-loss"]
         .metrics.aggregated.is_file()
     )
-    assert maps.exec.runs["train_2025_12_31_23_59_59"].debug.is_file()
+    assert maps.exec.runs["train_2025_12_31_23_59_59"].debug_log.is_file()
 
     maps_path = tmp_path / "minimal_maps"
     shutil.copytree(MINIMAL_MAPS, maps_path)
