@@ -15,10 +15,10 @@ from clinicadl.utils.dictionary.words import (
 
 from ....base import Directory
 from ...metrics import MetricsDir
-from ...utils import CollectionOfDirs, EpochsDir
+from ...utils import CollectionOfDirs, EpochsDir, ModelDir
 
 
-class ModelDir(Directory):
+class TrainingModelDir(ModelDir):
     def __init__(self, path: Path):
         super().__init__(path)
         self._validation_metrics = MetricsDir(
@@ -34,16 +34,16 @@ class ModelDir(Directory):
         return self._validation_metrics
 
 
-class BestModelsDir(CollectionOfDirs[ModelDir, str]):
+class BestModelsDir(CollectionOfDirs[TrainingModelDir, str]):
     _item_key = BEST
-    _dir_type = ModelDir
+    _dir_type = TrainingModelDir
 
     def __init__(self, path: Path):
         super().__init__(path)
-        self._metrics: dict[str, ModelDir] = {}
+        self._metrics: dict[str, TrainingModelDir] = {}
 
     @property
-    def metrics(self) -> dict[str, ModelDir]:
+    def metrics(self) -> dict[str, TrainingModelDir]:
         return self._metrics
 
     @property
@@ -60,8 +60,8 @@ class BestModelsDir(CollectionOfDirs[ModelDir, str]):
         return "_" + METRICS
 
 
-class CheckpointsDir(EpochsDir[ModelDir]):
-    _dir_type = ModelDir
+class CheckpointsDir(EpochsDir[TrainingModelDir]):
+    _dir_type = TrainingModelDir
 
 
 class ModelsDir(Directory):
@@ -69,7 +69,7 @@ class ModelsDir(Directory):
         super().__init__(path)
         self._best_models = BestModelsDir(path=self.path / f"{BEST}_{MODELS}")
         self._checkpoints = CheckpointsDir(path=self.path / CHECKPOINTS)
-        self._final = ModelDir(path=self.path / FINAL)
+        self._final = TrainingModelDir(path=self.path / FINAL)
 
     @property
     def best_models(self) -> BestModelsDir:
@@ -80,10 +80,10 @@ class ModelsDir(Directory):
         return self._checkpoints
 
     @property
-    def final(self) -> ModelDir:
+    def final(self) -> TrainingModelDir:
         return self._final
 
-    def get_checkpoint_dir(self, checkpoint_name: str) -> ModelDir:
+    def get_checkpoint_dir(self, checkpoint_name: str) -> TrainingModelDir:
         """
         To get the directory of a model checkpoint from a descriptive name of this
         checkpoint.
@@ -99,7 +99,7 @@ class ModelsDir(Directory):
 
         Returns
         -------
-        ModelDir
+        TrainingModelDir
             The :py:class:`clinicadl.io.base.Directory` associated to the checkpoint.
         """
         self.read()

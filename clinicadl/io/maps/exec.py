@@ -1,8 +1,8 @@
 from pathlib import Path
 from time import gmtime, strftime
 
-from clinicadl.utils.dictionary.suffixes import DEBUG, ERR, OUT
-from clinicadl.utils.dictionary.words import LOGS, RUN
+from clinicadl.utils.dictionary.suffixes import LOG
+from clinicadl.utils.dictionary.words import DEBUG, ERROR, INFO, RUN
 
 from ..base import Directory
 from .utils import CollectionOfDirs
@@ -10,16 +10,16 @@ from .utils import CollectionOfDirs
 
 class RunDir(Directory):
     @property
-    def outputs(self) -> Path:
-        return (self.path / LOGS).with_suffix(OUT)
+    def info(self) -> Path:
+        return (self.path / INFO).with_suffix(LOG)
 
     @property
-    def errors(self) -> Path:
-        return (self.path / LOGS).with_suffix(ERR)
+    def error(self) -> Path:
+        return (self.path / ERROR).with_suffix(LOG)
 
     @property
     def debug(self) -> Path:
-        return (self.path / LOGS).with_suffix(DEBUG)
+        return (self.path / DEBUG).with_suffix(LOG)
 
 
 class ExecDir(CollectionOfDirs[RunDir, str]):

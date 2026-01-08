@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Generator, Generic, TypeVar
 
-from clinicadl.utils.dictionary.words import EPOCH, SPLIT
+from clinicadl.utils.dictionary.suffixes import LOG
+from clinicadl.utils.dictionary.words import EPOCH, SPLIT, WARNING
 
 from ..base import Directory
 
@@ -116,3 +117,9 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
         self, epoch: int, overwrite: bool = False, exist_ok: bool = False
     ) -> None:
         self._create_item(epoch, overwrite=overwrite, exist_ok=exist_ok)
+
+
+class ModelDir(Directory):
+    @property
+    def warning(self) -> Path:
+        return (self.path / WARNING).with_suffix(LOG)

@@ -21,7 +21,7 @@ def _build_pattern(prefix: Path, suffix: str) -> re.Pattern:
     pattern = (
         rf"^{prefix}{sep}"
         r"run\-train_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}"
-        rf"{sep}logs\.{suffix}$"
+        rf"{sep}{suffix}\.log$"
     )
     print(pattern)
     return re.compile(pattern)
@@ -46,16 +46,16 @@ def test_maps(tmp_path: Path):
     pattern = r"^train_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}$"
     assert re.match(pattern, run)
     assert re.match(
-        _build_pattern(prefix=maps_path / "exec", suffix="err"),
-        str(maps.exec.runs[run].errors),
+        _build_pattern(prefix=maps_path / "exec", suffix="error"),
+        str(maps.exec.runs[run].error),
     )
     assert re.match(
         _build_pattern(prefix=maps_path / "exec", suffix="debug"),
         str(maps.exec.runs[run].debug),
     )
     assert re.match(
-        _build_pattern(prefix=maps_path / "exec", suffix="out"),
-        str(maps.exec.runs[run].outputs),
+        _build_pattern(prefix=maps_path / "exec", suffix="info"),
+        str(maps.exec.runs[run].info),
     )
 
     # training
@@ -148,6 +148,15 @@ def test_maps(tmp_path: Path):
         / "best-loss"
         / "model.pth.tar"
     )
+    assert maps.training.splits[0].models.best_models.metrics["loss"].warning == (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "best_models"
+        / "best-loss"
+        / "warning.log"
+    )
 
     # training - splits - models - best_models - validation_metrics
     assert maps.training.splits[0].models.best_models.metrics[
@@ -191,6 +200,15 @@ def test_maps(tmp_path: Path):
         / "epoch-0"
         / "model.pth.tar"
     )
+    assert maps.training.splits[0].models.checkpoints.epochs[0].warning == (
+        maps_path
+        / "training"
+        / "split-0"
+        / "models"
+        / "checkpoints"
+        / "epoch-0"
+        / "warning.log"
+    )
 
     # training - splits - models - checkpoints - validation_metrics
     assert maps.training.splits[0].models.checkpoints.epochs[
@@ -221,6 +239,9 @@ def test_maps(tmp_path: Path):
     # training - splits - models - final
     assert maps.training.splits[0].models.final.model == (
         maps_path / "training" / "split-0" / "models" / "final" / "model.pth.tar"
+    )
+    assert maps.training.splits[0].models.final.warning == (
+        maps_path / "training" / "split-0" / "models" / "final" / "warning.log"
     )
 
     # training - splits - models - final - validation_metrics
@@ -296,6 +317,15 @@ def test_maps(tmp_path: Path):
     assert (
         maps_path / "test" / "group-X" / "results" / "split-0" / "best-loss"
     ).exists()
+    assert maps.test.groups["X"].results.splits[0].models["best-loss"].warning == (
+        maps_path
+        / "test"
+        / "group-X"
+        / "results"
+        / "split-0"
+        / "best-loss"
+        / "warning.log"
+    )
 
     # test - group - splits - model - metrics
     assert maps.test.groups["X"].results.splits[0].models[
@@ -346,6 +376,17 @@ def test_maps(tmp_path: Path):
     assert (
         maps_path / "prediction" / "group-X" / "results" / "split-0" / "best-loss"
     ).exists()
+    assert maps.prediction.groups["X"].results.splits[0].models[
+        "best-loss"
+    ].warning == (
+        maps_path
+        / "prediction"
+        / "group-X"
+        / "results"
+        / "split-0"
+        / "best-loss"
+        / "warning.log"
+    )
 
     # prediction - group - splits - model - output_tsv
     assert maps.prediction.groups["X"].results.splits[0].models[
