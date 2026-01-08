@@ -157,9 +157,13 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             log_directory=_get_log_file_dir(maps, state, self.config.save_logs),
         )
 
+        self.logger.info("Beginning of prediction")
+
         chkpt_split, chkpt_name = maps.training.read_checkpoint_name(model_checkpoint)
         self._output_path = (
-            maps.test.groups[group_name].results.splits[chkpt_split].models[chkpt_name]
+            maps.prediction.groups[group_name]
+            .results.splits[chkpt_split]
+            .models[chkpt_name]
         ).path
 
         self._predict_progress_bar = tqdm(
@@ -212,6 +216,8 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         **kwargs,
     ) -> None:
         self._predict_progress_bar.close()
+
+        self.logger.info("End of prediction")
         self.logger.info("Predictions saved in %s", self._output_path)
 
     def on_epoch_start(self, *, state: TrainerState, **kwargs) -> None:

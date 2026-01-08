@@ -311,4 +311,98 @@ def test_test(caplog, tmp_path):
         state=state, maps=maps, model_checkpoint="split-0_best-loss", group_name="X"
     )
     assert len(maps.exec.runs_list) == 2
-    print(maps.exec.runs_list)
+
+
+def test_predict(caplog, tmp_path):
+    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.exec.remove(non_empty_ok=True)
+    maps.read()
+
+    state = TrainerState(
+        split_idx=0,
+        called="predict",
+        stage="prediction",
+        num_pred_batches=5,
+    )
+
+    logger = LoggerCallback()
+
+    stdout_capture = io.StringIO()
+    with contextlib.redirect_stdout(stdout_capture), caplog.at_level(logging.INFO):
+        logger.on_predict_start(
+            state=state, maps=maps, model_checkpoint="split-0_best-loss", group_name="X"
+        )
+    assert "Prediction: " in stdout_capture.getvalue()
+    assert "Beginning of prediction" in caplog.text
+    assert logger._predict_progress_bar.total == 5
+    assert logger._predict_progress_bar.initial == 1
+    assert logger._predict_progress_bar.desc == "Prediction"
+    assert logger._predict_progress_bar.unit == "batch"
+
+    caplog.clear()
+    state.current_pred_batch = 2
+    with caplog.at_level(logging.DEBUG):
+        logger.on_batch_start(state=state)
+    assert "Batch 2 loaded" in caplog.text
+
+    with caplog.at_level(logging.DEBUG):
+        logger.on_batch_end(state=state)
+    assert "Processing of batch 2 completed" in caplog.text
+    assert logger._predict_progress_bar.n == 2
+    assert not [r for r in caplog.records if r.levelname == logging.INFO]
+
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        logger.on_predict_end(state=state)
+    assert "End of prediction" in caplog.text
+    assert (
+        f"Predictions saved in {tmp_path / 'prediction' / 'group-X' / 'results' / 'split-0' / 'best-loss'}"
+        in caplog.text
+    )
+    assert logger._predict_progress_bar.disable
+
+    # files
+    run_name = maps.exec.runs_list[0]
+    assert run_name.startswith("predict_")
+    run_dir = maps.exec.runs[run_name]
+    f = maps.load_file(run_dir.debug)
+    assert "Batch" in f
+    assert "Prediction" not in f
+    f = maps.load_file(run_dir.outputs)
+    assert "Batch" not in f
+    assert "Prediction" in f
+    f = maps.load_file(run_dir.errors)
+    assert len(f) == 0
+    time.sleep(1)
+
+    # disable
+    logger = LoggerCallback(progress_bar=False, debug=False)
+    logger.on_predict_start(
+        state=state, maps=maps, model_checkpoint="split-0_best-loss", group_name="X"
+    )
+    assert logger._predict_progress_bar.disable
+
+    run_dir = maps.exec.runs[maps.exec.runs_list[1]]
+    assert not run_dir.debug.exists()
+    assert run_dir.outputs.exists()
+
+    # don't save
+    logger = LoggerCallback(save_logs=False)
+    logger.on_predict_start(
+        state=state, maps=maps, model_checkpoint="split-0_best-loss", group_name="X"
+    )
+    assert len(maps.exec.runs_list) == 2
+
+
+def test_state_dict():
+    logger = LoggerCallback()
+    logger.load_state_dict(logger.state_dict())
+
+
+def test_from_to_dict():
+    logger = LoggerCallback(progress_bar=False, save_logs=False, debug=False)
+    new_logger = LoggerCallback.from_dict(logger.to_dict())
+    assert not new_logger.config.progress_bar
+    assert not new_logger.config.save_logs
+    assert not new_logger.config.debug
