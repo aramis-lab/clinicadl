@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from clinicadl.io import Maps
     from clinicadl.losses.types import LossType
     from clinicadl.metrics import Metric
+    from clinicadl.metrics.types import MetricOrConfig
     from clinicadl.models import Model
     from clinicadl.optim.config import OptimizationConfig
     from clinicadl.split import Split
@@ -21,6 +22,9 @@ if TYPE_CHECKING:
 
 class Events(str, Enum):
     """Events that can trigger an action from a :py:class:`clinicadl.callbacks.Callback`."""
+
+    EXCEPTION = "on_exception"
+    INIT = "on_trainer_init"
 
     # Training
     TRAIN_START = "on_train_start"
@@ -68,6 +72,62 @@ class Callback(ABC):
 
     """
 
+    def reset(self) -> None:
+        """
+        Called every time :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`, :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`,
+        :py:meth:`Trainer.test <clinicadl.train.Trainer.test>` or :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>` are called.
+        """
+
+    def on_exception(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+    ) -> None:
+        """
+        Called when an exception interrupts an execution of the :py:class:`~clinicadl.train.Trainer`.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`~clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
+        """
+
+    def on_trainer_init(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        metrics: dict[str, MetricOrConfig],
+        optimization: OptimizationConfig,
+        callbacks: list[Callback],
+    ) -> None:
+        """
+        Called once when the :py:class:`~clinicadl.train.Trainer` is instantiated.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
+        metrics : dict[str, MetricOrConfig]
+            The metrics passed to the :py:class:`~clinicadl.train.Trainer`.
+        optimization : OptimizationConfig
+            The :py:class:`clinicadl.optim.OptimizationConfig` defining the optimization specifications
+            of the training phase.
+        callbacks : list[Callback]
+            The list of :py:class:`Callbacks <clinicadl.callbacks.Callback>` associated to the :py:class:`~clinicadl.train.Trainer`.
+        """
+
     # Train
 
     def on_train_start(
@@ -78,8 +138,8 @@ class Callback(ABC):
         state: TrainerState,
         split: Split,
         optimizers: dict[str, torch.optim.Optimizer],
-        computational: ComputationalConfig,
         optimization: OptimizationConfig,
+        computational: ComputationalConfig,
     ) -> None:
         """
         Called once at the beginning of :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
@@ -97,12 +157,14 @@ class Callback(ABC):
         optimizers : dict[str, torch.optim.Optimizer]
             The :py:class`Optimizer <torch.optim.Optimizer>` returned
             by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`.
-        computational : ComputationalConfig
-            The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
-            of the training phase.
         optimization : OptimizationConfig
             The :py:class:`clinicadl.optim.OptimizationConfig` defining the optimization specifications
             of the training phase.
+        computational : ComputationalConfig
+            The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
+            of the training phase.
+        callbacks : list[Callback]
+            The list of :py:class:`Callbacks <clinicadl.callbacks.Callback>` associated to the :py:class:`~clinicadl.train.Trainer`.
         """
 
     def on_train_end(

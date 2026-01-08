@@ -88,11 +88,11 @@ class Trainer:
         self,
         maps_path: PathType,
         model: Model,
-        callbacks: Optional[list[Callback]] = None,
         metrics: dict[str, MetricOrConfig] = {
             "loss": LossMetricConfig(loss_name="loss")
         },
-        optim_config: OptimizationConfig = OptimizationConfig(),
+        optimization: OptimizationConfig = OptimizationConfig(),
+        callbacks: Optional[list[Callback]] = None,
         _overwrite: bool = False,
     ) -> None:
         maps = Maps(maps_path)
@@ -177,6 +177,9 @@ class Trainer:
     def reset(self):
         self.state = TrainerState()
         self._metrics_handler.reset(reset_df=True)
+
+    def add_callbacks(self, callbacks: Sequence[Callback]):
+        pass
 
     def add_metrics(self, metrics: dict[str, MetricOrConfig]):
         self._metrics_handler.add_metrics(**metrics)

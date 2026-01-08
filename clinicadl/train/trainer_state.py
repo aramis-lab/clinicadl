@@ -12,6 +12,7 @@ class TrainerStage(str, Enum):
     TRAIN = "training"
     EVAL = "evaluation"
     PRED = "prediction"
+    INTERRUPTED = "interrupted"
 
 
 class TrainerCall(str, Enum):
