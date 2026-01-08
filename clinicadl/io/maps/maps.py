@@ -67,7 +67,7 @@ class Maps(Directory):
 
             The Python environment when the ``Maps`` was created.
 
-        .. dropdown:: callback.json → ``maps.callbacks_json``
+        .. dropdown:: callbacks.json → ``maps.callbacks_json``
             :icon: file
             :color: light
 

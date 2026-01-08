@@ -35,11 +35,9 @@ class DataLoader(TorchDataLoader):
         epoch : int
             Epoch number.
         """
-        if isinstance(self.sampler, DistributedSampler):
-            self.sampler.set_epoch(epoch)
-        if hasattr(self.dataset, "set_epoch") and callable(
-            set_epoch := getattr(self.dataset, "set_epoch")
-        ):
+        if callable(set_epoch := getattr(self.sampler, "set_epoch", None)):
+            set_epoch(epoch)
+        if callable(set_epoch := getattr(self.dataset, "set_epoch", None)):
             set_epoch(epoch)
 
 
