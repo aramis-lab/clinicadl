@@ -81,15 +81,15 @@ def test_maps(tmp_path: Path):
     )
 
     # training - splits - validation_metrics
-    assert maps.training.splits[0].validation_metrics.aggregated == (
+    assert maps.training.splits[0].validation_metrics.aggregated_tsv == (
         maps_path / "training" / "split-0" / "validation_metrics" / "aggregated.tsv"
     )
-    assert maps.training.splits[0].validation_metrics.details == (
+    assert maps.training.splits[0].validation_metrics.details_tsv == (
         maps_path / "training" / "split-0" / "validation_metrics" / "details.tsv"
     )
 
     # training - splits - logs
-    assert maps.training.splits[0].logs.training_loss == (
+    assert maps.training.splits[0].logs.training_loss_tsv == (
         maps_path / "training" / "split-0" / "logs" / "training_loss.tsv"
     )
     assert maps.training.splits[0].logs.learning_rates == (
@@ -104,18 +104,18 @@ def test_maps(tmp_path: Path):
     assert maps.training.splits[0].tmp.epochs[0].callbacks == (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "callbacks"
     )
-    assert maps.training.splits[0].tmp.epochs[0].state == (
+    assert maps.training.splits[0].tmp.epochs[0].state_json == (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "state.json"
     )
-    assert maps.training.splits[0].tmp.epochs[0].scaler == (
+    assert maps.training.splits[0].tmp.epochs[0].scaler_json == (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "scaler.json"
     )
-    assert maps.training.splits[0].tmp.epochs[0].model == (
+    assert maps.training.splits[0].tmp.epochs[0].model_pt == (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "model.pth.tar"
     )
 
     # training - splits - tmp - validation_metrics
-    assert maps.training.splits[0].tmp.epochs[0].validation_metrics.details == (
+    assert maps.training.splits[0].tmp.epochs[0].validation_metrics.details_tsv == (
         maps_path
         / "training"
         / "split-0"
@@ -124,7 +124,7 @@ def test_maps(tmp_path: Path):
         / "validation_metrics"
         / "details.tsv"
     )
-    assert maps.training.splits[0].tmp.epochs[0].validation_metrics.aggregated == (
+    assert maps.training.splits[0].tmp.epochs[0].validation_metrics.aggregated_tsv == (
         maps_path
         / "training"
         / "split-0"
@@ -142,7 +142,7 @@ def test_maps(tmp_path: Path):
     assert (
         maps_path / "training" / "split-0" / "models" / "best_models" / "best-loss"
     ).exists()
-    assert maps.training.splits[0].models.best_models.metrics["loss"].model == (
+    assert maps.training.splits[0].models.best_models.metrics["loss"].model_pt == (
         maps_path
         / "training"
         / "split-0"
@@ -164,7 +164,7 @@ def test_maps(tmp_path: Path):
     # training - splits - models - best_models - validation_metrics
     assert maps.training.splits[0].models.best_models.metrics[
         "loss"
-    ].validation_metrics.aggregated == (
+    ].validation_metrics.aggregated_tsv == (
         maps_path
         / "training"
         / "split-0"
@@ -176,7 +176,7 @@ def test_maps(tmp_path: Path):
     )
     assert maps.training.splits[0].models.best_models.metrics[
         "loss"
-    ].validation_metrics.details == (
+    ].validation_metrics.details_tsv == (
         maps_path
         / "training"
         / "split-0"
@@ -194,7 +194,7 @@ def test_maps(tmp_path: Path):
         maps_path / "training" / "split-0" / "models" / "checkpoints" / "epoch-0"
     ).exists()
 
-    assert maps.training.splits[0].models.checkpoints.epochs[0].model == (
+    assert maps.training.splits[0].models.checkpoints.epochs[0].model_pt == (
         maps_path
         / "training"
         / "split-0"
@@ -216,7 +216,7 @@ def test_maps(tmp_path: Path):
     # training - splits - models - checkpoints - validation_metrics
     assert maps.training.splits[0].models.checkpoints.epochs[
         0
-    ].validation_metrics.aggregated == (
+    ].validation_metrics.aggregated_tsv == (
         maps_path
         / "training"
         / "split-0"
@@ -228,7 +228,7 @@ def test_maps(tmp_path: Path):
     )
     assert maps.training.splits[0].models.checkpoints.epochs[
         0
-    ].validation_metrics.details == (
+    ].validation_metrics.details_tsv == (
         maps_path
         / "training"
         / "split-0"
@@ -240,7 +240,7 @@ def test_maps(tmp_path: Path):
     )
 
     # training - splits - models - final
-    assert maps.training.splits[0].models.final.model == (
+    assert maps.training.splits[0].models.final.model_pt == (
         maps_path / "training" / "split-0" / "models" / "final" / "model.pth.tar"
     )
     assert maps.training.splits[0].models.final.warning_log == (
@@ -248,7 +248,7 @@ def test_maps(tmp_path: Path):
     )
 
     # training - splits - models - final - validation_metrics
-    assert maps.training.splits[0].models.final.validation_metrics.aggregated == (
+    assert maps.training.splits[0].models.final.validation_metrics.aggregated_tsv == (
         maps_path
         / "training"
         / "split-0"
@@ -257,7 +257,7 @@ def test_maps(tmp_path: Path):
         / "validation_metrics"
         / "aggregated.tsv"
     )
-    assert maps.training.splits[0].models.final.validation_metrics.details == (
+    assert maps.training.splits[0].models.final.validation_metrics.details_tsv == (
         maps_path
         / "training"
         / "split-0"
@@ -333,7 +333,7 @@ def test_maps(tmp_path: Path):
     # test - group - splits - model - metrics
     assert maps.test.groups["X"].results.splits[0].models[
         "best-loss"
-    ].metrics.aggregated == (
+    ].metrics.aggregated_tsv == (
         maps_path
         / "test"
         / "group-X"
@@ -345,7 +345,7 @@ def test_maps(tmp_path: Path):
     )
     assert maps.test.groups["X"].results.splits[0].models[
         "best-loss"
-    ].metrics.details == (
+    ].metrics.details_tsv == (
         maps_path
         / "test"
         / "group-X"
@@ -457,14 +457,18 @@ def test_read(tmp_path):
     assert (
         maps.training.splits[0]
         .models.best_models.metrics["loss"]
-        .validation_metrics.aggregated.is_file()
+        .validation_metrics.aggregated_tsv.is_file()
     )
     assert (
         maps.training.splits[0]
         .models.checkpoints.epochs[0]
-        .validation_metrics.aggregated.is_file()
+        .validation_metrics.aggregated_tsv.is_file()
     )
-    assert maps.training.splits[0].tmp.epochs[0].validation_metrics.aggregated.is_file()
+    assert (
+        maps.training.splits[0]
+        .tmp.epochs[0]
+        .validation_metrics.aggregated_tsv.is_file()
+    )
     assert maps.training.data.train.splits[0].data_tsv.is_file()
     assert maps.training.data.validation.splits[0].data_tsv.is_file()
     assert (
@@ -477,7 +481,7 @@ def test_read(tmp_path):
         maps.test.groups["X"]
         .results.splits[0]
         .models["best-loss"]
-        .metrics.aggregated.is_file()
+        .metrics.aggregated_tsv.is_file()
     )
     assert maps.exec.runs["train_2025_12_31_23_59_59"].debug_log.is_file()
 
@@ -552,7 +556,7 @@ def test_load_file(tmp_path):
         maps.load_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
     )
     torch.testing.assert_close(
-        maps.load_file(maps.training.splits[0].models.checkpoints.epochs[0].model),
+        maps.load_file(maps.training.splits[0].models.checkpoints.epochs[0].model_pt),
         torch.Tensor([0]),
     )
 
@@ -590,7 +594,7 @@ def test_save_file(tmp_path):
 
     maps.save_file(
         torch.Tensor(0),
-        maps.training.splits[0].models.checkpoints.epochs[0].model,
+        maps.training.splits[0].models.checkpoints.epochs[0].model_pt,
         overwrite=True,
     )
 

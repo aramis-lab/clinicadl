@@ -10,9 +10,9 @@ from ..base import Directory
 
 class MetricsDir(Directory):
     @property
-    def aggregated(self) -> Path:
+    def aggregated_tsv(self) -> Path:
         return (self.path / AGGREGATED).with_suffix(TSV)
 
     @property
-    def details(self) -> Path:
+    def details_tsv(self) -> Path:
         return (self.path / DETAILS).with_suffix(TSV)

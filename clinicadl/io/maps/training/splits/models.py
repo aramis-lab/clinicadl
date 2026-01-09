@@ -26,7 +26,7 @@ class TrainingModelDir(ModelDir):
         )
 
     @property
-    def model(self) -> Path:
+    def model_pt(self) -> Path:
         return (self.path / MODEL).with_suffix(PTH + TAR)
 
     @property

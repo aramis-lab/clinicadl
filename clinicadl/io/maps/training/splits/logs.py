@@ -10,7 +10,7 @@ from ....base import Directory
 
 class TrainingLogsDir(Directory):
     @property
-    def training_loss(self) -> Path:
+    def training_loss_tsv(self) -> Path:
         return (self.path / f"{TRAINING}_{LOSS}").with_suffix(TSV)
 
     @property

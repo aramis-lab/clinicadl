@@ -209,7 +209,7 @@ class Maps(Directory):
 
                     Logs saved during training.
 
-                    .. dropdown:: training_loss.tsv → ``maps.training.splits[0].logs.training_loss``
+                    .. dropdown:: training_loss.tsv → ``maps.training.splits[0].logs.training_loss_tsv``
                         :icon: file
                         :color: light
 
@@ -240,7 +240,7 @@ class Maps(Directory):
 
                             Results for the best model obtained with respect to the metric ``"mse"``.
 
-                            .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.best_models.metrics["mse"].model``
+                            .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.best_models.metrics["mse"].model_pt``
                                 :icon: file
                                 :color: light
 
@@ -252,13 +252,13 @@ class Maps(Directory):
 
                                 Validation metrics obtained by the best model obtained with respect to the metric ``"mse"``.
 
-                                .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.best_models.metrics["mse"].validation_metrics.aggregated``
+                                .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.best_models.metrics["mse"].validation_metrics.aggregated_tsv``
                                     :icon: file
                                     :color: light
 
                                     Aggregated validation metrics.
 
-                                .. dropdown:: details.tsv → ``maps.training.splits[0].models.best_models.metrics["mse"].validation_metrics.details``
+                                .. dropdown:: details.tsv → ``maps.training.splits[0].models.best_models.metrics["mse"].validation_metrics.details_tsv``
                                     :icon: file
                                     :color: light
 
@@ -276,7 +276,7 @@ class Maps(Directory):
 
                             Results for the model at epoch ``10``.
 
-                            .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.checkpoints.epochs[10].model``
+                            .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.checkpoints.epochs[10]_pt``
                                 :icon: file
                                 :color: light
 
@@ -288,13 +288,13 @@ class Maps(Directory):
 
                                 Validation metrics obtained by the model at epoch ``10``.
 
-                                .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.checkpoints.epochs[10].validation_metrics.aggregated``
+                                .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.checkpoints.epochs[10].validation_metrics.aggregated_tsv``
                                     :icon: file
                                     :color: light
 
                                     Aggregated validation metrics.
 
-                                .. dropdown:: details.tsv → ``maps.training.splits[0].models.checkpoints.epochs[10].validation_metrics.details``
+                                .. dropdown:: details.tsv → ``maps.training.splits[0].models.checkpoints.epochs[10].validation_metrics.details_tsv``
                                     :icon: file
                                     :color: light
 
@@ -313,7 +313,7 @@ class Maps(Directory):
                             Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
                             have been raised when evaluating this model.
 
-                        .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.final.model``
+                        .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.final.model_pt``
                             :icon: file
                             :color: light
 
@@ -325,13 +325,13 @@ class Maps(Directory):
 
                             Validation metrics obtained by the final model.
 
-                            .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.final.validation_metrics.aggregated``
+                            .. dropdown:: aggregated.tsv → ``maps.training.splits[0].models.final.validation_metrics.aggregated_tsv``
                                 :icon: file
                                 :color: light
 
                                 Aggregated validation metrics.
 
-                            .. dropdown:: details.tsv → ``maps.training.splits[0].models.final.validation_metrics.details``
+                            .. dropdown:: details.tsv → ``maps.training.splits[0].models.final.validation_metrics.details_tsv``
                                 :icon: file
                                 :color: light
 
@@ -350,20 +350,20 @@ class Maps(Directory):
 
                         Checkpoint at the end of epoch ``15``.
 
-                        .. dropdown:: model.pth.tar → ``maps.training.splits[0].tmp.epochs[15].model``
+                        .. dropdown:: model.pth.tar → ``maps.training.splits[0].tmp.epochs[15].model_pt``
                             :icon: file
                             :color: light
 
                             The weights of the model.
 
-                        .. dropdown:: scaler.json → ``maps.training.splits[0].tmp.epochs[15].scaler``
+                        .. dropdown:: scaler.json → ``maps.training.splits[0].tmp.epochs[15].scaler_json``
                             :icon: file
                             :color: light
 
                             The state of the `Gradient Scaler <https://docs.pytorch.org/docs/stable/amp.html#gradient-scaling>`_
                             at epoch ``15``.
 
-                        .. dropdown:: state.json → ``maps.training.splits[0].tmp.epochs[15].state``
+                        .. dropdown:: state.json → ``maps.training.splits[0].tmp.epochs[15].state_json``
                             :icon: file
                             :color: light
 
@@ -381,13 +381,13 @@ class Maps(Directory):
 
                             Validation metrics at epoch ``15``.
 
-                            .. dropdown:: aggregated.tsv → ``maps.training.splits[0].tmp.epochs[15].validation_metrics.aggregated``
+                            .. dropdown:: aggregated.tsv → ``maps.training.splits[0].tmp.epochs[15].validation_metrics.aggregated_tsv``
                                 :icon: file
                                 :color: light
 
                                 Aggregated validation metrics.
 
-                            .. dropdown:: details.tsv → ``maps.training.splits[0].tmp.epochs[15].validation_metrics.details``
+                            .. dropdown:: details.tsv → ``maps.training.splits[0].tmp.epochs[15].validation_metrics.details_tsv``
                                 :icon: file
                                 :color: light
 
@@ -399,13 +399,13 @@ class Maps(Directory):
 
                     Validation metrics at every validation step.
 
-                    .. dropdown:: aggregated.tsv → ``maps.training.splits[0].validation_metrics.aggregated``
+                    .. dropdown:: aggregated.tsv → ``maps.training.splits[0].validation_metrics.aggregated_tsv``
                         :icon: file
                         :color: light
 
                         Aggregated validation metrics.
 
-                    .. dropdown:: details.tsv → ``maps.training.splits[0].validation_metrics.details``
+                    .. dropdown:: details.tsv → ``maps.training.splits[0].validation_metrics.details_tsv``
                         :icon: file
                         :color: light
 
@@ -467,13 +467,13 @@ class Maps(Directory):
 
                                 Metrics on the group ``"X"``.
 
-                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].metrics.aggregated``
+                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].metrics.aggregated_tsv``
                                     :icon: file
                                     :color: light
 
                                     Aggregated metrics.
 
-                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].metrics.details``
+                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].metrics.details_tsv``
                                     :icon: file
                                     :color: light
 
@@ -493,13 +493,13 @@ class Maps(Directory):
 
                                 Metrics on the group ``"X"``.
 
-                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["final"].metrics.aggregated``
+                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["final"].metrics.aggregated_tsv``
                                     :icon: file
                                     :color: light
 
                                     Aggregated metrics.
 
-                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["final"].metrics.details``
+                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["final"].metrics.details_tsv``
                                     :icon: file
                                     :color: light
 
@@ -518,13 +518,13 @@ class Maps(Directory):
 
                                 Metrics on the group ``"X"``.
 
-                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["best-mse"].metrics.aggregated``
+                                .. dropdown:: aggregated.tsv → ``maps.test.groups["X"].results.splits[0].models["best-mse"].metrics.aggregated_tsv``
                                     :icon: file
                                     :color: light
 
                                     Aggregated metrics.
 
-                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["best-mse"].metrics.details``
+                                .. dropdown:: details.tsv → ``maps.test.groups["X"].results.splits[0].models["best-mse"].metrics.details_tsv``
                                     :icon: file
                                     :color: light
 
@@ -679,7 +679,7 @@ class Maps(Directory):
 
     .. code-block:: python
 
-        >>> maps.training.splits[0].models.checkpoints.epochs[10].model
+        >>> maps.training.splits[0].models.checkpoints.epochs[10]_pt
         PosixPath('maps_dir/training/split-0/models/checkpoints/epoch-10/model.pth.tar')
 
     To get the list of all saved checkpoints:
@@ -806,7 +806,7 @@ class Maps(Directory):
                     },
                 }
             }
-            >>> maps.load_file(maps.training.splits[0].models.checkpoints.epochs[1].model)
+            >>> maps.load_file(maps.training.splits[0].models.checkpoints.epochs[1].model_pt)
             OrderedDict([('conv0.weight',
               tensor([[[[ 7.2531e-03,  5.7384e-03,  1.4988e-02,  ..., -3.1380e-02,
                          -2.2103e-02,  5.8432e-02],

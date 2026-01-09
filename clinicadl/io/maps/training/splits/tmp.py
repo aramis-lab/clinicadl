@@ -38,17 +38,17 @@ class EpochTmpDir(Directory):
 
     @property
     @mandatory
-    def model(self) -> Path:
+    def model_pt(self) -> Path:
         return (self.path / MODEL).with_suffix(PTH + TAR)
 
     @property
     @mandatory
-    def scaler(self) -> Path:
+    def scaler_json(self) -> Path:
         return (self.path / SCALER).with_suffix(JSON)
 
     @property
     @mandatory
-    def state(self) -> Path:
+    def state_json(self) -> Path:
         return (self.path / STATE).with_suffix(JSON)
 
 
