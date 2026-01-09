@@ -129,18 +129,6 @@ class Maps(Directory):
 
                     Details on the train sets.
 
-                    .. dropdown:: dataloader.json → ``maps.training.data.train.dataloader_json``
-                        :icon: file
-                        :color: light
-
-                        Details on the train :py:class:`dataloader <clinicadl.data.dataloader.DataLoaderConfig>`.
-
-                    .. dropdown:: dataset.json → ``maps.training.data.train.dataset_json``
-                        :icon: file
-                        :color: light
-
-                        Details on the train :py:class:`dataset <clinicadl.data.datasets>`.
-
                     .. dropdown:: **split-0**
                         :icon: file-directory
                         :color: muted
@@ -153,17 +141,24 @@ class Maps(Directory):
 
                             List of all (participant, session) pairs used for the train set of the split ``0``.
 
+                    .. dropdown:: dataloader.json → ``maps.training.data.train.splits[0].dataloader_json``
+                        :icon: file
+                        :color: light
+
+                        Details on the train :py:class:`dataloader <clinicadl.data.dataloader.DataLoaderConfig>`
+                        for split ``0``.
+
+                    .. dropdown:: dataset.json → ``maps.training.data.train.splits[0].dataset_json``
+                        :icon: file
+                        :color: light
+
+                        Details on the train :py:class:`dataset <clinicadl.data.datasets>` for split ``0``.
+
                 .. dropdown:: **validation**
                     :icon: file-directory
                     :color: muted
 
                     Details on the validation sets.
-
-                    .. dropdown:: dataset.json → ``maps.training.data.validation.dataset_json``
-                        :icon: file
-                        :color: light
-
-                        Details on the validation :py:class:`dataset <clinicadl.data.datasets>`.
 
                     .. dropdown:: **split-0**
                         :icon: file-directory
@@ -176,6 +171,12 @@ class Maps(Directory):
                             :color: light
 
                             List of all (participant, session) pairs used for the validation set of the split ``0``.
+
+                        .. dropdown:: dataset.json → ``maps.training.data.validation.splits[0].dataset_json``
+                            :icon: file
+                            :color: light
+
+                            Details on the validation :py:class:`dataset <clinicadl.data.datasets>` for split ``0``.
 
             .. dropdown:: **split-0**
                 :icon: file-directory

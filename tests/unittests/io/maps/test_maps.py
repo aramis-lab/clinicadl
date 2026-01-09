@@ -271,30 +271,28 @@ def test_maps(tmp_path: Path):
     assert maps.training.data.data_tsv == (maps_path / "training" / "data" / "data.tsv")
 
     # training - data - train
-    assert maps.training.data.train.dataloader_json == (
-        maps_path / "training" / "data" / "train" / "dataloader.json"
-    )
-    assert maps.training.data.train.dataset_json == (
-        maps_path / "training" / "data" / "train" / "dataset.json"
-    )
-
     maps.training.data.train.create_split(0)
     assert maps.training.data.train.splits_list == [0]
     assert (maps_path / "training" / "data" / "train" / "split-0").exists()
     assert maps.training.data.train.splits[0].data_tsv == (
         maps_path / "training" / "data" / "train" / "split-0" / "data.tsv"
     )
-
-    # training - data - validation
-    assert maps.training.data.validation.dataset_json == (
-        maps_path / "training" / "data" / "validation" / "dataset.json"
+    assert maps.training.data.train.splits[0].dataset_json == (
+        maps_path / "training" / "data" / "train" / "split-0" / "dataset.json"
+    )
+    assert maps.training.data.train.splits[0].dataloader_json == (
+        maps_path / "training" / "data" / "train" / "split-0" / "dataloader.json"
     )
 
+    # training - data - validation
     maps.training.data.validation.create_split(0)
     assert maps.training.data.validation.splits_list == [0]
     assert (maps_path / "training" / "data" / "validation" / "split-0").exists()
     assert maps.training.data.validation.splits[0].data_tsv == (
         maps_path / "training" / "data" / "validation" / "split-0" / "data.tsv"
+    )
+    assert maps.training.data.validation.splits[0].dataset_json == (
+        maps_path / "training" / "data" / "validation" / "split-0" / "dataset.json"
     )
 
     # test

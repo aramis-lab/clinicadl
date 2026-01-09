@@ -16,15 +16,11 @@ from ...utils import mandatory
 from ..utils import SplitsDir
 
 
-class DataSplitDir(Directory):
+class ValidationDataSplitDir(Directory):
     @property
     @mandatory
     def data_tsv(self) -> Path:
         return (self.path / DATA).with_suffix(TSV)
-
-
-class ValidationDataDir(SplitsDir[DataSplitDir]):
-    _dir_type = DataSplitDir
 
     @property
     @mandatory
@@ -32,11 +28,19 @@ class ValidationDataDir(SplitsDir[DataSplitDir]):
         return (self.path / DATASET).with_suffix(JSON)
 
 
-class TrainDataDir(ValidationDataDir):
+class TrainDataSplitDir(ValidationDataSplitDir):
     @property
     @mandatory
     def dataloader_json(self) -> Path:
         return (self.path / DATALOADER).with_suffix(JSON)
+
+
+class ValidationDataDir(SplitsDir[ValidationDataSplitDir]):
+    _dir_type = ValidationDataSplitDir
+
+
+class TrainDataDir(SplitsDir[TrainDataSplitDir]):
+    _dir_type = TrainDataSplitDir
 
 
 class DataDir(Directory):
