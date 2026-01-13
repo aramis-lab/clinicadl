@@ -15,7 +15,7 @@ from clinicadl.utils.dictionary.words import (
 )
 
 from ....base import Directory
-from ...metrics import MetricsDir
+from ...utils import MetricsDir
 from .logs import TrainingLogsDir
 from .models import ModelsDir
 from .tmp import TmpDir

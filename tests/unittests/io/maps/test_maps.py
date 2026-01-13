@@ -430,6 +430,9 @@ def test_create(tmp_path: Path):
     maps = Maps(maps_path)
 
     maps.create()
+    assert maps.summary_log.is_file()
+    assert maps.environment_txt.is_file()
+
     maps.training.data.create()
     with open(maps.training.data.data_tsv, "w", encoding="utf-8") as f:
         print("", file=f)

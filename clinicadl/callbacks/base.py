@@ -78,26 +78,6 @@ class Callback(ABC):
         :py:meth:`Trainer.test <clinicadl.train.Trainer.test>` or :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>` are called.
         """
 
-    def on_exception(
-        self,
-        *,
-        model: Model,
-        maps: Maps,
-        state: TrainerState,
-    ) -> None:
-        """
-        Called when an exception interrupts an execution of the :py:class:`~clinicadl.train.Trainer`.
-
-        Parameters
-        ----------
-        model : Model
-            The :py:class:`clinicadl.models.Model` associated to the :py:class:`~clinicadl.train.Trainer`.
-        maps : Maps
-            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
-        state : TrainerState
-            The current :py:class:`clinicadl.train.TrainerState`.
-        """
-
     def on_trainer_init(
         self,
         *,
@@ -126,6 +106,26 @@ class Callback(ABC):
             of the training phase.
         callbacks : list[Callback]
             The list of :py:class:`Callbacks <clinicadl.callbacks.Callback>` associated to the :py:class:`~clinicadl.train.Trainer`.
+        """
+
+    def on_exception(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+    ) -> None:
+        """
+        Called when an exception interrupts an execution of the :py:class:`~clinicadl.train.Trainer`.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`~clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
         """
 
     # Train

@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import TYPE_CHECKING
 
-import torch
+import torch.amp as amp
+import torch.nn as nn
 import torch.optim as optim
-from torch.amp import GradScaler
 
-from clinicadl.data.dataloader import Batch, BatchType
-from clinicadl.losses.types import Loss, LossType
 from clinicadl.utils.objects import JsonReaderWriter
 
+if TYPE_CHECKING:
+    from clinicadl.data.dataloader import Batch, BatchType
+    from clinicadl.losses.types import Loss, LossType
 
-class Model(JsonReaderWriter, ABC, torch.nn.Module):
+
+class Model(JsonReaderWriter, ABC, nn.Module):
     """
     The base model from which every model that works with ``ClinicaDL`` must inherit.
 
@@ -74,7 +76,7 @@ class Model(JsonReaderWriter, ABC, torch.nn.Module):
     def backward_step(
         self,
         loss: LossType,
-        grad_scaler: torch.amp.GradScaler = torch.amp.GradScaler(enabled=False),
+        grad_scaler: amp.GradScaler = amp.GradScaler(enabled=False),
     ) -> None:
         """
         Performs gradient computation using the loss(es) returned by :py:meth:`forward_step`.
@@ -90,8 +92,8 @@ class Model(JsonReaderWriter, ABC, torch.nn.Module):
     @abstractmethod
     def optimization_step(
         self,
-        optimizers: dict[str, torch.optim.Optimizer],
-        grad_scaler: GradScaler = GradScaler(enabled=False),
+        optimizers: dict[str, optim.Optimizer],
+        grad_scaler: amp.GradScaler = amp.GradScaler(enabled=False),
     ) -> None:
         """
         Performs the optimization step using the gradients accumulated in
@@ -206,18 +208,18 @@ class Model(JsonReaderWriter, ABC, torch.nn.Module):
 
     def get_summary(
         self,
-        input_data: torch.Tensor,
+        input_data: BatchType,
     ) -> str:
         """
         Returns a summary of your neural network, produced by
         `torchinfo <https://github.com/TylerYep/torchinfo>`_ for example.
 
-        If this method is not implemented, the ``nn_summary.txt`` file of your
-        :py:class:`MAPS directory <clinicadl.io.Maps>` will be empty.
+        If this method is not implemented, the ``nn_summary.txt`` will not be
+        created.
 
         Parameters
         ----------
-        input_data : torch.Tensor
+        input_data : BatchType
             Input data to pass to the neural network to build the summary.
 
         Returns

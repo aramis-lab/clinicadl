@@ -14,8 +14,7 @@ from clinicadl.utils.dictionary.words import (
 )
 
 from ....base import Directory
-from ...metrics import MetricsDir
-from ...utils import CollectionOfDirs, EpochsDir, ModelDir
+from ...utils import CollectionOfDirs, EpochsDir, MetricsDir, ModelDir
 
 
 class TrainingModelDir(ModelDir):

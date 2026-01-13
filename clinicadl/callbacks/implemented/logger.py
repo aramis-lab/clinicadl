@@ -5,8 +5,11 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Optional
 
+import torch
 from tqdm import tqdm
 
+from clinicadl.io.maps import MapsSummary
+from clinicadl.io.maps.training import TrainingSummary
 from clinicadl.train.trainer_state import TrainerCall, TrainerStage
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
@@ -14,10 +17,12 @@ from clinicadl.utils.objects import HasConfig
 from ..base import Callback
 
 if TYPE_CHECKING:
+    from clinicadl.data.dataloader import BatchType
     from clinicadl.io import Maps
     from clinicadl.io.maps.exec import RunDir
     from clinicadl.losses.types import LossType
     from clinicadl.models import Model
+    from clinicadl.split import Split
     from clinicadl.train import TrainerState
     from clinicadl.train.computational import ComputationalConfig
 
@@ -56,28 +61,68 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             save_logs=save_logs, debug=debug, progress_bar=progress_bar
         )
         self.logger: Optional[logging.Logger] = None
+        self._summary: Optional[MapsSummary] = None
+        self._train_summary: Optional[TrainingSummary] = None
         self._train_progress_bar: Optional[tqdm] = None
         self._val_progress_bar: Optional[tqdm] = None
         self._test_progress_bar: Optional[tqdm] = None
         self._predict_progress_bar: Optional[tqdm] = None
-        self._output_path: Optional[Path]
+        self._output_path: Optional[Path] = None
+        self._log_path: Optional[Path] = None
+
+    def on_trainer_init(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        **kwargs,
+    ) -> None:
+        if not maps.architecture_log.is_file():
+            maps.save_file(repr(model), maps.architecture_log)
+        self._summary = MapsSummary(maps.summary_log)
+
+    def on_exception(
+        self,
+        *,
+        state: TrainerState,
+        **kwargs,
+    ) -> None:
+        if state.called == TrainerCall.TRAIN:
+            self._train_summary.add_training_end_info(
+                n_epochs=state.current_epoch, interrupted=True
+            )
+        if self.config.save_logs:
+            self.logger.error(
+                "An exception occurred. To debug, check the logs in %s", self._log_path
+            )
+        _shutdown_logging(self.logger)
 
     def on_train_start(
         self,
         *,
         maps: Maps,
         state: TrainerState,
+        split: Split,
         computational: ComputationalConfig,
         **kwargs,
     ) -> None:
-        self.logger = _setup_logging(
-            self.config.debug,
-            log_directory=_get_log_file_dir(maps, state, self.config.save_logs),
-        )
-        self._output_path = maps.training.splits[state.split_idx].path
+        split_dir = maps.training.splits[state.split_idx]
+        self._setup_logging(maps, state, warning_file=split_dir.warning_log)
 
         self.logger.info("Beginning of training on split %s", state.split_idx)
         self.logger.info("Computational configuration: %s", computational)
+
+        self._output_path = split_dir.path
+
+        self._train_summary = TrainingSummary(
+            maps.training.splits[state.split_idx].summary_log
+        )
+        self._train_summary.create()
+        self._train_summary.add_data_info(
+            n_train_samples=len(split.train_dataset),
+            n_val_samples=len(split.val_dataset),
+        )
+        self._summary.add_training_split(split.index)
 
     def on_validation_start(
         self,
@@ -88,19 +133,17 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         **kwargs,
     ) -> None:
         if state.called == TrainerCall.VALIDATE:
-            self.logger = _setup_logging(
-                self.config.debug,
-                log_directory=_get_log_file_dir(maps, state, self.config.save_logs),
-            )
-
             if model_checkpoint:
-                self._output_path = (
-                    maps.training.splits[state.split_idx]
-                    .models.get_checkpoint_dir(model_checkpoint)
-                    .path
-                )
+                model_dir = maps.training.splits[
+                    state.split_idx
+                ].models.get_checkpoint_dir(model_checkpoint)
+                log_dir = model_dir
             else:
-                self._output_path = maps.training.splits[state.split_idx].models.path
+                model_dir = maps.training.splits[state.split_idx].models
+                log_dir = maps.training.splits[state.split_idx]
+
+            self._setup_logging(maps, state, warning_file=log_dir.warning_log)
+            self._output_path = model_dir.path
 
         self.logger.info("Beginning of validation")
 
@@ -122,17 +165,15 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         group_name: str,
         **kwargs,
     ) -> None:
-        self.logger = _setup_logging(
-            self.config.debug,
-            log_directory=_get_log_file_dir(maps, state, self.config.save_logs),
+        chkpt_split, chkpt_name = maps.training.read_checkpoint_name(model_checkpoint)
+        model_dir = (
+            maps.test.groups[group_name].results.splits[chkpt_split].models[chkpt_name]
         )
+        self._setup_logging(maps, state, warning_file=model_dir.warning_log)
 
         self.logger.info("Beginning of test")
 
-        chkpt_split, chkpt_name = maps.training.read_checkpoint_name(model_checkpoint)
-        self._output_path = (
-            maps.test.groups[group_name].results.splits[chkpt_split].models[chkpt_name]
-        ).path
+        self._output_path = model_dir.path
 
         self._test_progress_bar = tqdm(
             total=state.num_test_batches,
@@ -143,6 +184,8 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             file=sys.stdout,
         )
 
+        self._summary.add_test_group(group_name)
+
     def on_predict_start(
         self,
         *,
@@ -152,19 +195,17 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         group_name: str,
         **kwargs,
     ) -> None:
-        self.logger = _setup_logging(
-            self.config.debug,
-            log_directory=_get_log_file_dir(maps, state, self.config.save_logs),
-        )
-
-        self.logger.info("Beginning of prediction")
-
         chkpt_split, chkpt_name = maps.training.read_checkpoint_name(model_checkpoint)
-        self._output_path = (
+        model_dir = (
             maps.prediction.groups[group_name]
             .results.splits[chkpt_split]
             .models[chkpt_name]
-        ).path
+        )
+        self._setup_logging(maps, state, warning_file=model_dir.warning_log)
+
+        self.logger.info("Beginning of prediction")
+
+        self._output_path = model_dir.path
 
         self._predict_progress_bar = tqdm(
             total=state.num_pred_batches,
@@ -175,12 +216,17 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             file=sys.stdout,
         )
 
+        self._summary.add_prediction_group(group_name)
+
     def on_train_end(
         self,
         *,
         state: TrainerState,
         **kwargs,
     ) -> None:
+        self._train_summary.add_training_end_info(
+            n_epochs=state.current_epoch, interrupted=False
+        )
         self.logger.info(
             "Training completed successfully (stopped after %s epochs)",
             state.current_epoch,
@@ -189,6 +235,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             "All results, logs, and model checkpoints are saved in %s",
             self._output_path,
         )
+        _shutdown_logging(self.logger)
 
     def on_validation_end(
         self,
@@ -201,6 +248,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         self.logger.info("End of validation")
         if state.called == TrainerCall.VALIDATE:
             self.logger.info("Validation metrics saved in %s", self._output_path)
+            _shutdown_logging(self.logger)
 
     def on_test_end(
         self,
@@ -210,6 +258,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
 
         self.logger.info("End of test")
         self.logger.info("Test metrics saved in %s", self._output_path)
+        _shutdown_logging(self.logger)
 
     def on_predict_end(
         self,
@@ -219,6 +268,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
 
         self.logger.info("End of prediction")
         self.logger.info("Predictions saved in %s", self._output_path)
+        _shutdown_logging(self.logger)
 
     def on_epoch_start(self, *, state: TrainerState, **kwargs) -> None:
         self.logger.info("Beginning of epoch %d", state.current_epoch)
@@ -236,7 +286,15 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         self._train_progress_bar.close()
         self.logger.info("Epoch %d completed", state.current_epoch)
 
-    def on_batch_start(self, *, state: TrainerState, **kwargs) -> None:
+    def on_batch_start(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        batch: BatchType,
+        **kwargs,
+    ) -> None:
         if state.stage == TrainerStage.TRAIN:
             current_batch = state.current_train_batch
 
@@ -253,6 +311,11 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             raise ValueError("Inconsistent 'stage' and 'called' in the TrainerState.")
 
         self.logger.debug("Batch %d loaded", current_batch)
+
+        if not maps.nn_summary_txt.is_file():
+            with torch.no_grad():
+                nn_summary = model.get_summary(batch)
+            maps.save_file(nn_summary, maps.nn_summary_txt)
 
     def on_batch_end(
         self,
@@ -304,6 +367,16 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
     def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
         pass
 
+    def _setup_logging(
+        self, maps: Maps, state: TrainerState, warning_file: Path
+    ) -> None:
+        self._log_path = _get_log_file_dir(maps, state, self.config.save_logs)
+        self.logger = _setup_logging(
+            self.config.debug,
+            warning_file=warning_file,
+            log_directory=self._log_path,
+        )
+
 
 class _LogsFilter(logging.Filter):
     """
@@ -320,7 +393,9 @@ class _LogsFilter(logging.Filter):
         return record.levelno <= logging.ERROR
 
 
-def _setup_logging(debug: bool, log_directory: Optional[RunDir]) -> logging.Logger:
+def _setup_logging(
+    debug: bool, warning_file: Path, log_directory: Optional[RunDir]
+) -> logging.Logger:
     """
     Setup ClinicaDL's logging facilities.
     """
@@ -337,25 +412,33 @@ def _setup_logging(debug: bool, log_directory: Optional[RunDir]) -> logging.Logg
         "%(asctime)s - %(levelname)s: %(message)s", datefmt=datefmt
     )
 
-    console_handler = logging.StreamHandler(stream=sys.stdout)
-    console_handler.setLevel(logging.INFO)
-    console_handler.addFilter(_LogsFilter())
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+    outputs_handler = logging.StreamHandler(stream=sys.stdout)
+    outputs_handler.setLevel(logging.INFO)
+    outputs_handler.addFilter(_LogsFilter())
+    outputs_handler.setFormatter(formatter)
+    logger.addHandler(outputs_handler)
 
     if log_directory:
-        file_handler = logging.FileHandler(
-            log_directory.outputs, mode="a", encoding="utf-8"
+        info_handler = logging.FileHandler(
+            log_directory.info_log, mode="a", encoding="utf-8"
         )
-        file_handler.setLevel(logging.INFO)
-        file_handler.addFilter(_LogsFilter())
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        info_handler.setLevel(logging.INFO)
+        info_handler.addFilter(_LogsFilter())
+        info_handler.setFormatter(formatter)
+        logger.addHandler(info_handler)
+
+        warning_file_handler = logging.FileHandler(
+            warning_file, mode="a", encoding="utf-8"
+        )
+        warning_file_handler.setLevel(logging.WARNING)
+        warning_file_handler.addFilter(_LogsFilter(level=logging.WARNING))
+        warning_file_handler.setFormatter(formatter)
+        logger.addHandler(warning_file_handler)
 
         # DEBUG
         if debug:
             debug_file_handler = logging.FileHandler(
-                log_directory.debug, mode="a", encoding="utf-8"
+                log_directory.debug_log, mode="a", encoding="utf-8"
             )
             debug_file_handler.setLevel(logging.DEBUG)
             debug_file_handler.addFilter(_LogsFilter(level=logging.DEBUG))
@@ -367,20 +450,29 @@ def _setup_logging(debug: bool, log_directory: Optional[RunDir]) -> logging.Logg
         "%(asctime)s - %(name)s - %(levelname)s: %(message)s", datefmt=datefmt
     )
 
-    err_handler = logging.StreamHandler(stream=sys.stderr)
-    err_handler.setLevel(logging.ERROR)
-    err_handler.setFormatter(formatter)
-    logger.addHandler(err_handler)
+    error_handler = logging.StreamHandler(stream=sys.stderr)
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(formatter)
+    logger.addHandler(error_handler)
 
     if log_directory:
         error_file_handler = logging.FileHandler(
-            log_directory.errors, mode="a", encoding="utf-8"
+            log_directory.error_log, mode="a", encoding="utf-8"
         )
         error_file_handler.setLevel(logging.ERROR)
         error_file_handler.setFormatter(formatter)
         logger.addHandler(error_file_handler)
 
     return logger
+
+
+def _shutdown_logging(logger: logging.Logger) -> None:
+    """
+    To close ClinicaDL's logging facilities and come back to normal logging.
+    """
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)
 
 
 def _get_log_file_dir(

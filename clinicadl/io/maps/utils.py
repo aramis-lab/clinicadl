@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Generator, Generic, TypeVar
 
-from clinicadl.utils.dictionary.suffixes import LOG
-from clinicadl.utils.dictionary.words import EPOCH, SPLIT, WARNING
+from clinicadl.utils.dictionary.suffixes import LOG, TSV
+from clinicadl.utils.dictionary.words import AGGREGATED, DETAILS, EPOCH, SPLIT, WARNING
 
 from ..base import Directory
 
@@ -123,3 +123,13 @@ class ModelDir(Directory):
     @property
     def warning_log(self) -> Path:
         return (self.path / WARNING).with_suffix(LOG)
+
+
+class MetricsDir(Directory):
+    @property
+    def aggregated_tsv(self) -> Path:
+        return (self.path / AGGREGATED).with_suffix(TSV)
+
+    @property
+    def details_tsv(self) -> Path:
+        return (self.path / DETAILS).with_suffix(TSV)

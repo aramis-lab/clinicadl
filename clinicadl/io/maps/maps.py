@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import subprocess
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +30,7 @@ from ..base import Directory
 from ..utils import mandatory
 from .exec import ExecDir
 from .inference import PredictionDir, TestDir
+from .summary import MapsSummary
 from .training import TrainingDir
 
 
@@ -141,18 +141,18 @@ class Maps(Directory):
 
                             List of all (participant, session) pairs used for the train set of the split ``0``.
 
-                    .. dropdown:: dataloader.json → ``maps.training.data.train.splits[0].dataloader_json``
-                        :icon: file
-                        :color: light
+                        .. dropdown:: dataloader.json → ``maps.training.data.train.splits[0].dataloader_json``
+                            :icon: file
+                            :color: light
 
-                        Details on the train :py:class:`dataloader <clinicadl.data.dataloader.DataLoaderConfig>`
-                        for split ``0``.
+                            Details on the train :py:class:`dataloader <clinicadl.data.dataloader.DataLoaderConfig>`
+                            for split ``0``.
 
-                    .. dropdown:: dataset.json → ``maps.training.data.train.splits[0].dataset_json``
-                        :icon: file
-                        :color: light
+                        .. dropdown:: dataset.json → ``maps.training.data.train.splits[0].dataset_json``
+                            :icon: file
+                            :color: light
 
-                        Details on the train :py:class:`dataset <clinicadl.data.datasets>` for split ``0``.
+                            Details on the train :py:class:`dataset <clinicadl.data.datasets>` for split ``0``.
 
                 .. dropdown:: **validation**
                     :icon: file-directory
@@ -917,18 +917,7 @@ class Maps(Directory):
 
     def _create_summary_log(self):
         """Create a summary log file."""
-
-        summary = "==================== Summary Log ===================="
-        summary += "\n\n"
-        summary += (
-            f"Date              : {datetime.now().strftime('%d %b %Y, %H:%M:%S')}"
-        )
-        summary += "\n"
-        summary += f"Path              : {self.path.resolve()}"
-        summary += "\n"
-
-        with (self.summary_log).open(mode="w") as file:
-            file.write(summary)
+        MapsSummary(self.summary_log).create()
 
     def _write_environment_txt(self) -> None:
         """Writes the installed Python packages (via `pip freeze`) to `environment.txt`."""

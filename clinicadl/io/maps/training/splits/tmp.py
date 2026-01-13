@@ -15,8 +15,7 @@ from clinicadl.utils.dictionary.words import (
 
 from ....base import Directory
 from ....utils import mandatory
-from ...metrics import MetricsDir
-from ...utils import EpochsDir
+from ...utils import EpochsDir, MetricsDir
 
 
 class EpochTmpDir(Directory):

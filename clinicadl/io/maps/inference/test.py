@@ -4,8 +4,7 @@ from pathlib import Path
 
 from clinicadl.utils.dictionary.words import METRICS
 
-from ..metrics import MetricsDir
-from ..utils import ModelDir
+from ..utils import MetricsDir, ModelDir
 from .base import (
     InferenceDir,
     InferenceGroupDir,
