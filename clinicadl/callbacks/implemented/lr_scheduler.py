@@ -10,6 +10,7 @@ from pydantic import Field, field_validator, model_validator
 from torch.optim.lr_scheduler import LRScheduler, ReduceLROnPlateau
 from typing_extensions import Self
 
+from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.optim.lr_schedulers.config import (
     LRSchedulerConfig,
     LRSchedulerType,
@@ -23,11 +24,9 @@ from clinicadl.utils.dictionary.words import BATCH, EPOCH, NAME, OPTIMIZER
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
-from .utils import build_metric_key_error, get_metric_value
 
 if TYPE_CHECKING:
     from clinicadl.io import Maps
-    from clinicadl.metrics import Metric
     from clinicadl.train import TrainerState
 
 logger = getLogger("clinicadl.callbacks.LRSchedulerCallback")
@@ -192,16 +191,14 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         self._param_groups = self._get_param_groups(optimizer)
 
     def on_validation_start(
-        self, *, state: TrainerState, metrics: dict[str, Metric], **kwargs
+        self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
     ) -> None:
         if (
             state.called == TrainerCall.TRAIN
             and self.config.scheduler_type == LRSchedulerType.METRIC
         ):
-            try:
-                opt = metrics[self.config.metric_name].optimum
-            except KeyError as exc:
-                raise build_metric_key_error(self.config.metric_name) from exc
+            metrics.check_metric_name(self.config.metric_name)
+            opt = metrics.metrics[self.config.metric_name].optimum
 
             if isinstance(self.scheduler, ReduceLROnPlateau):
                 if self.scheduler.mode != opt:
@@ -218,14 +215,13 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
             self._scheduler_step(state=state)
 
     def on_validation_end(
-        self, *, state: TrainerState, metrics_df: pd.DataFrame, **kwargs
+        self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
     ) -> None:
         if state.called == TrainerCall.TRAIN and (
             self.config.scheduler_type == LRSchedulerType.METRIC
         ):
-            val_metric = get_metric_value(
-                metrics_df,
-                metric_name=self.config.metric_name,
+            val_metric = metrics.get_metric_value(
+                metric=self.config.metric_name,
                 epoch=state.current_epoch,
             )
             self._scheduler_step(val_metric, state=state)

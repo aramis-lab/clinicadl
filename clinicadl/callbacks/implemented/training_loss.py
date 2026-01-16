@@ -50,7 +50,7 @@ class TrainingLossCallback(Callback):
         maps.training.splits[state.split_idx].logs.create(exist_ok=True)
         maps.save_file(
             self.df,
-            path=maps.training.splits[state.split_idx].logs.training_loss,
+            path=maps.training.splits[state.split_idx].logs.training_loss_tsv,
             overwrite=True,
         )
 

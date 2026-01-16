@@ -7,22 +7,17 @@ from pydantic import PositiveInt, field_validator, model_validator
 from typing_extensions import Self
 
 from clinicadl.metrics.enum import Optimum
+from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
-from .utils import (
-    QuantityMonitoring,
-    build_metric_key_error,
-    get_metric_value,
-    get_metric_values,
-)
+from .utils import QuantityMonitoring
 
 if TYPE_CHECKING:
     from clinicadl.io import Maps
-    from clinicadl.io.maps.training.splits.models import ModelDir
-    from clinicadl.metrics import Metric
+    from clinicadl.io.maps.training.splits.models import TrainingModelDir
     from clinicadl.models import Model
     from clinicadl.train import TrainerState
 
@@ -105,8 +100,7 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
             metric=metric, epochs=epochs, save_last=save_last
         )
         self.metric_monitoring: Optional[QuantityMonitoring] = None
-        self._metrics_df = pd.DataFrame()
-        self._detailed_metrics_df = pd.DataFrame()
+        self._metrics: Optional[MetricsHandler] = None
 
     def _init_metric_monitoring(self, mode: Optimum) -> None:
         """Initialize metric monitoring with the mode."""
@@ -126,19 +120,16 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
             self.metric_monitoring.reset()
 
     def on_validation_start(
-        self, *, state: TrainerState, metrics: dict[str, Metric], **kwargs
+        self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
     ) -> None:
         if (
             self.config.metric
             and self.metric_monitoring is None
             and state.called == TrainerCall.TRAIN
         ):
-            try:
-                mode = metrics[self.config.metric].optimum
-            except KeyError as exc:
-                raise build_metric_key_error(self.config.metric) from exc
+            metrics.check_metric_name(self.config.metric)
 
-            self._init_metric_monitoring(mode)
+            self._init_metric_monitoring(metrics.metrics[self.config.metric].optimum)
 
     def on_validation_end(
         self,
@@ -146,19 +137,17 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         model: Model,
         maps: Maps,
         state: TrainerState,
-        metrics_df: pd.DataFrame,
-        detailed_metrics_df: pd.DataFrame,
+        metrics: MetricsHandler,
         **kwargs,
     ) -> None:
         if state.called != TrainerCall.TRAIN:
             return
 
-        self._metrics_df = metrics_df
-        self._detailed_metrics_df = detailed_metrics_df
+        self._metrics = metrics
 
         if self.config.metric:
-            value = get_metric_value(
-                metrics_df, metric_name=self.config.metric, epoch=state.current_epoch
+            value = metrics.get_metric_value(
+                metric=self.config.metric, epoch=state.current_epoch
             )
 
             if self.metric_monitoring.step(value, log=False):
@@ -205,21 +194,21 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         model: Model,
         maps: Maps,
         state: TrainerState,
-        model_dir: ModelDir,
+        model_dir: TrainingModelDir,
     ) -> None:
         """
         Saves the model and the validation metrics.
         """
         model_dir.validation_metrics.create(exist_ok=True)
-        maps.save_file(model.state_dict(), path=model_dir.model, overwrite=True)
+        maps.save_file(model.state_dict(), path=model_dir.model_pt, overwrite=True)
         maps.save_file(
-            get_metric_values(self._metrics_df, epoch=state.current_epoch),
-            path=model_dir.validation_metrics.aggregated,
+            self._metrics.get_metric_values(epoch=state.current_epoch),
+            path=model_dir.validation_metrics.aggregated_tsv,
             overwrite=True,
         )
         maps.save_file(
-            get_metric_values(self._detailed_metrics_df, epoch=state.current_epoch),
-            path=model_dir.validation_metrics.details,
+            self._metrics.get_detailed_metric_values(epoch=state.current_epoch),
+            path=model_dir.validation_metrics.details_tsv,
             overwrite=True,
         )
 

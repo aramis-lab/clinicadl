@@ -1,11 +1,13 @@
 import logging
 import re
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from clinicadl.callbacks import EarlyStoppingCallback
+from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import (
     MAEMetricConfig,
     MSEMetricConfig,
@@ -16,8 +18,8 @@ from clinicadl.train.trainer_state import TrainerState
 MSE = MSEMetricConfig().get_object()
 MAE = MAEMetricConfig().get_object()
 PSNR = PSNRMetricConfig(max_val=1).get_object()
-
-METRICS = pd.DataFrame(
+METRICS_HANDLER = MetricsHandler()
+METRICS_HANDLER._df = pd.DataFrame(
     {
         "epoch": [0, 2, 4, 6, 9],
         "mae": [np.inf, np.nan, 10.1, -10.1, -np.inf],
@@ -40,7 +42,8 @@ def test_inputs():
         lower_bound=0.1,
     )
     state = TrainerState(called="train")
-    es.on_validation_start(state=state, metrics={"psnr": PSNR, "mse": MSE})
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
+    es.on_validation_start(state=state, metrics=METRICS_HANDLER)
     assert (es.stoppers[0].config.metric, es.stoppers[1].config.metric) == (
         "psnr",
         "mse",
@@ -72,9 +75,11 @@ def test_inputs():
         upper_bound=[None, 0.1],
         lower_bound=[None, None],
     )
-    with pytest.raises(KeyError, match="'psnr' not found in the validation metrics!"):
-        es.on_validation_start(state=state, metrics={"mse": MSE})
-    es.on_validation_start(state=state, metrics={"psnr": PSNR, "mse": MSE})
+    with pytest.raises(KeyError, match="'psnr' not found in the computed metrics!"):
+        METRICS_HANDLER.config.metrics = {"mse": MSE}
+        es.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
+    es.on_validation_start(state=state, metrics=METRICS_HANDLER)
 
     assert (es.stoppers[0].config.patience, es.stoppers[1].config.patience) == (3, 7)
     assert (es.stoppers[0].config.min_delta, es.stoppers[1].config.min_delta) == (
@@ -105,9 +110,11 @@ def test_inputs():
 
 def test_on_train_start():
     state = TrainerState(called="train")
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
+
     early_stopping = EarlyStoppingCallback(metric="psnr", patience=1, min_delta=0.1)
-    early_stopping.on_validation_start(state=state, metrics={"mse": MSE, "psnr": PSNR})
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
 
     early_stopping.on_train_start()
     assert early_stopping.stoppers[0].best == -np.inf
@@ -115,12 +122,14 @@ def test_on_train_start():
 
 def test_numeric():
     state = TrainerState(called="train")
+    METRICS_HANDLER.config.metrics = {"bad": PSNR}
+
     early_stopping = EarlyStoppingCallback(metric="bad")
-    early_stopping.on_validation_start(state=state, metrics={"bad": PSNR})
+    early_stopping.on_validation_start(state=state, metrics=METRICS_HANDLER)
     with pytest.raises(
         ValueError, match="Value for metric 'bad' at epoch 0 is not numeric."
     ):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
 
 
 def test_one_metric(caplog):
@@ -131,16 +140,17 @@ def test_one_metric(caplog):
 
     state.should_stop = False
     state.current_epoch = 0
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.called = "train"
-    early_stopping.on_validation_start(state=state, metrics={"mae": MAE})
+    METRICS_HANDLER.config.metrics = {"mae": MAE}
+    early_stopping.on_validation_start(state=state, metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
     with caplog.at_level(logging.WARNING):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert (
         "Metric 'mae' value at epoch 0 is not a finite float. Stopping training."
         in caplog.text
@@ -150,7 +160,7 @@ def test_one_metric(caplog):
     state.should_stop = False
     state.current_epoch = 2
     with caplog.at_level(logging.WARNING):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert (
         "Metric 'mae' value at epoch 2 is not a finite float. Stopping training."
         in caplog.text
@@ -160,7 +170,7 @@ def test_one_metric(caplog):
     state.should_stop = False
     state.current_epoch = 4
     with caplog.at_level(logging.WARNING):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert (
         "Metric 'mae' value 10.1 exceeds upper bound 10.0 at epoch 4. Stopping training."
         in caplog.text
@@ -170,7 +180,7 @@ def test_one_metric(caplog):
     state.should_stop = False
     state.current_epoch = 6
     with caplog.at_level(logging.WARNING):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert (
         "Metric 'mae' value -10.1 falls below lower bound -10.0 at epoch 6. Stopping training."
         in caplog.text
@@ -180,7 +190,7 @@ def test_one_metric(caplog):
     state.should_stop = False
     state.current_epoch = 9
     with caplog.at_level(logging.WARNING):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert (
         "Metric 'mae' value at epoch 2 is not a finite float. Stopping training."
         in caplog.text
@@ -189,33 +199,34 @@ def test_one_metric(caplog):
 
     state = TrainerState(called="train")
     early_stopping = EarlyStoppingCallback(metric="psnr", patience=1, min_delta=0.1)
-    early_stopping.on_validation_start(state=state, metrics={"psnr": PSNR})
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR}
+    early_stopping.on_validation_start(state=state, metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert early_stopping.stoppers[0].best == 1.0
     assert not state.should_stop
 
     state.current_epoch = 2
     with caplog.at_level(logging.DEBUG):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert "No improvement in 'psnr' for 1 evaluation step(s)." in caplog.text
     assert not state.should_stop
 
     state.current_epoch = 4
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 6
     with caplog.at_level(logging.DEBUG):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert "No improvement in 'psnr' for 1 evaluation step(s)." in caplog.text
     assert not state.should_stop
 
     state.current_epoch = 9
     with caplog.at_level(logging.INFO):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert (
         "Early stopping triggered on metric 'psnr' after 2 evaluation(s) without improvement."
         in caplog.text
@@ -227,42 +238,44 @@ def test_one_metric(caplog):
     assert state.should_stop
 
     state = TrainerState(called="train")
+    METRICS_HANDLER.config.metrics = {"mse": MSE}
     early_stopping = EarlyStoppingCallback(metric="mse", patience=0, min_delta=0.1)
-    early_stopping.on_validation_start(state=state, metrics={"mse": MSE})
+    early_stopping.on_validation_start(state=state, metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 2
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 4
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert state.should_stop
 
 
 def test_mutiple_metrics(caplog):
     state = TrainerState(called="train")
+    METRICS_HANDLER.config.metrics = {"mse": MSE, "psnr": PSNR}
     early_stopping = EarlyStoppingCallback(
         metric=["psnr", "mse"], patience=[1, 0], min_delta=0.1
     )
-    early_stopping.on_validation_start(state=state, metrics={"mse": MSE, "psnr": PSNR})
+    early_stopping.on_validation_start(state=state, metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 2
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 4
     with caplog.at_level(logging.INFO):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert (
         "Early stopping triggered on metric 'mse' after 1 evaluation(s) without improvement."
         in caplog.text
@@ -270,12 +283,12 @@ def test_mutiple_metrics(caplog):
     assert not state.should_stop
 
     state.current_epoch = 6
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 9
     with caplog.at_level(logging.INFO):
-        early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+        early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert (
         "Early stopping triggered on metric 'psnr' after 2 evaluation(s) without improvement."
         in caplog.text
@@ -284,34 +297,33 @@ def test_mutiple_metrics(caplog):
 
     ###
     state = TrainerState(called="train")
+    METRICS_HANDLER.config.metrics = {"mse_overfit": MSE, "psnr": PSNR}
     early_stopping = EarlyStoppingCallback(
         metric=["psnr", "mse_overfit"],
         patience=[1, 0],
         min_delta=0.1,
     )
-    early_stopping.on_validation_start(
-        state=state, metrics={"mse_overfit": MSE, "psnr": PSNR}
-    )
+    early_stopping.on_validation_start(state=state, metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 2
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 4
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 6
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert not state.should_stop
 
     state.current_epoch = 9
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
     assert state.should_stop
 
 
@@ -330,8 +342,9 @@ def test_from_dict_to_dict():
     assert new_early_stopping.config.stoppers[0].min_delta == 0.1
     assert new_early_stopping.config.stoppers[1].min_delta == 0.1
 
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
     early_stopping.on_validation_start(
-        state=TrainerState(called="train"), metrics={"psnr": PSNR, "mse": MSE}
+        state=TrainerState(called="train"), metrics=METRICS_HANDLER
     )
     new_early_stopping = EarlyStoppingCallback.from_dict(early_stopping.to_dict())
     assert new_early_stopping.stoppers[0].config.metric == "psnr"
@@ -351,13 +364,14 @@ def test_state_dict():
     )
     assert early_stopping.state_dict() == dict()
 
-    early_stopping.on_validation_start(state=state, metrics={"psnr": PSNR, "mse": MSE})
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
+    early_stopping.on_validation_start(state=state, metrics=METRICS_HANDLER)
 
     state.current_epoch = 0
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
 
     state.current_epoch = 2
-    early_stopping.on_validation_end(state=state, metrics_df=METRICS)
+    early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
 
     state_dict = early_stopping.state_dict()
 

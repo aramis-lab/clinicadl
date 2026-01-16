@@ -1,12 +1,7 @@
 .. _api_metrics:
 
-:mod:`clinicadl.metrics`
-========================
-
-.. automodule:: clinicadl.metrics
-
 :mod:`clinicadl.metrics.config`
--------------------------------
+===============================
 
 .. automodule:: clinicadl.metrics.config
 

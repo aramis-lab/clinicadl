@@ -17,6 +17,7 @@ from torch.optim.lr_scheduler import (
 
 from clinicadl.callbacks import LRSchedulerCallback
 from clinicadl.io import Maps
+from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import MSEMetricConfig
 from clinicadl.optim.lr_schedulers.config import (
     ConstantLRConfig,
@@ -27,6 +28,7 @@ from clinicadl.train import TrainerState
 
 MSE = MSEMetricConfig().get_object()
 MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
+METRICS_HANDLER = MetricsHandler()
 
 
 def build_optimizer(key="optimizer"):
@@ -145,8 +147,11 @@ def test_on_train_start():
 def test_steps_scheduler():
     optimizer = build_optimizer()
     state = TrainerState(called="train")
-    wrong_metrics = pd.DataFrame({"epoch": [0, 1], "loss": [0.1, 0.5]})
-    metrics = pd.DataFrame({"epoch": [0, 1], "mse": [0.7, 1.1], "loss": [0.1, 0.5]})
+    METRICS_HANDLER.config.metrics = {"mse": MSE}
+    METRICS_HANDLER._df = pd.DataFrame(
+        {"epoch": [0, 1], "mse": [0.7, 1.1], "loss": [0.1, 0.5]}
+    )
+
     sched = StepLR(optimizer["optimizer"], step_size=1)
     epoch_scheduler = LRSchedulerCallback(StepLRConfig(step_size=1))
     step_scheduler = LRSchedulerCallback(sched, scheduler_type="step-based")
@@ -179,16 +184,13 @@ def test_steps_scheduler():
     metric_scheduler.scheduler.step.assert_not_called()
 
     state = TrainerState(current_epoch=1, called="train")
-    epoch_scheduler.on_validation_end(state=state, metrics_df=metrics)
-    step_scheduler.on_validation_end(state=state, metrics_df=metrics)
-    metric_scheduler.on_validation_end(state=state, metrics_df=metrics)
+    epoch_scheduler.on_validation_end(state=state, metrics=METRICS_HANDLER)
+    step_scheduler.on_validation_end(state=state, metrics=METRICS_HANDLER)
+    metric_scheduler.on_validation_end(state=state, metrics=METRICS_HANDLER)
 
     epoch_scheduler.scheduler.step.assert_called_once()
     step_scheduler.scheduler.step.assert_called_once()
     metric_scheduler.scheduler.step.assert_called_once_with(1.1)
-
-    with pytest.raises(KeyError, match="'mse' not found in the validation metrics!"):
-        metric_scheduler.on_validation_end(state=state, metrics_df=wrong_metrics)
 
     # only validation
     metric_scheduler = LRSchedulerCallback(
@@ -196,7 +198,7 @@ def test_steps_scheduler():
     )
     metric_scheduler.scheduler = MagicMock()
     metric_scheduler.on_validation_end(
-        state=TrainerState(current_epoch=1), metrics_df=metrics
+        state=TrainerState(current_epoch=1), metrics=METRICS_HANDLER
     )
     metric_scheduler.scheduler.step.assert_not_called()
 
@@ -209,14 +211,17 @@ def test_on_validation_start(caplog):
     )
     state = TrainerState(current_epoch=1)
 
-    metric_scheduler.on_validation_start(state=state, metrics={"mae": MSE})
+    METRICS_HANDLER.config.metrics = {"mae": MSE}
+    metric_scheduler.on_validation_start(state=state, metrics=METRICS_HANDLER)
 
     state.called = "train"
     metric_scheduler.on_train_start(optimizers=build_optimizer())
-    with pytest.raises(KeyError, match="'mse' not found in the validation metrics!"):
-        metric_scheduler.on_validation_start(state=state, metrics={"mae": MSE})
+    with pytest.raises(KeyError, match="'mse' not found in the computed metrics!"):
+        METRICS_HANDLER.config.metrics = {"mae": MSE}
+        metric_scheduler.on_validation_start(state=state, metrics=METRICS_HANDLER)
     with caplog.at_level(logging.WARNING):
-        metric_scheduler.on_validation_start(state=state, metrics={"mse": MSE})
+        METRICS_HANDLER.config.metrics = {"mse": MSE}
+        metric_scheduler.on_validation_start(state=state, metrics=METRICS_HANDLER)
     assert (
         "Found mode='max' in ReduceLROnPlateau, but found optimum='min' in 'mse'. This may be an error."
         in caplog.text

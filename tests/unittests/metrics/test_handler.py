@@ -327,15 +327,41 @@ def test_add_metrics():
 def test_get_metric():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
+        my_metric=CustomMetric(),
     )
     metrics.init_metrics(MODEL)
-    metrics(BATCH_1)
+    metrics(BATCH_1, epoch=0)
     metrics.aggregate(epoch=0)
     metrics.reset()
-    metrics(BATCH_2)
+    metrics(BATCH_2, epoch=1)
     metrics.aggregate(epoch=1)
-    assert np.isclose(metrics.get_metric("mse"), 0.66666, rtol=1e-4)
-    assert np.isclose(metrics.get_metric("mse", epoch=0), 0.33333, rtol=1e-4)
+    assert np.isclose(metrics.get_metric_value("mse"), 0.66666, rtol=1e-4)
+    assert np.isclose(metrics.get_metric_value("mse", epoch=0), 0.33333, rtol=1e-4)
+    with pytest.raises(KeyError, match="'abc' not found in the computed metrics!"):
+        metrics.get_metric_value("abc")
+    pd.testing.assert_frame_equal(
+        metrics.get_metric_values(),
+        pd.DataFrame({"epoch": 1, "mse": 0.66666, "my_metric": 0.33333}, index=[1]),
+        rtol=1e-4,
+    )
+    pd.testing.assert_frame_equal(
+        metrics.get_metric_values(epoch=0),
+        pd.DataFrame({"epoch": 0, "mse": 0.33333, "my_metric": 0.66666}, index=[0]),
+        rtol=1e-4,
+    )
+    pd.testing.assert_frame_equal(
+        metrics.get_detailed_metric_values(epoch=0),
+        pd.DataFrame(
+            {
+                "epoch": [0, 0, 0],
+                "participant_id": [f"sub-{i}" for i in range(3)],
+                "session_id": [f"ses-{i}" for i in range(3)],
+                "mse": pd.Series([0.0, 1.0, 0.0], dtype=np.float32),
+                "my_metric": pd.Series([1.0, 0.0, 1.0], dtype=np.float32),
+            },
+        ),
+        rtol=1e-4,
+    )
 
 
 def test_checks():

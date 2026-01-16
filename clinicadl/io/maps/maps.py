@@ -913,7 +913,7 @@ class Maps(Directory):
             with path.open("w", encoding="utf-8") as f:
                 f.write(str(obj))
         elif path.suffix == TSV:
-            assert isinstance(obj, pd.DataFrame)
+            assert isinstance(obj, (pd.DataFrame, pd.Series))
             obj.to_csv(path, sep=SEP, index=False)
         elif path.suffix == TAR and path.with_suffix("").suffix == PTH:
             torch_save(obj, path)

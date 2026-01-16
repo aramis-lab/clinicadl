@@ -6,20 +6,19 @@ from collections.abc import Sequence
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Mapping, Optional, TypeVar, Union
 
-import pandas as pd
 from pydantic import Field, NonNegativeFloat, NonNegativeInt, model_validator
 from typing_extensions import Self
 
 from clinicadl.metrics.enum import Optimum
+from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
-from .utils import QuantityMonitoring, build_metric_key_error, get_metric_value
+from .utils import QuantityMonitoring
 
 if TYPE_CHECKING:
-    from clinicadl.metrics import Metric
     from clinicadl.train import TrainerState
 
 
@@ -86,14 +85,14 @@ class OneMetricEarlyStopping(
         )
 
     # pylint: disable=arguments-renamed
-    def step(self, metrics_df: pd.DataFrame, state: TrainerState) -> bool:
+    def step(self, metrics: MetricsHandler, state: TrainerState) -> bool:
         """
         Checks if training should stop.
 
         Parameters
         ----------
-        metrics_df : pd.DataFrame
-            The DataFrame containing the validation metrics.
+        metrics : MetricsHandler
+            The :py:class:`clinicadl.metrics.MetricsHandler` containing the validation metrics.
         state : TrainerState
             The state of the trainer.
 
@@ -102,8 +101,8 @@ class OneMetricEarlyStopping(
         bool
             The decision.
         """
-        value = get_metric_value(
-            metrics_df, metric_name=self.config.metric, epoch=state.current_epoch
+        value = metrics.get_metric_value(
+            metric=self.config.metric, epoch=state.current_epoch
         )
 
         if self.config.check_finite and (math.isinf(value) or math.isnan(value)):
@@ -332,23 +331,22 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         self._reset()
 
     def on_validation_start(
-        self, *, state: TrainerState, metrics: dict[str, Metric], **kwargs
+        self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
     ) -> None:
         if self.stoppers is None and state.called == TrainerCall.TRAIN:
-            modes = {name: metric.optimum for name, metric in metrics.items()}
-            try:
-                self._add_modes(modes)
-            except KeyError as exc:
-                raise build_metric_key_error(exc.args[0]) from exc
+            for config in self.config.stoppers:
+                metrics.check_metric_name(metric=config.metric)
+            modes = {name: metric.optimum for name, metric in metrics.metrics.items()}
+            self._add_modes(modes)
             self._init_stoppers()
 
     def on_validation_end(
-        self, *, state: TrainerState, metrics_df: pd.DataFrame, **kwargs
+        self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
     ) -> None:
         if state.called != TrainerCall.TRAIN:
             return
 
-        should_stops = [stopper.step(metrics_df, state) for stopper in self.stoppers]
+        should_stops = [stopper.step(metrics, state) for stopper in self.stoppers]
         should_stop = all(should_stops)
         if should_stop:
             logger.info(
