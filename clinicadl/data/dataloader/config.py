@@ -23,6 +23,8 @@ class DataLoader(TorchDataLoader):
     Overwrites :py:class:`torch.utils.data.DataLoader` only to add a ``:py:meth:set_epoch` method.
     """
 
+    dataset: Dataset
+
     def set_epoch(self, epoch: int) -> None:
         """
         Sets the epoch.

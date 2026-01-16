@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from clinicadl.train import TrainerState
     from clinicadl.train.computational import ComputationalConfig
 
+    from .handler import CallbacksHandler
+
 
 class Events(str, Enum):
     """Events that can trigger an action from a :py:class:`clinicadl.callbacks.Callback`."""
@@ -85,7 +87,7 @@ class Callback(ABC):
         state: TrainerState,
         metrics: MetricsHandler,
         optimization: OptimizationConfig,
-        callbacks: list[Callback],
+        callbacks: CallbacksHandler,
     ) -> None:
         """
         Called once when the :py:class:`~clinicadl.train.Trainer` is instantiated.
@@ -103,8 +105,8 @@ class Callback(ABC):
         optimization : OptimizationConfig
             The :py:class:`clinicadl.optim.OptimizationConfig` defining the optimization specifications
             of the training phase.
-        callbacks : list[Callback]
-            The list of :py:class:`Callbacks <clinicadl.callbacks.Callback>` associated to the :py:class:`~clinicadl.train.Trainer`.
+        callbacks : CallbacksHandler
+            The :py:class:`~clinicadl.callbacks.CallbacksHandler` containing the callbacks passed to the :py:class:`~clinicadl.train.Trainer`.
         """
 
     def on_exception(
