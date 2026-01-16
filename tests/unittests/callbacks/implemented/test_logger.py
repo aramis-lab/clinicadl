@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 import torch
 
 from clinicadl.callbacks import LoggerCallback
@@ -166,16 +165,16 @@ def test_train(caplog, tmp_path):
     run_name = maps.exec.runs_list[0]
     assert run_name.startswith("train_")
     run_dir = maps.exec.runs[run_name]
-    f = maps.load_file(run_dir.debug_log)
+    f = maps.open_file(run_dir.debug_log)
     assert "Batch" in f
     assert "Epoch" not in f
-    f = maps.load_file(run_dir.info_log)
+    f = maps.open_file(run_dir.info_log)
     assert "Batch" not in f
     assert "Epoch" in f
     assert "a warning" in f
-    f = maps.load_file(run_dir.error_log)
+    f = maps.open_file(run_dir.error_log)
     assert len(f) == 0
-    f = maps.load_file(maps.training.splits[state.split_idx].warning_log)
+    f = maps.open_file(maps.training.splits[state.split_idx].warning_log)
     assert "Batch" not in f
     assert "Epoch" not in f
     assert "a warning" in f
@@ -263,16 +262,16 @@ def test_validate(caplog, tmp_path):
     run_name = maps.exec.runs_list[0]
     assert run_name.startswith("validate_")
     run_dir = maps.exec.runs[run_name]
-    f = maps.load_file(run_dir.debug_log)
+    f = maps.open_file(run_dir.debug_log)
     assert "Batch" in f
     assert "validation" not in f
-    f = maps.load_file(run_dir.info_log)
+    f = maps.open_file(run_dir.info_log)
     assert "Batch" not in f
     assert "validation" in f
     assert "a warning" in f
-    f = maps.load_file(run_dir.error_log)
+    f = maps.open_file(run_dir.error_log)
     assert len(f) == 0
-    f = maps.load_file(maps.training.splits[state.split_idx].warning_log)
+    f = maps.open_file(maps.training.splits[state.split_idx].warning_log)
     assert "Batch" not in f
     assert "validation" not in f
     assert "a warning" in f
@@ -297,7 +296,7 @@ def test_validate(caplog, tmp_path):
         f"Validation metrics saved in {tmp_path / 'training' / 'split-0' / 'models' / 'best_models' / 'best-loss'}"
         in caplog.text
     )
-    f = maps.load_file(
+    f = maps.open_file(
         maps.training.splits[state.split_idx]
         .models.best_models.metrics["loss"]
         .warning_log
@@ -381,16 +380,16 @@ def test_test(caplog, tmp_path):
     run_name = maps.exec.runs_list[0]
     assert run_name.startswith("test_")
     run_dir = maps.exec.runs[run_name]
-    f = maps.load_file(run_dir.debug_log)
+    f = maps.open_file(run_dir.debug_log)
     assert "Batch" in f
     assert "test" not in f
-    f = maps.load_file(run_dir.info_log)
+    f = maps.open_file(run_dir.info_log)
     assert "Batch" not in f
     assert "test" in f
     assert "a warning" in f
-    f = maps.load_file(run_dir.error_log)
+    f = maps.open_file(run_dir.error_log)
     assert len(f) == 0
-    f = maps.load_file(
+    f = maps.open_file(
         maps.test.groups["X"].results.splits[0].models["best-loss"].warning_log
     )
     assert "Batch" not in f
@@ -492,15 +491,15 @@ def test_predict(caplog, tmp_path):
     run_name = maps.exec.runs_list[0]
     assert run_name.startswith("predict_")
     run_dir = maps.exec.runs[run_name]
-    f = maps.load_file(run_dir.debug_log)
+    f = maps.open_file(run_dir.debug_log)
     assert "Batch" in f
     assert "Prediction" not in f
-    f = maps.load_file(run_dir.info_log)
+    f = maps.open_file(run_dir.info_log)
     assert "Batch" not in f
     assert "Prediction" in f
-    f = maps.load_file(run_dir.error_log)
+    f = maps.open_file(run_dir.error_log)
     assert len(f) == 0
-    f = maps.load_file(
+    f = maps.open_file(
         maps.prediction.groups["X"].results.splits[0].models["best-loss"].warning_log
     )
     assert "Batch" not in f
@@ -576,9 +575,9 @@ def test_on_exception(caplog, tmp_path):
 
     run_name = maps.exec.runs_list[0]
     run_dir = maps.exec.runs[run_name]
-    f = maps.load_file(run_dir.error_log)
+    f = maps.open_file(run_dir.error_log)
     assert "an error" in f
-    f = maps.load_file(run_dir.info_log)
+    f = maps.open_file(run_dir.info_log)
     assert "a warning" in f
     assert "a second warning" not in f
 
@@ -601,9 +600,9 @@ def test_on_exception(caplog, tmp_path):
 
     run_name = maps.exec.runs_list[1]
     run_dir = maps.exec.runs[run_name]
-    f = maps.load_file(run_dir.error_log)
+    f = maps.open_file(run_dir.error_log)
     assert "an error" in f
-    f = maps.load_file(run_dir.info_log)
+    f = maps.open_file(run_dir.info_log)
     assert "a warning" in f
     assert "a second warning" not in f
 

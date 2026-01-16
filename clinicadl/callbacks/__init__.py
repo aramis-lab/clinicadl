@@ -8,4 +8,5 @@ from .implemented import (
     LoggerCallback,
     LRSchedulerCallback,
     ModelCheckpointCallback,
+    MonitorCallback,
 )

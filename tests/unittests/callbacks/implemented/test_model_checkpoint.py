@@ -80,16 +80,16 @@ def compare_files(
     expected_metrics_df,
     expected_detailed_metrics_df,
 ):
-    dict_ = maps.load_file(model_dir.model)
+    dict_ = maps.open_file(model_dir.model)
     assert dict_ == expected_state_dict
 
-    metrics_df = maps.load_file(model_dir.validation_metrics.aggregated)
+    metrics_df = maps.open_file(model_dir.validation_metrics.aggregated)
     pd.testing.assert_frame_equal(
         metrics_df,
         expected_metrics_df,
     )
 
-    detailed_metrics_df = maps.load_file(model_dir.validation_metrics.details)
+    detailed_metrics_df = maps.open_file(model_dir.validation_metrics.details)
     pd.testing.assert_frame_equal(
         detailed_metrics_df,
         expected_detailed_metrics_df,

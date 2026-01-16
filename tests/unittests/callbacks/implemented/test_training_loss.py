@@ -85,7 +85,7 @@ def test_on_train_end(tmp_path):
     )
     training_loss.df = expected_df
     training_loss.on_train_end(maps=maps, state=state)
-    df = maps.load_file(maps.training.splits[1].logs.training_loss)
+    df = maps.open_file(maps.training.splits[1].logs.training_loss)
     pd.testing.assert_frame_equal(expected_df, df)
 
 

@@ -92,6 +92,9 @@ def test_maps(tmp_path: Path):
     assert maps.training.splits[0].logs.training_loss_tsv == (
         maps_path / "training" / "split-0" / "logs" / "training_loss.tsv"
     )
+    assert maps.training.splits[0].logs.computational_tsv == (
+        maps_path / "training" / "split-0" / "logs" / "computational.tsv"
+    )
     assert maps.training.splits[0].logs.learning_rates == (
         maps_path / "training" / "split-0" / "logs" / "learning_rates"
     )
@@ -550,19 +553,19 @@ def test_load_file(tmp_path):
     maps = Maps(maps_path)
     maps.read()
 
-    assert maps.load_file(maps.nn_summary_txt) == "test"
-    assert maps.load_file(maps.summary_log) == "test"
-    assert maps.load_file(maps.metrics_json) == {"test": True}
+    assert maps.open_file(maps.nn_summary_txt) == "test"
+    assert maps.open_file(maps.summary_log) == "test"
+    assert maps.open_file(maps.metrics_json) == {"test": True}
     pd.testing.assert_frame_equal(
-        maps.load_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
+        maps.open_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
     )
     torch.testing.assert_close(
-        maps.load_file(maps.training.splits[0].models.checkpoints.epochs[0].model_pt),
+        maps.open_file(maps.training.splits[0].models.checkpoints.epochs[0].model_pt),
         torch.Tensor([0]),
     )
 
     with pytest.raises(FileNotFoundError, match=".* is not a file!"):
-        maps.load_file(maps.training.splits[0].tmp.epochs[0].callbacks)
+        maps.open_file(maps.training.splits[0].tmp.epochs[0].callbacks)
 
 
 def test_save_file(tmp_path):
@@ -578,19 +581,19 @@ def test_save_file(tmp_path):
         maps.save_file("abc", maps.nn_summary_txt)
 
     maps.save_file("abc", maps.nn_summary_txt, overwrite=True)
-    assert maps.load_file(maps.nn_summary_txt) == "abc"
+    assert maps.open_file(maps.nn_summary_txt) == "abc"
 
     maps.save_file("abc", maps.summary_log, overwrite=True)
-    assert maps.load_file(maps.summary_log) == "abc"
+    assert maps.open_file(maps.summary_log) == "abc"
 
     maps.save_file({"abc": True}, maps.metrics_json, overwrite=True)
-    assert maps.load_file(maps.metrics_json) == {"abc": True}
+    assert maps.open_file(maps.metrics_json) == {"abc": True}
 
     maps.save_file(
         pd.DataFrame({"X": [0], "Z": [0]}), maps.training.data.data_tsv, overwrite=True
     )
     pd.testing.assert_frame_equal(
-        maps.load_file(maps.training.data.data_tsv), pd.DataFrame({"X": [0], "Z": [0]})
+        maps.open_file(maps.training.data.data_tsv), pd.DataFrame({"X": [0], "Z": [0]})
     )
 
     maps.save_file(

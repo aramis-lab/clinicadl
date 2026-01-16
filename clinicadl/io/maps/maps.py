@@ -195,7 +195,8 @@ class Maps(Directory):
                     :icon: file
                     :color: light
 
-                    Summary of the training of split ``0``.
+                    Summary of the training of split ``0``, with computational metrics provided by
+                    :py:mod:`~clinicadl.callbacks.MonitorCallback`.
 
                 .. dropdown:: warning.log → ``maps.training.splits[0].warning_log``
                     :icon: file
@@ -215,6 +216,12 @@ class Maps(Directory):
                         :color: light
 
                         Training loss for each batch seen during training.
+
+                    .. dropdown:: computational.tsv → ``maps.training.splits[0].logs.computational_tsv``
+                        :icon: file
+                        :color: light
+
+                        Computational metrics saved by :py:mod:`~clinicadl.callbacks.MonitorCallback`.
 
                     .. dropdown:: **learning_rates** → maps.training.splits[0].logs.learning_rates
                         :icon: file-directory
@@ -763,7 +770,7 @@ class Maps(Directory):
         self._create_summary_log()
 
     @staticmethod
-    def load_file(path: PathType) -> Any:
+    def open_file(path: PathType) -> Any:
         """
         To read and load any file inside the ``MAPS`` directory.
 
@@ -794,7 +801,7 @@ class Maps(Directory):
 
         .. code-block:: python
 
-            >>> maps.load_file(maps.metrics_json)
+            >>> maps.open_file(maps.metrics_json)
             {
                 "metrics": {
                     "mse": {
@@ -807,12 +814,12 @@ class Maps(Directory):
                     },
                 }
             }
-            >>> maps.load_file(maps.training.splits[0].models.checkpoints.epochs[1].model_pt)
+            >>> maps.open_file(maps.training.splits[0].models.checkpoints.epochs[1].model_pt)
             OrderedDict([('conv0.weight',
               tensor([[[[ 7.2531e-03,  5.7384e-03,  1.4988e-02,  ..., -3.1380e-02,
                          -2.2103e-02,  5.8432e-02],
             ...
-            >>> maps.load_file(maps.training.data.data_tsv)
+            >>> maps.open_file(maps.training.data.data_tsv)
                 participant_id	session_id
             0	sub-001	ses-M000
             1	sub-002	ses-M000
@@ -889,7 +896,7 @@ class Maps(Directory):
 
         See Also
         --------
-        :py:meth:`load_file`
+        :py:meth:`open_file`
 
         """
         path = Path(path)

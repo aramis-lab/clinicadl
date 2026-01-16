@@ -217,7 +217,8 @@ class Trainer:
             "on_train_start",
             split=split,
             computational=computational,
-            optimization=OptimizationConfig,
+            optimization=self.optimization_config,
+            resume=resume,
         )
 
         while not self.state.should_stop:
@@ -229,6 +230,8 @@ class Trainer:
 
             for batch_idx, batch in enumerate(split.train_loader, start=1):
                 self.state.current_train_batch = batch_idx
+
+                self._call_event("on_batch_start")
 
                 self._send_to_device(batch)
 
@@ -268,8 +271,10 @@ class Trainer:
                         grad_scaler=scaler,
                     )
 
+                self._call_event("on_batch_end")
+
             if (
-                self.state.current_epoch % self.optimization_config.evaluation_steps
+                self.state.current_epoch - 1 % self.optimization_config.evaluation_steps
                 == 0
             ):
                 self._validate(split)
@@ -488,7 +493,7 @@ class Trainer:
                     )
 
     def _check_leakage(self, dataloader: DataLoader) -> None:
-        training_data = self.maps.load_file(self.maps.training.data.data_tsv)
+        training_data = self.maps.open_file(self.maps.training.data.data_tsv)
         training_participants = set(training_data[PARTICIPANT_ID])
         dataset: Dataset = dataloader.dataset
         new_participants = set(zip(*dataset.get_participant_session_couples())[0])
@@ -537,7 +542,7 @@ class Trainer:
 
     def _load_model_checkpoint(self, model_path: Path) -> None:
         self.model.to("cpu")  # load weights on cpu
-        state_dict = self.maps.load_file(model_path)
+        state_dict = self.maps.open_file(model_path)
         self.model.load_state_dict(state_dict)
 
     def _write_training_infos(

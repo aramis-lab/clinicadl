@@ -260,7 +260,7 @@ def test_on_train_end(tmp_path):
     state.current_epoch = 3
     state.current_train_batch = 4
     scheduler.on_train_end(maps=maps, state=state)
-    df = maps.load_file(maps.training.splits[1].logs.learning_rates / "my_opt.tsv")
+    df = maps.open_file(maps.training.splits[1].logs.learning_rates / "my_opt.tsv")
     pd.testing.assert_frame_equal(
         df,
         pd.DataFrame(

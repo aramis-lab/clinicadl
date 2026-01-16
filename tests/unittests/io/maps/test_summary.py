@@ -93,7 +93,7 @@ def test_training_summary(tmp_path):
 
     actual_lines = normalize_file(path)
     expected_lines = [
-        "---------------------- Training ----------------------\n",
+        "============================================ Training =============================================\n",
         "\n",
         "Date: <ignore>\n",
         "\n",

@@ -114,6 +114,7 @@ class Callback(ABC):
         model: Model,
         maps: Maps,
         state: TrainerState,
+        exception: Exception,
     ) -> None:
         """
         Called when an exception interrupts an execution of the :py:class:`~clinicadl.train.Trainer`.
@@ -126,6 +127,8 @@ class Callback(ABC):
             The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
         state : TrainerState
             The current :py:class:`clinicadl.train.TrainerState`.
+        exception : Exception
+            The exception that has been raised.
         """
 
     # Train
