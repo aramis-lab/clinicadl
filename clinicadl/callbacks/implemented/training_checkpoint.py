@@ -1,29 +1,39 @@
+from __future__ import annotations
+
 import shutil
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
+
+from pydantic import NonNegativeInt
 
 from clinicadl.train.trainer_state import TrainerState
+from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import CALLBACKS
+from clinicadl.utils.names import camel_to_snake
+from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
 
-"""
-.. note::
+if TYPE_CHECKING:
+    from clinicadl.io import Maps
+    from clinicadl.io.maps.training.splits.tmp import EpochTmpDir
+    from clinicadl.metrics import MetricsHandler
+    from clinicadl.models import Model
+    from clinicadl.train import TrainerState
 
-    Behavior regarding interaction with ``ModelSelection``:
-
-    - If neither ``EarlyStopping`` nor ``ModelSelection`` are used:
-        the final model and the best-loss model are saved, but no early stopping is applied.
-    - If ``EarlyStopping`` is used without ``ModelSelection``:
-        training stops when all monitored metrics stop improving.
-        For each metric, a ``ModelSelection`` object is automatically created.
-    - If ``ModelSelection`` is used without ``EarlyStopping``:
-        best models are saved based on monitored metrics, but training completes all epochs.
-    - If both are used:
-        ``EarlyStopping`` metrics are automatically tracked by ``ModelSelection``,
-        ensuring best-performing models are saved.
-"""
+    from ..handler import CallbacksHandler
 
 
-class Checkpoint(Callback):
+class TrainingCheckpointCallbackConfig(ObjectConfig["TrainingCheckpointCallback"]):
+    """Config class for ``TrainingCheckpointCallback``."""
+
+    every_n_epochs: NonNegativeInt
+
+    @classmethod
+    def _get_class(cls):
+        return TrainingCheckpointCallback
+
+
+class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackConfig]):
     """
     Callback to save model and optimizer checkpoints at specified epochs or intervals.
 
@@ -65,22 +75,32 @@ class Checkpoint(Callback):
 
     """
 
-    def __init__(self, patience: int = 10, epochs: Optional[list[int]] = None):
-        if patience <= 0:
-            raise ValueError("Patience must be a positive integer.")
+    _config_type = TrainingCheckpointCallbackConfig
 
-        if not isinstance(epochs, list) and isinstance(epochs, int):
-            epochs = [epochs]
+    def __init__(self, every_n_epochs: int):
+        self.config = self._config_type(every_n_epochs=every_n_epochs)
+        self.last_saved_epoch = 0
+        self._metrics = None
+        self._callbacks = None
 
-        self.epochs = epochs if epochs else []
-        self.patience = patience
+    def on_trainer_init(
+        self,
+        *,
+        metrics: MetricsHandler,
+        callbacks: CallbacksHandler,
+    ) -> None:
+        self._metrics = metrics
+        self._callbacks = callbacks
 
-    def on_epoch_end(self, config: TrainerState, **kwargs) -> None:
-        """
-        Save the current model and optimizer state at the end of the require epochs.
-        It needs to be called after the _CheckpointSaver callback so that the tmp files
-        exist and are up to date.
-        """
+    def on_epoch_end(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
+        if state.current_epoch % self.config.every_n_epochs:
+            maps.training.splits[state.split_idx].tmp.create_epoch(
+                state.current_epoch, overwrite=True
+            )
+            tmp_dir = maps.training.splits[state.split_idx].tmp.epochs[
+                state.current_epoch
+            ]
+
         if (
             config.epoch in self.epochs
             or config.epoch % self.patience == 0
@@ -98,6 +118,15 @@ class Checkpoint(Callback):
             ]
 
             shutil.copyfile(tmp_dir.model, epoch_dir.model)
+
+    def _save_callbacks(self, tmp_dir: EpochTmpDir) -> None:
+        tmp_dir.callbacks.mkdir()
+        names = [
+            camel_to_snake(type(callback).__name__)
+            for callback in self._callbacks.callbacks
+        ]
+        for callback in self._callbacks.callbacks:
+            path = camel_to_snake(callable)
 
     def to_dict(self) -> dict[str, Any]:
         """
