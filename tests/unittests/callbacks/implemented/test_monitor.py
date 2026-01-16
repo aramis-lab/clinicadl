@@ -251,6 +251,41 @@ def test_monitor(tmp_path):
     assert len(df["Training data loading (s)"].dropna()) == 5
 
 
+def test_exception(caplog, tmp_path):
+    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.read()
+
+    OPTIMIZATION.accumulation_steps = 1
+    OPTIMIZATION.evaluation_steps = 1
+    COMPUTATIONAL.gpu = False
+
+    monitor = MonitorCallback(warmup_iterations=0)
+
+    try:
+        _training(
+            monitor,
+            maps,
+            raise_error=True,
+            epochs=2,
+            train_batches=2,
+            val_batches=2,
+            sleep_after_training_start=True,
+        )
+    except Exception as e:
+        with caplog.at_level("ERROR"):
+            monitor.on_exception(maps=maps, state=STATE, exception=e)
+
+    df = pd.read_csv(
+        maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
+    )
+    assert len(df) == 4
+    assert (
+        f"CUDA out of memory. To debug, you can have a look at your memory usage in {maps.training.splits[STATE.split_idx].logs.computational_tsv}"
+        in caplog.text
+    )
+
+
 def test_checkpoint(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
@@ -356,6 +391,7 @@ def test_monitor_gpu(tmp_path):
     )
     monitor.load_state_dict(state_dict)
     assert len(monitor._gpus_used) == 2
+
 
 def test_phase_monitor():
     monitor = _PhaseMonitor(gpu=False, num_measurements=2)
