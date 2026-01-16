@@ -200,7 +200,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             limited_measurements=True, name=VAL_LOAD
         )
         self.monitor_evaluation = self._init_monitor(
-            gpu=computational.gpu, limited_measurements=True, name=EVAL
+            gpu=computational.gpu, memory=True, limited_measurements=True, name=EVAL
         )
 
         self.n_iterations = 0

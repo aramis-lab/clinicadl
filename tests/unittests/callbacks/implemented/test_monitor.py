@@ -224,7 +224,7 @@ def test_monitor(tmp_path):
     assert len(df["Evaluation GPU max memory (MB)"].dropna()) == 0
 
     summary = maps.open_file(maps.training.splits[STATE.split_idx].summary_log)
-
+    print(summary)
     assert "Training completed after 1,000 epochs\n\n***" in summary
     assert "GPU:" not in summary
     assert "GPU throughput:" not in summary
@@ -305,7 +305,7 @@ def test_from_to_dict():
 
 
 @pytest.mark.gpu
-def test_gpu(tmp_path):
+def test_monitor_gpu(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
     maps.read()
@@ -332,9 +332,30 @@ def test_gpu(tmp_path):
 
     summary = maps.open_file(maps.training.splits[STATE.split_idx].summary_log)
 
-    assert "GPU:" not in summary
-    assert "GPU throughput:" not in summary
+    assert "GPU:" in summary
+    assert "GPU throughput:" in summary
 
+    # multiple gpus
+    monitor = MonitorCallback(warmup_iterations=0)
+
+    with pytest.raises(RuntimeError):
+        _training(
+            monitor,
+            maps,
+            raise_error=True,
+            epochs=2,
+            train_batches=2,
+            val_batches=2,
+            sleep_after_training_start=True,
+        )
+
+    state_dict = monitor.state_dict()
+    monitor = MonitorCallback(warmup_iterations=0)
+    monitor.on_train_start(
+        split=SPLIT, optimization=OPTIMIZATION, computational=COMPUTATIONAL
+    )
+    monitor.load_state_dict(state_dict)
+    assert len(monitor._gpus_used) == 2
 
 def test_phase_monitor():
     monitor = _PhaseMonitor(gpu=False, num_measurements=2)
@@ -370,11 +391,15 @@ def test_phase_monitor():
 def test_phase_monitor_gpu():
     import torch
 
-    x = torch.randn(4096, 4096, device="cuda")
+    x = torch.randn(2048, 2048, device="cuda")
     monitor = _PhaseMonitor(gpu=True, num_measurements=1)
     monitor.start()
     _ = x @ x
     monitor.stop()
-    print(monitor.gpu_times)
-    print(monitor.gpu_max_mem)
-    1 / 0
+    assert monitor.gpu_times[0] >= 1
+    assert monitor.gpu_max_mem[0] >= 1e7
+
+    monitor = _PhaseMonitor(gpu=True, num_measurements=1, memory=False)
+    monitor.start()
+    monitor.stop()
+    assert monitor.gpu_max_mem == []
