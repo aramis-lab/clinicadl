@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Mapping
 
 import torch
 from pydantic import NonNegativeInt
 
-from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.suffixes import PT
 from clinicadl.utils.names import camel_to_snake
@@ -87,18 +86,8 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         self._optimizers = optimizers
         self._scaler = grad_scaler
 
-    def on_validation_end(
-        self,
-        *,
-        state: TrainerState,
-        metrics: MetricsHandler,
-        **kwargs,
-    ) -> None:
-        if state.called == TrainerCall.TRAIN:
-            self._metrics = metrics
-
     def on_epoch_end(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
-        if not state.current_epoch % self.config.every_n_epochs:
+        if not state.current_epoch % self.config.every_n_epochs == 0:
             return
 
         maps.training.splits[state.split_idx].tmp.create_epoch(
@@ -124,7 +113,7 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         maps.training.splits[state.split_idx].tmp.clear(
             except_epoch=state.current_epoch
         )
-        logging.debug("Training checkpoint saved at epoch %d", state.current_epoch)
+        logging.debug("Training checkpoint saved after epoch %d", state.current_epoch)
 
     def on_train_end(
         self,
@@ -134,6 +123,12 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         **kwargs,
     ) -> None:
         maps.training.splits[state.split_idx].tmp.clear()
+
+    def state_dict(self) -> Mapping[str, Any]:
+        return {}
+
+    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
+        pass
 
     @classmethod
     def load_checkpoint(
@@ -156,7 +151,7 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         logging.info("Loading checkpoints from epoch %d", last_saved_epoch)
         chkpt_dir = tmp_dir.epochs[last_saved_epoch]
 
-        state.load_state_dict(chkpt_dir.state_json)
+        state.load_state_dict(maps.open_file(chkpt_dir.state_json))
         model.load_state_dict(maps.open_file(chkpt_dir.model_pt))
         opt_state_dicts = maps.open_file(chkpt_dir.optimizer_pt)
         for opt_name, opt in optimizers.items():
@@ -172,10 +167,9 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         """
         Saves the callback checkpoints.
         """
-        chkpt_dir.callbacks.mkdir()
-
         for callback, file_name in zip(
-            self._callbacks.callbacks, self._get_callback_file_names(self._callbacks)
+            self._callbacks.callbacks,
+            self._get_callback_file_names(self._callbacks.callbacks),
         ):
             maps.save_file(callback.state_dict(), chkpt_dir.callbacks / file_name)
 
@@ -199,8 +193,8 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         names = [camel_to_snake(type(callback).__name__) for callback in callbacks]
         cnt = {name: 0 for name in set(names)}
         for i, name in enumerate(names):
-            cnt[name] += 0
             names[i] += f"_{cnt[name]}" if cnt[name] else ""
+            cnt[name] += 1
 
         return map(lambda x: Path(x).with_suffix(PT), names)
 

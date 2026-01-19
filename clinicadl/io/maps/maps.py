@@ -843,7 +843,10 @@ class Maps(Directory):
         if path.suffix == JSON:
             return read_json(path)
         elif path.suffix == TSV:
-            return pd.read_csv(path, sep=SEP)
+            try:
+                return pd.read_csv(path, sep=SEP)
+            except pd.errors.EmptyDataError:
+                return pd.DataFrame()
         elif path.suffix == PT:
             return torch_load(path, weights_only=True)
         else:
