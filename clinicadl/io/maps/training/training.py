@@ -34,6 +34,15 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
     def optimization_json(self) -> Path:
         return (self.path / OPTIMIZATION).with_suffix(JSON)
 
+    def create_split(
+        self, split_idx: int, overwrite: bool = False, exist_ok: bool = False
+    ) -> None:
+        super().create_split(split_idx, overwrite=overwrite, exist_ok=exist_ok)
+        self.data.train.create_split(split_idx, overwrite=overwrite, exist_ok=exist_ok)
+        self.data.validation.create_split(
+            split_idx, overwrite=overwrite, exist_ok=exist_ok
+        )
+
     def read(self) -> None:
         super().read()
 

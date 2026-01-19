@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-import shutil
-from typing import TYPE_CHECKING, Any
+import logging
+from pathlib import Path
+from typing import TYPE_CHECKING
 
+import torch
 from pydantic import NonNegativeInt
 
-from clinicadl.train.trainer_state import TrainerState
+from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig
-from clinicadl.utils.dictionary.words import CALLBACKS
+from clinicadl.utils.dictionary.suffixes import PT
 from clinicadl.utils.names import camel_to_snake
 from clinicadl.utils.objects import HasConfig
 
@@ -22,6 +24,8 @@ if TYPE_CHECKING:
 
     from ..handler import CallbacksHandler
 
+logger = logging.getLogger("clinicadl.callbacks.TrainingCheckpointCallback")
+
 
 class TrainingCheckpointCallbackConfig(ObjectConfig["TrainingCheckpointCallback"]):
     """Config class for ``TrainingCheckpointCallback``."""
@@ -35,108 +39,181 @@ class TrainingCheckpointCallbackConfig(ObjectConfig["TrainingCheckpointCallback"
 
 class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackConfig]):
     """
-    Callback to save model and optimizer checkpoints at specified epochs or intervals.
+    To save checkpoints during a training phase.
 
-    This callback copies the current model and optimizer checkpoint files into
-    dedicated epoch folders during training, allowing checkpointing at desired points.
+    The user can then resume a training from the last saved checkpoint when calling
+    :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
+
+    The checkpoints will be **deleted when the training is completed**. To save permanently
+    checkpoints of your neural network, use instead :py:class:`~clinicadl.callbacks.ModelCheckpointCallback`.
 
     Parameters
     ----------
-    patience : int (default=10)
-        Interval (in epochs) at which to save checkpoints. For example, if patience=5,
-        checkpoints are saved every 5 epochs. The final epoch is always checkpointed.
-    epochs : list of int, optional
-        Specific epochs at which to save checkpoints regardless of the patience interval.
-        If not provided, only the patience interval and the final epoch trigger checkpointing.
-
-    Notes
-    -----
-    .. note::
-        - The final epoch is always saved as a checkpoint.
-        - If `patience` is greater than the total number of epochs, it will not save any intermediate checkpoints.
-        - If a specific epoch is outside the range of total epochs, it will not raise an error but will not save a checkpoint for that epoch.
-
-    Examples
-    --------
-    Save checkpoints every 5 epochs:
-
-    .. code-block:: python
-
-        checkpoint = Checkpoint(patience=5)
-        checkpoint.on_epoch_end(config=config)
-
-
-    Save checkpoints at specific epochs 3 and 7, and every 10 epochs:
-
-    .. code-block:: python
-
-        checkpoint = Checkpoint(patience=10, epochs=[3, 7])
-        checkpoint.on_epoch_end(config=config)
-
+    every_n_epochs : int, default=10
+        Interval (in epochs) for saving checkpoints.
     """
 
     _config_type = TrainingCheckpointCallbackConfig
 
-    def __init__(self, every_n_epochs: int):
+    def __init__(self, every_n_epochs: int = 10):
         self.config = self._config_type(every_n_epochs=every_n_epochs)
-        self.last_saved_epoch = 0
         self._metrics = None
         self._callbacks = None
+        self._optimizers = None
+        self._scaler = None
+        self._metrics = None
 
     def on_trainer_init(
         self,
         *,
         metrics: MetricsHandler,
         callbacks: CallbacksHandler,
+        **kwargs,
     ) -> None:
         self._metrics = metrics
         self._callbacks = callbacks
 
+    def on_exception(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
+        last_saved_epoch = self._get_last_saved_epoch(maps, state.split_idx)
+        logging.error("Last checkpoint at the end of epoch %d", last_saved_epoch)
+
+    def on_optimization_step_end(
+        self,
+        *,
+        optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler,
+        **kwargs,
+    ) -> None:
+        self._optimizers = optimizers
+        self._scaler = grad_scaler
+
+    def on_validation_end(
+        self,
+        *,
+        state: TrainerState,
+        metrics: MetricsHandler,
+        **kwargs,
+    ) -> None:
+        if state.called == TrainerCall.TRAIN:
+            self._metrics = metrics
+
     def on_epoch_end(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
-        if state.current_epoch % self.config.every_n_epochs:
-            maps.training.splits[state.split_idx].tmp.create_epoch(
-                state.current_epoch, overwrite=True
-            )
-            tmp_dir = maps.training.splits[state.split_idx].tmp.epochs[
-                state.current_epoch
-            ]
+        if not state.current_epoch % self.config.every_n_epochs:
+            return
 
-        if (
-            config.epoch in self.epochs
-            or config.epoch % self.patience == 0
-            or config.epoch == config.optim.epochs
-        ):
-            config.maps.training.splits[config.split.index].checkpoints.create_epoch(
-                config.epoch
-            )
-
-            epoch_dir = config.maps.training.splits[
-                config.split.index
-            ].checkpoints.epochs[config.epoch]
-            tmp_dir = config.maps.training.splits[config.split.index].tmp.epochs[
-                config.epoch
-            ]
-
-            shutil.copyfile(tmp_dir.model, epoch_dir.model)
-
-    def _save_callbacks(self, tmp_dir: EpochTmpDir) -> None:
-        tmp_dir.callbacks.mkdir()
-        names = [
-            camel_to_snake(type(callback).__name__)
-            for callback in self._callbacks.callbacks
+        maps.training.splits[state.split_idx].tmp.create_epoch(
+            state.current_epoch, overwrite=True
+        )
+        chkpt_dir = maps.training.splits[state.split_idx].tmp.epochs[
+            state.current_epoch
         ]
-        for callback in self._callbacks.callbacks:
-            path = camel_to_snake(callable)
 
-    def to_dict(self) -> dict[str, Any]:
-        """
-        Convert the callback to a dictionary representation.
+        state.to_json(chkpt_dir.state_json)
+        maps.save_file(model.state_dict(), chkpt_dir.model_pt)
+        maps.save_file(
+            {opt_name: opt.state_dict() for opt_name, opt in self._optimizers.items()},
+            chkpt_dir.optimizer_pt,
+        )
+        maps.save_file(self._scaler.state_dict(), chkpt_dir.scaler_pt)
+        self._metrics.save(
+            chkpt_dir.validation_metrics.aggregated_tsv,
+            details_path=chkpt_dir.validation_metrics.details_tsv,
+        )
+        self._save_callbacks(chkpt_dir, maps=maps)
 
-        Returns
-        -------
-        dict
-            Dictionary representation of the callback.
+        maps.training.splits[state.split_idx].tmp.clear(
+            except_epoch=state.current_epoch
+        )
+        logging.debug("Training checkpoint saved at epoch %d", state.current_epoch)
+
+    def on_train_end(
+        self,
+        *,
+        maps: Maps,
+        state: TrainerState,
+        **kwargs,
+    ) -> None:
+        maps.training.splits[state.split_idx].tmp.clear()
+
+    @classmethod
+    def load_checkpoint(
+        cls,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        metrics: MetricsHandler,
+        callbacks: CallbacksHandler,
+        optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler,
+    ) -> None:
         """
-        json_dict = super().to_dict()
-        json_dict.update({"patience": self.patience, "epochs": self.epochs})
-        return json_dict
+        Loads the last saved checkpoints and reset the objects to the associated
+        states.
+        """
+        tmp_dir = maps.training.splits[state.split_idx].tmp
+        last_saved_epoch = cls._get_last_saved_epoch(maps, split_idx=state.split_idx)
+        logging.info("Loading checkpoints from epoch %d", last_saved_epoch)
+        chkpt_dir = tmp_dir.epochs[last_saved_epoch]
+
+        state.load_state_dict(chkpt_dir.state_json)
+        model.load_state_dict(maps.open_file(chkpt_dir.model_pt))
+        opt_state_dicts = maps.open_file(chkpt_dir.optimizer_pt)
+        for opt_name, opt in optimizers.items():
+            opt.load_state_dict(opt_state_dicts[opt_name])
+        grad_scaler.load_state_dict(maps.open_file(chkpt_dir.scaler_pt))
+        metrics.load(
+            chkpt_dir.validation_metrics.aggregated_tsv,
+            details_path=chkpt_dir.validation_metrics.details_tsv,
+        )
+        cls._load_callbacks(callbacks, chkpt_dir=chkpt_dir, maps=maps)
+
+    def _save_callbacks(self, chkpt_dir: EpochTmpDir, maps: Maps) -> None:
+        """
+        Saves the callback checkpoints.
+        """
+        chkpt_dir.callbacks.mkdir()
+
+        for callback, file_name in zip(
+            self._callbacks.callbacks, self._get_callback_file_names(self._callbacks)
+        ):
+            maps.save_file(callback.state_dict(), chkpt_dir.callbacks / file_name)
+
+    @classmethod
+    def _load_callbacks(
+        cls, callbacks: CallbacksHandler, chkpt_dir: EpochTmpDir, maps: Maps
+    ) -> None:
+        """
+        Loads the callback checkpoints.
+        """
+        for callback, file_name in zip(
+            callbacks.callbacks, cls._get_callback_file_names(callbacks.callbacks)
+        ):
+            callback.load_state_dict(maps.open_file(chkpt_dir.callbacks / file_name))
+
+    @staticmethod
+    def _get_callback_file_names(callbacks: list[Callback]) -> list[Path]:
+        """
+        Gives a snake case file name for each callback.
+        """
+        names = [camel_to_snake(type(callback).__name__) for callback in callbacks]
+        cnt = {name: 0 for name in set(names)}
+        for i, name in enumerate(names):
+            cnt[name] += 0
+            names[i] += f"_{cnt[name]}" if cnt[name] else ""
+
+        return map(lambda x: Path(x).with_suffix(PT), names)
+
+    @staticmethod
+    def _get_last_saved_epoch(maps: Maps, split_idx: int) -> int:
+        """
+        Gets the last epoch saved in the checkpoint directory.
+        """
+        tmp_dir = maps.training.splits[split_idx].tmp
+        tmp_dir.read()
+        try:
+            return int(sorted(tmp_dir.epochs_list)[-1])
+        except IndexError as e:
+            raise FileNotFoundError(
+                f"No training checkpoint found in {str(tmp_dir.path)}"
+            ) from e

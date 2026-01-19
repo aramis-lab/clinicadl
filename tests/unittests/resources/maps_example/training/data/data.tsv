@@ -1,2 +1,3 @@
-A	B
-0	0
+participant_id	session_id
+sub-000	ses-M000
+sub-001	ses-M006

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinicadl.utils.dictionary.suffixes import PTH, TAR
+from clinicadl.utils.dictionary.suffixes import PT
 from clinicadl.utils.dictionary.words import (
     BEST,
     CHECKPOINTS,
@@ -26,7 +26,7 @@ class TrainingModelDir(ModelDir):
 
     @property
     def model_pt(self) -> Path:
-        return (self.path / MODEL).with_suffix(PTH + TAR)
+        return (self.path / MODEL).with_suffix(PT)
 
     @property
     def validation_metrics(self) -> MetricsDir:

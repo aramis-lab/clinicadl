@@ -1,15 +1,9 @@
-from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Sequence
 
 from pydantic import Field
 
-from clinicadl.io import Maps
-from clinicadl.metrics.handler import MetricsHandler
-from clinicadl.models import Model
 from clinicadl.utils.config import ObjectConfig
-from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.objects import HasConfig
-from clinicadl.utils.typing import PathType
 
 from .base import Callback, Events
 from .factory import get_callback_from_dict

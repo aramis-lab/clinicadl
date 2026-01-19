@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Mapping
 
 import pandas as pd
 
@@ -76,10 +76,6 @@ class ConfigSaverCallback(Callback):
             val_df,
             maps.training.data.validation.splits[split.index].data_tsv,
         )
-        maps.save_file(
-            _join_dfs(train_df, val_df),
-            maps.training.data.validation.splits[split.index].data_tsv,
-        )
 
         computational.to_json(maps.training.splits[split.index].computational_json)
 
@@ -92,7 +88,7 @@ class ConfigSaverCallback(Callback):
         **kwargs,
     ) -> None:
         if group_name not in maps.test.groups_list:
-            maps.test.create(group_name)
+            maps.test.create_group(group_name)
             to_json_safe(
                 dataloader.dataset,
                 maps.test.groups[group_name].dataset_json,
@@ -112,7 +108,7 @@ class ConfigSaverCallback(Callback):
         **kwargs,
     ) -> None:
         if group_name not in maps.prediction.groups_list:
-            maps.prediction.create(group_name)
+            maps.prediction.create_group(group_name)
             to_json_safe(
                 dataloader.dataset,
                 maps.prediction.groups[group_name].dataset_json,
@@ -122,6 +118,12 @@ class ConfigSaverCallback(Callback):
                 df,
                 maps.prediction.groups[group_name].data_tsv,
             )
+
+    def state_dict(self) -> Mapping[str, Any]:
+        return {}
+
+    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
+        pass
 
 
 def _clean_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -139,15 +141,11 @@ def _clean_df(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop_duplicates().sort_values([PARTICIPANT_ID, SESSION_ID])
 
 
-def _join_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
+def _join_dfs(*df: pd.DataFrame) -> pd.DataFrame:
     """
     Joins two DataFrames, drops duplicates and sorts.
     """
-    return (
-        pd.concat([df1, df2])
-        .drop_duplicates()
-        .sort_values([PARTICIPANT_ID, SESSION_ID])
-    )
+    return pd.concat(df).drop_duplicates().sort_values([PARTICIPANT_ID, SESSION_ID])
 
 
 def _update_training_df(maps: Maps, df: pd.DataFrame) -> None:

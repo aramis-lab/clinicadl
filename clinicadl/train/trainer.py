@@ -221,12 +221,15 @@ class Trainer:
             resume=resume,
         )
 
-        while not self.state.should_stop:
-            self.state.current_epoch += 1
+        for epoch in range(1, self.state.num_epochs + 1):
+            if self.state.should_stop:
+                break
+
+            split.train_loader.set_epoch(epoch)
+
+            self.state.reset_epoch(current_epoch=epoch, train_loader=split.train_loader)
 
             self._call_event("on_epoch_start")
-
-            split.train_loader.set_epoch(self.state.current_epoch)
 
             for batch_idx, batch in enumerate(split.train_loader, start=1):
                 self.state.current_train_batch = batch_idx
@@ -462,18 +465,22 @@ class Trainer:
     def _reset_resume(self) -> None:
         self.state.current_train_batch = 0
         self.state.current_val_batch = 0
-        self.state.stage = TrainerStage.TRAIN
+        # self.state.called = TrainerStage.TRAIN
 
     def _reset_train(self, split: Split, num_epochs: int) -> None:
-        self.state.reset_training(split=split, num_epochs=num_epochs)
+        self.state.reset_training(split_idx=split.index, num_epochs=num_epochs)
         self._metrics_handler.reset(reset_df=True)
 
     def _reset_validation(self, split: Split) -> None:
-        self.state.reset_validation(split=split)
+        self.state.reset_validation(
+            split_idx=split.index, val_loader=split.val_loader, in_training=True
+        )
         self._metrics_handler.reset(reset_df=False)
 
     def _reset_validate(self, split: Split) -> None:
-        self.state.reset_validation(split=split)
+        self.state.reset_validation(
+            split_idx=split.index, val_loader=split.val_loader, in_training=False
+        )
         self._metrics_handler.reset(reset_df=True)
 
     def _reset_test(self, dataloader: DataLoader) -> None:

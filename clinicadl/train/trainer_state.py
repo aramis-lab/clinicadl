@@ -2,7 +2,6 @@ from enum import Enum
 from typing import Any, Optional
 
 from clinicadl.data.dataloader import DataLoader
-from clinicadl.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
 
 
@@ -86,30 +85,43 @@ class TrainerState(ClinicaDLConfig):
     optim_step: int = 0
     split_idx: Optional[int] = None
 
-    def reset_training(self, split: Split, num_epochs: int) -> None:
+    def reset_training(self, split_idx: int, num_epochs: int) -> None:
         """
         To reset the whole trainer state.
         """
-        self.stage = TrainerStage.TRAIN
         self.called = TrainerCall.TRAIN
         self.should_stop = False
         self.current_train_batch = 0
-        self.num_train_batches = len(split.train_loader)
+        self.num_train_batches = 0
         self.current_val_batch = 0
-        self.num_val_batches = len(split.val_loader)
+        self.num_val_batches = 0
         self.current_epoch = 0
         self.num_epochs = num_epochs
         self.optim_step = 0
-        self.split_idx = split.index
+        self.split_idx = split_idx
 
-    def reset_validation(self, split: Split) -> None:
+    def reset_epoch(self, train_loader: DataLoader, current_epoch: int) -> None:
+        """
+        To reset at the beginning of a new epoch.
+        """
+        self.stage = TrainerStage.TRAIN
+        self.current_train_batch = 0
+        self.num_train_batches = len(train_loader)
+        self.current_epoch = current_epoch
+        self.optim_step = 0
+
+    def reset_validation(
+        self, split_idx: int, val_loader: DataLoader, in_training: bool = True
+    ) -> None:
         """
         To reset the validation state.
         """
+        if not in_training:
+            self.called = TrainerCall.VALIDATE
         self.stage = TrainerStage.EVAL
         self.current_val_batch = 0
-        self.num_val_batches = len(split.val_loader)
-        self.split_idx = split.index
+        self.num_val_batches = len(val_loader)
+        self.split_idx = split_idx
 
     def reset_test(self, dataloader: DataLoader) -> None:
         """

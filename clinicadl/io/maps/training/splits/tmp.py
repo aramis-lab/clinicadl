@@ -3,11 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from clinicadl.utils.dictionary.suffixes import JSON, PTH, TAR
+from clinicadl.utils.dictionary.suffixes import JSON, PT
 from clinicadl.utils.dictionary.words import (
     CALLBACKS,
     METRICS,
     MODEL,
+    OPTIMIZER,
     SCALER,
     STATE,
     VALIDATION,
@@ -38,12 +39,17 @@ class EpochTmpDir(Directory):
     @property
     @mandatory
     def model_pt(self) -> Path:
-        return (self.path / MODEL).with_suffix(PTH + TAR)
+        return (self.path / MODEL).with_suffix(PT)
 
     @property
     @mandatory
-    def scaler_json(self) -> Path:
-        return (self.path / SCALER).with_suffix(JSON)
+    def optimizer_pt(self) -> Path:
+        return (self.path / OPTIMIZER).with_suffix(PT)
+
+    @property
+    @mandatory
+    def scaler_pt(self) -> Path:
+        return (self.path / SCALER).with_suffix(PT)
 
     @property
     @mandatory

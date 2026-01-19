@@ -8,7 +8,7 @@ import pandas as pd
 from torch import load as torch_load
 from torch import save as torch_save
 
-from clinicadl.utils.dictionary.suffixes import JSON, LOG, PTH, TAR, TSV, TXT
+from clinicadl.utils.dictionary.suffixes import JSON, LOG, PT, TSV, TXT
 from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.dictionary.words import (
     ARCHITECTURE,
@@ -248,7 +248,7 @@ class Maps(Directory):
 
                             Results for the best model obtained with respect to the metric ``"mse"``.
 
-                            .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.best_models.metrics["mse"].model_pt``
+                            .. dropdown:: model.pt → ``maps.training.splits[0].models.best_models.metrics["mse"].model_pt``
                                 :icon: file
                                 :color: light
 
@@ -284,7 +284,7 @@ class Maps(Directory):
 
                             Results for the model at epoch ``10``.
 
-                            .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.checkpoints.epochs[10]_pt``
+                            .. dropdown:: model.pt → ``maps.training.splits[0].models.checkpoints.epochs[10]_pt``
                                 :icon: file
                                 :color: light
 
@@ -321,7 +321,7 @@ class Maps(Directory):
                             Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
                             have been raised when evaluating this model.
 
-                        .. dropdown:: model.pth.tar → ``maps.training.splits[0].models.final.model_pt``
+                        .. dropdown:: model.pt → ``maps.training.splits[0].models.final.model_pt``
                             :icon: file
                             :color: light
 
@@ -358,13 +358,19 @@ class Maps(Directory):
 
                         Checkpoint at the end of epoch ``15``.
 
-                        .. dropdown:: model.pth.tar → ``maps.training.splits[0].tmp.epochs[15].model_pt``
+                        .. dropdown:: model.pt → ``maps.training.splits[0].tmp.epochs[15].model_pt``
                             :icon: file
                             :color: light
 
                             The weights of the model.
 
-                        .. dropdown:: scaler.json → ``maps.training.splits[0].tmp.epochs[15].scaler_json``
+                        .. dropdown:: optimizer.pt → ``maps.training.splits[0].tmp.epochs[15].optimizer_pt``
+                            :icon: file
+                            :color: light
+
+                            The state of the optimizer(s).
+
+                        .. dropdown:: scaler.pt → ``maps.training.splits[0].tmp.epochs[15].scaler_pt``
                             :icon: file
                             :color: light
 
@@ -688,7 +694,7 @@ class Maps(Directory):
     .. code-block:: python
 
         >>> maps.training.splits[0].models.checkpoints.epochs[10]_pt
-        PosixPath('maps_dir/training/split-0/models/checkpoints/epoch-10/model.pth.tar')
+        PosixPath('maps_dir/training/split-0/models/checkpoints/epoch-10/model.pt')
 
     To get the list of all saved checkpoints:
 
@@ -838,8 +844,8 @@ class Maps(Directory):
             return read_json(path)
         elif path.suffix == TSV:
             return pd.read_csv(path, sep=SEP)
-        elif path.suffix == TAR and path.with_suffix("").suffix == PTH:
-            return torch_load(path)
+        elif path.suffix == PT:
+            return torch_load(path, weights_only=True)
         else:
             with path.open("r", encoding="utf-8") as f:
                 return f.read()
@@ -866,7 +872,7 @@ class Maps(Directory):
             If the file exists and ``overwrite=False``.
         ValueError
             If the file type is not supported. Supported file types in a ``MAPS``
-            directory are ``.json``, ``.txt``, ``.log``, ``.tsv``, and ``.pth.tar``.
+            directory are ``.json``, ``.txt``, ``.log``, ``.tsv``, and ``.pt``.
 
         Examples
         --------
@@ -915,11 +921,11 @@ class Maps(Directory):
         elif path.suffix == TSV:
             assert isinstance(obj, (pd.DataFrame, pd.Series))
             obj.to_csv(path, sep=SEP, index=False)
-        elif path.suffix == TAR and path.with_suffix("").suffix == PTH:
+        elif path.suffix == PT:
             torch_save(obj, path)
         else:
             raise ValueError(
-                f"'{path.suffix}' files are not supported. The supported files in a MAPS directory are {[JSON, LOG, TXT, TSV, PTH + TAR]}"
+                f"'{path.suffix}' files are not supported. The supported files in a MAPS directory are {[JSON, LOG, TXT, TSV, PT]}"
             )
 
     def _create_summary_log(self):

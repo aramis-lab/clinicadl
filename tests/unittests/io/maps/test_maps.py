@@ -110,11 +110,14 @@ def test_maps(tmp_path: Path):
     assert maps.training.splits[0].tmp.epochs[0].state_json == (
         maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "state.json"
     )
-    assert maps.training.splits[0].tmp.epochs[0].scaler_json == (
-        maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "scaler.json"
+    assert maps.training.splits[0].tmp.epochs[0].scaler_pt == (
+        maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "scaler.pt"
     )
     assert maps.training.splits[0].tmp.epochs[0].model_pt == (
-        maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "model.pth.tar"
+        maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "model.pt"
+    )
+    assert maps.training.splits[0].tmp.epochs[0].optimizer_pt == (
+        maps_path / "training" / "split-0" / "tmp" / "epoch-0" / "optimizer.pt"
     )
 
     # training - splits - tmp - validation_metrics
@@ -152,7 +155,7 @@ def test_maps(tmp_path: Path):
         / "models"
         / "best_models"
         / "best-loss"
-        / "model.pth.tar"
+        / "model.pt"
     )
     assert maps.training.splits[0].models.best_models.metrics["loss"].warning_log == (
         maps_path
@@ -204,7 +207,7 @@ def test_maps(tmp_path: Path):
         / "models"
         / "checkpoints"
         / "epoch-0"
-        / "model.pth.tar"
+        / "model.pt"
     )
     assert maps.training.splits[0].models.checkpoints.epochs[0].warning_log == (
         maps_path
@@ -244,7 +247,7 @@ def test_maps(tmp_path: Path):
 
     # training - splits - models - final
     assert maps.training.splits[0].models.final.model_pt == (
-        maps_path / "training" / "split-0" / "models" / "final" / "model.pth.tar"
+        maps_path / "training" / "split-0" / "models" / "final" / "model.pt"
     )
     assert maps.training.splits[0].models.final.warning_log == (
         maps_path / "training" / "split-0" / "models" / "final" / "warning.log"
@@ -274,7 +277,6 @@ def test_maps(tmp_path: Path):
     assert maps.training.data.data_tsv == (maps_path / "training" / "data" / "data.tsv")
 
     # training - data - train
-    maps.training.data.train.create_split(0)
     assert maps.training.data.train.splits_list == [0]
     assert (maps_path / "training" / "data" / "train" / "split-0").exists()
     assert maps.training.data.train.splits[0].data_tsv == (
@@ -288,7 +290,6 @@ def test_maps(tmp_path: Path):
     )
 
     # training - data - validation
-    maps.training.data.validation.create_split(0)
     assert maps.training.data.validation.splits_list == [0]
     assert (maps_path / "training" / "data" / "validation" / "split-0").exists()
     assert maps.training.data.validation.splits[0].data_tsv == (
@@ -554,7 +555,7 @@ def test_load_file(tmp_path):
     maps.read()
 
     assert maps.open_file(maps.nn_summary_txt) == "test"
-    assert maps.open_file(maps.summary_log) == "test"
+    assert "MAPS summary" in maps.open_file(maps.summary_log)
     assert maps.open_file(maps.metrics_json) == {"test": True}
     pd.testing.assert_frame_equal(
         maps.open_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
@@ -608,7 +609,7 @@ def test_save_file(tmp_path):
         ValueError,
         match=re.escape(
             "'.abc' files are not supported. "
-            "The supported files in a MAPS directory are ['.json', '.log', '.txt', '.tsv', '.pth.tar']"
+            "The supported files in a MAPS directory are ['.json', '.log', '.txt', '.tsv', '.pt']"
         ),
     ):
         maps.save_file("abc", "abc.abc")
