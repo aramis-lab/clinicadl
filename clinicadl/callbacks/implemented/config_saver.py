@@ -6,9 +6,7 @@ import pandas as pd
 
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
-from clinicadl.utils.exceptions import DataFrameError
 from clinicadl.utils.objects import to_json_safe
-from clinicadl.utils.tsvtools import read_data
 
 from ..base import Callback
 
@@ -130,15 +128,11 @@ def _clean_df(df: pd.DataFrame) -> pd.DataFrame:
     """
     Keeps only the columns "participant_id" and "session_id" and remove duplicated.
     """
-    try:
-        df = read_data(df, check_protected_names=False, check_duplicates=False)
-    except DataFrameError as e:
-        raise DataFrameError(
-            "The DataFrame of your clinicadl.data.dataset.Dataset is not valid."
-        ) from e
-    df = df[[PARTICIPANT_ID, SESSION_ID]]
-
-    return df.drop_duplicates().sort_values([PARTICIPANT_ID, SESSION_ID])
+    return (
+        df[[PARTICIPANT_ID, SESSION_ID]]
+        .drop_duplicates()
+        .sort_values([PARTICIPANT_ID, SESSION_ID])
+    )
 
 
 def _join_dfs(*df: pd.DataFrame) -> pd.DataFrame:
