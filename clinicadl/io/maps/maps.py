@@ -18,7 +18,9 @@ from clinicadl.utils.dictionary.words import (
     METRICS,
     MODEL,
     NN,
+    PARTICIPANT_ID,
     PREDICTION,
+    SESSION_ID,
     SUMMARY,
     TEST,
     TRAINING,
@@ -171,6 +173,13 @@ class Maps(Directory):
                             :color: light
 
                             List of all (participant, session) pairs used for the validation set of the split ``0``.
+
+                        .. dropdown:: dataloader.json → ``maps.training.data.train.splits[0].dataloader_json``
+                            :icon: file
+                            :color: light
+
+                            Details on the validation :py:class:`dataloader <clinicadl.data.dataloader.DataLoaderConfig>`
+                            for split ``0``.
 
                         .. dropdown:: dataset.json → ``maps.training.data.validation.splits[0].dataset_json``
                             :icon: file
@@ -443,6 +452,13 @@ class Maps(Directory):
 
                     List of all (participant, session) pairs in the group ``"X"``.
 
+                .. dropdown:: dataloader.json → ``maps.test.groups["X"].dataloader_json``
+                    :icon: file
+                    :color: light
+
+                    Details on the :py:class:`dataset <clinicadl.data.dataloader.DataLoaderConfig>` used
+                    for the group ``"X"``.
+
                 .. dropdown:: dataset.json → ``maps.test.groups["X"].dataset_json``
                     :icon: file
                     :color: light
@@ -567,6 +583,13 @@ class Maps(Directory):
                     :color: light
 
                     Details on the :py:class:`dataset <clinicadl.data.datasets>` used
+                    for the group ``"X"``.
+
+                .. dropdown:: dataloader.json → ``maps.prediction.groups["X"].dataloader_json``
+                    :icon: file
+                    :color: light
+
+                    Details on the :py:class:`dataset <clinicadl.data.dataloader.DataLoader>` used
                     for the group ``"X"``.
 
                 .. dropdown:: **results**
@@ -930,6 +953,60 @@ class Maps(Directory):
             raise ValueError(
                 f"'{path.suffix}' files are not supported. The supported files in a MAPS directory are {[JSON, LOG, TXT, TSV, PT]}"
             )
+
+    def delete_split(self, split_idx: int) -> None:
+        """
+        To properly remove a split from the :term:`MAPS` directory.
+
+        This function will delete the directory ``<maps>/training/split-<split_idx>``, will update
+        ``<maps>/training/data``, and will delete all the results associated to models trained on
+        this split in ``<maps>/test`` and ``<maps>/prediction``.
+
+        Parameters
+        ----------
+        split_idx : int
+            The id of the split to delete.
+        """
+        self.read()
+        if split_idx not in self.training.splits_list:
+            raise ValueError(f"Split {split_idx} does not exist in your MAPS directory")
+
+        for group in self.prediction.groups_list:
+            if split_idx in self.prediction.groups[group].results.splits_list:
+                self.prediction.groups[group].results.splits[split_idx].remove(
+                    non_empty_ok=True
+                )
+
+        for group in self.test.groups_list:
+            if split_idx in self.test.groups[group].results.splits_list:
+                self.test.groups[group].results.splits[split_idx].remove(
+                    non_empty_ok=True
+                )
+
+        self.training.data.train.splits[split_idx].remove(non_empty_ok=True)
+        self.training.data.validation.splits[split_idx].remove(non_empty_ok=True)
+
+        self.training.splits[split_idx].remove(non_empty_ok=True)
+
+        self._update_training_data()
+
+    def _update_training_data(self):
+        """
+        To update the DataFrame listing the training and validation (participant, session) pairs.
+        """
+        self.training.read()
+        dfs = []
+        for split_idx in self.training.splits_list:
+            dfs.append(
+                self.open_file(self.training.data.train.splits[split_idx].data_tsv)
+            )
+            dfs.append(
+                self.open_file(self.training.data.validation.splits[split_idx].data_tsv)
+            )
+
+        df = pd.concat(dfs).drop_duplicates().sort_values([PARTICIPANT_ID, SESSION_ID])
+
+        self.save_file(df, self.training.data.data_tsv, overwrite=True)
 
     def _create_summary_log(self):
         """Create a summary log file."""

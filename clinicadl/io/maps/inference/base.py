@@ -6,6 +6,7 @@ from typing import Generic
 from clinicadl.utils.dictionary.suffixes import JSON, TSV
 from clinicadl.utils.dictionary.words import (
     DATA,
+    DATALOADER,
     DATASET,
     GROUP,
     MODELS,
@@ -62,6 +63,11 @@ class InferenceGroupDir(Directory, Generic[DirType]):
     @mandatory
     def dataset_json(self) -> Path:
         return (self.path / DATASET).with_suffix(JSON)
+
+    @property
+    @mandatory
+    def dataloader_json(self) -> Path:
+        return (self.path / DATALOADER).with_suffix(JSON)
 
     @property
     @mandatory

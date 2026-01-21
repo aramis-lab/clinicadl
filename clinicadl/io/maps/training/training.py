@@ -11,7 +11,7 @@ from clinicadl.utils.dictionary.words import (
 
 from ...utils import mandatory
 from ..utils import SplitsDir
-from .data import DataDir
+from .data import TrainingDataDir
 from .splits import TrainingSplitDir
 from .splits.models import BestModelsDir, CheckpointsDir, ModelDir
 
@@ -23,10 +23,10 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
 
     def __init__(self, path: Path):
         super().__init__(path)
-        self._data = DataDir(path=self.path / DATA)
+        self._data = TrainingDataDir(path=self.path / DATA)
 
     @property
-    def data(self) -> DataDir:
+    def data(self) -> TrainingDataDir:
         return self._data
 
     @property

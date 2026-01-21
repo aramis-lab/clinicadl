@@ -298,6 +298,9 @@ def test_maps(tmp_path: Path):
     assert maps.training.data.validation.splits[0].dataset_json == (
         maps_path / "training" / "data" / "validation" / "split-0" / "dataset.json"
     )
+    assert maps.training.data.validation.splits[0].dataloader_json == (
+        maps_path / "training" / "data" / "validation" / "split-0" / "dataloader.json"
+    )
 
     # test
     maps.test.create_group("X")
@@ -309,6 +312,9 @@ def test_maps(tmp_path: Path):
     )
     assert maps.test.groups["X"].dataset_json == (
         maps_path / "test" / "group-X" / "dataset.json"
+    )
+    assert maps.test.groups["X"].dataloader_json == (
+        maps_path / "test" / "group-X" / "dataloader.json"
     )
 
     # test - group - splits
@@ -368,6 +374,9 @@ def test_maps(tmp_path: Path):
     )
     assert maps.prediction.groups["X"].dataset_json == (
         maps_path / "prediction" / "group-X" / "dataset.json"
+    )
+    assert maps.prediction.groups["X"].dataloader_json == (
+        maps_path / "prediction" / "group-X" / "dataloader.json"
     )
 
     # prediction - group - results - splits
@@ -471,7 +480,7 @@ def test_read(tmp_path):
     )
     assert (
         maps.training.splits[0]
-        .tmp.epochs[0]
+        .tmp.epochs[3]
         .validation_metrics.aggregated_tsv.is_file()
     )
     assert maps.training.data.train.splits[0].data_tsv.is_file()
@@ -558,7 +567,8 @@ def test_load_file(tmp_path):
     assert "MAPS summary" in maps.open_file(maps.summary_log)
     assert maps.open_file(maps.metrics_json) == {"test": True}
     pd.testing.assert_frame_equal(
-        maps.open_file(maps.training.data.data_tsv), pd.DataFrame({"A": [0], "B": [0]})
+        maps.open_file(maps.training.data.train.splits[0].data_tsv),
+        pd.DataFrame({"participant_id": ["sub-000"], "session_id": ["ses-M000"]}),
     )
     torch.testing.assert_close(
         maps.open_file(maps.training.splits[0].models.checkpoints.epochs[0].model_pt),
@@ -566,7 +576,7 @@ def test_load_file(tmp_path):
     )
 
     with pytest.raises(FileNotFoundError, match=".* is not a file!"):
-        maps.open_file(maps.training.splits[0].tmp.epochs[0].callbacks)
+        maps.open_file(maps.training.splits[0].tmp.epochs[3].callbacks)
 
 
 def test_save_file(tmp_path):
@@ -604,7 +614,7 @@ def test_save_file(tmp_path):
     )
 
     with pytest.raises(IsADirectoryError, match=".* is not a valid file name!"):
-        maps.save_file("abc", maps.training.splits[0].tmp.epochs[0].callbacks)
+        maps.save_file("abc", maps.training.splits[0].tmp.epochs[3].callbacks)
     with pytest.raises(
         ValueError,
         match=re.escape(
@@ -645,9 +655,9 @@ def test_iterdir(tmp_path):
     maps.training.splits[0].tmp.create_epoch(1)
     maps.training.splits[0].tmp.create_epoch(2)
     gen = maps.training.splits[0].tmp.iterdir()
-    assert next(gen).path == (maps_path / "training" / "split-0" / "tmp" / "epoch-0")
     assert next(gen).path == (maps_path / "training" / "split-0" / "tmp" / "epoch-1")
     assert next(gen).path == (maps_path / "training" / "split-0" / "tmp" / "epoch-2")
+    assert next(gen).path == (maps_path / "training" / "split-0" / "tmp" / "epoch-3")
     with pytest.raises(StopIteration):
         next(gen)
 
@@ -712,9 +722,9 @@ def test_get_checkpoint_path():
         maps.training.get_checkpoint_dir("split-0_abc")
     with pytest.raises(
         KeyError,
-        match=f"No checkpoint associated to split 1 in {str(maps.training.path)}",
+        match=f"No checkpoint associated to split 2 in {str(maps.training.path)}",
     ):
-        maps.training.get_checkpoint_dir("split-1_best-loss")
+        maps.training.get_checkpoint_dir("split-2_best-loss")
     with pytest.raises(
         KeyError,
         match=f"No checkpoint associated to the metric 'mse' in {str(models.best_models.path)}",
@@ -729,3 +739,39 @@ def test_read_checkpoint_name():
     assert maps.training.read_checkpoint_name("split-0_best-loss") == (0, "best-loss")
     assert maps.training.read_checkpoint_name("split-0_epoch-0") == (0, "epoch-0")
     assert maps.training.read_checkpoint_name("split-0_final") == (0, "final")
+
+
+def test_delete_split(tmp_path):
+    shutil.copytree(REFERENCE_MAPS, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.read()
+
+    assert (maps.training.path / "split-1").exists()
+    assert (maps.training.data.train.path / "split-1").exists()
+    assert (maps.training.data.validation.path / "split-1").exists()
+    assert (maps.test.groups["X"].results.path / "split-1").exists()
+    assert (maps.prediction.groups["X"].results.path / "split-1").exists()
+    pd.testing.assert_frame_equal(
+        maps.open_file(maps.training.data.data_tsv),
+        pd.DataFrame(
+            {
+                "participant_id": ["sub-000", "sub-001", "sub-002", "sub-003"],
+                "session_id": ["ses-M000", "ses-M006", "ses-M000", "ses-M000"],
+            }
+        ),
+    )
+    maps.delete_split(1)
+    assert not (maps.training.path / "split-1").exists()
+    assert not (maps.training.data.train.path / "split-1").exists()
+    assert not (maps.training.data.validation.path / "split-1").exists()
+    assert not (maps.test.groups["X"].results.path / "split-1").exists()
+    assert not (maps.prediction.groups["X"].results.path / "split-1").exists()
+    pd.testing.assert_frame_equal(
+        maps.open_file(maps.training.data.data_tsv),
+        pd.DataFrame(
+            {
+                "participant_id": ["sub-000", "sub-001"],
+                "session_id": ["ses-M000", "ses-M006"],
+            }
+        ),
+    )

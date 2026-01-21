@@ -16,7 +16,7 @@ from ...utils import mandatory
 from ..utils import SplitsDir
 
 
-class ValidationDataSplitDir(Directory):
+class DataSplitDir(Directory):
     @property
     @mandatory
     def data_tsv(self) -> Path:
@@ -27,37 +27,31 @@ class ValidationDataSplitDir(Directory):
     def dataset_json(self) -> Path:
         return (self.path / DATASET).with_suffix(JSON)
 
-
-class TrainDataSplitDir(ValidationDataSplitDir):
     @property
     @mandatory
     def dataloader_json(self) -> Path:
         return (self.path / DATALOADER).with_suffix(JSON)
 
 
-class ValidationDataDir(SplitsDir[ValidationDataSplitDir]):
-    _dir_type = ValidationDataSplitDir
+class DataDir(SplitsDir[DataSplitDir]):
+    _dir_type = DataSplitDir
 
 
-class TrainDataDir(SplitsDir[TrainDataSplitDir]):
-    _dir_type = TrainDataSplitDir
-
-
-class DataDir(Directory):
+class TrainingDataDir(Directory):
     def __init__(self, path: Path):
         super().__init__(path)
 
-        self._train = TrainDataDir(path=self.path / TRAIN)
-        self._validation = ValidationDataDir(path=self.path / VALIDATION)
+        self._train = DataDir(path=self.path / TRAIN)
+        self._validation = DataDir(path=self.path / VALIDATION)
 
     @property
     @mandatory
-    def train(self) -> TrainDataDir:
+    def train(self) -> DataDir:
         return self._train
 
     @property
     @mandatory
-    def validation(self) -> ValidationDataDir:
+    def validation(self) -> DataDir:
         return self._validation
 
     @property

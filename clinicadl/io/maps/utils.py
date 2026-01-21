@@ -74,6 +74,14 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
         for item in self._items_list:
             yield getattr(self, self._items_dict_private_name())[item]
 
+    def remove(self, non_empty_ok: bool = False) -> None:
+        super().remove(non_empty_ok=non_empty_ok)
+        setattr(
+            self,
+            self._items_dict_private_name(),
+            {},
+        )
+
 
 class SplitsDir(CollectionOfDirs[DirType, int]):
     _item_key = SPLIT
