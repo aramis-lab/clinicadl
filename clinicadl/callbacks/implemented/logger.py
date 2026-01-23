@@ -124,27 +124,34 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         )
         self._summary.add_training_split(split.index)
 
-    def on_validation_start(
+    def on_validate_start(
         self,
         *,
         maps: Maps,
         state: TrainerState,
-        model_checkpoint: Optional[str] = None,
+        model_checkpoint: Optional[str],
         **kwargs,
     ) -> None:
-        if state.called == TrainerCall.VALIDATE:
-            if model_checkpoint:
-                model_dir = maps.training.splits[
-                    state.split_idx
-                ].models.get_checkpoint_dir(model_checkpoint)
-                log_dir = model_dir
-            else:
-                model_dir = maps.training.splits[state.split_idx].models
-                log_dir = maps.training.splits[state.split_idx]
+        if model_checkpoint:
+            model_dir = maps.training.splits[state.split_idx].models.get_checkpoint_dir(
+                model_checkpoint
+            )
+            log_dir = model_dir
+        else:
+            model_dir = maps.training.splits[state.split_idx].models
+            log_dir = maps.training.splits[state.split_idx]
 
-            self._setup_logging(maps, state, warning_file=log_dir.warning_log)
-            self._output_path = model_dir.path
+        self._setup_logging(maps, state, warning_file=log_dir.warning_log)
+        self._output_path = model_dir.path
 
+        self.on_validation_start(state=state)
+
+    def on_validation_start(
+        self,
+        *,
+        state: TrainerState,
+        **kwargs,
+    ) -> None:
         self.logger.info("Beginning of validation")
 
         self._val_progress_bar = tqdm(
@@ -237,18 +244,22 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         )
         _shutdown_logging(self.logger)
 
+    def on_validate_end(
+        self,
+        **kwargs,
+    ) -> None:
+        self.on_validation_end()
+
+        self.logger.info("Validation metrics saved in %s", self._output_path)
+        _shutdown_logging(self.logger)
+
     def on_validation_end(
         self,
-        *,
-        state: TrainerState,
         **kwargs,
     ) -> None:
         self._val_progress_bar.close()
 
         self.logger.info("End of validation")
-        if state.called == TrainerCall.VALIDATE:
-            self.logger.info("Validation metrics saved in %s", self._output_path)
-            _shutdown_logging(self.logger)
 
     def on_test_end(
         self,

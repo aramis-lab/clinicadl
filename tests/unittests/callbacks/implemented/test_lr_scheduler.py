@@ -192,16 +192,6 @@ def test_steps_scheduler():
     step_scheduler.scheduler.step.assert_called_once()
     metric_scheduler.scheduler.step.assert_called_once_with(1.1)
 
-    # only validation
-    metric_scheduler = LRSchedulerCallback(
-        ReduceLROnPlateauConfig(), scheduler_type="metric-based", metric_name="mse"
-    )
-    metric_scheduler.scheduler = MagicMock()
-    metric_scheduler.on_validation_end(
-        state=TrainerState(current_epoch=1), metrics=METRICS_HANDLER
-    )
-    metric_scheduler.scheduler.step.assert_not_called()
-
 
 def test_on_validation_start(caplog):
     metric_scheduler = LRSchedulerCallback(
@@ -209,19 +199,15 @@ def test_on_validation_start(caplog):
         scheduler_type="metric-based",
         metric_name="mse",
     )
-    state = TrainerState(current_epoch=1)
 
     METRICS_HANDLER.config.metrics = {"mae": MSE}
-    metric_scheduler.on_validation_start(state=state, metrics=METRICS_HANDLER)
-
-    state.called = "train"
     metric_scheduler.on_train_start(optimizers=build_optimizer())
     with pytest.raises(KeyError, match="'mse' not found in the computed metrics!"):
         METRICS_HANDLER.config.metrics = {"mae": MSE}
-        metric_scheduler.on_validation_start(state=state, metrics=METRICS_HANDLER)
+        metric_scheduler.on_validation_start(metrics=METRICS_HANDLER)
     with caplog.at_level(logging.WARNING):
         METRICS_HANDLER.config.metrics = {"mse": MSE}
-        metric_scheduler.on_validation_start(state=state, metrics=METRICS_HANDLER)
+        metric_scheduler.on_validation_start(metrics=METRICS_HANDLER)
     assert (
         "Found mode='max' in ReduceLROnPlateau, but found optimum='min' in 'mse'. This may be an error."
         in caplog.text
@@ -231,7 +217,7 @@ def test_on_validation_start(caplog):
 def test_on_train_end(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
-    maps.training.create_split(1)
+    maps.training.create_split(2)
     optimizer = torch.optim.SGD(
         [
             {
@@ -252,7 +238,7 @@ def test_on_train_end(tmp_path):
     state = TrainerState(
         current_epoch=1,
         current_train_batch=4,
-        split_idx=1,
+        split_idx=2,
         num_epochs=3,
         num_train_batches=4,
     )
@@ -265,7 +251,9 @@ def test_on_train_end(tmp_path):
     state.current_epoch = 3
     state.current_train_batch = 4
     scheduler.on_train_end(maps=maps, state=state)
-    df = maps.open_file(maps.training.splits[1].logs.learning_rates / "my_opt.tsv")
+    df = maps.open_file(
+        maps.training.splits[state.split_idx].logs.learning_rates / "my_opt.tsv"
+    )
     pd.testing.assert_frame_equal(
         df,
         pd.DataFrame(

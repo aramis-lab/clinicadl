@@ -71,9 +71,9 @@ def test_on_backward_step_start():
 
 def test_on_train_end(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
-    state = TrainerState(split_idx=1)
+    state = TrainerState(split_idx=2)
     maps = Maps(tmp_path)
-    maps.training.create_split(1)
+    maps.training.create_split(state.split_idx)
     training_loss = TrainingLossCallback()
 
     expected_df = pd.DataFrame(
@@ -85,7 +85,7 @@ def test_on_train_end(tmp_path):
     )
     training_loss.df = expected_df
     training_loss.on_train_end(maps=maps, state=state)
-    df = maps.open_file(maps.training.splits[1].logs.training_loss_tsv)
+    df = maps.open_file(maps.training.splits[state.split_idx].logs.training_loss_tsv)
     pd.testing.assert_frame_equal(expected_df, df)
 
 

@@ -149,3 +149,7 @@ class CannotReadJsonFieldError(ClinicaDLException):
         if mention_kwargs:
             error_msg += "\nPlease pass this field via kwargs."
         super().__init__(error_msg)
+
+
+class CannotReadJsonError(ClinicaDLException):
+    """When a json cannot be read."""

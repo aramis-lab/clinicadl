@@ -8,7 +8,6 @@ from typing_extensions import Self
 
 from clinicadl.metrics.enum import Optimum
 from clinicadl.metrics.handler import MetricsHandler
-from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
@@ -119,14 +118,8 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         if self.metric_monitoring:
             self.metric_monitoring.reset()
 
-    def on_validation_start(
-        self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
-    ) -> None:
-        if (
-            self.config.metric
-            and self.metric_monitoring is None
-            and state.called == TrainerCall.TRAIN
-        ):
+    def on_validation_start(self, *, metrics: MetricsHandler, **kwargs) -> None:
+        if self.config.metric and self.metric_monitoring is None:
             metrics.check_metric_name(self.config.metric)
 
             self._init_metric_monitoring(metrics.metrics[self.config.metric].optimum)
@@ -140,9 +133,6 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         metrics: MetricsHandler,
         **kwargs,
     ) -> None:
-        if state.called != TrainerCall.TRAIN:
-            return
-
         self._metrics = metrics
 
         if self.config.metric:

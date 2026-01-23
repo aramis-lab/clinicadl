@@ -11,7 +11,6 @@ from typing_extensions import Self
 
 from clinicadl.metrics.enum import Optimum
 from clinicadl.metrics.handler import MetricsHandler
-from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
@@ -330,10 +329,8 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
     def on_train_start(self, **kwargs):
         self._reset()
 
-    def on_validation_start(
-        self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
-    ) -> None:
-        if self.stoppers is None and state.called == TrainerCall.TRAIN:
+    def on_validation_start(self, *, metrics: MetricsHandler, **kwargs) -> None:
+        if self.stoppers is None:
             for config in self.config.stoppers:
                 metrics.check_metric_name(metric=config.metric)
             modes = {name: metric.optimum for name, metric in metrics.metrics.items()}
@@ -343,9 +340,6 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
     def on_validation_end(
         self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
     ) -> None:
-        if state.called != TrainerCall.TRAIN:
-            return
-
         should_stops = [stopper.step(metrics, state) for stopper in self.stoppers]
         should_stop = all(should_stops)
         if should_stop:

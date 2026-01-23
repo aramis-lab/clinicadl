@@ -43,6 +43,8 @@ class Events(str, Enum):
     # Validation
     VAL_START = "on_validation_start"
     VAL_END = "on_validation_end"
+    VALIDATE_START = "on_validate_start"
+    VALIDATE_END = "on_validate_end"
     EVAL_START = "on_evaluation_step_start"
     EVAL_END = "on_evaluation_step_end"
 
@@ -399,20 +401,21 @@ class Callback(ABC):
 
     # Evaluate
 
-    def on_validation_start(
+    def on_validate_start(
         self,
         *,
         model: Model,
         maps: Maps,
         state: TrainerState,
-        split: Split,
+        dataloader: DataLoader,
+        model_checkpoint: Optional[str],
         metrics: MetricsHandler,
         computational: ComputationalConfig,
-        model_checkpoint: Optional[str] = None,
     ) -> None:
         """
-        Called once at the beginning of :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`
-        or at the beginning of every validation loop in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`
+        Called once at the beginning of :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
+
+        Not to be confused with :py:meth:`on_validation_start`.
 
         Parameters
         ----------
@@ -422,16 +425,72 @@ class Callback(ABC):
             The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
         state : TrainerState
             The current :py:class:`clinicadl.train.TrainerState`.
-        split : Split
-            The :py:class:`clinicadl.split.Split` on which validation is performed.
+        dataloader : DataLoader
+            The dataloader on which validation is performed.
+        model_checkpoint : str, default=None
+            The model checkpoint currently being validated.
         metrics : MetricsHandler
             The :py:class:`~clinicadl.metrics.MetricsHandler` containing the validation metrics.
         computational : ComputationalConfig
             The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
             of the validation phase.
-        model_checkpoint : Optional[str], default=None
-            The model checkpoint currently being validated. In :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`,
-            it will be ``None``.
+        """
+
+    def on_validation_start(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        dataloader: DataLoader,
+        metrics: MetricsHandler,
+        computational: ComputationalConfig,
+    ) -> None:
+        """
+        Called at the beginning of every validation loop in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
+
+        Not to be confused with :py:meth:`on_validate_start`.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
+        dataloader : DataLoader
+            The dataloader on which validation is performed.
+        metrics : MetricsHandler
+            The :py:class:`~clinicadl.metrics.MetricsHandler` containing the validation metrics.
+        computational : ComputationalConfig
+            The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
+            of the validation phase.
+        """
+
+    def on_validate_end(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        metrics: MetricsHandler,
+    ) -> None:
+        """
+        Called once at the end of :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
+
+        Not to be confused with :py:meth:`on_validation_end`.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
+        metrics : MetricsHandler
+            The :py:class:`~clinicadl.metrics.MetricsHandler` containing the validation metrics.
         """
 
     def on_validation_end(
@@ -443,8 +502,9 @@ class Callback(ABC):
         metrics: MetricsHandler,
     ) -> None:
         """
-        Called once at the end of :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`
-        or at the end of every validation loop in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`
+        Called at the end of every validation loop in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
+
+        Not to be confused with :py:meth:`on_validate_end`.
 
         Parameters
         ----------
@@ -520,9 +580,9 @@ class Callback(ABC):
         maps: Maps,
         state: TrainerState,
         dataloader: DataLoader,
-        metrics: MetricsHandler,
-        model_checkpoint: str,
         group_name: str,
+        model_checkpoint: str,
+        metrics: MetricsHandler,
         computational: ComputationalConfig,
     ) -> None:
         """
@@ -538,12 +598,12 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         dataloader : DataLoader
             The dataloader on which the test is performed.
-        metrics : MetricsHandler
-            The :py:class:`~clinicadl.metrics.MetricsHandler` containing the test metrics.
         model_checkpoint : Optional[str]
             The model checkpoint currently being tested.
         group_name : str
             The name given to the test data.
+        metrics : MetricsHandler
+            The :py:class:`~clinicadl.metrics.MetricsHandler` containing the test metrics.
         computational : ComputationalConfig
             The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
             of the validation phase.

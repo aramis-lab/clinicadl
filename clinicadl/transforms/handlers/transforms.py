@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Sequence, TypeVar
 
 import torchio as tio
 from pydantic import Field, ValidationInfo, field_validator, model_validator
+from typing_extensions import Self
 
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.transforms.extraction import Extraction, Image

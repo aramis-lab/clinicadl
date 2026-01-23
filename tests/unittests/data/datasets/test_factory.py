@@ -2,10 +2,16 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+import torchio as tio
 
 from clinicadl.data.datasets import *
-from clinicadl.data.datasets.factory import get_dataset_from_dict, get_dataset_from_json
+from clinicadl.data.datasets.factory import (
+    get_dataset_from_dict,
+    get_dataset_from_json,
+    get_dataset_from_json_safely,
+)
 from clinicadl.data.datatypes import T1Linear
+from clinicadl.transforms.handlers import Transforms
 
 from .utils import subset_df
 
@@ -21,7 +27,9 @@ CAPS_DATASET.read_tensor_conversion()
 
 
 def sub_data(participants_sessions: list[tuple[str, str]]) -> pd.DataFrame:
-    return subset_df(DATAFRAME, participants_sessions)
+    df = subset_df(DATAFRAME, participants_sessions)
+    df["abc"] = 0
+    return df
 
 
 MANDATORY_ARGS = {
@@ -77,3 +85,21 @@ def test_dataset_from_json(tmp_path, dataset):
 
     if dataset is CapsDataset:
         assert d.config.datatype.key == "t1-linear"
+
+
+def test_dataset_from_json_safely(tmp_path):
+    dataset = CapsDataset(
+        **MANDATORY_ARGS["CapsDataset"],
+        transforms=Transforms(image_transforms=[tio.ZNormalization()]),
+        columns={"abc": lambda x: str(x)},
+    )
+    dataset.to_json(tmp_path / "dataset.json")
+
+    assert get_dataset_from_json_safely(tmp_path / "dataset.json") == (None, [])
+    obj, fields = get_dataset_from_json_safely(
+        tmp_path / "dataset.json", default=dataset
+    )
+    assert isinstance(obj, CapsDataset)
+    assert isinstance(obj.transforms.image_transforms.transforms[0], tio.ZNormalization)
+    assert obj.config.columns["abc"](0) == "0"
+    assert fields == ["transforms", "columns"]

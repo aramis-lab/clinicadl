@@ -9,6 +9,7 @@ from typing import (
     Any,
     Callable,
     Optional,
+    TypeVar,
     Union,
 )
 
@@ -39,6 +40,8 @@ from ..structures import Column, DataPoint, Mask, Sample
 from .sampler import SamplerDataset
 
 logger = getLogger("clinicadl.data.datasets.base")
+
+T = TypeVar("T")
 
 
 def _dataframe_from_dict(serialized_df: Union[dict, Any]) -> None:
@@ -78,6 +81,14 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
     @property
     def _common_mask_names(self) -> list[str]:
         return list(map(Mask.get_mask_name, self._common_masks))
+
+    @field_validator("label", mode="after")
+    @classmethod
+    def _sort_labels(cls, labels: T) -> T:
+        """Sort the labels if list."""
+        if isinstance(labels, list):
+            return sorted(labels)
+        return labels
 
     @field_validator("columns", mode="before")
     @classmethod

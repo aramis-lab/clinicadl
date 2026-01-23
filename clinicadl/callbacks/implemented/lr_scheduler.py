@@ -17,7 +17,6 @@ from clinicadl.optim.lr_schedulers.config import (
 )
 from clinicadl.optim.lr_schedulers.factory import get_lr_scheduler_from_dict
 from clinicadl.optim.lr_schedulers.types import LRSchedulerOrConfig
-from clinicadl.train.trainer_state import TrainerCall
 from clinicadl.utils.config import ObjectConfig, ObjectOrConfig
 from clinicadl.utils.dictionary.suffixes import TSV
 from clinicadl.utils.dictionary.words import BATCH, EPOCH, NAME, OPTIMIZER
@@ -190,13 +189,8 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         self._current_lrs = self.scheduler.get_last_lr()
         self._param_groups = self._get_param_groups(optimizer)
 
-    def on_validation_start(
-        self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
-    ) -> None:
-        if (
-            state.called == TrainerCall.TRAIN
-            and self.config.scheduler_type == LRSchedulerType.METRIC
-        ):
+    def on_validation_start(self, *, metrics: MetricsHandler, **kwargs) -> None:
+        if self.config.scheduler_type == LRSchedulerType.METRIC:
             metrics.check_metric_name(self.config.metric_name)
             opt = metrics.metrics[self.config.metric_name].optimum
 
@@ -217,9 +211,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
     def on_validation_end(
         self, *, state: TrainerState, metrics: MetricsHandler, **kwargs
     ) -> None:
-        if state.called == TrainerCall.TRAIN and (
-            self.config.scheduler_type == LRSchedulerType.METRIC
-        ):
+        if self.config.scheduler_type == LRSchedulerType.METRIC:
             val_metric = metrics.get_metric_value(
                 metric=self.config.metric_name,
                 epoch=state.current_epoch,

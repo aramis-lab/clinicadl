@@ -52,3 +52,19 @@ def test_datatype(tmp_path):
         dict_ = json.load(f)
     data_type = DataType.from_dict(dict_)
     assert data_type.pattern == re.compile(".*/abc_.*")
+
+    # equality
+    data_type_1 = DataType(
+        pattern=".*/abc_.*", key="my_datatype", description="A description"
+    )
+
+    class DataTypeChild(DataType):
+        pass
+
+    data_type_2 = DataTypeChild(
+        pattern=".*/abc_.*", key="my_data", description="Another description"
+    )
+    assert not data_type_1 == data_type_2
+    data_type_2.key = "my_datatype"
+    assert data_type_1 == data_type_2
+    assert not data_type_1 == 0

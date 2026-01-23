@@ -62,6 +62,9 @@ class ConfigSaverCallback(Callback):
         split.config.train_loader_config.to_json(
             maps.training.data.train.splits[split.index].dataloader_json
         )
+        split.config.val_loader_config.to_json(
+            maps.training.data.validation.splits[split.index].dataloader_json
+        )
 
         train_df = _clean_df(split.train_dataset.df)
         val_df = _clean_df(split.val_dataset.df)

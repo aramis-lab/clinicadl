@@ -280,7 +280,7 @@ class Trainer:
                 self.state.current_epoch - 1 % self.optimization_config.evaluation_steps
                 == 0
             ):
-                self._validate(split)
+                self._validation(split.val_loader)
 
                 self._metrics_handler.save(
                     path=self.maps.training.splits[
@@ -306,8 +306,9 @@ class Trainer:
 
     def validate(
         self,
-        split: Split,
-        model_checkpoint: str,
+        split_idx: int,
+        val_loader: Optional[DataLoader],
+        model_checkpoint: Optional[str] = None,
         metrics: Optional[Sequence[str]] = None,
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
@@ -315,6 +316,7 @@ class Trainer:
         Evaluate the model on a validation or test dataset.
         """
         self.maps.read()
+        _get_dataloader()
         self._check_split(split, only_val=True)
         self._check_metrics(metrics)
 
@@ -343,16 +345,17 @@ class Trainer:
         metrics: Optional[Sequence[str]] = None,
         save_outputs: bool = False,
         computational: ComputationalConfig = ComputationalConfig(),
+        overwrite: bool = False,
     ) -> None:
         """
         Evaluate the model on a validation or test dataset.
         """
         self.maps.read()
-        self._check_leakage(dataloader)
         self._check_metrics(metrics)
-        self._check_group(group_name)
 
         checkpoint_path = self._read_checkpoint_name(model_checkpoint)
+        if overwrite:
+            "delete old results"
         self._load_model_checkpoint(checkpoint_path.model)
 
         self.maps.predictions.groups[group_name].results.create_model(model)
@@ -390,6 +393,7 @@ class Trainer:
         model_checkpoint: str,
         group_name: str,
         computational: ComputationalConfig = ComputationalConfig(),
+        overwrite: bool = False,
     ) -> None:
         """
         Predict
@@ -408,9 +412,9 @@ class Trainer:
             "on_prediction_end",
         )
 
-    def _validate(
+    def _validation(
         self,
-        split: Split,
+        dataloader: DataLoader,
         metrics: Optional[Sequence[str]],
         computational: ComputationalConfig,
         model_checkpoint: Optional[str] = None,
@@ -490,25 +494,6 @@ class Trainer:
     def _reset_prediction(self, dataloader: DataLoader) -> None:
         self.state.reset_test(dataloader=dataloader)
 
-    def _check_metrics(self, metrics: Optional[Sequence[str]]) -> None:
-        if metric is not None:
-            for metric in metrics:
-                if metric not in self._metrics_handler.metrics:
-                    raise ValueError(
-                        f"'{metric}' does not match any metrics. Metrics defined are: {self.metrics} "
-                        "Use 'add_metrics' to define new metrics."
-                    )
-
-    def _check_leakage(self, dataloader: DataLoader) -> None:
-        training_data = self.maps.open_file(self.maps.training.data.data_tsv)
-        training_participants = set(training_data[PARTICIPANT_ID])
-        dataset: Dataset = dataloader.dataset
-        new_participants = set(zip(*dataset.get_participant_session_couples())[0])
-        if len(training_participants.intersection(new_participants)) > 0:
-            raise DataLeakageError(
-                participants=training_participants.intersection(new_participants)
-            )
-
     def _get_all_models(
         self, split_idx: int, final: bool, checkpoints: bool
     ) -> list[ModelDir]:
@@ -552,121 +537,37 @@ class Trainer:
         state_dict = self.maps.open_file(model_path)
         self.model.load_state_dict(state_dict)
 
-    def _write_training_infos(
-        self,
-        split: Split,
-    ) -> None:
-        """
-        Write training information to the maps directory.
+    def _check_metrics(self, metrics: Optional[Sequence[str]]) -> None:
+        if metric is not None:
+            for metric in metrics:
+                if metric not in self._metrics_handler.metrics:
+                    raise ValueError(
+                        f"'{metric}' does not match any metrics. Metrics defined are: {self.metrics} "
+                        "Use 'add_metrics' to define new metrics."
+                    )
 
-        Parameters
-        ----------
-        split : Split
-            The data split used for training.
-        """
-        self.maps._create_training_split(split=split)
-        self.maps._add_lines_to_summary_log(
-            f"Training dataset  : {split.train_dataset.caps_reader.input_directory}"
-        )
 
-        assert isinstance(split.train_loader.dataset, CapsDataset)
-        split.train_loader.dataset.write_json(
-            self.maps.training.splits[split.index].caps_dataset_json, name="train"
-        )
-        split.train_loader_config.write_json(
-            self.maps.training.splits[split.index].dataloader_json, name="train"
-        )
-
-        assert isinstance(split.val_loader.dataset, CapsDataset)
-        split.val_loader.dataset.write_json(
-            self.maps.training.splits[split.index].caps_dataset_json, name="val"
-        )
-        split.val_loader_config.write_json(
-            self.maps.training.splits[split.index].dataloader_json, name="val"
-        )
-
-    def _write_end_training_infos(
-        self,
-        split: Split,
-    ) -> None:
-        """
-        Write end of training information to the maps directory.
-
-        Parameters
-        ----------
-        split : Split
-            The data split used for training.
-        """
-
-        self.maps._add_lines_to_summary_log(
-            f"Input size        : {self.model._input_size}\n"
-        )
-        self.maps._add_lines_to_summary_log("=" * 15)
-
-        self.config.write_torchsummary()  # not working i don't know why
-
-    def _check_split(self, split: Split, only_val: bool = False) -> None:
-        if not only_val:
-            if split.train_loader is None:
-                raise ClinicaDLConfigurationError(
-                    "The split has no train_loader defined. Please run `get_dataloader()`"
-                )
-            self.state.num_train_batches = len(split.train_loader)
-        if split.val_loader is None:
-            raise ClinicaDLConfigurationError(
-                "The split has no train_loader defined. Please run `get_dataloader()`"
-            )
-        self.state.num_val_batches = len(split.val_loader)
-
-    def _check_group(self, group_name: str) -> None:
-        self.maps.predictions.create_group(group_name)
-
-    def _read_checkpoint_name(self, checkpoint_name: str) -> ModelDir:
-        pattern = re.compile(r"^split-\d+_(?:final|metric-[a-z-]+|epoch-\d+)$")
-        assert bool(re.match(pattern, checkpoint_name))
-
-        split, checkpoint_name = checkpoint_name.split("_")
-        split_idx = int(split.split("-")[-1])
-        models_dir = self.maps.training.splits[split_idx].models
-
-        if checkpoint_name == "final":
-            return models_dir.final
-        elif checkpoint_name.startswith("metric"):
-            metric = checkpoint_name.split("-")[-1]
-            return models_dir.best_models.metrics[metric]
-        elif checkpoint_name.startswith("epoch"):
-            epoch = int(checkpoint_name.split("-")[-1])
-            return models_dir.checkpoints.epochs[epoch]
-
-    def _save_checkpoint(self):
-        if self.state.current_epoch == self._last_saved_epoch:
-            return
-        self._last_saved_epoch = self.state.current_epoch
-
-        tmp_dir = self.maps.training.splits[self.state.split_idx].tmp
-        tmp_dir.read()
-        tmp_dir.create_epoch(self.state.current_epoch)
-        epoch_dir = tmp_dir.epochs[self.state.current_epoch]
-
-        # model
-        self.model.save_checkpoint(epoch_dir.model)
-
-        # metrics
-        self._metrics_handler.save(
-            path=epoch_dir.validation_metrics.aggregated,
-            details_path=epoch_dir.validation_metrics.details,
-        )
-
-        # trainer state
-        write_json(epoch_dir, self.state.state_dict())
-
-        # callbacks
-        for name, callback in self.callbacks.callbacks.items():
-            lowered_name = camel_to_snake(name)
-            callback_json = epoch_dir.callbacks / lowered_name
-            callback.save_checkpoint(callback_json)
-
-        # delete old epochs
-        for epoch in tmp_dir.epochs_list:
-            if epoch != self.state.current_epoch:
-                tmp_dir.epochs[epoch].remove()
+# def _get_dataloader():
+#     """
+#     Useful for validate, test and predict.
+#     """
+#     if not (
+#         _get_old_dataset(
+#             dataset_path := maps.training.data.validation.splits[
+#                 state.split_idx
+#             ].dataset_json
+#         )
+#     ):
+#         raise CannotReadJsonError(
+#             f"ClinicaDL could not read the validation dataset for split {state.split_idx} in {dataset_path}. Please pass "
+#             "the validation dataloader to Trainer.validate."
+#         )
+#     if not (
+#         _get_old_dataloader(
+#             dataloader_path := maps.training.data.validation.splits[state.split_idx].dataloader_json
+#         )
+#     ):
+#         raise CannotReadJsonError(
+#             f"ClinicaDL could not read the validation dataloader for split {state.split_idx} in {dataloader_path}. Please pass "
+#             "the validation dataloader to Trainer.validate."
+#         )

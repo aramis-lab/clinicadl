@@ -1,4 +1,3 @@
-import shutil
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -34,20 +33,22 @@ def test_on_trainer_init(tmp_path):
 
 def test_on_train_start(tmp_path):
     SPLIT = Mock()
-    SPLIT.index = 1
+    SPLIT.index = 2
     SPLIT.train_dataset.df = pd.DataFrame(
         {
-            "participant_id": ["sub-100", "sub-000"],
-            "session_id": ["ses-100", "ses-M000"],
+            "participant_id": ["sub-100", "sub-100", "sub-000"],
+            "session_id": ["ses-M000", "ses-M000", "ses-M000"],
             "abc": "xxx",
         }
     )
     SPLIT.val_dataset.df = pd.DataFrame(
-        {"participant_id": ["sub-100", "sub-100"], "session_id": ["ses-100", "ses-100"]}
+        {
+            "participant_id": ["sub-101", "sub-101"],
+            "session_id": ["ses-M000", "ses-M000"],
+        }
     )
     COMPUTATIONAL = Mock()
 
-    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
     maps.training.create_split(SPLIT.index)
 
@@ -59,6 +60,9 @@ def test_on_train_start(tmp_path):
     )
     SPLIT.config.train_loader_config.to_json.assert_called_once_with(
         maps.training.data.train.splits[SPLIT.index].dataloader_json
+    )
+    SPLIT.config.val_loader_config.to_json.assert_called_once_with(
+        maps.training.data.validation.splits[SPLIT.index].dataloader_json
     )
     SPLIT.val_dataset.to_json.assert_called_once_with(
         maps.training.data.validation.splits[SPLIT.index].dataset_json, overwrite=False
@@ -75,34 +79,38 @@ def test_on_train_start(tmp_path):
         pd.DataFrame(
             {
                 "participant_id": ["sub-000", "sub-100"],
-                "session_id": ["ses-M000", "ses-100"],
+                "session_id": ["ses-M000", "ses-M000"],
             }
         ),
     )
     pd.testing.assert_frame_equal(
-        val_df, pd.DataFrame({"participant_id": ["sub-100"], "session_id": ["ses-100"]})
+        val_df,
+        pd.DataFrame({"participant_id": ["sub-101"], "session_id": ["ses-M000"]}),
     )
     pd.testing.assert_frame_equal(
         global_df,
         pd.DataFrame(
             {
-                "participant_id": ["sub-000", "sub-001", "sub-100"],
-                "session_id": ["ses-M000", "ses-M006", "ses-100"],
+                "participant_id": ["sub-000", "sub-100", "sub-101"],
+                "session_id": ["ses-M000", "ses-M000", "ses-M000"],
             }
         ),
     )
 
-    maps.training.data.data_tsv.unlink()
-    maps.training.create_split(2)
-    SPLIT.index = 2
+    SPLIT.index = 3
+    SPLIT.val_dataset.df = pd.DataFrame(
+        {"participant_id": ["sub-102"], "session_id": ["ses-M000"]}
+    )
+    maps.training.create_split(SPLIT.index)
     saver.on_train_start(maps=maps, split=SPLIT, computational=COMPUTATIONAL)
     global_df = maps.open_file(maps.training.data.data_tsv)
+    print(global_df)
     pd.testing.assert_frame_equal(
-        train_df,
+        global_df,
         pd.DataFrame(
             {
-                "participant_id": ["sub-000", "sub-100"],
-                "session_id": ["ses-M000", "ses-100"],
+                "participant_id": ["sub-000", "sub-100", "sub-101", "sub-102"],
+                "session_id": ["ses-M000", "ses-M000", "ses-M000", "ses-M000"],
             }
         ),
     )

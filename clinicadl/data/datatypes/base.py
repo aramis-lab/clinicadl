@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 from abc import ABC
@@ -103,6 +105,11 @@ class DataType(ConfigWithName, ABC):
     def name(self) -> str:
         """Gets the name of the current class."""
         return type(self).__name__
+
+    def __eq__(self, other: DataType) -> bool:
+        if not isinstance(other, DataType):
+            return False
+        return self.pattern == other.pattern and self.key == other.key
 
     @field_validator("key", mode="before")
     @classmethod

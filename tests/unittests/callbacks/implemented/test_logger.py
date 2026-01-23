@@ -66,7 +66,7 @@ def test_train(caplog, tmp_path):
     maps = Maps(tmp_path)
     maps.exec.remove(non_empty_ok=True)
     state = TrainerState(
-        split_idx=1,
+        split_idx=2,
         called="train",
         stage="training",
         num_train_batches=5,
@@ -82,7 +82,7 @@ def test_train(caplog, tmp_path):
     comp = ComputationalConfig(gpu=False)
     with caplog.at_level(logging.INFO):
         logger.on_train_start(maps=maps, split=SPLIT, state=state, computational=comp)
-    assert "Beginning of training on split 1" in caplog.text
+    assert f"Beginning of training on split {state.split_idx}" in caplog.text
     assert "Computational configuration: gpu=False" in caplog.text
     assert maps.training.splits[state.split_idx].summary_log.is_file()
     with open(maps.training.splits[state.split_idx].summary_log, "r") as f:
@@ -121,7 +121,7 @@ def test_train(caplog, tmp_path):
 
     state.stage = "evaluation"
     with contextlib.redirect_stdout(stdout_capture), caplog.at_level(logging.INFO):
-        logger.on_validation_start(state=state, maps=maps)
+        logger.on_validation_start(state=state)
     assert "Validation: " in stdout_capture.getvalue()
     assert "Beginning of validation" in caplog.text
     assert logger._val_progress_bar.total == 4
@@ -131,7 +131,7 @@ def test_train(caplog, tmp_path):
 
     caplog.clear()
     with caplog.at_level(logging.INFO):
-        logger.on_validation_end(state=state)
+        logger.on_validation_end()
     assert "End of validation" in caplog.text
     assert "Validation metrics saved" not in caplog.text
     assert logger._val_progress_bar.disable
@@ -153,7 +153,7 @@ def test_train(caplog, tmp_path):
         logger.on_train_end(state=state)
     assert "Training completed successfully (stopped after 3 epochs)" in caplog.text
     assert (
-        f"All results, logs, and model checkpoints are saved in {tmp_path / 'training' / 'split-1'}"
+        f"All results, logs, and model checkpoints are saved in {tmp_path / 'training' / f'split-{state.split_idx}'}"
         in caplog.text
     )
     with open(maps.training.splits[state.split_idx].summary_log, "r") as f:
@@ -187,7 +187,7 @@ def test_train(caplog, tmp_path):
     logger.on_train_start(maps=maps, state=state, computational=comp, split=SPLIT)
     logger.on_epoch_start(state=state)
     assert logger._train_progress_bar.disable
-    logger.on_validation_start(state=state, maps=maps)
+    logger.on_validation_start(state=state)
     assert logger._val_progress_bar.disable
 
     run_dir = maps.exec.runs[maps.exec.runs_list[1]]
@@ -208,9 +208,11 @@ def test_train(caplog, tmp_path):
 def test_validate(caplog, tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
+    maps.read()
     maps.exec.remove(non_empty_ok=True)
+
     state = TrainerState(
-        split_idx=1,
+        split_idx=2,
         called="validate",
         stage="evaluation",
         num_val_batches=4,
@@ -223,7 +225,7 @@ def test_validate(caplog, tmp_path):
 
     stdout_capture = io.StringIO()
     with contextlib.redirect_stdout(stdout_capture), caplog.at_level(logging.INFO):
-        logger.on_validation_start(state=state, maps=maps)
+        logger.on_validate_start(state=state, maps=maps, model_checkpoint=None)
     assert "Validation: " in stdout_capture.getvalue()
     assert "Beginning of validation" in caplog.text
     assert logger._val_progress_bar.total == 4
@@ -248,10 +250,10 @@ def test_validate(caplog, tmp_path):
 
     caplog.clear()
     with caplog.at_level(logging.INFO):
-        logger.on_validation_end(state=state)
+        logger.on_validate_end()
     assert "End of validation" in caplog.text
     assert (
-        f"Validation metrics saved in {tmp_path / 'training' / 'split-1' / 'models'}"
+        f"Validation metrics saved in {tmp_path / 'training' / f'split-{state.split_idx}' / 'models'}"
         in caplog.text
     )
     assert logger._val_progress_bar.disable
@@ -280,20 +282,18 @@ def test_validate(caplog, tmp_path):
 
     # with checkpoint
     state.split_idx = 0
-    maps.training.splits[1].remove(non_empty_ok=True)
-    maps.read()
     logger = LoggerCallback(progress_bar=False, debug=False)
     logger.on_trainer_init(model=MODEL, maps=maps)
-    logger.on_validation_start(state=state, maps=maps, model_checkpoint="best-loss")
+    logger.on_validate_start(state=state, maps=maps, model_checkpoint="best-loss")
     assert logger._val_progress_bar.disable
 
     log.warning("a third warning")
 
     caplog.clear()
     with caplog.at_level(logging.INFO):
-        logger.on_validation_end(state=state)
+        logger.on_validate_end()
     assert (
-        f"Validation metrics saved in {tmp_path / 'training' / 'split-0' / 'models' / 'best_models' / 'best-loss'}"
+        f"Validation metrics saved in {tmp_path / 'training' / f'split-{state.split_idx}' / 'models' / 'best_models' / 'best-loss'}"
         in caplog.text
     )
     f = maps.open_file(
@@ -312,11 +312,11 @@ def test_validate(caplog, tmp_path):
     maps.training.splits[state.split_idx].warning_log.unlink()
     logger = LoggerCallback(save_logs=False)
     logger.on_trainer_init(model=MODEL, maps=maps)
-    logger.on_validation_start(state=state, maps=maps)
+    logger.on_validate_start(state=state, maps=maps, model_checkpoint=None)
     log.warning("a warning")
     assert len(maps.exec.runs_list) == 2
     assert not maps.training.splits[state.split_idx].warning_log.is_file()
-    logger.on_validation_end(state=state)
+    logger.on_validate_end()
 
 
 def test_test(caplog, tmp_path):
@@ -547,7 +547,7 @@ def test_on_exception(caplog, tmp_path):
     maps = Maps(tmp_path)
     maps.exec.remove(non_empty_ok=True)
     state = TrainerState(
-        split_idx=1,
+        split_idx=2,
         called="train",
         stage="training",
     )
@@ -588,7 +588,7 @@ def test_on_exception(caplog, tmp_path):
     # not training
     state.called = "validate"
     state.stage = "evaluation"
-    logger.on_validation_start(state=state, maps=maps)
+    logger.on_validate_start(state=state, maps=maps, model_checkpoint=None)
 
     log.warning("a warning")
 
@@ -613,7 +613,7 @@ def test_on_exception(caplog, tmp_path):
     # don't save files
     logger = LoggerCallback(save_logs=False)
     logger.on_trainer_init(model=MODEL, maps=maps)
-    logger.on_validation_start(state=state, maps=maps)
+    logger.on_validate_start(state=state, maps=maps, model_checkpoint=None)
 
     caplog.clear()
     with caplog.at_level(logging.INFO):

@@ -75,7 +75,7 @@ class Serializable:
         )
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> Self:
+    def from_dict(cls, config_dict: dict[str, Any], **kwargs: Any) -> Self:
         """
         To create the object from a dictionary returned by
         :py:meth:`to_dict`.
@@ -84,6 +84,8 @@ class Serializable:
         ----------
         config_dict : dict[str, Any]
             The input dictionary.
+        kwargs : Any
+            Any field of the dictionary to overwrite.
 
         Returns
         -------
@@ -119,8 +121,8 @@ class HasConfig(JsonReaderWriter, Serializable, Generic[Config]):
         return self.config.to_dict()
 
     @classmethod
-    def from_dict(cls: type[Self], config_dict: dict[str, Any]) -> Self:
-        config = cls._config_type.from_dict(config_dict)
+    def from_dict(cls: type[Self], config_dict: dict[str, Any], **kwargs: Any) -> Self:
+        config = cls._config_type.from_dict(config_dict, **kwargs)
         return cls._from_config(config)
 
     @classmethod
@@ -129,6 +131,11 @@ class HasConfig(JsonReaderWriter, Serializable, Generic[Config]):
         return cls(
             **config.to_raw_dict()
         )  # not get_object here because we want to keep config classes as config classes
+
+    def __eq__(self, other: Self) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return self.config == other.config
 
 
 def to_json_safe(

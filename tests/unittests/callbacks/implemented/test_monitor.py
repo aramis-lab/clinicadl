@@ -124,7 +124,7 @@ def _training(
         _assert_running(monitor.monitor_global_training, monitor.monitor_epoch)
 
         if (STATE.current_epoch - 1) % OPTIMIZATION.evaluation_steps == 0:
-            monitor.on_validation_start(state=STATE)
+            monitor.on_validation_start()
             STATE.stage = "evaluation"
             _assert_running(
                 monitor.monitor_global_training,

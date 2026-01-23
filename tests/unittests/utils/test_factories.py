@@ -1,11 +1,13 @@
 import json
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
 
 from clinicadl.utils.factories import (
     factory_from_dict,
     factory_from_json,
     get_args_from,
     get_defaults_from,
+    safe_factory_from_json,
 )
 
 from .utils import *
@@ -29,52 +31,155 @@ def test_factory_from_dict():
     @factory_from_dict(
         object_type=Obj, enum=ImplementedObj, context=globals(), config=False
     )
-    def get_obj_from_dict(data: dict[str, Any]) -> Obj:
-        """
-        A doc.
-        """
+    def get_obj_from_dict(data: dict[str, Any], **kwargs) -> Obj:
+        """A doc."""
+
+    assert get_obj_from_dict.__doc__ == """A doc."""
+    obj = get_obj_from_dict(data={"name": "ObjA", "a": 0, "b": 1})
+    assert obj.a == 0
+    assert obj.b == 1
+    assert isinstance(obj, ObjA)
+    obj = get_obj_from_dict(data={"name": "ObjA", "a": 0, "b": 1}, b=2)
+    assert obj.b == 2
 
     @factory_from_dict(
-        object_type=ObjConfig, enum=ImplementedObj, context=globals(), config=True
+        object_type=ObjConfig, enum=ImplementedConfig, context=globals(), config=True
     )
-    def get_objconfig_from_dict(data: dict[str, Any]) -> ObjConfig:
-        """
-        A doc.
-        """
+    def get_config_from_dict(data: dict[str, Any], **kwargs) -> ObjConfig:
+        pass
 
-    obj = get_obj_from_dict(data={"name": "ObjA", "a": 0})
-    assert isinstance(obj, Obj)
+    obj = get_config_from_dict(data={"name": "ObjB", "a": 0, "b": 1})
     assert obj.a == 0
+    assert obj.b == 1
+    assert isinstance(obj, ObjBConfig)
 
-    obj = get_objconfig_from_dict({"name": "ObjA", "a": 0})
-    assert isinstance(obj, ObjConfig)
+    @factory_from_dict(
+        object_type=NamedConfig,
+        enum=ImplementedNamedConfig,
+        context=globals(),
+        config=False,
+    )
+    def get_config_from_dict(data: dict[str, Any], **kwargs) -> NamedConfig:
+        pass
+
+    obj = get_config_from_dict(data={"name": "ConfigC", "a": 0, "b": 1})
     assert obj.a == 0
+    assert obj.b == 1
+    assert isinstance(obj, ConfigC)
 
 
 def test_factory_from_json(tmp_path):
     with open(tmp_path / "data.json", "w") as f:
-        json.dump({"name": "ObjA", "a": 0}, f)
+        json.dump({"name": "ObjA", "a": 0, "b": 1}, f)
 
     @factory_from_json(
         object_type=Obj, enum=ImplementedObj, context=globals(), config=False
     )
-    def get_obj_from_json(data: dict[str, Any]) -> Obj:
-        """
-        A doc.
-        """
+    def get_obj_from_json(data: Path, **kwargs) -> Obj:
+        """A doc."""
+
+    assert get_obj_from_json.__doc__ == """A doc."""
+    obj = get_obj_from_json(data=tmp_path / "data.json")
+    assert obj.a == 0
+    assert obj.b == 1
+    assert isinstance(obj, ObjA)
+    obj = get_obj_from_json(data=tmp_path / "data.json", b=2)
+    assert obj.b == 2
 
     @factory_from_json(
-        object_type=ObjConfig, enum=ImplementedObj, context=globals(), config=True
+        object_type=ObjConfig, enum=ImplementedConfig, context=globals(), config=True
     )
-    def get_objconfig_from_json(data: dict[str, Any]) -> ObjConfig:
-        """
-        A doc.
-        """
+    def get_config_from_json(data: Path, **kwargs) -> ObjConfig:
+        pass
 
-    obj = get_obj_from_json(data=tmp_path / "data.json")
-    assert isinstance(obj, Obj)
-    assert obj.a == 0
+    with open(tmp_path / "data.json", "w") as f:
+        json.dump({"name": "ObjB", "a": 0, "b": 1}, f)
 
-    obj = get_objconfig_from_json(tmp_path / "data.json")
-    assert isinstance(obj, ObjConfig)
+    obj = get_config_from_json(data=tmp_path / "data.json")
     assert obj.a == 0
+    assert obj.b == 1
+    assert isinstance(obj, ObjBConfig)
+
+    @factory_from_json(
+        object_type=NamedConfig,
+        enum=ImplementedNamedConfig,
+        context=globals(),
+        config=False,
+    )
+    def get_config_from_json(data: Path, **kwargs) -> NamedConfig:
+        pass
+
+    with open(tmp_path / "data.json", "w") as f:
+        json.dump({"name": "ConfigC", "a": 0, "b": 1}, f)
+
+    obj = get_config_from_json(data=tmp_path / "data.json")
+    assert obj.a == 0
+    assert obj.b == 1
+    assert isinstance(obj, ConfigC)
+
+
+def test_safe_factory_from_json(tmp_path):
+    with open(tmp_path / "data.json", "w") as f:
+        json.dump({"name": "ObjA", "a": 0, "b": "x"}, f)
+
+    @factory_from_json(
+        object_type=Obj, enum=ImplementedObj, context=globals(), config=False
+    )
+    def get_obj_from_json(data: Path, **kwargs) -> Obj:
+        pass
+
+    @safe_factory_from_json(factory=get_obj_from_json)
+    def get_obj_from_json_safe(
+        data: Path, default: Optional[Obj] = None
+    ) -> tuple[Optional[Obj], list[str]]:
+        """A doc."""
+
+    assert get_obj_from_json_safe.__doc__ == """A doc."""
+    assert get_obj_from_json_safe(data=tmp_path / "data.json") == (None, [])
+
+    out, fields = get_obj_from_json_safe(
+        data=tmp_path / "data.json", default=ObjA(a=1, b=1)
+    )
+    assert fields == ["b"]
+    assert out.a == 0
+    assert out.b == 1
+
+    ###
+    with open(tmp_path / "data.json", "w") as f:
+        json.dump({"name": "ObjA", "a": "x", "b": "x"}, f)
+
+    out, fields = get_obj_from_json_safe(
+        data=tmp_path / "data.json", default=ObjA(a=1, b=1)
+    )
+    assert fields == ["a", "b"]
+    assert out.a == 1
+    assert out.b == 1
+
+    ###
+    with open(tmp_path / "data.json", "w") as f:
+        json.dump({"name": "ObjX", "a": 1, "b": 1}, f)
+
+    assert get_obj_from_json_safe(data=tmp_path / "data.json") == (None, [])
+
+    ###
+    with open(tmp_path / "data.json", "w") as f:
+        json.dump({"a": 1, "b": 1}, f)
+
+    assert get_obj_from_json_safe(data=tmp_path / "data.json") == (None, [])
+
+    ###
+    @safe_factory_from_json(factory=SimpleConfig.from_json)
+    def get_obj_from_json_safe(
+        data: Path, default: Optional[Obj] = None
+    ) -> tuple[Optional[Obj], list[str]]:
+        pass
+
+    with open(tmp_path / "data.json", "w") as f:
+        json.dump({"a": "x", "b": "x"}, f)
+
+    out, fields = get_obj_from_json_safe(
+        data=tmp_path / "data.json", default=SimpleConfig(a=1, b=1)
+    )
+    assert fields == ["a", "b"]
+    assert out.a == 1
+    assert out.b == 1

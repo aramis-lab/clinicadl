@@ -105,7 +105,7 @@ def compare_files(
 def test_inputs(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
-    state = TrainerState(current_epoch=2, split_idx=1, called="train")
+    state = TrainerState(current_epoch=2, split_idx=2, called="train")
     maps.training.create_split(state.split_idx)
 
     chkpt = ModelCheckpointCallback()
@@ -128,21 +128,21 @@ def test_inputs(tmp_path):
     )
     with pytest.raises(KeyError, match="'psnr' not found in the computed metrics!"):
         METRICS_HANDLER.config.metrics = {"mae": MAE}
-        chkpt.on_validation_start(state=state, metrics=METRICS_HANDLER)
+        chkpt.on_validation_start(metrics=METRICS_HANDLER)
     METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mae": MAE}
-    chkpt.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    chkpt.on_validation_start(metrics=METRICS_HANDLER)
     assert chkpt.metric_monitoring.mode == "max"
 
     chkpt = ModelCheckpointCallback(metric="mae", epochs=range(1, 3))
     METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mae": MAE}
-    chkpt.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    chkpt.on_validation_start(metrics=METRICS_HANDLER)
     assert chkpt.metric_monitoring.mode == "min"
 
 
 def test_on_train_start(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
-    state = TrainerState(current_epoch=1, split_idx=1, called="train")
+    state = TrainerState(current_epoch=1, split_idx=2, called="train")
     maps.training.create_split(state.split_idx)
     model = Mock()
     model.state_dict.return_value = {}
@@ -152,7 +152,7 @@ def test_on_train_start(tmp_path):
     METRICS_HANDLER.config.metrics = {"psnr": PSNR}
     METRICS_HANDLER._df = METRICS
     METRICS_HANDLER._detailed_df = DETAILED_METRICS
-    chkpt.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    chkpt.on_validation_start(metrics=METRICS_HANDLER)
     chkpt.on_validation_end(
         model=model,
         maps=maps,
@@ -166,30 +166,19 @@ def test_on_train_start(tmp_path):
 def test_metric(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
-    state = TrainerState(current_epoch=1, split_idx=1)
+    state = TrainerState(current_epoch=1, split_idx=2)
     maps.training.create_split(state.split_idx)
     model = Mock()
 
     expected_state_dict_1 = {"abc": [1]}
     model.state_dict.return_value = expected_state_dict_1
     chkpt = ModelCheckpointCallback(metric="psnr")
-    chkpt.on_validation_end(
-        model=model,
-        maps=maps,
-        state=state,
-        metrics=METRICS_HANDLER,
-    )
-    assert not (
-        maps.training.splits[state.split_idx].models.best_models.path / "best-psnr"
-    ).is_dir()
-
-    state.called = "train"
     chkpt.on_train_start(maps=maps, state=state)
     metric_dir = maps.training.splits[state.split_idx].models.best_models.metrics[
         "psnr"
     ]
     METRICS_HANDLER.config.metrics = {"psnr": PSNR}
-    chkpt.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    chkpt.on_validation_start(metrics=METRICS_HANDLER)
     chkpt.on_validation_end(
         model=model,
         maps=maps,
@@ -241,7 +230,7 @@ def test_metric(tmp_path):
     chkpt = ModelCheckpointCallback(metric="mae")
     chkpt.on_train_start(maps=maps, state=state)
     METRICS_HANDLER.config.metrics = {"mae": MAE}
-    chkpt.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    chkpt.on_validation_start(metrics=METRICS_HANDLER)
     metric_dir = maps.training.splits[state.split_idx].models.best_models.metrics["mae"]
 
     model.state_dict.return_value = expected_state_dict_1
@@ -296,7 +285,7 @@ def test_metric(tmp_path):
 def test_epochs(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
-    state = TrainerState(current_epoch=1, split_idx=1, called="train")
+    state = TrainerState(current_epoch=1, split_idx=2, called="train")
     maps.training.create_split(state.split_idx)
     model = Mock()
     chkpt = ModelCheckpointCallback(epochs=[1, 2])
@@ -363,7 +352,7 @@ def test_epochs(tmp_path):
 def test_save_last(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
-    state = TrainerState(current_epoch=4, split_idx=1, called="train")
+    state = TrainerState(current_epoch=4, split_idx=2, called="train")
     maps.training.create_split(state.split_idx)
     model = Mock()
     chkpt = ModelCheckpointCallback(save_last=True)
@@ -391,7 +380,7 @@ def test_save_last(tmp_path):
 def test_from_dict_to_dict(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
-    state = TrainerState(current_epoch=4, split_idx=1, called="train")
+    state = TrainerState(current_epoch=4, split_idx=2, called="train")
     maps.training.create_split(state.split_idx)
 
     chkpt = ModelCheckpointCallback(metric="psnr", epochs=[1, 2], save_last=False)
@@ -405,7 +394,7 @@ def test_from_dict_to_dict(tmp_path):
 
     chkpt.on_train_start(maps=maps, state=state)
     METRICS_HANDLER.config.metrics = {"psnr": PSNR}
-    chkpt.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    chkpt.on_validation_start(metrics=METRICS_HANDLER)
 
     new_chkpt = ModelCheckpointCallback.from_dict(chkpt.to_dict())
     assert new_chkpt.metric_monitoring.name == "psnr"
@@ -414,7 +403,7 @@ def test_from_dict_to_dict(tmp_path):
 
 def test_state_dict(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
-    state = TrainerState(current_epoch=1, split_idx=1, called="train")
+    state = TrainerState(current_epoch=1, split_idx=2, called="train")
     maps = Maps(tmp_path)
     maps.training.create_split(state.split_idx)
     model = Mock()
@@ -430,7 +419,7 @@ def test_state_dict(tmp_path):
     chkpt.load_state_dict(state_dict)
 
     METRICS_HANDLER.config.metrics = {"psnr": PSNR}
-    chkpt.on_validation_start(state=state, metrics=METRICS_HANDLER)
+    chkpt.on_validation_start(metrics=METRICS_HANDLER)
     chkpt.on_validation_end(
         model=model,
         maps=maps,

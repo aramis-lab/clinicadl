@@ -246,11 +246,10 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
                 self.monitor_val_batch.start()
                 self.monitor_val_batch_loading.start()
 
-    def on_validation_start(self, *, state: TrainerState, **kwargs) -> None:
-        if state.called == TrainerCall.TRAIN:
-            self.monitor_validation.start()
-            self.monitor_val_batch.start()
-            self.monitor_val_batch_loading.start()
+    def on_validation_start(self, **kwargs) -> None:
+        self.monitor_validation.start()
+        self.monitor_val_batch.start()
+        self.monitor_val_batch_loading.start()
 
     def on_evaluation_step_start(self, *, state: TrainerState, **kwargs) -> None:
         if state.called == TrainerCall.TRAIN:
@@ -262,9 +261,8 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             self.monitor_evaluation.stop()
             self.n_iterations += 1
 
-    def on_validation_end(self, *, state: TrainerState, **kwargs) -> None:
-        if state.called == TrainerCall.TRAIN:
-            self.monitor_validation.stop()
+    def on_validation_end(self, **kwargs) -> None:
+        self.monitor_validation.stop()
 
     def on_epoch_end(self, **kwargs) -> None:
         self.monitor_epoch.stop()

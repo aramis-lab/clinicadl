@@ -11,7 +11,9 @@ from clinicadl.data.datasets import (
     UnpairedDataset,
 )
 from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.factories import safe_factory_from_json
 from clinicadl.utils.seed import pl_worker_init_function
+from clinicadl.utils.typing import PathType
 
 from ..datasets import Dataset
 from .collate import CollateFn, ToBatchCollate, ToBatchesCollate
@@ -348,3 +350,32 @@ class DataLoaderConfig(ClinicaDLConfig):
             ) from exc
 
         return weights
+
+
+@safe_factory_from_json(factory=DataLoaderConfig.from_json)
+def get_dataloader_from_json_safely(
+    json_path: PathType, default: Optional[DataLoaderConfig] = None
+) -> tuple[Optional[DataLoaderConfig], list[str]]:
+    """
+    Factory function to get a :py:class:`DataLoaderConfig` from the
+    file saved with :py:meth:`DataLoaderConfig.to_json`, which will not raised errors.
+
+    If some fields of the serialized dataloader cannot be read, they will be reported, and
+    the field of ``default`` will be used to override them (if not ``None``).
+
+    If it was impossible to read the serialized dataloader, the factory returns ``None``.
+
+    Parameters
+    ----------
+    json_path : PathType
+        The path to the serialized dataloader.
+    default : Optional[DataLoaderConfig], default=None
+        The :py:class:`DataLoaderConfig` from which to take the default arguments.
+
+    Returns
+    -------
+    Optional[DataLoaderConfig]
+        The deserialized DataLoaderConfig. ``None`` if deserialization was impossible.
+    list[str]
+        The list of fields that could not be read in the serialized dataloader.
+    """
