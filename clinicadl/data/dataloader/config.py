@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from copy import copy
 from typing import Any, Optional
 
 from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
@@ -26,6 +27,7 @@ class DataLoader(TorchDataLoader):
     """
 
     dataset: Dataset
+    config: DataLoaderConfig
 
     def set_epoch(self, epoch: int) -> None:
         """
@@ -290,13 +292,16 @@ class DataLoaderConfig(ClinicaDLConfig):
             else:
                 collate_fn = ToBatchCollate()
 
-        return DataLoader(
+        dataloader = DataLoader(
             dataset=dataset,
             sampler=self._generate_sampler(dataset, dp_degree, rank),
             worker_init_fn=pl_worker_init_function,
             collate_fn=collate_fn,
             **self.to_dict(exclude={"sampling_weights", "shuffle", "collate_fn"}),
         )
+        dataloader.config = copy(self)
+
+        return dataloader
 
     def _generate_sampler(
         self,

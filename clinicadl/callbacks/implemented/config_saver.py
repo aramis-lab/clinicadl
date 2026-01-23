@@ -94,6 +94,7 @@ class ConfigSaverCallback(Callback):
                 dataloader.dataset,
                 maps.test.groups[group_name].dataset_json,
             )
+            dataloader.config.to_json(maps.test.groups[group_name].dataloader_json)
             df = _clean_df(dataloader.dataset.df)
             maps.save_file(
                 df,
@@ -113,6 +114,9 @@ class ConfigSaverCallback(Callback):
             to_json_safe(
                 dataloader.dataset,
                 maps.prediction.groups[group_name].dataset_json,
+            )
+            dataloader.config.to_json(
+                maps.prediction.groups[group_name].dataloader_json
             )
             df = _clean_df(dataloader.dataset.df)
             maps.save_file(

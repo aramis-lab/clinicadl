@@ -138,6 +138,9 @@ def test_on_test_start(tmp_path):
     DATALOADER.dataset.to_json.assert_called_once_with(
         maps.test.groups["X"].dataset_json, overwrite=False
     )
+    DATALOADER.config.to_json.assert_called_once_with(
+        maps.test.groups["X"].dataloader_json
+    )
     df = maps.open_file(maps.test.groups["X"].data_tsv)
     pd.testing.assert_frame_equal(
         df,
@@ -179,6 +182,9 @@ def test_on_predict_start(tmp_path):
     saver.on_predict_start(maps=maps, dataloader=DATALOADER, group_name="X")
     DATALOADER.dataset.to_json.assert_called_once_with(
         maps.prediction.groups["X"].dataset_json, overwrite=False
+    )
+    DATALOADER.config.to_json.assert_called_once_with(
+        maps.prediction.groups["X"].dataloader_json
     )
     df = maps.open_file(maps.prediction.groups["X"].data_tsv)
     pd.testing.assert_frame_equal(

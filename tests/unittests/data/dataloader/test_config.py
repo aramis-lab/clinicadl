@@ -102,6 +102,8 @@ def test_get_object():
     assert dataloader.pin_memory
     assert dataloader.worker_init_fn == pl_worker_init_function
 
+    assert dataloader.config == dataloader_config
+
     # check sampler
     torch.manual_seed(0)
     assert isinstance(dataloader.sampler, WeightedRandomSampler)
