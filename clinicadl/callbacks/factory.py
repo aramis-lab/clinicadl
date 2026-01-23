@@ -1,28 +1,41 @@
-from abc import ABC
+from enum import Enum
 from typing import Any
+
+from clinicadl.utils.factories import factory_from_dict
 
 from .base import Callback
 from .implemented import *
 
-# from .implemented.logger import _Logger
-# from .implemented.monitor import _Monitor
-# from .implemented.training_loss import _TrainingLoss
+
+class ImplementedCallback(str, Enum):
+    """Callbacks implemented natively in ClinicaDL."""
+
+    EARLY_STOP = "EarlyStoppingCallback"
+    LOGGER = "LoggerCallback"
+    LR_SCHEDULER = "LRSchedulerCallback"
+    MODEL_CHKPT = "ModelCheckpointCallback"
+    MONITOR = "MonitorCallback"
+    TRAIN_CHKPT = "TrainingCheckpointCallback"
 
 
-def get_callback_from_dict(json_dict: dict[str, Any]) -> Callback:
+@factory_from_dict(
+    object_type=Callback,
+    enum=ImplementedCallback,
+    context=globals(),
+    config=False,
+)
+def get_callback_from_dict(data: dict[str, Any], **kwargs) -> Callback:
     """
-    Create a callback instance from a dictionary representation.
+    Factory function to get a :py:class:`Callback` from a
+    dictionary saved with :py:meth:`Callback.to_dict`.
 
     Parameters
     ----------
-    json_dict : dict
-        Dictionary representation of the callback.
+    data : dict[str, Any]
+        The dictionary.
 
     Returns
     -------
     Callback
-        Instantiated callback object.
+        The deserialized callback.
     """
-    callback_name = json_dict.pop("name")
-    callback_class = globals()[callback_name]
-    return callback_class(**json_dict)

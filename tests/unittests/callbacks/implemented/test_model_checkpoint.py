@@ -116,7 +116,6 @@ def test_inputs(tmp_path):
     assert not chkpt.config.save_last
 
     chkpt = ModelCheckpointCallback(metric="psnr", epochs=range(1, 3))
-    assert not chkpt.config.save_last
     assert chkpt.config.metric == "psnr"
     assert chkpt.config.epochs == [1, 2]
 

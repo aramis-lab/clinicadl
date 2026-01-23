@@ -475,7 +475,7 @@ class _CheckDataConsistency:
             default=new,
         )
         if not old:
-            logging.warning(
+            logger.warning(
                 "Could not read the %(phase)s %(type)s of %(group_type)s-%(old_group)s (in %(old_path)s), and thus could not compare with the %(type)s %(compared_with)s. "
                 "Beware that differences between %(type)ss could lead to inconsistent results %(across)s.",
                 args,
@@ -483,14 +483,14 @@ class _CheckDataConsistency:
             return
         if problematic_fields:
             args["problematic_fields"] = problematic_fields
-            logging.warning(
+            logger.warning(
                 "Could not read the arguments %(problematic_fields)s of the %(phase)s %(type)s of %(group_type)s-%(old_group)s (in %(old_path)s), and thus could not compare with the %(type)s %(compared_with)s. "
                 "Beware that differences between %(type)ss could lead to inconsistent results %(across)s.",
                 args,
             )
         if error_msg := comparator(new, old, problematic_fields):
             args["error_msg"] = error_msg
-            logging.warning(
+            logger.warning(
                 "The %(phase)s %(type)ss of %(group_type)s-%(old_group)s and the one %(compared_with)s are different: %(error_msg)s\nThis may lead to inconsistent results %(across)s.",
                 args,
             )

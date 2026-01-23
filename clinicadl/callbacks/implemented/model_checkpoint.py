@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence
 
 import pandas as pd
-from pydantic import PositiveInt, field_validator, model_validator
-from typing_extensions import Self
+from pydantic import PositiveInt, field_validator
 
 from clinicadl.metrics.enum import Optimum
 from clinicadl.metrics.handler import MetricsHandler
@@ -26,16 +25,8 @@ class ModelCheckpointCallbackConfig(ObjectConfig["ModelCheckpointCallback"]):
 
     metric: Optional[str]
     epochs: list[PositiveInt]
-    save_last: Optional[bool]
+    save_last: bool
     mode: Optional[Optimum] = None
-
-    @model_validator(mode="after")
-    def _validate_save_last(self) -> Self:
-        """If no monitored quantity and save_last is None, set save_last to True."""
-        if not self.metric and self.save_last is None:
-            self.__dict__["save_last"] = True
-
-        return Self
 
     @field_validator("epochs", mode="before")
     @classmethod
@@ -62,13 +53,14 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
     ----------
     metric : Optional[str], default=None
         The metric to monitor.
+
     epochs : Optional[Sequence[int]], default=None
         The list of epochs after which the neural network weights should be saved.
 
         .. important::
             Epochs are indexed from **1**.
 
-    save_last : bool
+    save_last : bool, default=True
         Whether to save the neural network weights after the last epoch.
 
     Examples
@@ -93,7 +85,7 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         self,
         metric: Optional[str] = None,
         epochs: Optional[Sequence[int]] = None,
-        save_last: Optional[bool] = None,
+        save_last: bool = True,
     ):
         self.config = self._config_type(
             metric=metric, epochs=epochs, save_last=save_last

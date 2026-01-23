@@ -41,12 +41,35 @@ class LoggerCallbackConfig(ObjectConfig["LoggerCallback"]):
 
 class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
     """
-    Callback that logs major training events to console and/or file.
+    To configure logging.
+
+    `Logging <https://docs.python.org/3/library/logging.html>`_ is a convenient way to get insight of the current status of
+    the :py:class:`~clinicadl.train.Trainer`, to record the important information
+    that it raises, and to get clues on how to debug a failed execution.
 
     Parameters
     ----------
-    verbose : bool, default=False
-        If True, enables detailed DEBUG-level logging.
+    save_logs: bool, default=True
+        Whether log messages raised during the code execution should be saved in files. Otherwise, log messages
+        will just be printed in your console.
+
+        These files will be saved in your :term:`MAPS` directory in ``<maps>/exec/run-<program_executed>_<datetime>``.
+        In this folder, you will find:
+
+            - ``debug.log`` (if ``debug=True``): log messages with level "DEBUG". Useful to debug your execution when it failed.
+            - ``info.log``: log messages with level "INFO". General information about the execution flow.
+            - ``error.log``: log messages with level "ERROR". To have information on potential errors that stopped the execution.
+
+        Note that a file named ``warning.log``, which contain log messages with level "WARNING", will also be saved,
+        but its location depends on the program being executed. For example, if you execute :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`,
+        it will be saved under ``<maps>/training/split-<split_idx>/warning.log``. This is because this file may contain
+        methodological warnings that should be stayed close to the results.
+
+    debug: bool, default=True
+        Whether to print/save the log messages with level "DEBUG". These messages are verbose, but helpful for debugging.
+
+    progress_bar : bool, default=True
+        Whether to display a progress bar every time an iteration on a dataloader is performed.
     """
 
     _config_type = LoggerCallbackConfig

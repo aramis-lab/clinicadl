@@ -63,16 +63,37 @@ class MonitorCallbackConfig(ObjectConfig["MonitorCallback"]):
 
 class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
     """
-    Callback to monitor and log training performance (time and memory) by phase.
+    To monitor some computation statistics during a training phase.
 
-    Tracks multiple phases:
-        - Total training
-        - Per-batch loading
-        - Forward and backward passes
-        - Validation
+    The statistics will then be summarized in ``<maps>/training/split-<split_idx>/summary.log``,
+    but the details can be found in ``<maps>/training/split-<split_idx>/logs/computational.tsv``.
 
-    Metrics include time, CPU memory, and GPU memory usage.
+    The following statistics are recorded for different phases of the training (GPU statistics
+    will be reported only if GPUs are used during the phase):
+    - Time (s): total duration of this phase;
+    - GPU Time (s): duration of GPU computation during this phase;
+    - GPU Max Memory (MB): maximum GPU memory occupied during this phase.
 
+    You may also find:
+    - Throughput (images/s): the number of image processed per second, which is equal to the batch size divided by the iteration
+      time;
+    - GPU throughput: the number of image processed per second by the GPU, which is equal to the batch size divided by the iteration
+      GPU time.
+
+    Parameters
+    ----------
+    num_measurements : int, default=100
+        The number of measurement to perform for averaging the statistics.
+
+        .. note::
+            Some statistics, like the total training time, are obviously not measured ``num_measurements`` times.
+
+    warmup_iterations : int, default=10
+        The number of batches to wait before starting the monitoring. It is particularly important when working with GPUs, on
+        which the first calculations can take significantly longer and therefore skew the measurement.
+
+    enabled : bool, default=True
+        Whether to activate monitoring.
     """
 
     _config_type = MonitorCallbackConfig

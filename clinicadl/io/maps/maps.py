@@ -321,7 +321,7 @@ class Maps(Directory):
                         :icon: file-directory
                         :color: muted
 
-                        The model at the end of training.
+                        The model at the end of training, saved unless ``save_last=False`` in :py:class:`~clinicadl.callbacks.ModelCheckpointCallback`.
 
                         .. dropdown:: warning.log → ``maps.training.splits[0].models.final.warning_log``
                             :icon: file
@@ -358,8 +358,8 @@ class Maps(Directory):
                     :icon: file-directory
                     :color: muted
 
-                    Checkpoints saved at the end of each epoch, in order to resume training in case of failure.
-                    This directory will be emptied at the end of training.
+                    Checkpoints saved by :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback`, in order to resume training in case of failure.
+                    **This directory will be emptied at the end of training.**
 
                     .. dropdown:: **epoch-15**
                         :icon: file-directory

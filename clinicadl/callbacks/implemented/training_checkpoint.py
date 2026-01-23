@@ -30,6 +30,7 @@ class TrainingCheckpointCallbackConfig(ObjectConfig["TrainingCheckpointCallback"
     """Config class for ``TrainingCheckpointCallback``."""
 
     every_n_epochs: NonNegativeInt
+    enabled: bool
 
     @classmethod
     def _get_class(cls):
@@ -50,12 +51,14 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
     ----------
     every_n_epochs : int, default=10
         Interval (in epochs) for saving checkpoints.
+    enabled : bool, default=True
+        Whether to activate checkpointing.
     """
 
     _config_type = TrainingCheckpointCallbackConfig
 
-    def __init__(self, every_n_epochs: int = 10):
-        self.config = self._config_type(every_n_epochs=every_n_epochs)
+    def __init__(self, every_n_epochs: int = 10, enabled: bool = True):
+        self.config = self._config_type(every_n_epochs=every_n_epochs, enabled=enabled)
         self._metrics = None
         self._callbacks = None
         self._optimizers = None
@@ -73,8 +76,9 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         self._callbacks = callbacks
 
     def on_exception(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
-        last_saved_epoch = self._get_last_saved_epoch(maps, state.split_idx)
-        logging.error("Last checkpoint at the end of epoch %d", last_saved_epoch)
+        if self.config.enabled:
+            last_saved_epoch = self._get_last_saved_epoch(maps, state.split_idx)
+            logger.error("Last checkpoint at the end of epoch %d", last_saved_epoch)
 
     def on_optimization_step_end(
         self,
@@ -87,7 +91,10 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         self._scaler = grad_scaler
 
     def on_epoch_end(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
-        if not state.current_epoch % self.config.every_n_epochs == 0:
+        if (
+            not self.config.enabled
+            or not state.current_epoch % self.config.every_n_epochs == 0
+        ):
             return
 
         maps.training.splits[state.split_idx].tmp.create_epoch(
@@ -113,7 +120,7 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         maps.training.splits[state.split_idx].tmp.clear(
             except_epoch=state.current_epoch
         )
-        logging.debug("Training checkpoint saved after epoch %d", state.current_epoch)
+        logger.debug("Training checkpoint saved after epoch %d", state.current_epoch)
 
     def on_train_end(
         self,
@@ -122,7 +129,8 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         state: TrainerState,
         **kwargs,
     ) -> None:
-        maps.training.splits[state.split_idx].tmp.clear()
+        if maps.training.splits[state.split_idx].tmp.path.exists():
+            maps.training.splits[state.split_idx].tmp.clear()
 
     def state_dict(self) -> Mapping[str, Any]:
         return {}
@@ -148,7 +156,7 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         """
         tmp_dir = maps.training.splits[state.split_idx].tmp
         last_saved_epoch = cls._get_last_saved_epoch(maps, split_idx=state.split_idx)
-        logging.info("Loading checkpoints from epoch %d", last_saved_epoch)
+        logger.info("Loading checkpoints from epoch %d", last_saved_epoch)
         chkpt_dir = tmp_dir.epochs[last_saved_epoch]
 
         state.load_state_dict(maps.open_file(chkpt_dir.state_json))
