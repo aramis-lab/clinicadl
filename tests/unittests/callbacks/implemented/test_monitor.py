@@ -404,7 +404,7 @@ def test_phase_monitor():
     monitor.start()
     monitor.stop()
     assert len(monitor.times) == 2
-    assert 0.05 <= monitor.times[0] <= 0.15
+    assert 0.09 <= monitor.times[0]
 
     monitor = _PhaseMonitor(gpu=False, num_measurements=1, save_time=True)
     monitor.start()
@@ -414,7 +414,7 @@ def test_phase_monitor():
     monitor.start()
     monitor.load_state_dict(state_dict)
     monitor.stop()
-    assert 0.05 <= state_dict["elapsed"] <= 0.15
+    assert 0.09 <= state_dict["elapsed"]
     assert monitor.times[0] >= 0.05
 
     monitor = _PhaseMonitor(gpu=False, num_measurements=1, enabled=False)

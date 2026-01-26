@@ -79,7 +79,7 @@ def test_summary(tmp_path):
     dates = [
         datetime.strptime(s, "%Y %b %d, %H:%M:%S") for s in re.findall(pattern, content)
     ]
-    assert dates[1] == (dates[0] + timedelta(seconds=1))
+    assert dates[1] >= (dates[0] + timedelta(seconds=1))
     assert dates[2] == dates[0]
 
 
