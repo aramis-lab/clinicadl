@@ -315,7 +315,9 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         """
         To iterate on all the monitors.
         """
-        return (getattr(self, name) for name in dir(self) if name.startswith("monitor"))
+        for name in dir(self):
+            if name.startswith("monitor") and (value := getattr(self, name)):
+                yield value
 
     def _init_monitor(
         self,

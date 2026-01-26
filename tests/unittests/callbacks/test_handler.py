@@ -101,8 +101,8 @@ MANDATORY[-1] = Mock()
 
 @patch("clinicadl.callbacks.handler.MANDATORY", MANDATORY)
 def test_call_event():
-    log = Mock()
-    log.__class__ = LoggerCallback
+    log = LoggerCallback()
+    log.on_trainer_init = Mock()
     cb = Mock()
     cb.__class__ = Callback
     cb_handler = CallbacksHandler([cb, log])
@@ -115,17 +115,18 @@ def test_call_event():
         optimization=Mock(),
         callbacks=Mock(),
     )
-    assert log.on_trainer_init.assert_called_once
-    assert cb.on_trainer_init.assert_called_once
-    assert MANDATORY[-1].on_trainer_init.assert_called_once
+    assert cb_handler.callbacks[0] is log
+    log.on_trainer_init.assert_called_once()
+    cb.on_trainer_init.assert_called_once()
+    MANDATORY[-1].on_trainer_init.assert_called_once()
 
 
 def test_checkpoints(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
     maps.read()
-    log = Mock()
-    log.__class__ = LoggerCallback
+    log = LoggerCallback()
+    log.state_dict = Mock()
     log.state_dict.return_value = "logger"
     state = Mock()
     state.current_epoch = 1
@@ -154,6 +155,8 @@ def test_checkpoints(tmp_path):
     cb_handler._all_callbacks[0].logger = Mock()
     cb_handler._all_callbacks[0]._train_progress_bar = Mock()
     cb_handler._all_callbacks[3].monitor_epoch = Mock()
+    cb_handler._all_callbacks[3].monitor_epoch.state_dict.return_value = {}
+    cb_handler._all_callbacks[3].monitor_epoch.name = "epoch"
     cb_handler._all_callbacks[-1]._optimizers = opt
     cb_handler._all_callbacks[-1]._scaler = scaler
     cb_handler._all_callbacks[-1]._metrics = Mock()
@@ -166,18 +169,22 @@ def test_checkpoints(tmp_path):
     ) == {"abc": 1}
     assert (
         maps.open_file(
-            maps.training.splits[state.split_idx].tmp.epochs[1].callbacks / "mock.pt"
+            maps.training.splits[state.split_idx].tmp.epochs[1].callbacks
+            / "logger_callback.pt"
         )
         == "logger"
     )
 
 
 def test_serialize_deserialize(tmp_path):
-    cb_handler = CallbacksHandler([EarlyStoppingCallback(metric="loss")])
+    cb_handler = CallbacksHandler(
+        [EarlyStoppingCallback(metric="loss"), LoggerCallback()]
+    )
     cb_handler.to_json(tmp_path / "cb.json")
     config = Maps.open_file(tmp_path / "cb.json")
     cb_handler = CallbacksHandler.from_json(tmp_path / "cb.json")
     assert isinstance(cb_handler.callbacks[2], EarlyStoppingCallback)
     assert cb_handler.callbacks[2].config.stoppers[0].metric == "loss"
-    assert len(config["callbacks"]) == 1
+    assert len(config["callbacks"]) == 2
     assert config["callbacks"][0]["name"] == "EarlyStoppingCallback"
+    assert config["callbacks"][1]["name"] == "LoggerCallback"
