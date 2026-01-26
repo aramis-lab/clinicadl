@@ -5,13 +5,12 @@ from typing import TYPE_CHECKING, Any, Sequence, TypeVar
 
 import torchio as tio
 from pydantic import Field, ValidationInfo, field_validator, model_validator
-from typing_extensions import Self
 
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.transforms.extraction import Extraction, Image
 from clinicadl.utils.config import ObjectConfig, SequenceOfObjects
 from clinicadl.utils.dictionary.words import AUGMENTATION, IMAGE, SAMPLE, TRANSFORMATION
-from clinicadl.utils.objects import HasConfig
+from clinicadl.utils.objects import HasConfig, equal_if_config_equal
 
 from ..extraction import get_extraction_from_dict
 from ..factory import get_transform_from_dict
@@ -73,6 +72,7 @@ class TransformsConfig(ObjectConfig["Transforms"]):
         return Transforms
 
 
+@equal_if_config_equal
 class Transforms(HasConfig[TransformsConfig]):
     """
     Configuration class to define all the transforms applied to images in

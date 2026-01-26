@@ -132,11 +132,6 @@ class HasConfig(JsonReaderWriter, Serializable, Generic[Config]):
             **config.to_raw_dict()
         )  # not get_object here because we want to keep config classes as config classes
 
-    def __eq__(self, other: Self) -> bool:
-        if not isinstance(other, type(self)):
-            return False
-        return self.config == other.config
-
 
 def to_json_safe(
     obj: JsonReaderWriter, json_path: PathType, overwrite: bool = False
@@ -160,3 +155,31 @@ def to_json_safe(
         obj.to_json(json_path, overwrite=overwrite)
     except NotImplementedError:
         write_json(json_path, data=repr(obj), overwrite=overwrite)
+
+
+C = TypeVar("C", bound=HasConfig)
+
+
+def equal_if_config_equal(cls: type[C]) -> type[C]:
+    """
+    Decorator to define the equality of two objects as the
+    equality of their configuration class.
+
+    Parameters
+    ----------
+    cls : type[C]
+        The class to decorate.
+
+    Returns
+    -------
+    type[C]
+        The decorated class, with its '__eq__' method overridden.
+    """
+
+    def _config_equal(self: C, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return self.config == other.config
+
+    cls.__eq__ = _config_equal
+    return cls

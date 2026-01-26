@@ -475,7 +475,7 @@ def test_read(tmp_path):
     )
     assert (
         maps.training.splits[0]
-        .models.checkpoints.epochs[0]
+        .models.checkpoints.epochs[3]
         .validation_metrics.aggregated_tsv.is_file()
     )
     assert (
@@ -571,7 +571,7 @@ def test_load_file(tmp_path):
         pd.DataFrame({"participant_id": ["sub-000"], "session_id": ["ses-M000"]}),
     )
     torch.testing.assert_close(
-        maps.open_file(maps.training.splits[0].models.checkpoints.epochs[0].model_pt),
+        maps.open_file(maps.training.splits[0].models.checkpoints.epochs[3].model_pt),
         torch.Tensor([0]),
     )
 
@@ -609,7 +609,7 @@ def test_save_file(tmp_path):
 
     maps.save_file(
         torch.Tensor(0),
-        maps.training.splits[0].models.checkpoints.epochs[0].model_pt,
+        maps.training.splits[0].models.checkpoints.epochs[3].model_pt,
         overwrite=True,
     )
 
@@ -678,7 +678,7 @@ def test_get_checkpoint_path():
         models.get_checkpoint_dir("best-mse")
 
     assert (
-        models.get_checkpoint_dir("epoch-0").path == models.checkpoints.epochs[0].path
+        models.get_checkpoint_dir("epoch-3").path == models.checkpoints.epochs[3].path
     )
     with pytest.raises(
         KeyError,
@@ -705,8 +705,8 @@ def test_get_checkpoint_path():
         == models.best_models.metrics["loss"].path
     )
     assert (
-        maps.training.get_checkpoint_dir("split-0_epoch-0").path
-        == models.checkpoints.epochs[0].path
+        maps.training.get_checkpoint_dir("split-0_epoch-3").path
+        == models.checkpoints.epochs[3].path
     )
     assert maps.training.get_checkpoint_dir("split-0_final").path == models.final.path
 
@@ -737,7 +737,7 @@ def test_read_checkpoint_name():
     maps.read()
 
     assert maps.training.read_checkpoint_name("split-0_best-loss") == (0, "best-loss")
-    assert maps.training.read_checkpoint_name("split-0_epoch-0") == (0, "epoch-0")
+    assert maps.training.read_checkpoint_name("split-0_epoch-3") == (0, "epoch-3")
     assert maps.training.read_checkpoint_name("split-0_final") == (0, "final")
 
 
@@ -755,8 +755,8 @@ def test_delete_split(tmp_path):
         maps.open_file(maps.training.data.data_tsv),
         pd.DataFrame(
             {
-                "participant_id": ["sub-000", "sub-001", "sub-002", "sub-003"],
-                "session_id": ["ses-M000", "ses-M006", "ses-M000", "ses-M000"],
+                "participant_id": ["sub-000", "sub-000", "sub-010", "sub-010"],
+                "session_id": ["ses-M000", "ses-M003", "ses-M003", "ses-M012"],
             }
         ),
     )
@@ -770,8 +770,8 @@ def test_delete_split(tmp_path):
         maps.open_file(maps.training.data.data_tsv),
         pd.DataFrame(
             {
-                "participant_id": ["sub-000", "sub-001"],
-                "session_id": ["ses-M000", "ses-M006"],
+                "participant_id": ["sub-000", "sub-010"],
+                "session_id": ["ses-M000", "ses-M003"],
             }
         ),
     )

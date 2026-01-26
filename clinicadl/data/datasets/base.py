@@ -30,7 +30,7 @@ from clinicadl.utils.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
-from clinicadl.utils.objects import HasConfig
+from clinicadl.utils.objects import HasConfig, equal_if_config_equal
 from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType, PathType
 
@@ -261,6 +261,7 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
                 )
 
 
+@equal_if_config_equal
 class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
     """
     Abstract class with the main logic of all the :py:class:` ~clinicadl.data.datasets.Dataset`

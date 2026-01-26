@@ -12,6 +12,7 @@ from clinicadl.utils.objects import (
     HasConfig,
     JsonReaderWriter,
     Serializable,
+    equal_if_config_equal,
     to_json_safe,
 )
 
@@ -61,6 +62,7 @@ class ReaderWriterConfig(ObjectConfig["ReaderWriter"]):
         return ReaderWriter
 
 
+@equal_if_config_equal
 class ReaderWriter(HasConfig[ReaderWriterConfig]):
     _config_type = ReaderWriterConfig
 
