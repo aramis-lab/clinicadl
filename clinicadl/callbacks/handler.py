@@ -95,7 +95,7 @@ def _reorder(
     else:
         default_rank = -float("inf")
     rank = {cls_: i for i, cls_ in enumerate(order)}
-    input_list.sort(lambda x: rank.get(type(x), default_rank))
+    input_list.sort(key=lambda x: rank.get(type(x), default_rank))
 
 
 class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
@@ -125,12 +125,14 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         callbacks: Sequence[Callback],
     ):
         self.config = self._config_type(callbacks=callbacks)
-        self._all_callbacks = self._complete_callbacks()
+        self._with_defaults = None
+        self._all_callbacks = None
+        self._complete_callbacks()
 
     @property
     def callbacks(self) -> list[Callback]:
         """The callbacks currently in the CallbacksHandler."""
-        return self.config.callbacks
+        return self._with_defaults
 
     def add_callbacks(
         self,
@@ -140,7 +142,7 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         Adds new callbacks.
         """
         self.config.add_callbacks(callbacks)
-        self._all_callbacks = self._complete_callbacks()
+        self._complete_callbacks()
 
     def call_event(self, event: Events, **kwargs) -> None:
         """
@@ -156,17 +158,18 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         for callback in self._all_callbacks:
             getattr(callback, Events(event).value)(**kwargs)
 
-    def _complete_callbacks(self) -> list[Callback]:
+    def _complete_callbacks(self) -> None:
         """
         Completes the callbacks passed by the user with the mandatory
         and default callbacks.
         """
         callbacks = copy(self.config.callbacks)
-        self._add_mandatory(callbacks)
-        self._add_default(callbacks)
+        self._add_defaults(callbacks)
         self._reorder(callbacks)
-
-        return callbacks
+        self._with_defaults = copy(callbacks)
+        self._add_mandatory(callbacks)
+        self._reorder(callbacks)
+        self._all_callbacks = callbacks
 
     @staticmethod
     def _add_mandatory(callbacks: list[Callback]) -> None:
@@ -176,12 +179,12 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         callbacks.extend(MANDATORY)
 
     @staticmethod
-    def _add_default(callbacks: list[Callback]) -> None:
+    def _add_defaults(callbacks: list[Callback]) -> None:
         """
         Adds the default callbacks.
         """
         for callback in DEFAULT:
-            if not any(type(x) is type(callback) for x in callback):
+            if not any(type(x) is type(callback) for x in callbacks):
                 callbacks.append(callback)
 
     @staticmethod
