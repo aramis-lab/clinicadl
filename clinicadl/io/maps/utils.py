@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Generator, Generic, TypeVar
 
-from clinicadl.utils.dictionary.words import BEST, EPOCH, METRICS, SPLIT
+from clinicadl.utils.dictionary.suffixes import LOG, TSV
+from clinicadl.utils.dictionary.words import AGGREGATED, DETAILS, EPOCH, SPLIT, WARNING
 
 from ..base import Directory
 
@@ -73,6 +74,14 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
         for item in self._items_list:
             yield getattr(self, self._items_dict_private_name())[item]
 
+    def remove(self, non_empty_ok: bool = False) -> None:
+        super().remove(non_empty_ok=non_empty_ok)
+        setattr(
+            self,
+            self._items_dict_private_name(),
+            {},
+        )
+
 
 class SplitsDir(CollectionOfDirs[DirType, int]):
     _item_key = SPLIT
@@ -118,26 +127,17 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
         self._create_item(epoch, overwrite=overwrite, exist_ok=exist_ok)
 
 
-class BestModelsDir(CollectionOfDirs[DirType, str]):
-    _item_key = BEST
+class ModelDir(Directory):
+    @property
+    def warning_log(self) -> Path:
+        return (self.path / WARNING).with_suffix(LOG)
 
-    def __init__(self, path: Path):
-        super().__init__(path)
-        self._metrics: dict[str, DirType] = {}
+
+class MetricsDir(Directory):
+    @property
+    def aggregated_tsv(self) -> Path:
+        return (self.path / AGGREGATED).with_suffix(TSV)
 
     @property
-    def metrics(self) -> dict[str, DirType]:
-        return self._metrics
-
-    @property
-    def metrics_list(self) -> list[str]:
-        return self._items_list
-
-    def create_metric(
-        self, metric: str, overwrite: bool = False, exist_ok: bool = False
-    ) -> None:
-        self._create_item(metric, overwrite=overwrite, exist_ok=exist_ok)
-
-    @classmethod
-    def _items_dict_private_name(cls) -> str:
-        return "_" + METRICS
+    def details_tsv(self) -> Path:
+        return (self.path / DETAILS).with_suffix(TSV)

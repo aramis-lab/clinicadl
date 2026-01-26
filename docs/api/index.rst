@@ -36,7 +36,7 @@ functions may not be enough to give full guidelines on their use.
    data/index
    io
    losses
-   metrics
+   metrics/index
    models
    networks/index
    optim/index

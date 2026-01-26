@@ -6,6 +6,8 @@ from pathlib import Path
 from clinicadl.utils.io import remove_non_empty_dir
 from clinicadl.utils.typing import PathType
 
+from .utils import IS_MANDATORY
+
 
 class Directory:
     """
@@ -120,8 +122,11 @@ class Directory:
             if isinstance(type_, property):
                 value = getattr(self, name)
 
-                if isinstance(value, Directory):
+                if isinstance(value, Directory) and (
+                    getattr(type_.fget, IS_MANDATORY, False) or value.path.exists()
+                ):
                     paths.append(value)
+
                 elif isinstance(value, dict):
                     for v in value.values():
                         if isinstance(v, Directory):
@@ -135,7 +140,7 @@ class Directory:
         """
         paths = []
         for name, type_ in inspect.getmembers(type(self)):
-            if isinstance(type_, property):
+            if isinstance(type_, property) and getattr(type_.fget, IS_MANDATORY, False):
                 value = getattr(self, name)
                 if isinstance(value, Path):
                     paths.append(value)

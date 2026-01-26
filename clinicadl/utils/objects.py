@@ -75,7 +75,7 @@ class Serializable:
         )
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> Self:
+    def from_dict(cls, config_dict: dict[str, Any], **kwargs: Any) -> Self:
         """
         To create the object from a dictionary returned by
         :py:meth:`to_dict`.
@@ -84,6 +84,8 @@ class Serializable:
         ----------
         config_dict : dict[str, Any]
             The input dictionary.
+        kwargs : Any
+            Any field of the dictionary to overwrite.
 
         Returns
         -------
@@ -119,8 +121,8 @@ class HasConfig(JsonReaderWriter, Serializable, Generic[Config]):
         return self.config.to_dict()
 
     @classmethod
-    def from_dict(cls: type[Self], config_dict: dict[str, Any]) -> Self:
-        config = cls._config_type.from_dict(config_dict)
+    def from_dict(cls: type[Self], config_dict: dict[str, Any], **kwargs: Any) -> Self:
+        config = cls._config_type.from_dict(config_dict, **kwargs)
         return cls._from_config(config)
 
     @classmethod
@@ -153,3 +155,31 @@ def to_json_safe(
         obj.to_json(json_path, overwrite=overwrite)
     except NotImplementedError:
         write_json(json_path, data=repr(obj), overwrite=overwrite)
+
+
+C = TypeVar("C", bound=HasConfig)
+
+
+def equal_if_config_equal(cls: type[C]) -> type[C]:
+    """
+    Decorator to define the equality of two objects as the
+    equality of their configuration class.
+
+    Parameters
+    ----------
+    cls : type[C]
+        The class to decorate.
+
+    Returns
+    -------
+    type[C]
+        The decorated class, with its '__eq__' method overridden.
+    """
+
+    def _config_equal(self: C, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return self.config == other.config
+
+    cls.__eq__ = _config_equal
+    return cls

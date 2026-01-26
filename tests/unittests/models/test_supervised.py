@@ -81,7 +81,7 @@ def test_SupervisedModel(tmp_path):
     assert isinstance(new_model, SupervisedModel)
 
     # summary
-    summary_ = new_model.get_summary(input_data=torch.randn(1, 2, 2, 2))
+    summary_ = new_model.get_summary(input_data=BATCH)
     assert "Total params: 9" in summary_
 
     # network as config

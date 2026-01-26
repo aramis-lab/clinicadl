@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import pandas as pd
 from pydantic import Field
@@ -316,9 +316,9 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
 
         return new_df
 
-    def get_metric(self, metric: str, epoch: Optional[int] = None) -> float:
+    def get_metric_value(self, metric: str, epoch: Optional[int] = None) -> float:
         """
-        To get the value of a metric.
+        To get the (aggregated) value of a metric.
 
         Parameters
         ----------
@@ -333,10 +333,67 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         float
             The value of the metric.
         """
+        self.check_metric_name(metric)
+
         if epoch is not None:
-            return self.df.set_index(EPOCH).loc[epoch, metric]
+            value = self.df.set_index(EPOCH).loc[epoch, metric]
         else:
-            return self.df.iloc[-1][metric]
+            value = self.df.iloc[-1][metric]
+
+        try:
+            return float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"""Value for metric '{metric}' {f"at epoch {epoch} " if epoch is not None else ""}is not numeric."""
+            ) from exc
+
+    def get_metric_values(self, epoch: Optional[int] = None) -> pd.DataFrame:
+        """
+        To get the (aggregated) values of a all the computed metrics.
+
+        Parameters
+        ----------
+        epoch : int
+            The epoch for which the values are wanted. If ``None``, the method will
+            return the last computed values.
+
+        Returns
+        -------
+        pd.DataFrame
+            A :py:class:`pandas.DataFrame` containing the metric values.
+        """
+        if epoch is not None:
+            return self.df[self.df[EPOCH] == epoch]
+        return self.df.iloc[-1:]
+
+    def get_detailed_metric_values(self, epoch: int) -> pd.DataFrame:
+        """
+        To get the detailed values of a all the computed metrics
+        for a specific epoch.
+
+        Parameters
+        ----------
+        epoch : int
+            The epoch for which the values are wanted.
+
+        Returns
+        -------
+        pd.DataFrame
+            A :py:class:`pandas.DataFrame` containing the metric values.
+        """
+        return self.detailed_df[self.detailed_df[EPOCH] == epoch]
+
+    def check_metric_name(self, metric: str) -> None:
+        """
+        Checks if a metric is in the computed metrics.
+
+        Parameters
+        ----------
+        metric : str
+            The name of the metric to check.
+        """
+        if metric not in self.metrics:
+            raise KeyError(f"'{metric}' not found in the computed metrics!")
 
     def save(self, path: Path, details_path: Optional[Path] = None) -> None:
         """

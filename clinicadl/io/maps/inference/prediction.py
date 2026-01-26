@@ -5,11 +5,16 @@ from pathlib import Path
 from clinicadl.utils.dictionary.suffixes import TSV
 from clinicadl.utils.dictionary.words import CAPS, OUTPUT
 
-from ...base import Directory
-from .base import InferenceDir, InferenceGroupDir, InferenceSplitDir
+from ..utils import ModelDir
+from .base import (
+    InferenceDir,
+    InferenceGroupDir,
+    InferenceResultsDir,
+    InferenceSplitDir,
+)
 
 
-class ModelDir(Directory):
+class PredictionModelDir(ModelDir):
     @property
     def caps_output(self) -> Path:
         return self.path / f"{CAPS}_{OUTPUT}"
@@ -18,25 +23,17 @@ class ModelDir(Directory):
     def output_tsv(self) -> Path:
         return (self.path / OUTPUT).with_suffix(TSV)
 
-    def read(self) -> None:
-        """
-        Checks and reads the directory to find the files inside.
 
-        Raises
-        ------
-        FileNotFoundError
-            If an expected directory or file is missing.
-        """
-        if not self.path.exists():
-            raise FileNotFoundError(f"Directory {str(self.path)} does not exist.")
+class PredictionSplitDir(InferenceSplitDir[PredictionModelDir]):
+    _dir_type = PredictionModelDir
 
 
-class PredictionSplitDir(InferenceSplitDir[ModelDir]):
-    _dir_type = ModelDir
-
-
-class PredictionGroupDir(InferenceGroupDir[PredictionSplitDir]):
+class PredictionResultsDir(InferenceResultsDir[PredictionSplitDir]):
     _dir_type = PredictionSplitDir
+
+
+class PredictionGroupDir(InferenceGroupDir[PredictionResultsDir]):
+    _results_dir_type = PredictionResultsDir
 
 
 class PredictionDir(InferenceDir[PredictionGroupDir]):

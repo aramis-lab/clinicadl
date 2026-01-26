@@ -86,14 +86,14 @@ install.doc: check.lock
 ## tests        : Run the unit tests
 .PHONY: test
 test: install
-	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" tests/unittests --ignore tests/unittests/train --ignore tests/unittests/callbacks
+	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" tests/unittests --ignore tests/unittests/train
 
 ## gpu-tests    : Run only GPU unit tests
 .PHONY: gpu-test
 gpu-test: install
-	@$(POETRY) run python -m pytest -v -m "gpu" tests/unittests --ignore tests/unittests/train --ignore tests/unittests/callbacks
+	@$(POETRY) run python -m pytest -v -m "gpu" tests/unittests --ignore tests/unittests/train
 
 ## multi-gpu-tests    : Run only Multi-GPUs unit tests
 .PHONY: multi-gpu-test
 multi-gpu-test: install
-	@$(POETRY) run python -m pytest -v -m "multi_gpu" tests/unittests --ignore tests/unittests/train --ignore tests/unittests/callbacks
+	@$(POETRY) run python -m pytest -v -m "multi_gpu" tests/unittests --ignore tests/unittests/train

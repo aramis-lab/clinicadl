@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Generator, Optional, TypeVar, Union, over
 import torch
 import torchio as tio
 
-from clinicadl.utils.objects import Config, HasConfig
+from clinicadl.utils.objects import Config, HasConfig, equal_if_config_equal
 
 if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
@@ -27,6 +27,7 @@ class ImplementedExtraction(str, Enum):
     PATCH = "Patch"
 
 
+@equal_if_config_equal
 class Extraction(HasConfig[Config], ABC):
     """
     Abstract base class for sample extractions.

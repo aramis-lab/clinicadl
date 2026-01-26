@@ -31,10 +31,6 @@ class ClinicaDLNetworksError(ClinicaDLException):
 class DataLeakageError(ClinicaDLException):
     """Base class for data leakage exceptions."""
 
-    def __init__(self, participants: Sequence[str]):
-        error_msg = f"Data leakage detected, the following participants were seen during training or validation: {participants}"
-        super().__init__(error_msg)
-
 
 class ClinicaDLTSVError(ClinicaDLException):
     """Base class for tsv files exceptions."""
@@ -153,3 +149,7 @@ class CannotReadJsonFieldError(ClinicaDLException):
         if mention_kwargs:
             error_msg += "\nPlease pass this field via kwargs."
         super().__init__(error_msg)
+
+
+class CannotReadJsonError(ClinicaDLException):
+    """When a json cannot be read."""

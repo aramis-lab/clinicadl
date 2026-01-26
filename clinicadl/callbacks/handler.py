@@ -1,235 +1,196 @@
-from pathlib import Path
-from typing import Dict, List, Optional
+from collections import Counter
+from copy import copy
+from typing import Sequence, TypeVar
 
-from clinicadl.io import Maps
-from clinicadl.metrics.handler import MetricsHandler
-from clinicadl.models import Model
-from clinicadl.utils.json import read_json, write_json
-from clinicadl.utils.typing import PathType
+from pydantic import Field, field_validator
 
-from .config import get_callback_from_dict
-from .factory import *
-from .factory.base import Callback
-from .factory.logger import _Logger
-from .factory.monitor import _Monitor
-from .factory.training_loss import _TrainingLoss
+from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.objects import HasConfig
 
-LOSS = "loss"
+from .base import Callback, Events
+from .factory import get_callback_from_dict
+from .implemented import (
+    ChecksCallback,
+    ConfigSaverCallback,
+    LoggerCallback,
+    ModelCheckpointCallback,
+    MonitorCallback,
+    TrainingCheckpointCallback,
+    TrainingLossCallback,
+)
 
-PREFERRED_ORDER = [
-    _TrainingLoss.__name__,
-    LRScheduler.__name__,
-    Checkpoint.__name__,
-    ModelSelection.__name__,
-    _Monitor.__name__,
-    _Logger.__name__,
-    MLflow.__name__,
-    CodeCarbon.__name__,
-    WandB.__name__,
-    TensorBoard.__name__,
+T = TypeVar("T")
+
+FIRST = [
+    LoggerCallback,
+    ChecksCallback,
+    ConfigSaverCallback,
+    MonitorCallback,
+]
+LAST = [ModelCheckpointCallback, TrainingCheckpointCallback]
+ONLY_ONE = [
+    LoggerCallback,
+    ChecksCallback,
+    ConfigSaverCallback,
+    MonitorCallback,
+    TrainingLossCallback,
+    TrainingCheckpointCallback,
+]
+
+MANDATORY = [ChecksCallback(), ConfigSaverCallback(), TrainingLossCallback()]
+DEFAULT = [
+    LoggerCallback(),
+    MonitorCallback(),
+    ModelCheckpointCallback(save_last=True),
+    TrainingCheckpointCallback(),
 ]
 
 
-class _CallbacksHandler:
+class CallbacksHandlerConfig(ObjectConfig["CallbacksHandler"]):
     """
-    Central handler for all training callbacks in the ClinicaDL pipeline.
+    To check the callbacks passed by the user.
+    """
 
-    This class initializes, validates, and orders the various callbacks used during
-    training and evaluation, including logging, monitoring, early stopping, and checkpointing.
+    callbacks: list[Callback] = Field(
+        reader=lambda callbacks: [get_callback_from_dict(c) for c in callbacks]
+    )
+
+    @field_validator("callbacks", mode="after")
+    @classmethod
+    def _check_duplicate(cls, callbacks: list[Callback]) -> list[Callback]:
+        """
+        Checks unwanted duplicates.
+        """
+        counts = Counter(type(callback) for callback in callbacks)
+        for callback in ONLY_ONE:
+            if counts.get(callback, 0) > 1:
+                raise ValueError(f"You cannot pass more than one {callback}")
+
+        return callbacks
+
+    def add_callbacks(
+        self,
+        callbacks: Sequence[Callback],
+    ) -> None:
+        """
+        Adds new callbacks.
+        """
+        self.callbacks += callbacks
+
+    @classmethod
+    def _get_class(cls):
+        return CallbacksHandlerConfig
+
+
+def _reorder(
+    input_list: list[T], order: list[type], unordered_at_the_end: bool
+) -> None:
+    """
+    Reorders elements according to their types and the order given in 'order'. If unordered_at_the_end=True, all the elements whose
+    types are not in ordered will stay in the same order but at the end; otherwise, they will stay in the same order but at
+    the beginning.
+    """
+    if unordered_at_the_end:
+        default_rank = float("inf")
+    else:
+        default_rank = -float("inf")
+    rank = {cls_: i for i, cls_ in enumerate(order)}
+    input_list.sort(key=lambda x: rank.get(type(x), default_rank))
+
+
+class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
+    """
+    To handle all the :py:class:`~clinicadl.callbacks.Callback` passed to a :py:class:`~clinicadl.train.Trainer`.
+
+    Note that some callbacks are instantiated by default: :py:class:`~clinicadl.callbacks.LoggerCallback`,
+    :py:class:`~clinicadl.callbacks.MonitorCallback`, :py:class:`~clinicadl.callbacks.ModelCheckpointCallback`
+    and :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback`. To override them, just pass a new instance via
+    ``callbacks``.
 
     Parameters
     ----------
-    metrics : MetricsHandler
-        Object used to validate the metric names required by `ModelSelection` and `EarlyStopping`.
-    callbacks : Optional[List[Callback]]
-        List of user-defined callbacks. Supports duplicates for EarlyStopping,
-        and merges `ModelSelection` instances.
+    callbacks : Sequence[Callback]
+        A sequence of :py:class:`~clinicadl.callbacks.Callback`.
 
-    Attributes
-    ----------
-    callbacks : Dict[str, Callback]
-        Dictionary mapping callback identifiers to instantiated callbacks.
-
-    See Also
-    --------
-    :py:class:`~clinicadl.callbacks.base.Callback`: Abstract base class for all callbacks.
-    :py:class:`~clinicadl.metrics.metrics.MetricsHandler`: Metric management utility.
+        .. important:: Order matters!
+            The order of your callbacks in ``callbacks`` may determine the order in which callbacks will be called.
+            Note, however, that some callbacks have an immutable rank in this order. For example, no matter where you place
+            :py:class:`~clinicadl.callbacks.LoggerCallback`, it will be called first to initialize logging.
     """
+
+    _config_type = CallbacksHandlerConfig
 
     def __init__(
         self,
-        metrics: MetricsHandler,
-        callbacks: Optional[List[Callback]] = None,
+        callbacks: Sequence[Callback],
     ):
-        self.callbacks: Dict[str, Callback] = self._check_callbacks_names(callbacks)
-        self._add_default_callbacks()
-        self._check_metrics(metrics)
-        self._check_callbacks_order()
-
-    def _check_callbacks_names(
-        self, callbacks: Optional[List[Callback]] = None
-    ) -> Dict[str, Callback]:
-        """
-        Resolve user-provided callbacks, avoiding duplicates and handling special cases.
-
-        Parameters
-        ----------
-        callbacks : Optional[List[Callback]]
-            List of callback instances.
-
-        Returns
-        -------
-        Dict[str, Callback]
-            Mapping of callback names to instances.
-        """
-        if not callbacks:
-            return {}
-
-        resolved: Dict[str, Callback] = {}
-
-        for callback in callbacks:
-            if not isinstance(callback, Callback):
-                raise TypeError(
-                    f"Each callback must be a Callback instance, got {type(callback)} for {callback}"
-                )
-
-            name = type(callback).__name__
-
-            if isinstance(callback, (EarlyStopping, LRScheduler)):
-                count = sum(k.startswith(name) for k in resolved)
-                unique_name = f"{name}{count + 1}" if name in resolved else name
-                resolved[unique_name] = callback
-
-            elif isinstance(callback, ModelSelection):
-                if name in resolved:
-                    merged_metrics = set(resolved[name].metrics).union(callback.metrics)  # type: ignore
-                    resolved[name] = ModelSelection(metrics=list(merged_metrics))
-                else:
-                    resolved[name] = callback
-
-            elif name in resolved:
-                raise ValueError(f"Duplicate callback not allowed: {name}")
-
-            else:
-                resolved[name] = callback
-
-        return resolved
-
-    def _add_default_callbacks(self):
-        """
-        Add default callbacks if they are not already provided.
-        """
-        defaults = {
-            _Monitor.__name__: _Monitor(),
-            _TrainingLoss.__name__: _TrainingLoss(),
-            _Logger.__name__: _Logger(),
-            _CheckpointSaver.__name__: _CheckpointSaver(),
-        }
-
-        for name, callback in defaults.items():
-            if name not in self.callbacks:
-                self.callbacks[name] = callback
-
-    def _check_metrics(self, metrics: MetricsHandler):
-        """
-        Ensure that all metrics used in ModelSelection and EarlyStopping callbacks
-        are present in the provided metrics.
-
-        Raises
-        ------
-        ValueError
-            If any metric required by `EarlyStopping` or `ModelSelection` is missing.
-        """
-
-        es_metrics = [
-            metric
-            for cb in self.callbacks.values()
-            if isinstance(cb, EarlyStopping)
-            for metric in cb.metrics
-        ]
-
-        ms_cb = self.callbacks.get(ModelSelection.__name__)
-        ms_metrics = set(ms_cb.metrics if ms_cb else [])  # type: ignore
-        ms_metrics.add(LOSS)
-
-        ms_metrics.update(es_metrics)
-        self.callbacks[ModelSelection.__name__] = ModelSelection(
-            metrics=list(ms_metrics)
-        )
-
-        available = set(metrics.metrics.keys())
-
-        if es_metrics:
-            missing_early = set(es_metrics) - available
-            if missing_early:
-                raise ValueError(f"Missing metrics for EarlyStopping: {missing_early}")
-
-        missing = ms_metrics - available
-        if missing:
-            raise ValueError(f"Missing metrics for ModelSelection: {missing}")
-
-    def _check_callbacks_order(self):
-        """
-        Order callbacks based on preferred priority.
-        """
-
-        early = {
-            k: v
-            for k, v in self.callbacks.items()
-            if k.startswith(EarlyStopping.__name__)
-        }
-        rest = {k: v for k, v in self.callbacks.items() if k not in early}
-
-        ordered = dict(sorted(early.items()))
-        ordered.update(
-            {name: rest.pop(name) for name in PREFERRED_ORDER if name in rest}
-        )
-        ordered.update(rest)
-
-        self.callbacks = ordered
+        self.config = self._config_type(callbacks=callbacks)
+        self._with_defaults = None
+        self._all_callbacks = None
+        self._complete_callbacks()
 
     @property
-    def callback_list(self) -> list[str]:
-        """
-        Get the list of callback class names currently registered.
+    def callbacks(self) -> list[Callback]:
+        """The callbacks currently in the CallbacksHandler."""
+        return self._with_defaults
 
-        Returns
-        -------
-        list of str
-            List of callback class names.
+    def add_callbacks(
+        self,
+        callbacks: Sequence[Callback],
+    ) -> None:
         """
-        return list(self.callbacks.keys())
+        Adds new callbacks.
+        """
+        self.config.add_callbacks(callbacks)
+        self._complete_callbacks()
 
-    def call_event(self, event: str, model: Model, maps: Maps, **kwargs) -> None:
+    def call_event(self, event: Events, **kwargs) -> None:
         """
         Call a specific event method on all callbacks.
 
         Parameters
         ----------
-        event : str
-            Name of the event method to call (e.g. 'on_train_begin').
-
-        kwargs : dict
-            Keyword arguments passed to each callback's event method.
+        event : Events
+            Name of the event to call (e.g. ``"on_train_start"``).
+        kwargs : Any
+            Keyword arguments to pass to every callback's event methods.
         """
-        for callback in self.callbacks.values():
-            method = getattr(callback, event, None)
-            if callable(method):
-                method(config=config, **kwargs)
+        for callback in self._all_callbacks:
+            getattr(callback, Events(event).value)(**kwargs)
 
-    def write_json(self, json_path: PathType) -> None:
-        json_path = Path(json_path)
-        json_dict = {
-            name: callback.to_dict()
-            for name, callback in self.callbacks.items()
-            if not name.startswith("_")
-        }
+    def _complete_callbacks(self) -> None:
+        """
+        Completes the callbacks passed by the user with the mandatory
+        and default callbacks.
+        """
+        callbacks = copy(self.config.callbacks)
+        self._add_defaults(callbacks)
+        self._reorder(callbacks)
+        self._with_defaults = copy(callbacks)
+        self._add_mandatory(callbacks)
+        self._reorder(callbacks)
+        self._all_callbacks = callbacks
 
-        write_json(json_path=json_path, data=json_dict)
+    @staticmethod
+    def _add_mandatory(callbacks: list[Callback]) -> None:
+        """
+        Adds the mandatory callbacks.
+        """
+        callbacks.extend(MANDATORY)
 
-    @classmethod
-    def from_json(cls, json_path: PathType) -> List[Callback]:
-        json_path = Path(json_path)
-        _dict = read_json(json_path=json_path)
+    @staticmethod
+    def _add_defaults(callbacks: list[Callback]) -> None:
+        """
+        Adds the default callbacks.
+        """
+        for callback in DEFAULT:
+            if not any(type(x) is type(callback) for x in callbacks):
+                callbacks.append(callback)
 
-        return [get_callback_from_dict(json_dict) for json_dict in _dict.values()]
+    @staticmethod
+    def _reorder(callbacks: list[Callback]) -> None:
+        """
+        Reorders the callbacks.
+        """
+        _reorder(callbacks, FIRST, unordered_at_the_end=True)
+        _reorder(callbacks, LAST, unordered_at_the_end=False)

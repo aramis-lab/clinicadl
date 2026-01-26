@@ -28,6 +28,7 @@ from .base import Model
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
+    from clinicadl.data.structures import Sample
 
 
 class SupervisedModelConfig(ObjectConfig["SupervisedModel"]):
@@ -229,7 +230,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], Model):
 
     def get_summary(
         self,
-        input_data: torch.Tensor,
+        input_data: Batch[Sample],
     ) -> str:
         """
         Returns a summary of the neural network, produced by
@@ -237,7 +238,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], Model):
 
         Parameters
         ----------
-        input_data : torch.Tensor
+        input_data : Batch[Sample]
             Input data to pass to the neural network to build the summary.
 
         Returns
@@ -249,7 +250,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], Model):
 
         summary_ = summary(
             self.network,
-            input_data=input_data,
+            input_data=input_data[0].image.tensor,
         )
 
         return str(summary_)

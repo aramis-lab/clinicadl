@@ -2,7 +2,6 @@ from enum import Enum
 from typing import Any, Optional
 
 from clinicadl.data.dataloader import DataLoader
-from clinicadl.split import Split
 from clinicadl.utils.config import ClinicaDLConfig
 
 
@@ -10,9 +9,18 @@ class TrainerStage(str, Enum):
     """Possible stages of the trainer."""
 
     TRAIN = "training"
-    VAL = "validation"
+    EVAL = "evaluation"
+    PRED = "prediction"
+    INTERRUPTED = "interrupted"
+
+
+class TrainerCall(str, Enum):
+    """Methods of :py:class:`clinicadl.train.Trainer`."""
+
+    TRAIN = "train"
+    VALIDATE = "validate"
     TEST = "test"
-    PREDICT = "prediction"
+    PREDICT = "predict"
 
 
 class TrainerState(ClinicaDLConfig):
@@ -21,16 +29,12 @@ class TrainerState(ClinicaDLConfig):
 
     Attributes
     ----------
+    called : Optional[TrainerCall]
+        The method the ``Trainer`` that has been called. One of ``"train"``, ``"validate"``, ``"test"``, or ``"predict"``.
+        ``None`` if no method has been called so far..
     stage : Optional[TrainerStage]
         Current action performed by the ``Trainer``.
-        One of ``"training"``, ``"validation"``, ``"test"``, or ``"prediction"``.
-
-        .. note::
-            ``Trainer`` stage can be ``"validation"`` when :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`
-            or :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` are called.
-
-        ``None`` if no action has been launched so far.
-
+        One of ``"training"``, ``"evaluation"`` or ``"prediction"``.
     should_stop : bool
         Whether the training should be stopped at the end of the
         current epoch during :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
@@ -65,6 +69,7 @@ class TrainerState(ClinicaDLConfig):
         ``None`` if in :py:meth:`Trainer.test <clinicadl.train.Trainer.test>` or :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`.
     """
 
+    called: Optional[TrainerCall] = None
     stage: Optional[TrainerStage] = None
     should_stop: bool = False
     current_train_batch: int = 0
@@ -80,35 +85,50 @@ class TrainerState(ClinicaDLConfig):
     optim_step: int = 0
     split_idx: Optional[int] = None
 
-    def reset_training(self, split: Split, num_epochs: int) -> None:
+    def reset_training(self, split_idx: int, num_epochs: int) -> None:
         """
         To reset the whole trainer state.
         """
-        self.stage = TrainerStage.TRAIN
+        self.called = TrainerCall.TRAIN
         self.should_stop = False
         self.current_train_batch = 0
-        self.num_train_batches = len(split.train_loader)
+        self.num_train_batches = 0
         self.current_val_batch = 0
-        self.num_val_batches = len(split.val_loader)
+        self.num_val_batches = 0
         self.current_epoch = 0
         self.num_epochs = num_epochs
         self.optim_step = 0
-        self.split_idx = split.index
+        self.split_idx = split_idx
 
-    def reset_validation(self, split: Split) -> None:
+    def reset_epoch(self, train_loader: DataLoader, current_epoch: int) -> None:
+        """
+        To reset at the beginning of a new epoch.
+        """
+        self.stage = TrainerStage.TRAIN
+        self.current_train_batch = 0
+        self.num_train_batches = len(train_loader)
+        self.current_epoch = current_epoch
+        self.optim_step = 0
+
+    def reset_validation(
+        self, split_idx: int, val_loader: DataLoader, in_training: bool = True
+    ) -> None:
         """
         To reset the validation state.
         """
-        self.stage = TrainerStage.VAL
+        if not in_training:
+            self.called = TrainerCall.VALIDATE
+        self.stage = TrainerStage.EVAL
         self.current_val_batch = 0
-        self.num_val_batches = len(split.val_loader)
-        self.split_idx = split.index
+        self.num_val_batches = len(val_loader)
+        self.split_idx = split_idx
 
     def reset_test(self, dataloader: DataLoader) -> None:
         """
         To reset the test state.
         """
-        self.stage = TrainerStage.TEST
+        self.stage = TrainerStage.EVAL
+        self.called = TrainerCall.TEST
         self.current_test_batch = 0
         self.num_test_batches = len(dataloader)
         self.split_idx = None
@@ -117,7 +137,8 @@ class TrainerState(ClinicaDLConfig):
         """
         To reset the prediction state.
         """
-        self.stage = TrainerStage.PREDICT
+        self.stage = TrainerStage.PRED
+        self.called = TrainerCall.PREDICT
         self.current_pred_batch = 0
         self.num_pred_batches = len(dataloader)
         self.split_idx = None

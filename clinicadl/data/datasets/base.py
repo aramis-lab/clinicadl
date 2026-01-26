@@ -9,6 +9,7 @@ from typing import (
     Any,
     Callable,
     Optional,
+    TypeVar,
     Union,
 )
 
@@ -29,7 +30,7 @@ from clinicadl.utils.dictionary.words import (
     SESSION,
     SESSION_ID,
 )
-from clinicadl.utils.objects import HasConfig
+from clinicadl.utils.objects import HasConfig, equal_if_config_equal
 from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType, PathType
 
@@ -39,6 +40,8 @@ from ..structures import Column, DataPoint, Mask, Sample
 from .sampler import SamplerDataset
 
 logger = getLogger("clinicadl.data.datasets.base")
+
+T = TypeVar("T")
 
 
 def _dataframe_from_dict(serialized_df: Union[dict, Any]) -> None:
@@ -78,6 +81,14 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
     @property
     def _common_mask_names(self) -> list[str]:
         return list(map(Mask.get_mask_name, self._common_masks))
+
+    @field_validator("label", mode="after")
+    @classmethod
+    def _sort_labels(cls, labels: T) -> T:
+        """Sort the labels if list."""
+        if isinstance(labels, list):
+            return sorted(labels)
+        return labels
 
     @field_validator("columns", mode="before")
     @classmethod
@@ -250,6 +261,7 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
                 )
 
 
+@equal_if_config_equal
 class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
     """
     Abstract class with the main logic of all the :py:class:` ~clinicadl.data.datasets.Dataset`

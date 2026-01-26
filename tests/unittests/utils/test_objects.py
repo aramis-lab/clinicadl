@@ -12,6 +12,7 @@ from clinicadl.utils.objects import (
     HasConfig,
     JsonReaderWriter,
     Serializable,
+    equal_if_config_equal,
     to_json_safe,
 )
 
@@ -61,6 +62,7 @@ class ReaderWriterConfig(ObjectConfig["ReaderWriter"]):
         return ReaderWriter
 
 
+@equal_if_config_equal
 class ReaderWriter(HasConfig[ReaderWriterConfig]):
     _config_type = ReaderWriterConfig
 
@@ -132,3 +134,17 @@ def test_dict():
     assert isinstance(obj.config.obj.value, ObjectTest)
     assert isinstance(obj.config.seq.values[0].value, ObjectTestConfig)
     assert isinstance(obj.config.seq.values[1].value, ObjectTest)
+
+
+def test_eq():
+    r1 = ReaderWriter(a=0, obj=ObjectTestConfig(a=1), seq=[ObjectTestConfig(a=2)])
+    r2 = ReaderWriter(a=0, obj=ObjectTestConfig(a=0), seq=[ObjectTestConfig(a=2)])
+    assert r1 != r2
+    r2.config.obj = ObjectTestConfig(a=1)
+    assert r1 == r2
+
+    class ReaderWriterChild(ReaderWriter):
+        pass
+
+    r2 = ReaderWriterChild(a=0, obj=ObjectTestConfig(a=1), seq=[ObjectTestConfig(a=2)])
+    assert r1 != r2

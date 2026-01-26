@@ -11,11 +11,12 @@ from clinicadl.utils.dictionary.words import (
     SUMMARY,
     TMP,
     VALIDATION,
+    WARNING,
 )
 
 from ....base import Directory
-from ...metrics import MetricsDir
-from .logs import LogsDir
+from ...utils import MetricsDir
+from .logs import TrainingLogsDir
 from .models import ModelsDir
 from .tmp import TmpDir
 
@@ -27,8 +28,12 @@ class TrainingSplitDir(Directory):
         self._validation_metrics = MetricsDir(
             path=self.path / f"{VALIDATION}_{METRICS}"
         )
-        self._logs = LogsDir(path=self.path / LOGS)
+        self._logs = TrainingLogsDir(path=self.path / LOGS)
         self._tmp = TmpDir(path=self.path / TMP)
+
+    @property
+    def warning_log(self) -> Path:
+        return (self.path / WARNING).with_suffix(LOG)
 
     @property
     def models(self) -> ModelsDir:
@@ -39,7 +44,7 @@ class TrainingSplitDir(Directory):
         return self._validation_metrics
 
     @property
-    def logs(self) -> LogsDir:
+    def logs(self) -> TrainingLogsDir:
         return self._logs
 
     @property

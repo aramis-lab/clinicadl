@@ -34,7 +34,7 @@ class ComputationalConfig(ClinicaDLConfig):
         To seed the randomness in your training.
     """
 
-    gpu: bool = False
+    gpu: bool = True
     non_blocking: bool = True
     amp: bool = True
     channels_last: bool = True

@@ -56,18 +56,38 @@ class OptimizerConfig(ObjectConfig[optim.Optimizer]):
             )  # order in the list is important to match lr_scheduler
             for group, args in args_by_group:
                 params_in_group, _ = get_params_in_groups(network, group)
-                args.update({"params": params_in_group})
+                args.update({"params": params_in_group, "name": group})
                 params.append(args)
 
             other_params, other_param_names = get_params_not_in_groups(
                 network, groups=[group for group, _ in args_by_group]
             )
             if len(other_param_names) > 0:
-                params.append({"params": other_params})
+                params.append({"params": other_params, "name": "ELSE"})
 
         associated_class = self._get_class()
 
         return associated_class(params, **args_global)
+
+    def get_parameter_groups(self) -> list[str]:
+        """
+        Returns all parameter groups mentioned by the user in the fields.
+
+        Returns
+        -------
+        list[str]
+            The list of groups.
+        """
+        groups = set()
+        for _, value in self:
+            if isinstance(value, dict):
+                groups.update(set(v for v in value.keys() if v != "ELSE"))
+
+        groups = list(groups)
+        if groups:
+            groups = sorted(list(groups)) + ["ELSE"]
+
+        return groups
 
     @classmethod
     def _get_class(cls) -> type[optim.Optimizer]:

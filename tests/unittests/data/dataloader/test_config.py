@@ -8,12 +8,14 @@ from pydantic import ValidationError
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
 from clinicadl.data.dataloader import (
+    CollateFn,
     DataLoaderConfig,
     MergeBatchesCollate,
     ToBatchCollate,
     ToBatchesCollate,
 )
 from clinicadl.data.dataloader.batch import Batch
+from clinicadl.data.dataloader.config import get_dataloader_from_json_safely
 from clinicadl.data.datasets import (
     CapsDataset,
     ConcatDataset,
@@ -99,6 +101,8 @@ def test_get_object():
     assert dataloader.drop_last
     assert dataloader.pin_memory
     assert dataloader.worker_init_fn == pl_worker_init_function
+
+    assert dataloader.config == dataloader_config
 
     # check sampler
     torch.manual_seed(0)
@@ -441,6 +445,23 @@ def test_serialize_deserialize(tmp_path):
     dataloader_config.to_json(tmp_path / "dataloader.json", overwrite=True)
     dataloader_config = DataLoaderConfig.from_json(tmp_path / "dataloader.json")
     assert isinstance(dataloader_config.collate_fn, MergeBatchesCollate)
+
+    # without errors
+    class CustomCollate(CollateFn):
+        def __call__(self, samples):
+            return samples
+
+    dataloader_config = DataLoaderConfig(
+        batch_size=2, shuffle=False, collate_fn=CustomCollate()
+    )
+    dataloader_config.to_json(tmp_path / "dataloader.json", overwrite=True)
+    assert get_dataloader_from_json_safely(tmp_path / "dataloader.json") == (None, [])
+    new_config, fields = get_dataloader_from_json_safely(
+        tmp_path / "dataloader.json", default=dataloader_config
+    )
+    assert isinstance(new_config, DataLoaderConfig)
+    assert isinstance(new_config.collate_fn, CustomCollate)
+    assert fields == ["collate_fn"]
 
 
 def test_custom_dataset():

@@ -3,19 +3,20 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from clinicadl.utils.dictionary.suffixes import JSON, PTH, TAR
+from clinicadl.utils.dictionary.suffixes import JSON, PT
 from clinicadl.utils.dictionary.words import (
     CALLBACKS,
     METRICS,
     MODEL,
+    OPTIMIZER,
     SCALER,
     STATE,
     VALIDATION,
 )
 
 from ....base import Directory
-from ...metrics import MetricsDir
-from ...utils import EpochsDir
+from ....utils import mandatory
+from ...utils import EpochsDir, MetricsDir
 
 
 class EpochTmpDir(Directory):
@@ -26,23 +27,33 @@ class EpochTmpDir(Directory):
         )
 
     @property
+    @mandatory
     def callbacks(self) -> Path:
         return self.path / CALLBACKS
 
     @property
+    @mandatory
     def validation_metrics(self) -> MetricsDir:
         return self._validation_metrics
 
     @property
-    def model(self) -> Path:
-        return (self.path / MODEL).with_suffix(PTH + TAR)
+    @mandatory
+    def model_pt(self) -> Path:
+        return (self.path / MODEL).with_suffix(PT)
 
     @property
-    def scaler(self) -> Path:
-        return (self.path / SCALER).with_suffix(JSON)
+    @mandatory
+    def optimizer_pt(self) -> Path:
+        return (self.path / OPTIMIZER).with_suffix(PT)
 
     @property
-    def state(self) -> Path:
+    @mandatory
+    def scaler_pt(self) -> Path:
+        return (self.path / SCALER).with_suffix(PT)
+
+    @property
+    @mandatory
+    def state_json(self) -> Path:
         return (self.path / STATE).with_suffix(JSON)
 
 
