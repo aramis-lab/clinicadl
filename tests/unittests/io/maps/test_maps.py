@@ -775,3 +775,27 @@ def test_delete_split(tmp_path):
             }
         ),
     )
+
+
+def test_get_all_models(tmp_path):
+    shutil.copytree(REFERENCE_MAPS, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.read()
+    maps.training.splits[0].models.best_models.create_metric("mse")
+    maps.training.splits[0].models.checkpoints.create_epoch(1)
+
+    assert maps.training.splits[0].models.get_all_models() == [
+        "best-loss",
+        "best-mse",
+        "epoch-1",
+        "epoch-3",
+        "final",
+    ]
+
+    maps.training.splits[0].models.final.remove(non_empty_ok=True)
+    assert maps.training.splits[0].models.get_all_models() == [
+        "best-loss",
+        "best-mse",
+        "epoch-1",
+        "epoch-3",
+    ]

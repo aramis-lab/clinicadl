@@ -224,52 +224,24 @@ def test_load(tmp_path):
 def test_metrics_subset():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
-        my_metric=CustomMetric(),
+        my_metric=(my_metric := CustomMetric()),
     )
-    metrics.init_metrics(MODEL)
-
-    metrics(BATCH_1, epoch=0)
-    metrics.aggregate(epoch=0)
-    metrics.reset()
 
     with pytest.raises(
-        ValueError,
+        KeyError,
         match=re.escape(
-            "'abc' does not match any metrics. Metrics are: ['mse', 'my_metric']"
+            "'abc' not found in the computed metrics! Metrics are: ['mse', 'my_metric']"
         ),
     ):
-        output = metrics(BATCH_2, epoch=1, metrics=["abc"])
+        metrics.subset(["abc"])
 
-    output = metrics(BATCH_2, epoch=1, metrics=["mse"])
-    metrics.aggregate(epoch=1, metrics=["mse"])
+    new_metrics = metrics.subset(["my_metric"])
 
-    expected_output_df = pd.DataFrame.from_dict(
-        {
-            "epoch": [1, 1, 1],
-            "participant_id": [f"sub-{i}" for i in range(3, 6)],
-            "session_id": [f"ses-{i}" for i in range(3, 6)],
-            "mse": pd.Series([1.0, 1.0, 0.0], dtype=np.float32),
-        }
+    assert new_metrics.config.metric_names == ["my_metric"]
+    assert isinstance(
+        new_metrics.config.metrics.values["my_metric"].value, CustomMetric
     )
-    expected_detailed_df = pd.DataFrame.from_dict(
-        {
-            "epoch": [0, 0, 0, 1, 1, 1],
-            "participant_id": [f"sub-{i}" for i in range(6)],
-            "session_id": [f"ses-{i}" for i in range(6)],
-            "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
-            "my_metric": pd.Series([1.0, 0.0, 1.0, -1, -1, -1], dtype=np.float32),
-        }
-    )
-    expected_df = pd.DataFrame.from_dict(
-        {
-            "epoch": [0, 1],
-            "mse": pd.Series([0.333333, 0.666666], dtype=np.float64),
-            "my_metric": pd.Series([0.666666, -1], dtype=np.float64),
-        }
-    )
-    pd.testing.assert_frame_equal(output, expected_output_df)
-    pd.testing.assert_frame_equal(metrics.detailed_df.fillna(-1), expected_detailed_df)
-    pd.testing.assert_frame_equal(metrics.df.fillna(-1), expected_df)
+    assert new_metrics.config.metrics.values["my_metric"].value is not my_metric
 
 
 def test_epochs():
@@ -477,8 +449,8 @@ def test_read_write_json(tmp_path):
         json_path=tmp_path / "metrics.json",
         my_metric=CustomMetric(),
     )
-    assert isinstance(metrics.metrics["mse"], MSEMetricConfig)
-    assert isinstance(metrics.metrics["my_metric"], CustomMetric)
+    assert isinstance(metrics.config.metrics.values["mse"].value, MSEMetricConfig)
+    assert isinstance(metrics.config.metrics.values["my_metric"].value, CustomMetric)
 
 
 def test_empty():

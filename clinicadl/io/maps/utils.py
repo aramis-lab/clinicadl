@@ -3,10 +3,20 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Generator, Generic, TypeVar
 
-from clinicadl.utils.dictionary.suffixes import LOG, TSV
-from clinicadl.utils.dictionary.words import AGGREGATED, DETAILS, EPOCH, SPLIT, WARNING
+from clinicadl.utils.dictionary.suffixes import JSON, LOG, TSV
+from clinicadl.utils.dictionary.words import (
+    AGGREGATED,
+    DATA,
+    DATALOADER,
+    DATASET,
+    DETAILS,
+    EPOCH,
+    SPLIT,
+    WARNING,
+)
 
 from ..base import Directory
+from ..utils import mandatory
 
 DirType = TypeVar("DirType", bound=Directory)
 ItemType = TypeVar("ItemType", int, str)
@@ -141,3 +151,20 @@ class MetricsDir(Directory):
     @property
     def details_tsv(self) -> Path:
         return (self.path / DETAILS).with_suffix(TSV)
+
+
+class DataDir(Directory):
+    @property
+    @mandatory
+    def data_tsv(self) -> Path:
+        return (self.path / DATA).with_suffix(TSV)
+
+    @property
+    @mandatory
+    def dataset_json(self) -> Path:
+        return (self.path / DATASET).with_suffix(JSON)
+
+    @property
+    @mandatory
+    def dataloader_json(self) -> Path:
+        return (self.path / DATALOADER).with_suffix(JSON)

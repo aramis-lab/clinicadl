@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Sequence
 
@@ -37,6 +38,13 @@ class MetricsHandlerConfig(KwargsConfig["MetricsHandler"]):
         reader=DictOfObjects.build_reader(get_metric_from_dict)
     )
 
+    @property
+    def metric_names(self) -> list[str]:
+        """
+        The names of the metrics.
+        """
+        return list(self.metrics.values.keys())
+
     def add_metrics(
         self,
         metrics: dict[str, MetricOrConfig],
@@ -45,7 +53,7 @@ class MetricsHandlerConfig(KwargsConfig["MetricsHandler"]):
         Adds metrics.
         """
         for name in metrics:
-            if name in self.metrics.values:
+            if name in self.metric_names:
                 raise ValueError(f"A metric named '{name}' already exists!")
         self.metrics = self.metrics.values | metrics
 
@@ -107,9 +115,12 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         self._model = model
 
     @property
-    def metrics(self) -> dict[str, Metric]:
-        """The metrics currently in the MetricsHandler."""
-        return self.config.to_raw_dict()
+    def metrics(self) -> Optional[dict[str, Metric]]:
+        """
+        The metrics currently in the MetricsHandler.
+        If ``None``, it means that :py:meth:`init_metrics` must be called.
+        """
+        return self._metrics
 
     @property
     def df(self) -> pd.DataFrame:
@@ -131,14 +142,14 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         """
         Create an empty DataFrame with a column for each metric.
         """
-        return pd.DataFrame(columns=list(self.metrics.keys()))
+        return pd.DataFrame(columns=self.config.metric_names)
 
     def _init_detailed_df(self) -> pd.DataFrame:
         """
         Create an empty DataFrame with a column for each metric,
         as well as columns "participant_id" and "session_id".
         """
-        columns = [PARTICIPANT_ID, SESSION_ID] + list(self.metrics.keys())
+        columns = [PARTICIPANT_ID, SESSION_ID] + self.config.metric_names
 
         return pd.DataFrame(columns=columns)
 
@@ -162,13 +173,13 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         """
         self.config.add_metrics(metrics)
         self.reset(reset_df=False)
-        if self._metrics is not None:
+        if self.metrics is not None:
             self._metrics = self.config.metrics.get_object(model=self._model)
 
-        new_columns = self._df.columns.join(self.metrics.keys())
+        new_columns = self._df.columns.join(self.config.metric_names)
         self._df = self._df.reindex(columns=new_columns, fill_value=pd.NA)
 
-        new_columns = self._detailed_df.columns.join(self.metrics.keys())
+        new_columns = self._detailed_df.columns.join(self.config.metric_names)
         self._detailed_df = self._detailed_df.reindex(
             columns=new_columns,
             fill_value=pd.NA,
@@ -187,8 +198,8 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         --------
         :py:meth:`monai.metrics.Cumulative.reset`
         """
-        if self._metrics is not None:
-            for metric in self._metrics.values():
+        if self.metrics is not None:
+            for metric in self.metrics.values():
                 metric.reset()
 
         if reset_df:
@@ -198,7 +209,6 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
     def aggregate(
         self,
         epoch: Optional[int] = None,
-        metrics: Optional[Sequence[str]] = None,
     ) -> None:
         """
         Aggregate and store metric results.
@@ -207,8 +217,6 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         ----------
         epoch : Optional[int], default=None
             Current epoch. This information will be added in the DataFrame.
-        metrics : Optional[Sequence[str]], default=None
-            Subset of metrics that must be computed.
 
         Raises
         ------
@@ -219,18 +227,12 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         --------
         :py:meth:`monai.metrics.Cumulative.aggregate`
         """
-        if self._metrics is None:
+        if self.metrics is None:
             raise ClinicaDLConfigurationError(
                 "First, call 'init_metrics' to instantiate the metrics."
             )
 
-        to_compute = self._get_metrics_subest(metrics)
-
-        values = {
-            name: metric.aggregate()
-            for name, metric in self._metrics.items()
-            if name in to_compute
-        }
+        values = {name: metric.aggregate() for name, metric in self.metrics.items()}
 
         new_df = pd.DataFrame(values, index=[0])
 
@@ -252,7 +254,6 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         self,
         batch: Batch,
         epoch: Optional[int] = None,
-        metrics: Optional[Sequence[str]] = None,
     ) -> pd.DataFrame:
         """
         Updates metrics with a new batch.
@@ -264,8 +265,6 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             by some metrics.
         epoch : Optional[int], default=None
             Current epoch. This information will be added in the DataFrame.
-        metrics : Optional[Sequence[str]], default=None
-            Subset of metrics that must be computed.
 
         Returns
         -------
@@ -277,24 +276,16 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         ValueError
             If a metric mentioned in ``metrics`` does not match any metric in the ``MetricsHandler``.
         """
-        if self._metrics is None:
+        if self.metrics is None:
             raise ClinicaDLConfigurationError(
                 "First, call 'init_metrics' to instantiate the metrics."
             )
-
-        to_compute = self._get_metrics_subest(metrics)
 
         participants = batch.get_field(PARTICIPANT)
         sessions = batch.get_field(SESSION)
         values = {PARTICIPANT_ID: participants, SESSION_ID: sessions}
 
-        values.update(
-            {
-                name: metric(batch)
-                for name, metric in self._metrics.items()
-                if name in to_compute
-            }
-        )
+        values.update({name: metric(batch) for name, metric in self.metrics.items()})
 
         new_df = pd.DataFrame(values)
 
@@ -392,8 +383,10 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         metric : str
             The name of the metric to check.
         """
-        if metric not in self.metrics:
-            raise KeyError(f"'{metric}' not found in the computed metrics!")
+        if metric not in self.config.metric_names:
+            raise KeyError(
+                f"'{metric}' not found in the computed metrics! Metrics are: {self.config.metric_names}"
+            )
 
     def save(self, path: Path, details_path: Optional[Path] = None) -> None:
         """
@@ -447,7 +440,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         """
         df = pd.read_csv(path, sep=SEP)
 
-        expected_columns = set(self.metrics.keys())
+        expected_columns = set(self.config.metric_names)
         assert (
             len(expected_columns.difference(df.columns)) == 0
         ), f"Checkpoint in {str(path)} is not a valid metric file, some columns are missing: {expected_columns.difference(df.columns)}"
@@ -463,16 +456,32 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             ), f"Checkpoint in {str(path)} is not a valid metric details file, some columns are missing: {expected_columns.difference(detailed_df.columns)}"
             self._detailed_df = detailed_df
 
-    def _get_metrics_subest(self, metrics: Optional[Sequence[str]]) -> Sequence[str]:
+    def subset(self, metrics: Sequence[str]) -> MetricsHandler:
         """
-        Checks the list of metrics passed.
-        """
-        if metrics is None:
-            return self.metrics
-        for metric in metrics:
-            if metric not in self.metrics:
-                raise ValueError(
-                    f"'{metric}' does not match any metrics. Metrics are: {list(self.metrics.keys())}"
-                )
+        Creates a new ``MetricsHandler`` containing only a subset of
+        the current metrics.
 
-        return metrics
+        Parameters
+        ----------
+        metrics : Sequence[str]
+            The names of the metrics to keep in the new instance.
+
+        Returns
+        -------
+        MetricsHandler
+            The new instance.
+        """
+        for metric in metrics:
+            self.check_metric_name(metric)
+
+        subset = {
+            name: metric
+            for name, metric in self.config.to_raw_dict().items()
+            if name in metrics
+        }
+
+        new_metrics = MetricsHandler(**deepcopy(subset))
+        if self.metrics:
+            new_metrics.init_metrics(model=self._model)
+
+        return new_metrics
