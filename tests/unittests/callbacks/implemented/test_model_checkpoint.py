@@ -119,22 +119,22 @@ def test_inputs(tmp_path):
     assert chkpt.config.metric == "psnr"
     assert chkpt.config.epochs == [1, 2]
 
-    chkpt.on_train_start(maps=maps, state=state)
+    METRICS_HANDLER.config.metrics = {"mae": MAE}
+    METRICS_HANDLER.init_metrics()
+    with pytest.raises(KeyError, match="'psnr' not found in the computed metrics!"):
+        chkpt.on_train_start(metrics=METRICS_HANDLER, maps=maps, state=state)
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mae": MAE}
+    METRICS_HANDLER.init_metrics()
+    chkpt.on_train_start(metrics=METRICS_HANDLER, maps=maps, state=state)
+    assert chkpt.metric_monitoring.mode == "max"
     assert (
         maps.training.splits[state.split_idx]
         .models.best_models.metrics["psnr"]
         .path.is_dir()
     )
-    with pytest.raises(KeyError, match="'psnr' not found in the computed metrics!"):
-        METRICS_HANDLER.config.metrics = {"mae": MAE}
-        chkpt.on_validation_start(metrics=METRICS_HANDLER)
-    METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mae": MAE}
-    chkpt.on_validation_start(metrics=METRICS_HANDLER)
-    assert chkpt.metric_monitoring.mode == "max"
 
     chkpt = ModelCheckpointCallback(metric="mae", epochs=range(1, 3))
-    METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mae": MAE}
-    chkpt.on_validation_start(metrics=METRICS_HANDLER)
+    chkpt.on_train_start(metrics=METRICS_HANDLER, maps=maps, state=state)
     assert chkpt.metric_monitoring.mode == "min"
 
 
@@ -147,18 +147,18 @@ def test_on_train_start(tmp_path):
     model.state_dict.return_value = {}
     chkpt = ModelCheckpointCallback(metric="psnr")
 
-    chkpt.on_train_start(maps=maps, state=state)
     METRICS_HANDLER.config.metrics = {"psnr": PSNR}
+    METRICS_HANDLER.init_metrics()
+    chkpt.on_train_start(maps=maps, state=state, metrics=METRICS_HANDLER)
     METRICS_HANDLER._df = METRICS
     METRICS_HANDLER._detailed_df = DETAILED_METRICS
-    chkpt.on_validation_start(metrics=METRICS_HANDLER)
     chkpt.on_validation_end(
         model=model,
         maps=maps,
         state=state,
         metrics=METRICS_HANDLER,
     )
-    chkpt.on_train_start(maps=maps, state=state)
+    chkpt.on_train_start(maps=maps, state=state, metrics=METRICS_HANDLER)
     assert chkpt.metric_monitoring.best == -np.inf
 
 
@@ -172,18 +172,18 @@ def test_metric(tmp_path):
     expected_state_dict_1 = {"abc": [1]}
     model.state_dict.return_value = expected_state_dict_1
     chkpt = ModelCheckpointCallback(metric="psnr")
-    chkpt.on_train_start(maps=maps, state=state)
-    metric_dir = maps.training.splits[state.split_idx].models.best_models.metrics[
-        "psnr"
-    ]
     METRICS_HANDLER.config.metrics = {"psnr": PSNR}
-    chkpt.on_validation_start(metrics=METRICS_HANDLER)
+    METRICS_HANDLER.init_metrics()
+    chkpt.on_train_start(maps=maps, state=state, metrics=METRICS_HANDLER)
     chkpt.on_validation_end(
         model=model,
         maps=maps,
         state=state,
         metrics=METRICS_HANDLER,
     )
+    metric_dir = maps.training.splits[state.split_idx].models.best_models.metrics[
+        "psnr"
+    ]
     compare_files(
         maps,
         metric_dir,
@@ -227,9 +227,9 @@ def test_metric(tmp_path):
 
     # with mode = "min"
     chkpt = ModelCheckpointCallback(metric="mae")
-    chkpt.on_train_start(maps=maps, state=state)
     METRICS_HANDLER.config.metrics = {"mae": MAE}
-    chkpt.on_validation_start(metrics=METRICS_HANDLER)
+    METRICS_HANDLER.init_metrics()
+    chkpt.on_train_start(maps=maps, state=state, metrics=METRICS_HANDLER)
     metric_dir = maps.training.splits[state.split_idx].models.best_models.metrics["mae"]
 
     model.state_dict.return_value = expected_state_dict_1
@@ -391,9 +391,9 @@ def test_from_dict_to_dict(tmp_path):
     assert new_chkpt.config.epochs == [1, 2]
     assert not new_chkpt.config.save_last
 
-    chkpt.on_train_start(maps=maps, state=state)
     METRICS_HANDLER.config.metrics = {"psnr": PSNR}
-    chkpt.on_validation_start(metrics=METRICS_HANDLER)
+    METRICS_HANDLER.init_metrics()
+    chkpt.on_train_start(maps=maps, state=state, metrics=METRICS_HANDLER)
 
     new_chkpt = ModelCheckpointCallback.from_dict(chkpt.to_dict())
     assert new_chkpt.metric_monitoring.name == "psnr"
@@ -413,12 +413,11 @@ def test_state_dict(tmp_path):
     chkpt.load_state_dict(state_dict)
 
     chkpt = ModelCheckpointCallback(metric="psnr")
-    chkpt.on_train_start(maps=maps, state=state)
-    assert (state_dict := chkpt.state_dict()) == dict()
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR}
+    METRICS_HANDLER.init_metrics()
+    chkpt.on_train_start(maps=maps, state=state, metrics=METRICS_HANDLER)
     chkpt.load_state_dict(state_dict)
 
-    METRICS_HANDLER.config.metrics = {"psnr": PSNR}
-    chkpt.on_validation_start(metrics=METRICS_HANDLER)
     chkpt.on_validation_end(
         model=model,
         maps=maps,
@@ -426,10 +425,6 @@ def test_state_dict(tmp_path):
         metrics=METRICS_HANDLER,
     )
     state_dict = chkpt.state_dict()
-
-    new_chkpt = ModelCheckpointCallback(metric="psnr")
-    new_chkpt.load_state_dict(state_dict)
-    assert new_chkpt.metric_monitoring is None
 
     new_chkpt = ModelCheckpointCallback.from_dict(chkpt.to_dict())
     new_chkpt.load_state_dict(state_dict)

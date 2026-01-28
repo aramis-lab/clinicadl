@@ -13,6 +13,7 @@ from .implemented import (
     ChecksCallback,
     ConfigSaverCallback,
     LoggerCallback,
+    MetricsSaverCallback,
     ModelCheckpointCallback,
     MonitorCallback,
     TrainingCheckpointCallback,
@@ -27,7 +28,7 @@ FIRST = [
     ConfigSaverCallback,
     MonitorCallback,
 ]
-LAST = [ModelCheckpointCallback, TrainingCheckpointCallback]
+LAST = [TrainingCheckpointCallback]
 ONLY_ONE = [
     LoggerCallback,
     ChecksCallback,
@@ -37,7 +38,12 @@ ONLY_ONE = [
     TrainingCheckpointCallback,
 ]
 
-MANDATORY = [ChecksCallback(), ConfigSaverCallback(), TrainingLossCallback()]
+MANDATORY = [
+    ChecksCallback(),
+    ConfigSaverCallback(),
+    TrainingLossCallback(),
+    MetricsSaverCallback(),
+]
 DEFAULT = [
     LoggerCallback(),
     MonitorCallback(),

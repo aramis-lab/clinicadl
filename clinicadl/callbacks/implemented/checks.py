@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, TypeVar, Union
 
 import pandas as pd
 import torch
 
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader import Batch, BatchType, DataLoaderConfig
 from clinicadl.data.dataloader.config import get_dataloader_from_json_safely
 from clinicadl.data.datasets.factory import get_dataset_from_json_safely
 from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
@@ -44,6 +45,7 @@ class ChecksCallback(Callback):
         self._check_data_leakage = _CheckDataLeakage()
         self._check_losses = _CheckLosses()
         self._check_data_consistency = _CheckDataConsistency()
+        self._check_batch = _CheckBatch()
 
     def on_train_start(self, **kwargs) -> None:
         self._check_inputs.on_train_start(**kwargs)
@@ -51,29 +53,37 @@ class ChecksCallback(Callback):
         self._check_dataframes.on_train_start(**kwargs)
         self._check_data_leakage.on_train_start(**kwargs)
         self._check_data_consistency.on_train_start(**kwargs)
+        self._check_batch.on_train_start(**kwargs)
+
+    def on_resume(self, **kwargs) -> None:
+        self._check_inputs.on_resume(**kwargs)
+        self._check_dataframes.on_resume(**kwargs)
+        self._check_data_consistency.on_resume(**kwargs)
+        self._check_batch.on_resume(**kwargs)
+
+    def on_batch_start(self, **kwargs) -> None:
+        self._check_batch.on_batch_start(**kwargs)
 
     def on_backward_step_start(self, **kwargs) -> None:
         self._check_losses.on_backward_step_start(**kwargs)
 
     def on_validate_start(self, **kwargs) -> None:
+        self._check_dataframes.on_validate_start(**kwargs)
         self._check_data_consistency.on_validate_start(**kwargs)
+        self._check_batch.on_validate_start(**kwargs)
 
     def on_test_start(self, **kwargs) -> None:
         self._check_inputs.on_test_start(**kwargs)
         self._check_dataframes.on_test_start(**kwargs)
         self._check_data_leakage.on_test_start(**kwargs)
         self._check_data_consistency.on_test_start(**kwargs)
+        self._check_batch.on_test_start(**kwargs)
 
     def on_predict_start(self, **kwargs) -> None:
         self._check_inputs.on_predict_start(**kwargs)
         self._check_dataframes.on_predict_start(**kwargs)
         self._check_data_consistency.on_predict_start(**kwargs)
-
-    def state_dict(self) -> Mapping[str, Any]:
-        return {}
-
-    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
-        pass
+        self._check_batch.on_predict_start(**kwargs)
 
 
 class _CheckInputs:
@@ -81,15 +91,10 @@ class _CheckInputs:
     Various checks on user inputs.
     """
 
-    def on_train_start(self, *, maps: Maps, split: Split, **kwargs) -> None:
+    def on_train_start(self, *, split: Split, **kwargs) -> None:
         """
         Checks the split index and that dataloaders have been instantiated in the splits.
         """
-        if split.index in maps.training.splits_list:
-            raise ValueError(
-                f"Training on split {split.index}. To relaunch a training on this split, first delete it properly with clinicadl.io.Maps.delete_split"
-            )
-
         if split.train_loader is None:
             raise RuntimeError(
                 "The split has no training dataloder defined. Please run 'build_train_loader'"
@@ -98,6 +103,9 @@ class _CheckInputs:
             raise RuntimeError(
                 "The split has no validation dataloder defined. Please run 'build_val_loader'"
             )
+
+    def on_resume(self, *, split: Split, **kwargs) -> None:
+        self.on_train_start(split=split)
 
     def on_test_start(
         self,
@@ -137,8 +145,8 @@ class _CheckInputs:
 
         if chkpt in dir_.groups[group_name].results.splits[split_idx].models_list:
             raise FileExistsError(
-                f"There are already some results for checkpoint '{chkpt}' in {dir_.groups[group_name].results.splits[split_idx].path}. "
-                f"Set overwrite=True in Trainer.{'test' if test else 'predict'} to overwrite them."
+                f"There are already some results for checkpoint '{chkpt}' in {dir_.groups[group_name].results.splits[split_idx].models[chkpt].path}. "
+                f"If you want to continue, please first delete the folder."
             )
 
 
@@ -213,6 +221,20 @@ class _CheckDataFrames:
         """
         self._check_df(split.train_dataset.df)
         self._check_df(split.val_dataset.df)
+
+    def on_resume(self, *, split: Split, **kwargs) -> None:
+        self.on_train_start(split=split)
+
+    def on_validate_start(
+        self,
+        *,
+        dataloader: DataLoader,
+        **kwargs,
+    ) -> None:
+        """
+        Checks the DataFrame of the validation dataset.
+        """
+        self._check_df(dataloader.dataset.df)
 
     def on_test_start(
         self,
@@ -323,6 +345,58 @@ class _CheckDataConsistency:
                 old_group=split_idx,
                 stage="training",
             )
+
+    def on_resume(self, *, maps: Maps, split: Split, **kwargs) -> None:
+        """
+        Raises:
+        - error if the (participant, session) couples in the datasets are not the same as in the original datasets;
+        - warning if the datasets don't match with the original dataset (or cannot be compared);
+        - warning if the training dataloader doesn't match with the original dataloader (or cannot be compared).
+        """
+        self._compare_participants_sessions(
+            split.train_dataset,
+            maps.training.data.train.splits[split.index].data_tsv,
+            maps=maps,
+            stage="training",
+            group=split.index,
+        )
+        self._compare_participants_sessions(
+            split.val_dataset,
+            maps.training.data.validation.splits[split.index].data_tsv,
+            maps=maps,
+            stage="validation",
+            group=split.index,
+        )
+        self._compare(
+            split.train_dataset,
+            maps.training.data.train.splits[split.index].dataset_json,
+            getter=get_dataset_from_json_safely,
+            comparator=_compare_datasets,
+            new_group=split.index,
+            old_group=split.index,
+            stage="training",
+            resume=True,
+        )
+        self._compare(
+            split.val_dataset,
+            maps.training.data.validation.splits[split.index].dataset_json,
+            getter=get_dataset_from_json_safely,
+            comparator=_compare_datasets,
+            new_group=split.index,
+            old_group=split.index,
+            stage="validation",
+            resume=True,
+        )
+        self._compare(
+            split.config.train_loader_config,
+            maps.training.data.train.splits[split.index].dataloader_json,
+            getter=get_dataloader_from_json_safely,
+            comparator=_compare_dataloaders,
+            new_group=split.index,
+            old_group=split.index,
+            stage="training",
+            resume=True,
+        )
 
     def on_validate_start(
         self, *, maps: Maps, state: TrainerState, dataloader: DataLoader, **kwargs
@@ -448,6 +522,7 @@ class _CheckDataConsistency:
         new_group: Union[str, int],
         old_group: Union[str, int],
         stage: str,
+        resume: bool = False,
     ) -> None:
         """
         Compares a dataset (or dataloader) with one serialized in a file.
@@ -460,14 +535,18 @@ class _CheckDataConsistency:
             "old_group": str(old_group),
             "group_type": "split" if isinstance(new_group, int) else "group",
             "old_path": old_path,
-            "compared_with": f"of split-{new_group}"
+            "compared_with": "passed for resuming training"
+            if resume
+            else f"of split-{new_group}"
             if stage == "training" or stage == "validation"
             else f"passed to Trainer.{stage.replace('ion', '')}",
-            "across": "across splits"
+            "across": ""
+            if resume
+            else " across splits"
             if stage == "training" or stage == "validation"
-            else "in predictions"
+            else " in predictions"
             if stage == "prediction"
-            else f"in {stage.replace('validate', 'validation')} metrics",
+            else f" in {stage.replace('validate', 'validation')} metrics",
         }
 
         old, problematic_fields = getter(
@@ -477,7 +556,7 @@ class _CheckDataConsistency:
         if not old:
             logger.warning(
                 "Could not read the %(phase)s %(type)s of %(group_type)s-%(old_group)s (in %(old_path)s), and thus could not compare with the %(type)s %(compared_with)s. "
-                "Beware that differences between %(type)ss could lead to inconsistent results %(across)s.",
+                "Beware that differences between %(type)ss could lead to inconsistent results%(across)s.",
                 args,
             )
             return
@@ -485,13 +564,13 @@ class _CheckDataConsistency:
             args["problematic_fields"] = problematic_fields
             logger.warning(
                 "Could not read the arguments %(problematic_fields)s of the %(phase)s %(type)s of %(group_type)s-%(old_group)s (in %(old_path)s), and thus could not compare with the %(type)s %(compared_with)s. "
-                "Beware that differences between %(type)ss could lead to inconsistent results %(across)s.",
+                "Beware that differences between %(type)ss could lead to inconsistent results%(across)s.",
                 args,
             )
         if error_msg := comparator(new, old, problematic_fields):
             args["error_msg"] = error_msg
             logger.warning(
-                "The %(phase)s %(type)ss of %(group_type)s-%(old_group)s and the one %(compared_with)s are different: %(error_msg)s\nThis may lead to inconsistent results %(across)s.",
+                "The %(phase)s %(type)ss of %(group_type)s-%(old_group)s and the one %(compared_with)s are different: %(error_msg)s\nThis may lead to inconsistent results%(across)s.",
                 args,
             )
 
@@ -555,3 +634,59 @@ def _compare_datasets(
         columns_2 := set(old.config.columns)
     ):
         return f"the two datasets don't have the same columns or column processing. Got {columns_1} and {columns_2}"
+
+
+class _CheckBatch:
+    """
+    Checks that the batch is in a supported format.
+    """
+
+    def __init__(self):
+        self._checked = False
+
+    def on_train_start(self, **kwargs) -> None:
+        self._checked = False
+
+    def on_resume(self, **kwargs) -> None:
+        self._checked = False
+
+    def on_validate_start(self, **kwargs) -> None:
+        self._checked = False
+
+    def on_test_start(self, **kwargs) -> None:
+        self._checked = False
+
+    def on_predict_start(self, **kwargs) -> None:
+        self._checked = False
+
+    def on_batch_start(
+        self,
+        *,
+        batch: BatchType,
+        **kwargs,
+    ) -> None:
+        if self._checked:
+            return
+
+        if isinstance(batch, Batch):
+            self._checked = True
+            return
+        elif isinstance(batch, Sequence):
+            for b in batch:
+                if not isinstance(b, Batch):
+                    break
+            else:
+                self._checked = True
+                return
+        elif isinstance(batch, dict):
+            for b in batch.values():
+                if not isinstance(b, Batch):
+                    break
+            else:
+                self._checked = True
+                return
+
+        raise ValueError(
+            "The batch returned by your dataloader can be either a Batch, a sequence of Batch, "
+            f"or a dict or Batch. Got: {batch}"
+        )

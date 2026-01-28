@@ -80,6 +80,35 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
             last_saved_epoch = self._get_last_saved_epoch(maps, state.split_idx)
             logger.error("Last checkpoint at the end of epoch %d", last_saved_epoch)
 
+    def on_resume(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        metrics: MetricsHandler,
+        callbacks: CallbacksHandler,
+        optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler,
+        **kwargs,
+    ) -> None:
+        tmp_dir = maps.training.splits[state.split_idx].tmp
+        last_saved_epoch = self._get_last_saved_epoch(maps, split_idx=state.split_idx)
+        logger.info("Loading checkpoints from epoch %d", last_saved_epoch)
+        chkpt_dir = tmp_dir.epochs[last_saved_epoch]
+
+        state.load_state_dict(maps.open_file(chkpt_dir.state_json))
+        model.load_state_dict(maps.open_file(chkpt_dir.model_pt))
+        opt_state_dicts = maps.open_file(chkpt_dir.optimizer_pt)
+        for opt_name, opt in optimizers.items():
+            opt.load_state_dict(opt_state_dicts[opt_name])
+        grad_scaler.load_state_dict(maps.open_file(chkpt_dir.scaler_pt))
+        metrics.load(
+            chkpt_dir.validation_metrics.aggregated_tsv,
+            details_path=chkpt_dir.validation_metrics.details_tsv,
+        )
+        self._load_callbacks(callbacks, chkpt_dir=chkpt_dir, maps=maps)
+
     def on_optimization_step_end(
         self,
         *,
@@ -131,45 +160,6 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
     ) -> None:
         if maps.training.splits[state.split_idx].tmp.path.exists():
             maps.training.splits[state.split_idx].tmp.clear()
-
-    def state_dict(self) -> Mapping[str, Any]:
-        return {}
-
-    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
-        pass
-
-    @classmethod
-    def load_checkpoint(
-        cls,
-        *,
-        model: Model,
-        maps: Maps,
-        state: TrainerState,
-        metrics: MetricsHandler,
-        callbacks: CallbacksHandler,
-        optimizers: dict[str, torch.optim.Optimizer],
-        grad_scaler: torch.amp.GradScaler,
-    ) -> None:
-        """
-        Loads the last saved checkpoints and reset the objects to the associated
-        states.
-        """
-        tmp_dir = maps.training.splits[state.split_idx].tmp
-        last_saved_epoch = cls._get_last_saved_epoch(maps, split_idx=state.split_idx)
-        logger.info("Loading checkpoints from epoch %d", last_saved_epoch)
-        chkpt_dir = tmp_dir.epochs[last_saved_epoch]
-
-        state.load_state_dict(maps.open_file(chkpt_dir.state_json))
-        model.load_state_dict(maps.open_file(chkpt_dir.model_pt))
-        opt_state_dicts = maps.open_file(chkpt_dir.optimizer_pt)
-        for opt_name, opt in optimizers.items():
-            opt.load_state_dict(opt_state_dicts[opt_name])
-        grad_scaler.load_state_dict(maps.open_file(chkpt_dir.scaler_pt))
-        metrics.load(
-            chkpt_dir.validation_metrics.aggregated_tsv,
-            details_path=chkpt_dir.validation_metrics.details_tsv,
-        )
-        cls._load_callbacks(callbacks, chkpt_dir=chkpt_dir, maps=maps)
 
     def _save_callbacks(self, chkpt_dir: EpochTmpDir, maps: Maps) -> None:
         """

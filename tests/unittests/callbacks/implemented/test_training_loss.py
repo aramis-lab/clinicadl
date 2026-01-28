@@ -91,10 +91,6 @@ def test_on_train_end(tmp_path):
 
 def test_state_dict():
     training_loss = TrainingLossCallback()
-    state_dict = training_loss.state_dict()
-    new_training_loss = TrainingLossCallback()
-    new_training_loss.load_state_dict(state_dict)
-
     training_loss.df = pd.DataFrame(
         {
             "epoch": [4],

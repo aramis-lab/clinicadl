@@ -389,26 +389,31 @@ def test_save_and_merge_df(tmp_path):
 
     metrics(BATCH_1, epoch=0)
     metrics.aggregate(epoch=0)
+    metrics(BATCH_1, epoch=1)
+    metrics.aggregate(epoch=1)
     metrics.merge(tmp_path / "df.tsv", details_path=tmp_path / "detailed_df.tsv")
 
     df = pd.read_csv(tmp_path / "df.tsv", sep="\t")
     expected_df = pd.DataFrame.from_dict(
         {
-            "epoch": [0],
-            "mse": pd.Series([0.333333]),
-            "my_metric": pd.Series([0.666666]),
+            "epoch": [0, 1],
+            "mse": pd.Series([0.333333, float("nan")]),
+            "my_metric": pd.Series([0.666666, 0.666666]),
         }
     )
-    pd.testing.assert_frame_equal(df, expected_df)
+    pd.testing.assert_frame_equal(
+        df,
+        expected_df,
+    )
 
     df = pd.read_csv(tmp_path / "detailed_df.tsv", sep="\t")
     expected_df = pd.DataFrame.from_dict(
         {
-            "epoch": [0, 0, 0],
-            "participant_id": [f"sub-{i}" for i in range(3)],
-            "session_id": [f"ses-{i}" for i in range(3)],
-            "mse": pd.Series([0.0, 1.0, 0.0]),
-            "my_metric": pd.Series([1.0, 0.0, 1.0]),
+            "epoch": [0, 0, 0, 1, 1, 1],
+            "participant_id": [f"sub-{i}" for i in range(3)] * 2,
+            "session_id": [f"ses-{i}" for i in range(3)] * 2,
+            "mse": pd.Series([0.0, 1.0, 0.0, float("nan"), float("nan"), float("nan")]),
+            "my_metric": pd.Series([1.0, 0.0, 1.0, 1.0, 0.0, 1.0]),
         }
     )
     pd.testing.assert_frame_equal(df, expected_df)

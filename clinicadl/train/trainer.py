@@ -1,40 +1,39 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Iterator, Optional
 
-import pandas as pd
 import torch
-from monai.metrics.metric import CumulativeIterationMetric as MonaiMetric
-from torch.amp import GradScaler
 from torch.amp.autocast_mode import autocast
 
-from clinicadl.callbacks.handler import Callback, _CallbacksHandler
-from clinicadl.data.dataloader import Batch, BatchType, DataLoader
-from clinicadl.data.datasets import CapsDataset, Dataset
+from clinicadl.callbacks import CallbacksHandler, TrainingCheckpointCallback
+from clinicadl.callbacks.base import Events
+from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.datasets.factory import get_dataset_from_json
 from clinicadl.io.maps.maps import Maps
-from clinicadl.io.maps.training.splits.models import ModelDir
-from clinicadl.losses.config import LossConfig
-from clinicadl.losses.types import Loss
-from clinicadl.metrics.config import LossMetricConfig, MetricConfig
-from clinicadl.metrics.handler import LossMetricConfig, MetricsHandler
-from clinicadl.metrics.types import MetricOrConfig
-from clinicadl.modelss import Model
+from clinicadl.metrics import MetricsHandler
+from clinicadl.metrics.config import LossMetricConfig
 from clinicadl.optim.config import OptimizationConfig
-from clinicadl.predictor.predictor import Predictor
-from clinicadl.split.split import Split
 from clinicadl.train.computational import ComputationalConfig
-from clinicadl.train.trainer_state import TrainerStage, TrainerState
-from clinicadl.transforms.handlers import Postprocessing, Transforms
-from clinicadl.utils.dictionary.utils import SEP
-from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError, DataLeakageError
-from clinicadl.utils.json import write_json
-from clinicadl.utils.names import camel_to_snake
+from clinicadl.train.trainer_state import TrainerState
+from clinicadl.utils.dictionary.words import CPU
+from clinicadl.utils.exceptions import CannotReadJsonError
 from clinicadl.utils.seed import seed_everything
-from clinicadl.utils.typing import PathType
+
+if TYPE_CHECKING:
+    from torch.amp import GradScaler
+    from torch.optim import Optimizer
+
+    from clinicadl.callbacks import Callback
+    from clinicadl.data.dataloader import Batch, BatchType, DataLoader
+    from clinicadl.data.datasets import Dataset
+    from clinicadl.io.maps.training.splits.models import TrainingModelDir
+    from clinicadl.io.maps.utils import DataDir
+    from clinicadl.metrics.types import MetricOrConfig
+    from clinicadl.models import Model
+    from clinicadl.split.split import Split
+    from clinicadl.utils.typing import PathType
 
 
 class Trainer:
@@ -93,152 +92,120 @@ class Trainer:
         },
         optimization: OptimizationConfig = OptimizationConfig(),
         callbacks: Optional[list[Callback]] = None,
-        _overwrite: bool = False,
+        overwrite: bool = False,
     ) -> None:
-        maps = Maps(maps_path)
-        if not resume:
-            train_metrics = MetricsHandler(**metrics)
+        self._maps = Maps(maps_path)
+        self._maps.create(overwrite=overwrite)
 
-            self.callbacks = _CallbacksHandler(
-                metrics=train_metrics,
-                callbacks=callbacks if callbacks is not None else [],
-            )
-            maps.create(overwrite=_overwrite)
+        self._model = model
+        self._metrics = MetricsHandler(**metrics)
+        self._metrics.init_metrics(self._model)
+        self._callbacks = CallbacksHandler(callbacks=callbacks if callbacks else [])
+        self._optim_config = optimization
 
-            model.write_json(maps.model_json)
-            model.write_architecture_log(maps.architecture_log)
+        self._state = TrainerState()
 
-            self.callbacks.write_json(maps.training.callbacks_json)
-            train_metrics.write_json(maps.training.metrics_json)
-            comp_config.write_json(maps.training.computational_json)
-            optim_config.write_json(maps.training.optimization_json)
-
-        else:
-            maps.load()
-            train_metrics = MetricsHandler.from_json(maps.training.metrics_json)
-            self.callbacks = _CallbacksHandler.from_json(maps.training.callbacks_json)
-            optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
-            comp_config = ComputationalConfig.from_json(
-                maps.training.computational_json
-            )
-            model = Model.from_json(maps.model_json)
-
-        self._state: TrainerState = TrainerState(num_epochs=self._optim_config.epochs)
-
-        self._model: Model = model
-        self._maps: Maps = maps
-        self._metrics_handler: MetricsHandler = MetricsHandler(**metrics)
-        self._metrics_handler.init_metrics(self._model)
-
-        self._optim_config: OptimizationConfig = optim_config
-
-        seed_everything(seed=seed, deterministic=False, compensation="memory")
+        self._call_event(
+            Events.INIT,
+            metrics=self._metrics,
+            optimization=self.optimization,
+            callbacks=self.callbacks,
+        )
 
     @property
-    def model(self):
-        return self._model
-
-    @property
-    def maps(self):
+    def maps(self) -> Maps:
         return self._maps
 
     @property
-    def metrics(self):
-        return list(self._metrics_handler.metrics.keys())
+    def model(self) -> Model:
+        return self._model
+
+    # @property
+    # def metrics(self) -> MetricsHandler:
+    #     return self._metrics
 
     @property
-    def optimization_config(self) -> OptimizationConfig:
+    def callbacks(self) -> CallbacksHandler:
+        return self._callbacks
+
+    @property
+    def optimization(self) -> OptimizationConfig:
         return self._optim_config
 
     @property
     def state(self) -> TrainerState:
         return self._state
 
-    @classmethod
-    def from_maps(cls, maps_path: PathType):
-        maps = Maps(maps_path)
-        maps.read()
+    def add_metrics(self, **metrics: MetricOrConfig) -> None:
+        self._metrics.add_metrics(**metrics)
+        self._metrics.to_json(self._maps.metrics_json, overwrite=True)
 
-        model = Model.from_json(maps.model_json)
-        optim_config = OptimizationConfig.from_json(maps.training.optimization_json)
-        metrics = MetricsHandler.from_json(maps.metrics_json)
-        callbacks = _CallbacksHandler.from_json(maps.training.callbacks_json)
-
-        # TODO : check seed ?
-
-        return cls(
-            maps_path=maps_path,
-            model=model,
-            callbacks=callbacks,
-            metrics=metrics,  # type: ignore
-            optim_config=optim_config,
-        )
-
-    def reset(self):
-        self.state = TrainerState()
-        self._metrics_handler.reset(reset_df=True)
-
-    def add_callbacks(self, callbacks: Sequence[Callback]):
-        pass
-
-    def add_metrics(self, metrics: dict[str, MetricOrConfig]):
-        self._metrics_handler.add_metrics(**metrics)
+    def add_callbacks(self, callbacks: Sequence[Callback]) -> None:
+        self._callbacks.add_callbacks(callbacks)
+        self._metrics.to_json(self._maps.callbacks_json, overwrite=True)
 
     def train(
         self,
         split: Split,
-        resume: bool = False,
         computational: ComputationalConfig = ComputationalConfig(),
-        reset: bool = True,
+        metrics: Optional[Sequence[str]] = None,
+        resume: bool = False,
     ) -> None:
-        """
-        Run the training loop over the given data split.
-
-        Parameters
-        ----------
-        split : Split
-            The data split containing training and validation DataLoaders.
-        """
-        # seed?
+        """ """
         self.maps.read()
-        self._check_split(split)
-        self.model.train()  # reset model
-        self.model.to(
-            computational.device,
-            non_blocking=computational.non_blocking,
-            memory_format=torch.channels_last_3d,
-        )
-        split.train_loader.eval()
-        self.reset()
-        scaler = computational.get_scaler()
-        self._write_training_infos(split=split)
+        self._create_split(split.index)
 
-        self._call_event(
-            "on_train_start",
-            split=split,
-            computational=computational,
-            optimization=self.optimization_config,
-            resume=resume,
-        )
+        if metrics:
+            metrics_handler = self._metrics.subset(metrics)
+        else:
+            metrics_handler = self._metrics
 
-        for epoch in range(1, self.state.num_epochs + 1):
+        self._reset_train(split=split, seed=computational.seed, metrics=metrics_handler)
+        self._model_to(computational)
+
+        optimizers = self.model.build_optimizers()
+        grad_scaler = computational.get_scaler()
+
+        if resume:
+            self._call_event(
+                Events.RESUME,
+                split=split,
+                optimizers=optimizers,
+                grad_scaler=grad_scaler,
+                optimization=self.optimization,
+                metrics=metrics_handler,
+                callbacks=self.callbacks,
+                computational=computational,
+            )
+        else:
+            self._call_event(
+                Events.TRAIN_START,
+                split=split,
+                optimizers=optimizers,
+                optimization=self.optimization,
+                metrics=metrics_handler,
+                callbacks=self.callbacks,
+                computational=computational,
+            )
+
+        for epoch in range(
+            self.state.current_epoch + 1, self.optimization.num_epochs + 1
+        ):
             if self.state.should_stop:
                 break
 
-            split.train_loader.set_epoch(epoch)
+            self._reset_epoch(epoch, train_loader=split.train_loader)
 
-            self.state.reset_epoch(current_epoch=epoch, train_loader=split.train_loader)
-
-            self._call_event("on_epoch_start")
+            self._call_event(Events.EPOCH_START)
 
             for batch_idx, batch in enumerate(split.train_loader, start=1):
                 self.state.current_train_batch = batch_idx
 
-                self._call_event("on_batch_start")
+                self._call_event(Events.BATCH_START, batch=batch)
 
-                self._send_to_device(batch)
+                self._batch_to(batch, computational=computational)
 
-                self._call_event("on_forward_step_start", batch=batch)
+                self._call_event(Events.FORWARD_START, batch=batch)
 
                 with autocast(
                     device_type=computational.device.type,
@@ -247,327 +214,334 @@ class Trainer:
                     loss = self.model.forward_step(batch=batch)
 
                 self._call_event(
-                    "on_backward_step_start", loss=loss, grad_scaler=scaler
+                    Events.BACKWARD_START, loss=loss, grad_scaler=grad_scaler
                 )
 
-                self.model.backward_step(loss, grad_scaler=scaler)
+                self.model.backward_step(loss, grad_scaler=grad_scaler)
 
-                self._call_event("on_backward_step_end")
+                self._call_event(Events.BACKWARD_END)
 
-                if batch_idx % self.optimization_config.accumulation_steps == 0:
+                if batch_idx % self.optimization.accumulation_steps == 0:
                     self._call_event(
-                        "on_optimization_step_start",
-                        optimizers=self.model.get_optimizers(),
-                        grad_scaler=scaler,
+                        Events.OPTIM_STEP_START,
+                        optimizers=optimizers,
+                        grad_scaler=grad_scaler,
                     )
 
-                    self.model.optimization_step(grad_scaler=scaler)
+                    self.model.optimization_step(grad_scaler=grad_scaler)
                     self.state.optim_step += 1
 
-                    scaler.update()
-                    for optimizer in self.model.get_optimizers().values():
+                    grad_scaler.update()
+                    for optimizer in optimizers.values():
                         optimizer.zero_grad(set_to_none=True)
 
                     self._call_event(
-                        "on_optimization_step_end",
-                        optimizers=self.model.get_optimizers(),
-                        grad_scaler=scaler,
+                        Events.OPTIM_STEP_END,
+                        optimizers=optimizers,
+                        grad_scaler=grad_scaler,
                     )
 
-                self._call_event("on_batch_end")
+                self._call_event(Events.BATCH_END)
 
             if (
-                self.state.current_epoch - 1 % self.optimization_config.evaluation_steps
+                self.state.current_epoch
+                - 1
+                % self.optimization.evaluation_steps  # always validate the first epoch
                 == 0
             ):
-                self._validation(split.val_loader)
-
-                self._metrics_handler.save(
-                    path=self.maps.training.splits[
-                        split.index
-                    ].validation_metrics.aggregated,
-                    details_path=self.maps.training.splits[
-                        split.index
-                    ].validation_metrics.aggregated,
+                self._validation(
+                    split.val_loader,
+                    metrics=metrics_handler,
+                    computational=computational,
                 )
 
-            self._call_event("on_epoch_end")
+            self._call_event(Events.EPOCH_END)
 
-            self._save_checkpoint()
-
-            if self.state.current_epoch == self.state.num_epochs:
-                self.state.should_stop = True
-
-        self._write_end_training_infos(split=split)
-
-        self._call_event("on_train_end")
-
-        self.maps.training.splits[split.index].tmp.clear()
+        self._call_event(Events.TRAIN_END)
 
     def validate(
         self,
         split_idx: int,
-        val_loader: Optional[DataLoader],
+        metrics: Sequence[str],
+        dataloader: Optional[DataLoader] = None,
         model_checkpoint: Optional[str] = None,
-        metrics: Optional[Sequence[str]] = None,
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
         """
         Evaluate the model on a validation or test dataset.
         """
         self.maps.read()
-        _get_dataloader()
-        self._check_split(split, only_val=True)
-        self._check_metrics(metrics)
+        self._check_split(split_idx)
 
-        checkpoint_path = self._read_checkpoint_name(model_checkpoint)
-        self._load_model_checkpoint(checkpoint_path.model)
+        if not dataloader:
+            dataloader = self._get_dataloader(
+                self.maps.training.data.validation.splits[split_idx]
+            )
 
-        self.model.to(computational.device, non_blocking=computational.non_blocking)
+        metrics_handler = self._metrics.subset(metrics)
 
-        self._validate(
-            split,
-            metrics=metrics,
-            computational=computational,
-            model_checkpoint=model_checkpoint,
-        )
+        for chkpt_name, chkpt in self._get_models_in_split(split_idx, model_checkpoint):
+            self._reset_validate(split_idx, dataloader, metrics_handler)
+            self._load_model_checkpoint(chkpt)
+            self._model_to(computational)
 
-        self._metrics_handler.merge(
-            path=checkpoint_path.validation_metrics.aggregated,
-            details_path=checkpoint_path.validation_metrics.aggregated,
-        )
+            self._call_event(
+                Events.VALIDATE_START,
+                dataloader=dataloader,
+                model_checkpoint=chkpt_name,
+                metrics=metrics_handler,
+                callbacks=self.callbacks,
+                computational=computational,
+            )
+
+            self._evaluation_loop(
+                dataloader,
+                metrics=metrics_handler,
+                computational=computational,
+            )
+
+            self._call_event(
+                Events.VALIDATE_END,
+                metrics=metrics_handler,
+            )
 
     def test(
         self,
-        dataloader: DataLoader,
         model_checkpoint: str,
+        metrics: Sequence[str],
         group_name: str,
-        metrics: Optional[Sequence[str]] = None,
-        save_outputs: bool = False,
+        dataloader: Optional[DataLoader] = None,
         computational: ComputationalConfig = ComputationalConfig(),
-        overwrite: bool = False,
     ) -> None:
         """
         Evaluate the model on a validation or test dataset.
         """
         self.maps.read()
-        self._check_metrics(metrics)
 
-        checkpoint_path = self._read_checkpoint_name(model_checkpoint)
-        if overwrite:
-            "delete old results"
-        self._load_model_checkpoint(checkpoint_path.model)
+        if not dataloader:
+            self._check_group_exists(group_name)
+            dataloader = self._get_dataloader(self.maps.test.groups[group_name])
 
-        self.maps.predictions.groups[group_name].results.create_model(model)
+        self.maps.test.create_group(group_name, exist_ok=True)
 
-        self._reset_test()
+        metrics_handler = self._metrics.subset(metrics)
+
+        self._reset_test(dataloader, metrics_handler)
+        self._load_model_checkpoint(
+            self.maps.training.get_checkpoint_dir(model_checkpoint)
+        )
+        self._model_to(computational)
 
         self._call_event(
-            "on_test_start",
+            Events.TEST_START,
             dataloader=dataloader,
             model_checkpoint=model_checkpoint,
+            metrics=metrics_handler,
             group_name=group_name,
+            callbacks=self.callbacks,
             computational=computational,
         )
 
-        self._evaluation_loop(dataloader)
-
-        self._call_event(
-            "on_test_end",
-            metrics=self._metrics_handler.df,
-            detailed_metrics=self._metrics_handler.detailed_df,
-        )
-
-        self._metrics_handler.save(
-            path=self.maps.predictions.groups[group_name]
-            .results.models[model]
-            .metrics.aggregated,
-            details_path=self.maps.predictions.groups[group_name]
-            .results.models[model]
-            .metrics.details,
-        )
-
-    def predict(
-        self,
-        dataloader: DataLoader,
-        model_checkpoint: str,
-        group_name: str,
-        computational: ComputationalConfig = ComputationalConfig(),
-        overwrite: bool = False,
-    ) -> None:
-        """
-        Predict
-        """
-        self.maps.read()
-
-        self._call_event(
-            "on_prediction_start",
-            dataloader=dataloader,
-            model_checkpoint=model_checkpoint,
-            group_name=group_name,
-            computational=computational,
+        self._evaluation_loop(
+            dataloader, metrics=metrics_handler, computational=computational
         )
 
         self._call_event(
-            "on_prediction_end",
+            Events.TEST_END,
+            metrics=metrics_handler,
         )
 
     def _validation(
         self,
         dataloader: DataLoader,
-        metrics: Optional[Sequence[str]],
+        metrics: MetricsHandler,
         computational: ComputationalConfig,
-        model_checkpoint: Optional[str] = None,
     ) -> None:
-        self._reset_validation()
+        self._reset_validation(dataloader, metrics)
 
         self._call_event(
-            "on_validation_start",
-            split=split,
-            model_checkpoint=model_checkpoint,
+            Events.VAL_START,
+            dataloader=dataloader,
+            metrics=metrics,
+            callbacks=self.callbacks,
             computational=computational,
         )
 
-        self._evaluation_loop(split.val_loader, metrics=metrics)
+        self._evaluation_loop(
+            dataloader,
+            metrics=metrics,
+            epoch=self.state.current_epoch,
+            computational=computational,
+        )
 
         self._call_event(
-            "on_validation_end",
-            metrics=self._metrics_handler.df,
-            detailed_metrics=self._metrics_handler.detailed_df,
+            Events.VAL_END,
+            metrics=metrics,
         )
 
     def _evaluation_loop(
-        self, dataloader: DataLoader, metrics: Optional[Sequence[str]] = None
+        self,
+        dataloader: DataLoader,
+        metrics: MetricsHandler,
+        computational: ComputationalConfig,
+        epoch: Optional[int] = None,
     ) -> None:
-        self.model.eval()
-        dataloader.dataset.eval()
-
         with torch.no_grad():
-            for batch_idx, batch in enumerate(dataloader):
+            for batch_idx, batch in enumerate(dataloader, start=1):
                 self.state.current_val_batch = batch_idx
 
-                self._send_to_device(batch)
+                self._call_event(Events.BATCH_START, batch=batch)
 
-                self._call_event("on_evaluation_step_start", batch=batch)
+                self._batch_to(batch, computational=computational)
 
-                output_batch = self.model.evaluation_step(
-                    batch
-                )  # amp during evaluation?
+                self._call_event(Events.EVAL_START, batch=batch)
 
-                metrics = self._metrics_handler(
+                output_batch = self.model.evaluation_step(batch)
+
+                self._call_event(
+                    Events.EVAL_END,
+                    output=output_batch,
+                    detailed_metrics_df=metrics_df,
+                )
+
+                metrics_df = metrics(
                     output_batch, epoch=self.state.current_epoch, metrics=metrics
                 )
 
-                self._call_event(
-                    "on_evaluation_step_end",
-                    output=output_batch,
-                    metrics=metrics,
-                )
+                self._call_event(Events.BATCH_END)
 
-        self._metrics_handler.aggregate(epoch=self.state.current_epoch, metrics=metrics)
+        metrics.aggregate(epoch=epoch)
 
-    def _reset_resume(self) -> None:
-        self.state.current_train_batch = 0
-        self.state.current_val_batch = 0
-        # self.state.called = TrainerStage.TRAIN
-
-    def _reset_train(self, split: Split, num_epochs: int) -> None:
-        self.state.reset_training(split_idx=split.index, num_epochs=num_epochs)
-        self._metrics_handler.reset(reset_df=True)
-
-    def _reset_validation(self, split: Split) -> None:
-        self.state.reset_validation(
-            split_idx=split.index, val_loader=split.val_loader, in_training=True
+    def _reset_train(
+        self, split: Split, seed: Optional[int], metrics: MetricsHandler
+    ) -> None:
+        seed_everything(seed=seed, deterministic=False, compensation="memory")
+        self.state.reset_training(
+            split_idx=split.index, num_epochs=self._optim_config.num_epochs
         )
-        self._metrics_handler.reset(reset_df=False)
+        self.model.reset()
+        split.train_loader.dataset.train()
+        split.val_loader.dataset.eval()
+        metrics.reset(reset_df=True)
 
-    def _reset_validate(self, split: Split) -> None:
+    def _reset_epoch(self, epoch: int, train_loader: DataLoader) -> None:
+        self.state.reset_epoch(current_epoch=epoch, train_loader=train_loader)
+        self.model.train()
+        train_loader.set_epoch(epoch)
+
+    def _reset_validation(
+        self, val_loader: DataLoader, metrics: MetricsHandler
+    ) -> None:
         self.state.reset_validation(
-            split_idx=split.index, val_loader=split.val_loader, in_training=False
+            split_idx=self.state.split_idx, val_loader=val_loader, in_training=True
         )
-        self._metrics_handler.reset(reset_df=True)
+        self.model.eval()
+        metrics.reset(reset_df=False)
 
-    def _reset_test(self, dataloader: DataLoader) -> None:
-        self.state.reset_test(dataloader=dataloader)
-        self._metrics_handler.reset(reset_df=True)
+    def _reset_validate(
+        self, split_idx: int, dataloader: DataLoader, metrics: MetricsHandler
+    ) -> None:
+        self.state.reset_validation(
+            split_idx=split_idx, val_loader=dataloader, in_training=False
+        )
+        self.model.eval()
+        dataloader.dataset.eval()
+        metrics.reset(reset_df=True)
 
-    def _reset_prediction(self, dataloader: DataLoader) -> None:
-        self.state.reset_test(dataloader=dataloader)
+    def _reset_test(self, dataloader: DataLoader, metrics: MetricsHandler) -> None:
+        self.state.reset_test(dataloader)
+        self.model.eval()
+        dataloader.dataset.eval()
+        metrics.reset(reset_df=True)
 
-    def _get_all_models(
-        self, split_idx: int, final: bool, checkpoints: bool
-    ) -> list[ModelDir]:
-        models_path = self.maps.training.splits[split_idx].models
-
-        all_models = list(models_path.best_models.iterdir())
-
-        if final:
-            all_models.append(models_path.final)
-
-        if checkpoints:
-            all_models.extend(models_path.checkpoints.iterdir())
-
-    @staticmethod
-    def _model_to(model: torch.nn.Module, comp_config: ComputationalConfig) -> None:
-        model.to(device=comp_config.device, non_blocking=comp_config.non_blocking)
+    def _model_to(self, comp_config: ComputationalConfig) -> None:
+        self.model.to(device=comp_config.device, non_blocking=comp_config.non_blocking)
         if comp_config.channels_last:
             try:
-                model.to(torch.channels_last)
+                self.model.to(torch.channels_last)
             except RuntimeError:
-                model.to(torch.channels_last_3d)
+                self.model.to(torch.channels_last_3d)
 
-    @staticmethod
-    def _batch_to(data: BatchType) -> None:
+    @classmethod
+    def _batch_to(cls, batch: BatchType, computational: ComputationalConfig) -> None:
         """
         Send the data to the right device.
         """
-        if isinstance(data, Batch):
-            data.to(self.computational_config.device)
-        else:
-            for batch in data:
-                batch.to(self.computational_config.device)
+        if isinstance(batch, Batch):
+            batch.to(
+                device=computational.device,
+                non_blocking=computational.non_blocking,
+                channels_last=computational.channels_last,
+            )
+        elif isinstance(batch, dict):
+            for b in batch.values():
+                cls._batch_to(b, computational=computational)
+        else:  # batch has been checks by ChecksCallback, so it must be a sequence
+            for b in batch:
+                cls._batch_to(b, computational=computational)
 
-    def _call_event(self, event: str, **kwargs):
+    def _call_event(self, event: Events, **kwargs):
         self.callbacks.call_event(
             event, model=self.model, maps=self.maps, state=self.state, **kwargs
         )
 
+    def _get_models_in_split(
+        self, split_idx: int, model_checkpoint: Optional[str]
+    ) -> Iterator[tuple[str, Path]]:
+        if model_checkpoint:
+            yield (
+                model_checkpoint,
+                self.maps.training.splits[split_idx]
+                .models.get_checkpoint_dir(model_checkpoint)
+                .model_pt,
+            )
+        else:
+            for model_checkpoint in self.maps.training.splits[
+                split_idx
+            ].models.get_all_models():
+                yield from self._get_models_in_split(split_idx, model_checkpoint)
+
     def _load_model_checkpoint(self, model_path: Path) -> None:
-        self.model.to("cpu")  # load weights on cpu
+        self.model.to(CPU)  # load weights on cpu
         state_dict = self.maps.open_file(model_path)
         self.model.load_state_dict(state_dict)
 
-    def _check_metrics(self, metrics: Optional[Sequence[str]]) -> None:
-        if metric is not None:
-            for metric in metrics:
-                if metric not in self._metrics_handler.metrics:
-                    raise ValueError(
-                        f"'{metric}' does not match any metrics. Metrics defined are: {self.metrics} "
-                        "Use 'add_metrics' to define new metrics."
-                    )
+    def _get_dataloader(self, data_dir: DataDir) -> DataLoader:
+        def _error_msg(obj: str, path: Path) -> str:
+            return (
+                f"ClinicaDL could not read the {obj} in {path}. Please pass directly the dataloader "
+                "via 'dataloader'."
+            )
 
+        try:
+            dataset = get_dataset_from_json(data_dir.dataset_json)
+        except Exception as e:
+            raise CannotReadJsonError(
+                _error_msg("dataset", data_dir.dataset_json)
+            ) from e
 
-# def _get_dataloader():
-#     """
-#     Useful for validate, test and predict.
-#     """
-#     if not (
-#         _get_old_dataset(
-#             dataset_path := maps.training.data.validation.splits[
-#                 state.split_idx
-#             ].dataset_json
-#         )
-#     ):
-#         raise CannotReadJsonError(
-#             f"ClinicaDL could not read the validation dataset for split {state.split_idx} in {dataset_path}. Please pass "
-#             "the validation dataloader to Trainer.validate."
-#         )
-#     if not (
-#         _get_old_dataloader(
-#             dataloader_path := maps.training.data.validation.splits[state.split_idx].dataloader_json
-#         )
-#     ):
-#         raise CannotReadJsonError(
-#             f"ClinicaDL could not read the validation dataloader for split {state.split_idx} in {dataloader_path}. Please pass "
-#             "the validation dataloader to Trainer.validate."
-#         )
+        try:
+            dataloader_config = DataLoaderConfig.from_json(data_dir.dataloader_json)
+        except Exception as e:
+            raise CannotReadJsonError(
+                _error_msg("dataloader", data_dir.dataloader_json)
+            ) from e
+
+        return dataloader_config.get_object(dataset)
+
+    def _create_split(self, split_idx: int) -> None:
+        if split_idx in self.maps.training.splits_list:
+            raise ValueError(
+                f"Training on split {split_idx} has already been performed. To relaunch a training on this split, first delete it properly with clinicadl.io.Maps.delete_split"
+            )
+        self.maps.training.create_split(split_idx)
+
+    def _check_split(self, split_idx: int) -> None:
+        if split_idx not in self.maps.training.splits_list:
+            raise KeyError(f"No training performed on split {split_idx}.")
+
+    def _check_group_exists(self, group: str) -> None:
+        if group not in self.maps.test.groups_list:
+            raise ValueError(
+                f"The group you passed ('{group}'), so you must pass a dataloader."
+            )

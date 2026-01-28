@@ -18,6 +18,7 @@ from clinicadl.callbacks import (
 from clinicadl.callbacks.implemented import (
     ChecksCallback,
     ConfigSaverCallback,
+    MetricsSaverCallback,
     TrainingLossCallback,
 )
 from clinicadl.io import Maps
@@ -57,11 +58,12 @@ def test_inputs():
     assert cb_handler._all_callbacks[4] is es_1
     assert cb_handler._all_callbacks[5] is es_2
     assert cb_handler._all_callbacks[6] is custom
-    assert isinstance(cb_handler._all_callbacks[7], TrainingLossCallback)
-    assert isinstance(cb_handler._all_callbacks[8], ModelCheckpointCallback)
-    assert cb_handler._all_callbacks[8].config.save_last
-    assert cb_handler._all_callbacks[9] is chkpt
-    assert len(cb_handler._all_callbacks) == 10
+    assert isinstance(cb_handler._all_callbacks[7], ModelCheckpointCallback)
+    assert cb_handler._all_callbacks[7].config.save_last
+    assert isinstance(cb_handler._all_callbacks[8], TrainingLossCallback)
+    assert isinstance(cb_handler._all_callbacks[9], MetricsSaverCallback)
+    assert cb_handler._all_callbacks[10] is chkpt
+    assert len(cb_handler._all_callbacks) == 11
 
     assert cb_handler.callbacks[0] is log
     assert isinstance(cb_handler.callbacks[1], MonitorCallback)
@@ -74,19 +76,19 @@ def test_inputs():
 
     cb_handler.add_callbacks(
         [
-            es_3 := EarlyStoppingCallback(metric="mae"),
             model_ckpt := ModelCheckpointCallback(epochs=[5]),
+            es_3 := EarlyStoppingCallback(metric="mae"),
             monitor := MonitorCallback(num_measurements=5),
         ]
     )
-    assert len(cb_handler.callbacks) == 8
+    assert len(cb_handler._all_callbacks) == 12
     assert cb_handler._all_callbacks[3] is monitor
-    assert cb_handler._all_callbacks[7] is es_3
-    assert cb_handler._all_callbacks[9] is model_ckpt
-    assert len(cb_handler._all_callbacks) == 11
+    assert cb_handler._all_callbacks[7] is model_ckpt
+    assert cb_handler._all_callbacks[8] is es_3
+    assert len(cb_handler.callbacks) == 8
     assert cb_handler.callbacks[1] is monitor
-    assert cb_handler.callbacks[5] is es_3
-    assert cb_handler.callbacks[6] is model_ckpt
+    assert cb_handler.callbacks[5] is model_ckpt
+    assert cb_handler.callbacks[6] is es_3
 
     for cb in [LoggerCallback(), MonitorCallback(), TrainingCheckpointCallback()]:
         with pytest.raises(
@@ -105,7 +107,14 @@ def test_call_event():
     log.on_trainer_init = Mock()
     cb = Mock()
     cb.__class__ = Callback
-    cb_handler = CallbacksHandler([cb, log])
+    cb_handler = CallbacksHandler([log, Callback(), cb])
+    with pytest.raises(TypeError, match="missing 5 required keyword-only argument"):
+        cb_handler.call_event(
+            "on_trainer_init",
+            model=Mock(),
+        )
+
+    log.on_trainer_init.reset_mock()
     cb_handler.call_event(
         "on_trainer_init",
         model=Mock(),

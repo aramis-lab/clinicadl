@@ -204,7 +204,3 @@ def test_on_predict_start(tmp_path):
         df,
         EXPECTED_DF,
     )
-
-
-def test_state_dict():
-    ConfigSaverCallback().load_state_dict(ConfigSaverCallback().state_dict())

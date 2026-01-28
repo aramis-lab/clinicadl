@@ -129,16 +129,16 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         computational: ComputationalConfig,
         **kwargs,
     ) -> None:
-        split_dir = maps.training.splits[state.split_idx]
+        split_dir = maps.training.splits[split.index]
         self._setup_logging(maps, state, warning_file=split_dir.warning_log)
 
-        self.logger.info("Beginning of training on split %s", state.split_idx)
+        self.logger.info("Beginning of training on split %s", split.index)
         self.logger.info("Computational configuration: %s", computational)
 
         self._output_path = split_dir.path
 
         self._train_summary = TrainingSummary(
-            maps.training.splits[state.split_idx].summary_log
+            maps.training.splits[split.index].summary_log
         )
         self._train_summary.create()
         self._train_summary.add_data_info(
@@ -146,6 +146,29 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             n_val_samples=len(split.val_dataset),
         )
         self._summary.add_training_split(split.index)
+
+    def on_resume(
+        self,
+        *,
+        maps: Maps,
+        state: TrainerState,
+        split: Split,
+        computational: ComputationalConfig,
+        **kwargs,
+    ) -> None:
+        split_dir = maps.training.splits[split.index]
+        self._setup_logging(maps, state, warning_file=split_dir.warning_log)
+
+        last_epoch = sorted(maps.training.splits[split.index].tmp.epochs_list)[-1]
+        self.logger.info(
+            "Resuming training on split %s from epoch %d", split.index, last_epoch + 1
+        )
+        self.logger.info("Computational configuration: %s", computational)
+
+        self._output_path = split_dir.path
+        self._train_summary = TrainingSummary(
+            maps.training.splits[split.index].summary_log
+        )
 
     def on_validate_start(
         self,
@@ -394,12 +417,6 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             loss = {name: tensor.item() for name, tensor in loss.items()}
 
             self._train_progress_bar.set_postfix(loss)
-
-    def state_dict(self) -> Mapping[str, Any]:
-        return {}
-
-    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
-        pass
 
     def _setup_logging(
         self, maps: Maps, state: TrainerState, warning_file: Path

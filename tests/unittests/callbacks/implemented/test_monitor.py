@@ -309,12 +309,14 @@ def test_checkpoint(tmp_path):
         )
 
     state_dict = monitor.state_dict()
+    assert state_dict["Training"]["elapsed"] > 1
     monitor = MonitorCallback(warmup_iterations=0)
-    monitor.on_train_start(
+    monitor.on_resume(
         split=SPLIT, optimization=OPTIMIZATION, computational=COMPUTATIONAL
     )
     monitor.load_state_dict(state_dict)
 
+    assert monitor.n_iterations == 0
     assert len(monitor.monitor_global_training.times) == 0
     assert len(monitor.monitor_epoch.times) == 1
     assert len(monitor.monitor_train_loop.times) == 3

@@ -178,54 +178,17 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         computational: ComputationalConfig,
         **kwargs,
     ) -> None:
-        self._optimization_config = optimization
-        self._train_batch_size = split.train_loader.batch_size
-        self._val_batch_size = split.val_loader.batch_size
+        self._init_all_monitors(split, optimization, computational)
 
-        if computational.gpu:
-            self._gpus_used.append(torch.cuda.get_device_name(0))
-
-        self.monitor_global_training = self._init_monitor(name=TRAIN, save_time=True)
-        self.monitor_epoch = self._init_monitor(name=EPOCH)
-
-        self.monitor_train_loop = self._init_monitor(
-            gpu=computational.gpu, limited_measurements=True, name=TRAIN_LOOP
-        )
-        self.monitor_train_batch_loading = self._init_monitor(
-            limited_measurements=True, name=TRAIN_LOAD
-        )
-        self.monitor_forward = self._init_monitor(
-            gpu=computational.gpu,
-            memory=True,
-            limited_measurements=True,
-            name=FORWARD,
-        )
-        self.monitor_backward = self._init_monitor(
-            gpu=computational.gpu,
-            memory=True,
-            limited_measurements=True,
-            name=BACKWARD,
-        )
-        self.monitor_optimization = self._init_monitor(
-            gpu=computational.gpu,
-            memory=True,
-            limited_measurements=True,
-            name=OPT,
-        )
-
-        self.monitor_validation = self._init_monitor(name=VAL)
-        self.monitor_val_batch = self._init_monitor(
-            gpu=computational.gpu, limited_measurements=True, name=VAL_LOOP
-        )
-        self.monitor_val_batch_loading = self._init_monitor(
-            limited_measurements=True, name=VAL_LOAD
-        )
-        self.monitor_evaluation = self._init_monitor(
-            gpu=computational.gpu, memory=True, limited_measurements=True, name=EVAL
-        )
-
-        self.n_iterations = 0
-        self.monitor_global_training.start()
+    def on_resume(
+        self,
+        *,
+        split: Split,
+        optimization: OptimizationConfig,
+        computational: ComputationalConfig,
+        **kwargs,
+    ) -> None:
+        self._init_all_monitors(split, optimization, computational)
 
     def on_epoch_start(self, **kwargs) -> None:
         self.monitor_epoch.start()
@@ -340,6 +303,61 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             save_time=save_time,
             name=name,
         )
+
+    def _init_all_monitors(
+        self,
+        split: Split,
+        optimization: OptimizationConfig,
+        computational: ComputationalConfig,
+    ) -> None:
+        self._optimization_config = optimization
+        self._train_batch_size = split.train_loader.batch_size
+        self._val_batch_size = split.val_loader.batch_size
+
+        if computational.gpu:
+            self._gpus_used.append(torch.cuda.get_device_name(0))
+
+        self.monitor_global_training = self._init_monitor(name=TRAIN, save_time=True)
+        self.monitor_epoch = self._init_monitor(name=EPOCH)
+
+        self.monitor_train_loop = self._init_monitor(
+            gpu=computational.gpu, limited_measurements=True, name=TRAIN_LOOP
+        )
+        self.monitor_train_batch_loading = self._init_monitor(
+            limited_measurements=True, name=TRAIN_LOAD
+        )
+        self.monitor_forward = self._init_monitor(
+            gpu=computational.gpu,
+            memory=True,
+            limited_measurements=True,
+            name=FORWARD,
+        )
+        self.monitor_backward = self._init_monitor(
+            gpu=computational.gpu,
+            memory=True,
+            limited_measurements=True,
+            name=BACKWARD,
+        )
+        self.monitor_optimization = self._init_monitor(
+            gpu=computational.gpu,
+            memory=True,
+            limited_measurements=True,
+            name=OPT,
+        )
+
+        self.monitor_validation = self._init_monitor(name=VAL)
+        self.monitor_val_batch = self._init_monitor(
+            gpu=computational.gpu, limited_measurements=True, name=VAL_LOOP
+        )
+        self.monitor_val_batch_loading = self._init_monitor(
+            limited_measurements=True, name=VAL_LOAD
+        )
+        self.monitor_evaluation = self._init_monitor(
+            gpu=computational.gpu, memory=True, limited_measurements=True, name=EVAL
+        )
+
+        self.n_iterations = 0
+        self.monitor_global_training.start()
 
     def _optimization_condition(self, batch_idx: int) -> bool:
         """

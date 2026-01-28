@@ -124,12 +124,6 @@ class ConfigSaverCallback(Callback):
                 maps.prediction.groups[group_name].data_tsv,
             )
 
-    def state_dict(self) -> Mapping[str, Any]:
-        return {}
-
-    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
-        pass
-
 
 def _clean_df(df: pd.DataFrame) -> pd.DataFrame:
     """

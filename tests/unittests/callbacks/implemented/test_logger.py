@@ -37,6 +37,7 @@ def test_trainer(tmp_path):
         called="train",
         stage="training",
     )
+    SPLIT.index = state.split_idx
 
     logger = LoggerCallback()
 
@@ -622,9 +623,34 @@ def test_on_exception(caplog, tmp_path):
     assert "An exception occurred. To debug, check the logs in" not in caplog.text
 
 
-def test_state_dict():
-    logger = LoggerCallback()
-    logger.load_state_dict(logger.state_dict())
+def test_resume(caplog, tmp_path):
+    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.read()
+    state = TrainerState(
+        split_idx=0,
+        num_epochs=4,
+    )
+    SPLIT.index = state.split_idx
+
+    logger = LoggerCallback(save_logs=False)
+    logger.on_trainer_init(model=MODEL, maps=maps)
+
+    comp = ComputationalConfig(gpu=False)
+    with caplog.at_level(logging.INFO):
+        logger.on_resume(maps=maps, split=SPLIT, state=state, computational=comp)
+    assert f"Resuming training on split {state.split_idx} from epoch 4" in caplog.text
+    assert "Computational configuration: gpu=False" in caplog.text
+
+    state.current_epoch = 4
+    caplog.clear()
+    with caplog.at_level(logging.INFO):
+        logger.on_train_end(state=state)
+    assert "Training completed successfully (stopped after 4 epochs)" in caplog.text
+    assert (
+        f"All results, logs, and model checkpoints are saved in {tmp_path / 'training' / f'split-{state.split_idx}'}"
+        in caplog.text
+    )
 
 
 def test_from_to_dict():

@@ -305,7 +305,7 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
         if not have_modes:
             raise RuntimeError(
                 "Cannot initialize early stoppers because their modes "
-                "need to be specified. E.g. by calling on_validation_start"
+                "need to be specified. E.g. by calling on_train_start"
             )
 
         self.stoppers = [config.get_object() for config in self.config.stoppers]
@@ -326,16 +326,17 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
                 stopper.reset()
 
     # pylint: disable=arguments-differ, unused-argument
-    def on_train_start(self, **kwargs):
+    def on_train_start(self, metrics: MetricsHandler, **kwargs):
         self._reset()
 
-    def on_validation_start(self, *, metrics: MetricsHandler, **kwargs) -> None:
-        if self.stoppers is None:
-            for config in self.config.stoppers:
-                metrics.check_metric_name(metric=config.metric)
-            modes = {name: metric.optimum for name, metric in metrics.metrics.items()}
-            self._add_modes(modes)
-            self._init_stoppers()
+        for config in self.config.stoppers:
+            metrics.check_metric_name(metric=config.metric)
+        modes = {name: metric.optimum for name, metric in metrics.metrics.items()}
+        self._add_modes(modes)
+        self._init_stoppers()
+
+    def on_resume(self, **kwargs):
+        self._init_stoppers()
 
     def on_validation_end(
         self, *, state: TrainerState, metrics: MetricsHandler, **kwargs

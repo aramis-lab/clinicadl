@@ -1,6 +1,5 @@
 import logging
 import re
-from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
@@ -42,7 +41,8 @@ def test_inputs():
         lower_bound=0.1,
     )
     METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
-    es.on_validation_start(metrics=METRICS_HANDLER)
+    METRICS_HANDLER.init_metrics()
+    es.on_train_start(metrics=METRICS_HANDLER)
     assert (es.stoppers[0].config.metric, es.stoppers[1].config.metric) == (
         "psnr",
         "mse",
@@ -76,9 +76,9 @@ def test_inputs():
     )
     with pytest.raises(KeyError, match="'psnr' not found in the computed metrics!"):
         METRICS_HANDLER.config.metrics = {"mse": MSE}
-        es.on_validation_start(metrics=METRICS_HANDLER)
+        es.on_train_start(metrics=METRICS_HANDLER)
     METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
-    es.on_validation_start(metrics=METRICS_HANDLER)
+    es.on_train_start(metrics=METRICS_HANDLER)
 
     assert (es.stoppers[0].config.patience, es.stoppers[1].config.patience) == (3, 7)
     assert (es.stoppers[0].config.min_delta, es.stoppers[1].config.min_delta) == (
@@ -110,21 +110,22 @@ def test_inputs():
 def test_on_train_start():
     state = TrainerState()
     METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
-
+    METRICS_HANDLER.init_metrics()
     early_stopping = EarlyStoppingCallback(metric="psnr", patience=1, min_delta=0.1)
-    early_stopping.on_validation_start(metrics=METRICS_HANDLER)
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
     early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
 
-    early_stopping.on_train_start()
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
     assert early_stopping.stoppers[0].best == -np.inf
 
 
 def test_numeric():
     state = TrainerState()
     METRICS_HANDLER.config.metrics = {"bad": PSNR}
+    METRICS_HANDLER.init_metrics()
 
     early_stopping = EarlyStoppingCallback(metric="bad")
-    early_stopping.on_validation_start(metrics=METRICS_HANDLER)
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
     with pytest.raises(
         ValueError, match="Value for metric 'bad' at epoch 0 is not numeric."
     ):
@@ -140,7 +141,8 @@ def test_one_metric(caplog):
     state.should_stop = False
     state.current_epoch = 0
     METRICS_HANDLER.config.metrics = {"mae": MAE}
-    early_stopping.on_validation_start(metrics=METRICS_HANDLER)
+    METRICS_HANDLER.init_metrics()
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
@@ -195,7 +197,8 @@ def test_one_metric(caplog):
     state = TrainerState()
     early_stopping = EarlyStoppingCallback(metric="psnr", patience=1, min_delta=0.1)
     METRICS_HANDLER.config.metrics = {"psnr": PSNR}
-    early_stopping.on_validation_start(metrics=METRICS_HANDLER)
+    METRICS_HANDLER.init_metrics()
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
@@ -234,8 +237,9 @@ def test_one_metric(caplog):
 
     state = TrainerState()
     METRICS_HANDLER.config.metrics = {"mse": MSE}
+    METRICS_HANDLER.init_metrics()
     early_stopping = EarlyStoppingCallback(metric="mse", patience=0, min_delta=0.1)
-    early_stopping.on_validation_start(metrics=METRICS_HANDLER)
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
@@ -254,10 +258,11 @@ def test_one_metric(caplog):
 def test_mutiple_metrics(caplog):
     state = TrainerState()
     METRICS_HANDLER.config.metrics = {"mse": MSE, "psnr": PSNR}
+    METRICS_HANDLER.init_metrics()
     early_stopping = EarlyStoppingCallback(
         metric=["psnr", "mse"], patience=[1, 0], min_delta=0.1
     )
-    early_stopping.on_validation_start(metrics=METRICS_HANDLER)
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
@@ -293,12 +298,13 @@ def test_mutiple_metrics(caplog):
     ###
     state = TrainerState()
     METRICS_HANDLER.config.metrics = {"mse_overfit": MSE, "psnr": PSNR}
+    METRICS_HANDLER.init_metrics()
     early_stopping = EarlyStoppingCallback(
         metric=["psnr", "mse_overfit"],
         patience=[1, 0],
         min_delta=0.1,
     )
-    early_stopping.on_validation_start(metrics=METRICS_HANDLER)
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
 
     state.should_stop = False
     state.current_epoch = 0
@@ -338,7 +344,8 @@ def test_from_dict_to_dict():
     assert new_early_stopping.config.stoppers[1].min_delta == 0.1
 
     METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
-    early_stopping.on_validation_start(state=TrainerState(), metrics=METRICS_HANDLER)
+    METRICS_HANDLER.init_metrics()
+    early_stopping.on_train_start(state=TrainerState(), metrics=METRICS_HANDLER)
     new_early_stopping = EarlyStoppingCallback.from_dict(early_stopping.to_dict())
     assert new_early_stopping.stoppers[0].config.metric == "psnr"
     assert new_early_stopping.stoppers[1].config.metric == "mse"
@@ -358,7 +365,8 @@ def test_state_dict():
     assert early_stopping.state_dict() == dict()
 
     METRICS_HANDLER.config.metrics = {"psnr": PSNR, "mse": MSE}
-    early_stopping.on_validation_start(metrics=METRICS_HANDLER)
+    METRICS_HANDLER.init_metrics()
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
 
     state.current_epoch = 0
     early_stopping.on_validation_end(state=state, metrics=METRICS_HANDLER)
@@ -380,3 +388,15 @@ def test_state_dict():
     assert new_early_stopping.stoppers[0].num_non_improvements == 1
     assert new_early_stopping.stoppers[1].best == -1.11
     assert new_early_stopping.stoppers[1].num_non_improvements == 0
+
+
+def test_resume():
+    early_stopping = EarlyStoppingCallback(metric="psnr")
+    METRICS_HANDLER.config.metrics = {"psnr": PSNR}
+    METRICS_HANDLER.init_metrics()
+    early_stopping.on_train_start(metrics=METRICS_HANDLER)
+    state_dict = early_stopping.state_dict()
+
+    new_early_stopping = EarlyStoppingCallback.from_dict(early_stopping.to_dict())
+    new_early_stopping.on_resume()
+    new_early_stopping.load_state_dict(state_dict)
