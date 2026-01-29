@@ -28,6 +28,7 @@ functions may not be enough to give full guidelines on their use.
    split
    transforms
    train
+   utils
 
 .. toctree::
    :hidden:
@@ -43,3 +44,4 @@ functions may not be enough to give full guidelines on their use.
    split
    transforms/index
    train
+   utils

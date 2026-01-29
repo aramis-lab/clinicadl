@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 from typing import Optional
@@ -5,32 +6,25 @@ from typing import Optional
 import numpy as np
 import torch
 
+from .computational.ddp import get_rank
 
-def _get_rank() -> int:
-    """Returns 0 unless the environment specifies a rank."""
-    rank_keys = ("RANK", "SLURM_PROCID", "LOCAL_RANK")
-    for key in rank_keys:
-        rank = os.environ.get(key)
-        if rank is not None:
-            return int(rank)
-    return 0
+logger = logging.getLogger(__name__)
+
+MAX_SEED_VALUE = np.iinfo(np.uint32).max
+MIN_SEED_VALUE = np.iinfo(np.uint32).min
 
 
-global_rank = _get_rank()
-
-
-def pl_worker_init_function(worker_id: int) -> None:  # pragma: no cover
+def pl_worker_init_function(worker_id: int) -> None:
     """
-    The worker_init_fn that Lightning automatically adds to your dataloader if you previously set
-    set the seed with ``seed_everything(seed, workers=True)``.
-    See also the PyTorch documentation on
-    `randomness in DataLoaders <https://pytorch.org/docs/stable/notes/randomness.html#dataloader>`_.
+    To handle seeding with multiprocessing.
+
+    From https://pytorch-lightning.readthedocs.io/en/1.7.7/_modules/pytorch_lightning/utilities/seed.html#pl_worker_init_function.
     """
     # implementation notes: https://github.com/pytorch/pytorch/issues/5059#issuecomment-817392562
     process_seed = torch.initial_seed()
-    # back out the base seed so we can use all the bits
+    # back out the base seed so we can use all the bits (https://docs.pytorch.org/docs/stable/data.html#randomness-in-multi-process-data-loading)
     base_seed = process_seed - worker_id
-    ss = np.random.SeedSequence([base_seed, worker_id, global_rank])
+    ss = np.random.SeedSequence([base_seed, worker_id, get_rank()])
     # use 128 bits (4 x 32-bit words)
     np.random.seed(ss.generate_state(4))
     # Spawn distinct SeedSequences for the PyTorch PRNG and the stdlib random module
@@ -45,57 +39,49 @@ def pl_worker_init_function(worker_id: int) -> None:  # pragma: no cover
     random.seed(stdlib_seed)
 
 
-def get_seed(seed: Optional[int] = None) -> int:
-    max_seed_value = np.iinfo(np.uint32).max
-    min_seed_value = np.iinfo(np.uint32).min
+def seed_everything(seed: Optional[int] = None, deterministic: bool = False) -> None:
+    """
+    To control reproducibility.
 
+    It will seed pseudo-random number generators in: PyTorch, Numpy, python.random. The seed
+    can be accessed via the environment variable ``"CLINICADL_GLOBAL_SEED"``.
+
+    Besides, if ``deterministic=True``, PyTorch's operations will be configured in deterministic mode,
+    to the extent possible. In this case, an environment variable ``"CLINICADL_DETERMINISTIC"`` will
+    also be created.
+
+    .. important:: ``deterministic=True``
+        - does not guarantee fully reproducible results; it only ensures determinism within PyTorch’s current limitations;
+        - comes with a cost in computing performances. It is advised to use this parameter only for your final
+          experiments.
+
+    Parameters
+    ----------
+    seed : Optional[int], default=None
+        The seed to use. If ``None``, a random seed will be generated.
+    deterministic : bool, default=False
+        Whether to configure PyTorch's operations in deterministic mode.
+    """
     if seed is None:
-        seed = random.randint(min_seed_value, max_seed_value)
-
-    return seed
-
-
-def seed_everything(seed, deterministic=False, compensation="memory") -> None:
-    """
-    Function that sets seed for pseudo-random number generators in:
-    pytorch, numpy, python.random
-
-    Adapted from pytorch-lightning
-    https://pytorch-lightning.readthedocs.io/en/latest/_modules/pytorch_lightning/utilities/seed.html#seed_everything
-
-    Args:
-        seed (int): Value of the seed for all pseudo-random number generators
-        deterministic (bool): If set to True will raise an error if non-deterministic behaviour is encountered
-        compensation (str): Chooses which computational aspect is affected when deterministic is set to True.
-            Must be chosen between time and memory.
-
-    Raises:
-        ClinicaDLConfigurationError: if compensation is not in {"time", "memory"}.
-        RuntimeError: if a non-deterministic behaviour was encountered.
-
-    """
-    from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-
-    max_seed_value = np.iinfo(np.uint32).max
-    min_seed_value = np.iinfo(np.uint32).min
-
-    if not (min_seed_value <= seed <= max_seed_value):
-        seed = random.randint(min_seed_value, max_seed_value)
+        seed = random.randint(MIN_SEED_VALUE, MAX_SEED_VALUE)
+    if not (MIN_SEED_VALUE <= seed <= MAX_SEED_VALUE):
+        raise ValueError(
+            f"Seed must be between {MIN_SEED_VALUE} and {MAX_SEED_VALUE}. Got {seed}"
+        )
 
     random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
+    os.environ["CLINICADL_GLOBAL_SEED"] = str(seed)
+    logger.info("Global seed set to %d", seed)
+
     if deterministic:
-        torch.backends.cudnn.benchmark = False
-        if compensation == "memory":
-            os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-        elif compensation == "time":
-            os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
-        else:
-            raise ClinicaDLConfigurationError(
-                "The compensation for a deterministic CUDA setting "
-                "must be chosen between 'time' and 'memory'."
-            )
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
         torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+        os.environ["CLINICADL_DETERMINISTIC"] = "true"
