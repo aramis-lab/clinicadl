@@ -30,6 +30,23 @@ def test_on_trainer_init(tmp_path):
     OPTIMIZATION.to_json.assert_called_once_with(maps.training.optimization_json)
     CALLBACKS.to_json.assert_called_once_with(maps.callbacks_json)
 
+    MODEL.reset_mock()
+    METRICS.reset_mock()
+    OPTIMIZATION.reset_mock()
+    CALLBACKS.reset_mock()
+    maps = Maps(MAPS_PATH)
+    saver.on_trainer_init(
+        model=MODEL,
+        metrics=METRICS,
+        optimization=OPTIMIZATION,
+        callbacks=CALLBACKS,
+        maps=maps,
+    )
+    MODEL.to_json.assert_not_called()
+    METRICS.to_json.assert_not_called()
+    OPTIMIZATION.to_json.assert_not_called()
+    CALLBACKS.to_json.assert_not_called()
+
 
 def test_on_train_start(tmp_path):
     SPLIT = Mock()

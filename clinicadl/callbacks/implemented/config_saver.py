@@ -37,10 +37,14 @@ class ConfigSaverCallback(Callback):
         callbacks: CallbacksHandler,
         **kwargs,
     ) -> None:
-        to_json_safe(model, maps.model_json)
-        metrics.to_json(maps.metrics_json)
-        optimization.to_json(maps.training.optimization_json)
-        callbacks.to_json(maps.callbacks_json)
+        if not maps.model_json.exists():
+            to_json_safe(model, maps.model_json)
+        if not maps.metrics_json.exists():
+            metrics.to_json(maps.metrics_json)
+        if not maps.training.optimization_json.exists():
+            optimization.to_json(maps.training.optimization_json)
+        if not maps.callbacks_json.exists():
+            callbacks.to_json(maps.callbacks_json)
 
     def on_train_start(
         self,
