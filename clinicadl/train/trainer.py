@@ -2,18 +2,20 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Optional
+from typing import TYPE_CHECKING, Iterator, Optional, Union
 
 import torch
 from torch.amp.autocast_mode import autocast
+from typing_extensions import Self
 
-from clinicadl.callbacks import CallbacksHandler, TrainingCheckpointCallback
+from clinicadl.callbacks import CallbacksHandler
 from clinicadl.callbacks.base import Events
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader import Batch, DataLoaderConfig
 from clinicadl.data.datasets.factory import get_dataset_from_json
 from clinicadl.io.maps.maps import Maps
 from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import LossMetricConfig
+from clinicadl.models.factory import get_model_from_json
 from clinicadl.optim.config import OptimizationConfig
 from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer_state import TrainerState
@@ -22,13 +24,8 @@ from clinicadl.utils.exceptions import CannotReadJsonError
 from clinicadl.utils.seed import seed_everything
 
 if TYPE_CHECKING:
-    from torch.amp import GradScaler
-    from torch.optim import Optimizer
-
     from clinicadl.callbacks import Callback
-    from clinicadl.data.dataloader import Batch, BatchType, DataLoader
-    from clinicadl.data.datasets import Dataset
-    from clinicadl.io.maps.training.splits.models import TrainingModelDir
+    from clinicadl.data.dataloader import BatchType, DataLoader
     from clinicadl.io.maps.utils import DataDir
     from clinicadl.metrics.types import MetricOrConfig
     from clinicadl.models import Model
@@ -87,20 +84,29 @@ class Trainer:
         self,
         maps_path: PathType,
         model: Model,
-        metrics: dict[str, MetricOrConfig] = {
+        metrics: Union[dict[str, MetricOrConfig], MetricsHandler] = {
             "loss": LossMetricConfig(loss_name="loss")
         },
         optimization: OptimizationConfig = OptimizationConfig(),
-        callbacks: Optional[list[Callback]] = None,
+        callbacks: Optional[Union[list[Callback], CallbacksHandler]] = None,
         overwrite: bool = False,
     ) -> None:
         self._maps = Maps(maps_path)
         self._maps.create(overwrite=overwrite)
 
         self._model = model
-        self._metrics = MetricsHandler(**metrics)
+
+        if isinstance(metrics, MetricsHandler):
+            self._metrics = metrics
+        else:
+            self._metrics = MetricsHandler(**metrics)
         self._metrics.init_metrics(self._model)
-        self._callbacks = CallbacksHandler(callbacks=callbacks if callbacks else [])
+
+        if isinstance(callbacks, CallbacksHandler):
+            self._callbacks = callbacks
+        else:
+            self._callbacks = CallbacksHandler(callbacks=callbacks if callbacks else [])
+
         self._optim_config = optimization
 
         self._state = TrainerState()
@@ -120,9 +126,9 @@ class Trainer:
     def model(self) -> Model:
         return self._model
 
-    # @property
-    # def metrics(self) -> MetricsHandler:
-    #     return self._metrics
+    @property
+    def metrics(self) -> MetricsHandler:
+        return self._metrics
 
     @property
     def callbacks(self) -> CallbacksHandler:
@@ -135,6 +141,23 @@ class Trainer:
     @property
     def state(self) -> TrainerState:
         return self._state
+
+    @classmethod
+    def from_maps(cls, maps_path: PathType, **kwargs) -> Self:
+        maps = Maps(maps_path)
+        maps.read()
+        model = get_model_from_json(maps.model_json)
+        metrics = MetricsHandler.from_json(maps.model_json)
+        optimization = OptimizationConfig.from_json(maps.training.optimization_json)
+        callbacks = CallbacksHandler.from_json(maps.callbacks_json)
+
+        return cls(
+            maps_path=maps_path,
+            model=model,
+            metrics=metrics,
+            optimization=optimization,
+            callbacks=callbacks,
+        )
 
     def add_metrics(self, **metrics: MetricOrConfig) -> None:
         self._metrics.add_metrics(**metrics)
@@ -155,12 +178,14 @@ class Trainer:
         self.maps.read()
         self._create_split(split.index)
 
+        self._seed(computational)
+
         if metrics:
             metrics_handler = self._metrics.subset(metrics)
         else:
             metrics_handler = self._metrics
 
-        self._reset_train(split=split, seed=computational.seed, metrics=metrics_handler)
+        self._reset_train(split=split, metrics=metrics_handler)
         self._model_to(computational)
 
         optimizers = self.model.build_optimizers()
@@ -273,6 +298,8 @@ class Trainer:
         self.maps.read()
         self._check_split(split_idx)
 
+        self._seed(computational)
+
         if not dataloader:
             dataloader = self._get_dataloader(
                 self.maps.training.data.validation.splits[split_idx]
@@ -318,11 +345,11 @@ class Trainer:
         """
         self.maps.read()
 
+        self._seed(computational)
+
         if not dataloader:
             self._check_group_exists(group_name)
             dataloader = self._get_dataloader(self.maps.test.groups[group_name])
-
-        self.maps.test.create_group(group_name, exist_ok=True)
 
         metrics_handler = self._metrics.subset(metrics)
 
@@ -412,10 +439,7 @@ class Trainer:
 
         metrics.aggregate(epoch=epoch)
 
-    def _reset_train(
-        self, split: Split, seed: Optional[int], metrics: MetricsHandler
-    ) -> None:
-        seed_everything(seed=seed, deterministic=False, compensation="memory")
+    def _reset_train(self, split: Split, metrics: MetricsHandler) -> None:
         self.state.reset_training(
             split_idx=split.index, num_epochs=self._optim_config.num_epochs
         )
@@ -454,7 +478,15 @@ class Trainer:
         dataloader.dataset.eval()
         metrics.reset(reset_df=True)
 
+    @staticmethod
+    def _seed(computational: ComputationalConfig) -> None:
+        if computational.seed is not None:
+            seed_everything(
+                computational.seed, deterministic=computational.deterministic
+            )
+
     def _model_to(self, comp_config: ComputationalConfig) -> None:
+        comp_config.check_device()
         self.model.to(device=comp_config.device, non_blocking=comp_config.non_blocking)
         if comp_config.channels_last:
             try:
