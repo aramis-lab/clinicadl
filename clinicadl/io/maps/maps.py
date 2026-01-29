@@ -491,6 +491,13 @@ class Maps(Directory):
                                 Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
                                 have been raised when evaluating this model.
 
+                            .. dropdown:: computational.json → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].computational_json`
+                                :icon: file
+                                :color: light
+
+                                Details on the :py:class:`computational parameters <clinicadl.train.ComputationalConfig>` used
+                                when testing.
+
                             .. dropdown:: **metrics**
                                 :icon: file-directory
                                 :color: muted
@@ -655,6 +662,13 @@ class Maps(Directory):
 
                                 Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
                                 have been raised when evaluating this model.
+
+                            .. dropdown:: computational.json → ``maps.prediction.groups["X"].results.splits[0].models["epoch-10"].computational_json`
+                                :icon: file
+                                :color: light
+
+                                Details on the :py:class:`computational parameters <clinicadl.train.ComputationalConfig>` used
+                                when predicting.
 
                             .. dropdown:: output.tsv → ``maps.prediction.groups["X"].results.splits[0].models["best-mse"].output_tsv``
                                 :icon: file

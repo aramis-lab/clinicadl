@@ -3,13 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Generic
 
+from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.dictionary.words import (
+    COMPUTATIONAL,
     GROUP,
     MODELS,
     RESULTS,
 )
 
-from ..utils import CollectionOfDirs, DataDir, DirType, SplitsDir
+from ..utils import CollectionOfDirs, DataDir, DirType, ModelDir, SplitsDir
+
+
+class InferenceModelDir(ModelDir):
+    @property
+    def computational_json(self) -> Path:
+        return (self.path / COMPUTATIONAL).with_suffix(JSON)
 
 
 class InferenceSplitDir(CollectionOfDirs[DirType, str]):

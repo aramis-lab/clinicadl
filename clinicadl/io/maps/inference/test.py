@@ -4,16 +4,17 @@ from pathlib import Path
 
 from clinicadl.utils.dictionary.words import METRICS
 
-from ..utils import MetricsDir, ModelDir
+from ..utils import MetricsDir
 from .base import (
     InferenceDir,
     InferenceGroupDir,
+    InferenceModelDir,
     InferenceResultsDir,
     InferenceSplitDir,
 )
 
 
-class TestModelDir(ModelDir):
+class TestModelDir(InferenceModelDir):
     def __init__(self, path: Path):
         super().__init__(path)
         self._metrics = MetricsDir(path=self.path / METRICS)

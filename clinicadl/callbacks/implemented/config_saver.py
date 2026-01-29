@@ -89,7 +89,9 @@ class ConfigSaverCallback(Callback):
         *,
         maps: Maps,
         dataloader: DataLoader,
+        model_checkpoint: str,
         group_name: str,
+        computational: ComputationalConfig,
         **kwargs,
     ) -> None:
         if group_name not in maps.test.groups_list:
@@ -105,12 +107,24 @@ class ConfigSaverCallback(Callback):
                 maps.test.groups[group_name].data_tsv,
             )
 
+        split_idx, chkpt = maps.training.read_checkpoint_name(model_checkpoint)
+        maps.test.groups[group_name].results.create_split(split_idx, exist_ok=True)
+        maps.test.groups[group_name].results.splits[split_idx].create_model(chkpt)
+        computational.to_json(
+            maps.test.groups[group_name]
+            .results.splits[split_idx]
+            .models[chkpt]
+            .computational_json
+        )
+
     def on_predict_start(
         self,
         *,
         maps: Maps,
         dataloader: DataLoader,
+        model_checkpoint: str,
         group_name: str,
+        computational: ComputationalConfig,
         **kwargs,
     ) -> None:
         if group_name not in maps.prediction.groups_list:
@@ -127,6 +141,18 @@ class ConfigSaverCallback(Callback):
                 df,
                 maps.prediction.groups[group_name].data_tsv,
             )
+
+        split_idx, chkpt = maps.training.read_checkpoint_name(model_checkpoint)
+        maps.prediction.groups[group_name].results.create_split(
+            split_idx, exist_ok=True
+        )
+        maps.prediction.groups[group_name].results.splits[split_idx].create_model(chkpt)
+        computational.to_json(
+            maps.prediction.groups[group_name]
+            .results.splits[split_idx]
+            .models[chkpt]
+            .computational_json
+        )
 
 
 def _clean_df(df: pd.DataFrame) -> pd.DataFrame:

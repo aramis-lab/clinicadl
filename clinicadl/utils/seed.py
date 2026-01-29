@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 MAX_SEED_VALUE = np.iinfo(np.uint32).max
 MIN_SEED_VALUE = np.iinfo(np.uint32).min
+GLOBAL_SEED = "CLINICADL_GLOBAL_SEED"
+DETERMINISTIC = "CLINICADL_DETERMINISTIC"
 
 
 def pl_worker_init_function(worker_id: int) -> None:
@@ -73,9 +75,11 @@ def seed_everything(seed: Optional[int] = None, deterministic: bool = False) -> 
     os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed_all(
+        seed
+    )  # manual_seed should be ok because one process per GPU
 
-    os.environ["CLINICADL_GLOBAL_SEED"] = str(seed)
+    os.environ[GLOBAL_SEED] = str(seed)
     logger.info("Global seed set to %d", seed)
 
     if deterministic:
@@ -84,4 +88,4 @@ def seed_everything(seed: Optional[int] = None, deterministic: bool = False) -> 
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-        os.environ["CLINICADL_DETERMINISTIC"] = "true"
+        os.environ[DETERMINISTIC] = "true"

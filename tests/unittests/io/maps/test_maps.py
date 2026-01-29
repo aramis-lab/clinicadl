@@ -337,6 +337,17 @@ def test_maps(tmp_path: Path):
         / "best-loss"
         / "warning.log"
     )
+    assert maps.test.groups["X"].results.splits[0].models[
+        "best-loss"
+    ].computational_json == (
+        maps_path
+        / "test"
+        / "group-X"
+        / "results"
+        / "split-0"
+        / "best-loss"
+        / "computational.json"
+    )
 
     # test - group - splits - model - metrics
     assert maps.test.groups["X"].results.splits[0].models[
@@ -400,6 +411,17 @@ def test_maps(tmp_path: Path):
         / "split-0"
         / "best-loss"
         / "warning.log"
+    )
+    assert maps.prediction.groups["X"].results.splits[0].models[
+        "best-loss"
+    ].computational_json == (
+        maps_path
+        / "prediction"
+        / "group-X"
+        / "results"
+        / "split-0"
+        / "best-loss"
+        / "computational.json"
     )
 
     # prediction - group - splits - model - output_tsv

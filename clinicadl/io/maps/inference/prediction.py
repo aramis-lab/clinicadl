@@ -5,16 +5,16 @@ from pathlib import Path
 from clinicadl.utils.dictionary.suffixes import TSV
 from clinicadl.utils.dictionary.words import CAPS, OUTPUT
 
-from ..utils import ModelDir
 from .base import (
     InferenceDir,
     InferenceGroupDir,
+    InferenceModelDir,
     InferenceResultsDir,
     InferenceSplitDir,
 )
 
 
-class PredictionModelDir(ModelDir):
+class PredictionModelDir(InferenceModelDir):
     @property
     def caps_output(self) -> Path:
         return self.path / f"{CAPS}_{OUTPUT}"

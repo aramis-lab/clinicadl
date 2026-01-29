@@ -143,7 +143,10 @@ class _CheckInputs:
         else:
             dir_ = maps.prediction
 
-        if chkpt in dir_.groups[group_name].results.splits[split_idx].models_list:
+        if (
+            split_idx in dir_.groups[group_name].results.splits_list
+            and chkpt in dir_.groups[group_name].results.splits[split_idx].models_list
+        ):
             raise FileExistsError(
                 f"There are already some results for checkpoint '{chkpt}' in {dir_.groups[group_name].results.splits[split_idx].models[chkpt].path}. "
                 f"If you want to continue, please first delete the folder."
