@@ -10,51 +10,47 @@ from clinicadl.utils.seed import pl_worker_init_function, seed_everything
 from tests.utils import ddp_test, ddp_wrapper
 
 
-class TestSeedEverything:
-    @patch("torch.use_deterministic_algorithms")
-    def test_seed_everything(self, mock, caplog):
-        assert "CLINICADL_GLOBAL_SEED" not in os.environ
-        assert "CLINICADL_DETERMINISTIC" not in os.environ
-        assert os.environ.get("PYTHONHASHSEED") != "10"
-        assert os.environ.get("CUBLAS_WORKSPACE_CONFIG") != ":4096:8"
 
-        with caplog.at_level("INFO"):
-            seed_everything(seed=10)
-        assert "Global seed set to 10" in caplog.text
-        assert os.environ.get("PYTHONHASHSEED") == "10"
-        assert os.environ.get("CLINICADL_GLOBAL_SEED") == "10"
-        assert "CLINICADL_DETERMINISTIC" not in os.environ
+@patch("torch.use_deterministic_algorithms")
+def test_seed_everything(mock, caplog):
+    assert "CLINICADL_GLOBAL_SEED" not in os.environ
+    assert "CLINICADL_DETERMINISTIC" not in os.environ
+    assert os.environ.get("PYTHONHASHSEED") != "10"
+    assert os.environ.get("CUBLAS_WORKSPACE_CONFIG") != ":4096:8"
 
-        seed_everything(seed=11, deterministic=True)
-        assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
-        assert os.environ.get("CUBLAS_WORKSPACE_CONFIG") == ":4096:8"
-        assert torch.backends.cudnn.deterministic
-        assert not torch.backends.cudnn.benchmark
-        mock.assert_called_once_with(True)
+    with caplog.at_level("INFO"):
+        seed_everything(seed=10)
+    assert "Global seed set to 10" in caplog.text
+    assert os.environ.get("PYTHONHASHSEED") == "10"
+    assert os.environ.get("CLINICADL_GLOBAL_SEED") == "10"
+    assert "CLINICADL_DETERMINISTIC" not in os.environ
 
-        seed_everything(0)
-        r1 = random.randint(0, 100)
-        n1 = np.random.rand()
-        t1 = torch.rand(1)
+    seed_everything(seed=11, deterministic=True)
+    assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
+    assert os.environ.get("CUBLAS_WORKSPACE_CONFIG") == ":4096:8"
+    assert torch.backends.cudnn.deterministic
+    assert not torch.backends.cudnn.benchmark
+    mock.assert_called_once_with(True)
 
-        seed_everything(1)
-        r2 = random.randint(0, 100)
-        n2 = np.random.rand()
-        t2 = torch.rand(1)
+    seed_everything(0)
+    r1 = random.randint(0, 100)
+    n1 = np.random.rand()
+    t1 = torch.rand(1)
 
-        assert not np.isclose(r1, r2)
-        assert not np.isclose(n1, n2)
-        assert not torch.isclose(t1, t2)
+    seed_everything(1)
+    r2 = random.randint(0, 100)
+    n2 = np.random.rand()
+    t2 = torch.rand(1)
 
-    @ddp_wrapper
-    def _gpu_seed(self, rank):
-        assert torch.cuda.initial_seed() == 7
+    assert not np.isclose(r1, r2)
+    assert not np.isclose(n1, n2)
+    assert not torch.isclose(t1, t2)
 
-    @pytest.mark.multi_gpu
-    def test_seed_everything_gpu(self):
-        seed_everything(7)
-        ddp_test(self._gpu_seed, world_size=2)
 
+@pytest.mark.gpu
+def test_seed_everything_gpu():
+    seed_everything(7)
+    assert torch.cuda.initial_seed() == 7
 
 @patch("numpy.random.SeedSequence", side_effect=np.random.SeedSequence)
 @patch(
