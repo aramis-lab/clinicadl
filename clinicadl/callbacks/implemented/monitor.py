@@ -159,6 +159,9 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         exception: Exception,
         **kwargs,
     ) -> None:
+        if not self.monitor_global_training:
+            return
+
         df = self._build_df()
         tsv_path = maps.training.splits[state.split_idx].logs.computational_tsv
         df.to_csv(tsv_path, sep=SEP)

@@ -79,6 +79,11 @@ def test_saving(caplog, tmp_path):
     tmp_dir.clear()
 
     chkpt.on_trainer_init(callbacks=CALLBACKS, metrics=METRICS)
+
+    with caplog.at_level("INFO"):
+        chkpt.on_exception(maps=maps, state=STATE)
+    assert len(caplog.records) == 0
+
     for epoch in range(1, 6):
         STATE.current_epoch = epoch
         chkpt.on_optimization_step_end(optimizers=OPTIMIZERS, grad_scaler=SCALER)

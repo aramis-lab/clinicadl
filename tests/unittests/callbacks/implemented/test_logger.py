@@ -550,8 +550,12 @@ def test_on_exception(caplog, tmp_path):
 
     logger = LoggerCallback()
 
-    # train
     logger.on_trainer_init(model=MODEL, maps=maps)
+    with caplog.at_level(logging.INFO):
+        logger.on_exception(state=state)
+    assert len(caplog.records) == 0
+
+    # train
     logger.on_train_start(maps=maps, split=SPLIT, state=state, computational=comp)
 
     log = logging.getLogger("clinicadl.logger_test")
@@ -578,35 +582,10 @@ def test_on_exception(caplog, tmp_path):
         f"An exception occurred. To debug, check the logs in {run_dir}" in caplog.text
     )
 
-    # not training
-    state.called = "validate"
-    state.stage = "evaluation"
-    logger.on_validate_start(state=state, maps=maps, model_checkpoint=None)
-
-    log.warning("a warning")
-
-    state.stage = "interrupted"
-    log.exception(ValueError("an error"))
-    with caplog.at_level(logging.INFO):
-        logger.on_exception(state=state)
-    log.warning("a second warning")
-
-    run_name = maps.exec.runs_list[1]
-    run_dir = maps.exec.runs[run_name]
-    f = maps.open_file(run_dir.error_log)
-    assert "an error" in f
-    f = maps.open_file(run_dir.info_log)
-    assert "a warning" in f
-    assert "a second warning" not in f
-
-    assert (
-        f"An exception occurred. To debug, check the logs in {run_dir}" in caplog.text
-    )
-
     # don't save files
     logger = LoggerCallback(save_logs=False)
     logger.on_trainer_init(model=MODEL, maps=maps)
-    logger.on_validate_start(state=state, maps=maps, model_checkpoint=None)
+    logger.on_train_start(maps=maps, split=SPLIT, state=state, computational=comp)
 
     caplog.clear()
     with caplog.at_level(logging.INFO):

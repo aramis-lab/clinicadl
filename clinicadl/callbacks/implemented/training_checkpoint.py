@@ -77,7 +77,10 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
 
     def on_exception(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
         if self.config.enabled:
-            last_saved_epoch = self._get_last_saved_epoch(maps, state.split_idx)
+            try:
+                last_saved_epoch = self._get_last_saved_epoch(maps, state.split_idx)
+            except FileNotFoundError:
+                return
             logger.error("Last checkpoint at the end of epoch %d", last_saved_epoch)
 
     def on_resume(

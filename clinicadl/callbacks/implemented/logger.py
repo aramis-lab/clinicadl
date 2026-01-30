@@ -115,15 +115,15 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         state: TrainerState,
         **kwargs,
     ) -> None:
-        if state.called == TrainerCall.TRAIN:
+        if state.called == TrainerCall.TRAIN and self._train_summary:
             self._train_summary.add_training_end_info(
                 n_epochs=state.current_epoch, interrupted=True
             )
-        if self.config.save_logs:
+        if self.config.save_logs and self.logger:
             self.logger.error(
                 "An exception occurred. To debug, check the logs in %s", self._log_path
             )
-        _shutdown_logging(self.logger)
+            _shutdown_logging(self.logger)
 
     def on_train_start(
         self,

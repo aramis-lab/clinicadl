@@ -262,6 +262,12 @@ def test_exception(caplog, tmp_path):
 
     monitor = MonitorCallback(warmup_iterations=0)
 
+    with caplog.at_level("ERROR"):
+        monitor.on_exception(
+            maps=maps, state=STATE, exception=RuntimeError("CUDA out of memory")
+        )
+    assert len(caplog.records) == 0
+
     try:
         _training(
             monitor,
