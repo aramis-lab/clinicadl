@@ -8,7 +8,6 @@ from ..base import Callback
 
 if TYPE_CHECKING:
     from clinicadl.io import Maps
-    from clinicadl.models import Model
     from clinicadl.train import TrainerState
 
 

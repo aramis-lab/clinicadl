@@ -3,15 +3,15 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from typing import TYPE_CHECKING, Optional
 
 import torch
 from tqdm import tqdm
 
 from clinicadl.io.maps import MapsSummary
 from clinicadl.io.maps.training import TrainingSummary
-from clinicadl.train.trainer_state import TrainerCall, TrainerStage
 from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.enum import TrainerCall, TrainerStage
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback

@@ -257,3 +257,21 @@ class MaskChecksum(str, Enum):
     PCA = "ace36356b57f4db73e17c421a7cfd7ae056a1b258b8126534cf65d8d0be9527a"
     SVPPA = "44f2e00bf2d2d09b532cb53e3ba61d6087b4114768cc8ae3330ea84c4b7e0e6a"
     AAL2 = "89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471"
+
+
+class TrainerStage(str, Enum):
+    """Possible stages of the :py:class:`clinicadl.train.Trainer`."""
+
+    TRAIN = "training"
+    EVAL = "evaluation"
+    PRED = "prediction"
+    INTERRUPTED = "interrupted"
+
+
+class TrainerCall(str, Enum):
+    """Public methods of :py:class:`clinicadl.train.Trainer`."""
+
+    TRAIN = "train"
+    VALIDATE = "validate"
+    TEST = "test"
+    PREDICT = "predict"

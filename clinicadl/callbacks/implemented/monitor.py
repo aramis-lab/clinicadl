@@ -10,10 +10,10 @@ import torch
 from pydantic import NonNegativeInt
 
 from clinicadl.io.maps.training import TrainingSummary
-from clinicadl.train.trainer_state import TrainerCall, TrainerStage, TrainerState
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.dictionary.words import GPU
+from clinicadl.utils.enum import TrainerCall, TrainerStage
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from clinicadl.io import Maps
     from clinicadl.optim import OptimizationConfig
     from clinicadl.split import Split
-    from clinicadl.train import ComputationalConfig
+    from clinicadl.train import ComputationalConfig, TrainerState
 
 logger = logging.getLogger("clinicadl.callbacks.MonitorCallback")
 

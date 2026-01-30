@@ -1,26 +1,8 @@
-from enum import Enum
 from typing import Any, Optional
 
 from clinicadl.data.dataloader import DataLoader
 from clinicadl.utils.config import ClinicaDLConfig
-
-
-class TrainerStage(str, Enum):
-    """Possible stages of the trainer."""
-
-    TRAIN = "training"
-    EVAL = "evaluation"
-    PRED = "prediction"
-    INTERRUPTED = "interrupted"
-
-
-class TrainerCall(str, Enum):
-    """Methods of :py:class:`clinicadl.train.Trainer`."""
-
-    TRAIN = "train"
-    VALIDATE = "validate"
-    TEST = "test"
-    PREDICT = "predict"
+from clinicadl.utils.enum import TrainerCall, TrainerStage
 
 
 class TrainerState(ClinicaDLConfig):

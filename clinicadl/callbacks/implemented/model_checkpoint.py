@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence
 
-import pandas as pd
 from pydantic import PositiveInt, field_validator
 
 from clinicadl.metrics.enum import Optimum
