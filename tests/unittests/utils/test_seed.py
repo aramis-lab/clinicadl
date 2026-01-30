@@ -56,6 +56,8 @@ def test_seed_everything(caplog):
     assert not np.isclose(n1, n2)
     assert not torch.isclose(t1, t2)
 
+    os.environ.pop("CLINICADL_DETERMINISTIC", None)
+
 
 def test_seed_everything_context():
     os.environ["CLINICADL_GLOBAL_SEED"] = "0"
@@ -64,6 +66,7 @@ def test_seed_everything_context():
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = "x"
     torch.backends.cudnn.deterministic = False
     torch.backends.cudnn.benchmark = True
+    torch.use_deterministic_algorithms(False)
 
     with seed_everything_context(seed=10, deterministic=True):
         r1 = random.randint(0, 100)
