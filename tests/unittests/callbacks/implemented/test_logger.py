@@ -213,12 +213,11 @@ def test_validate(caplog, tmp_path):
     maps.exec.remove(non_empty_ok=True)
 
     state = TrainerState(
-        split_idx=2,
+        split_idx=0,
         called="validate",
         stage="evaluation",
         num_val_batches=4,
     )
-    maps.training.create_split(state.split_idx)
     SPLIT.index = state.split_idx
 
     logger = LoggerCallback()
@@ -226,9 +225,12 @@ def test_validate(caplog, tmp_path):
 
     stdout_capture = io.StringIO()
     with contextlib.redirect_stdout(stdout_capture), caplog.at_level(logging.INFO):
-        logger.on_validate_start(state=state, maps=maps, model_checkpoint=None)
+        logger.on_validate_start(state=state, maps=maps, model_checkpoint="best-loss")
     assert "Validation: " in stdout_capture.getvalue()
-    assert "Beginning of validation" in caplog.text
+    assert (
+        f"Beginning of validation of checkpoint 'best-loss' on split {SPLIT.index}"
+        in caplog.text
+    )
     assert logger._val_progress_bar.total == 4
     assert logger._val_progress_bar.initial == 1
     assert logger._val_progress_bar.desc == "Validation"
@@ -254,7 +256,7 @@ def test_validate(caplog, tmp_path):
         logger.on_validate_end()
     assert "End of validation" in caplog.text
     assert (
-        f"Validation metrics saved in {tmp_path / 'training' / f'split-{state.split_idx}' / 'models'}"
+        f"Validation metrics saved in {tmp_path / 'training' / f'split-{state.split_idx}' / 'models' / 'best_models' / 'best-loss'}"
         in caplog.text
     )
     assert logger._val_progress_bar.disable
@@ -274,14 +276,18 @@ def test_validate(caplog, tmp_path):
     assert "a warning" in f
     f = maps.open_file(run_dir.error_log)
     assert len(f) == 0
-    f = maps.open_file(maps.training.splits[state.split_idx].warning_log)
+    f = maps.open_file(
+        maps.training.splits[state.split_idx]
+        .models.best_models.metrics["loss"]
+        .warning_log
+    )
     assert "Batch" not in f
     assert "validation" not in f
     assert "a warning" in f
     assert "a second warning" not in f
     time.sleep(1)
 
-    # with checkpoint
+    # disable
     state.split_idx = 0
     logger = LoggerCallback(progress_bar=False, debug=False)
     logger.on_trainer_init(model=MODEL, maps=maps)
@@ -289,20 +295,6 @@ def test_validate(caplog, tmp_path):
     assert logger._val_progress_bar.disable
 
     log.warning("a third warning")
-
-    caplog.clear()
-    with caplog.at_level(logging.INFO):
-        logger.on_validate_end()
-    assert (
-        f"Validation metrics saved in {tmp_path / 'training' / f'split-{state.split_idx}' / 'models' / 'best_models' / 'best-loss'}"
-        in caplog.text
-    )
-    f = maps.open_file(
-        maps.training.splits[state.split_idx]
-        .models.best_models.metrics["loss"]
-        .warning_log
-    )
-    assert "a third warning" in f
 
     run_dir = maps.exec.runs[maps.exec.runs_list[1]]
     assert not run_dir.debug_log.exists()
@@ -313,7 +305,7 @@ def test_validate(caplog, tmp_path):
     maps.training.splits[state.split_idx].warning_log.unlink()
     logger = LoggerCallback(save_logs=False)
     logger.on_trainer_init(model=MODEL, maps=maps)
-    logger.on_validate_start(state=state, maps=maps, model_checkpoint=None)
+    logger.on_validate_start(state=state, maps=maps, model_checkpoint="best-loss")
     log.warning("a warning")
     assert len(maps.exec.runs_list) == 2
     assert not maps.training.splits[state.split_idx].warning_log.is_file()
