@@ -478,6 +478,9 @@ class Trainer:
         metrics.aggregate(epoch=epoch)
 
     def _reset_train(self, split: Split, metrics: MetricsHandler) -> None:
+        """
+        Resets the relevant objects before training.
+        """
         self.state.reset_training(
             split_idx=split.index, num_epochs=self._optim_config.num_epochs
         )
@@ -487,6 +490,9 @@ class Trainer:
         metrics.reset(reset_df=True)
 
     def _reset_epoch(self, epoch: int, train_loader: DataLoader) -> None:
+        """
+        Resets the relevant objects before a new epoch.
+        """
         self.state.reset_epoch(current_epoch=epoch, train_loader=train_loader)
         self.model.train()
         train_loader.set_epoch(epoch)
@@ -494,6 +500,9 @@ class Trainer:
     def _reset_validation(
         self, val_loader: DataLoader, metrics: MetricsHandler
     ) -> None:
+        """
+        Resets the relevant objects before a validation phase in :py:meth:`train`.
+        """
         self.state.reset_validation(
             split_idx=self.state.split_idx, val_loader=val_loader, in_training=True
         )
@@ -503,6 +512,9 @@ class Trainer:
     def _reset_validate(
         self, split_idx: int, dataloader: DataLoader, metrics: MetricsHandler
     ) -> None:
+        """
+        Resets the relevant objects before a validation phase in :py:meth:`validate`.
+        """
         self.state.reset_validation(
             split_idx=split_idx, val_loader=dataloader, in_training=False
         )
@@ -511,6 +523,9 @@ class Trainer:
         metrics.reset(reset_df=True)
 
     def _reset_test(self, dataloader: DataLoader, metrics: MetricsHandler) -> None:
+        """
+        Resets the relevant objects before a test phase.
+        """
         self.state.reset_test(dataloader)
         self.model.eval()
         dataloader.dataset.eval()
@@ -518,6 +533,10 @@ class Trainer:
 
     @staticmethod
     def _seed_context(seed: Optional[int], deterministic: bool) -> ContextManager[None]:
+        """
+        Returns a context manager for reproducibility if a seed is passed and a
+        null context otherwise.
+        """
         return (
             seed_everything_context(seed=seed, deterministic=deterministic)
             if seed is not None
@@ -526,6 +545,9 @@ class Trainer:
 
     @contextmanager
     def _exception_context(self) -> Generator[None, None, None]:
+        """
+        Context manager to handle exceptions.
+        """
         try:
             yield
         except Exception as e:
@@ -533,18 +555,21 @@ class Trainer:
             raise
 
     def _model_to(self, comp_config: ComputationalConfig) -> None:
+        """
+        Sends the model to the right device and converts to the specified memory format.
+        """
         comp_config.check_device()
         self.model.to(device=comp_config.device, non_blocking=comp_config.non_blocking)
         if comp_config.channels_last:
             try:
-                self.model.to(torch.channels_last)
+                self.model.to(memory_format=torch.channels_last)
             except RuntimeError:
-                self.model.to(torch.channels_last_3d)
+                self.model.to(memory_format=torch.channels_last_3d)
 
     @classmethod
     def _batch_to(cls, batch: BatchType, computational: ComputationalConfig) -> None:
         """
-        Send the data to the right device.
+        Send the data to the right device and converts to the specified memory format.
         """
         if isinstance(batch, Batch):
             batch.to(

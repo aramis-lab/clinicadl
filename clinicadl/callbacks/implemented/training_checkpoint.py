@@ -9,6 +9,7 @@ from pydantic import NonNegativeInt
 
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.suffixes import PT
+from clinicadl.utils.enum import TrainerCall
 from clinicadl.utils.names import camel_to_snake
 from clinicadl.utils.objects import HasConfig
 
@@ -76,12 +77,14 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         self._callbacks = callbacks
 
     def on_exception(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
-        if self.config.enabled:
-            try:
-                last_saved_epoch = self._get_last_saved_epoch(maps, state.split_idx)
-            except FileNotFoundError:
-                return
-            logger.error("Last checkpoint at the end of epoch %d", last_saved_epoch)
+        if not state.called == TrainerCall.TRAIN or not self.config.enabled:
+            return
+
+        try:
+            last_saved_epoch = self._get_last_saved_epoch(maps, state.split_idx)
+        except FileNotFoundError:
+            return
+        logger.error("Last checkpoint at the end of epoch %d", last_saved_epoch)
 
     def on_resume(
         self,
