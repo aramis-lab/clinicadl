@@ -62,7 +62,7 @@ class ComputationalConfig(ClinicaDLConfig):
 
     @field_validator("deterministic", mode="after")
     @classmethod
-    def _check_deterministic(cls, deterministic: Optional[bool]) -> Optional[bool]:
+    def _check_deterministic(cls, deterministic: Optional[bool]) -> bool:
         """If no deterministic arg, look for a global configuration."""
         if deterministic is None:
             return bool(os.environ.get(DETERMINISTIC))

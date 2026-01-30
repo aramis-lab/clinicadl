@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, Optional, Union
+from typing import TYPE_CHECKING, ContextManager, Generator, Iterator, Optional, Union
 
 import torch
 from torch.amp.autocast_mode import autocast
@@ -21,7 +22,7 @@ from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.dictionary.words import CPU
 from clinicadl.utils.exceptions import CannotReadJsonError
-from clinicadl.utils.seed import seed_everything
+from clinicadl.utils.seed import seed_everything_context
 
 if TYPE_CHECKING:
     from clinicadl.callbacks import Callback
@@ -174,12 +175,25 @@ class Trainer:
         metrics: Optional[Sequence[str]] = None,
         resume: bool = False,
     ) -> None:
-        """ """
         self.maps.read()
-        self._create_split(split.index)
+        self._create_split(split.index, resume)
 
-        self._seed(computational)
+        if resume:
+            seed, deterministic = self._get_old_reprod_config(split.index)
+        else:
+            seed, deterministic = computational.seed, computational.deterministic
 
+        with self._seed_context(seed, deterministic), self._exception_context():
+            self._train(split, computational, metrics, resume)
+
+    def _train(
+        self,
+        split: Split,
+        computational: ComputationalConfig = ComputationalConfig(),
+        metrics: Optional[Sequence[str]] = None,
+        resume: bool = False,
+    ) -> None:
+        """ """
         if metrics:
             metrics_handler = self._metrics.subset(metrics)
         else:
@@ -292,14 +306,27 @@ class Trainer:
         model_checkpoint: Optional[str] = None,
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
-        """
-        Evaluate the model on a validation or test dataset.
-        """
         self.maps.read()
         self._check_split(split_idx)
 
-        self._seed(computational)
+        seed, deterministic = self._get_old_reprod_config(split_idx)
 
+        with self._seed_context(seed, deterministic), self._exception_context():
+            self._validate(
+                split_idx, metrics, dataloader, model_checkpoint, computational
+            )
+
+    def _validate(
+        self,
+        split_idx: int,
+        metrics: Sequence[str],
+        dataloader: Optional[DataLoader] = None,
+        model_checkpoint: Optional[str] = None,
+        computational: ComputationalConfig = ComputationalConfig(),
+    ) -> None:
+        """
+        Evaluate the model on a validation or test dataset.
+        """
         if not dataloader:
             dataloader = self._get_dataloader(
                 self.maps.training.data.validation.splits[split_idx]
@@ -340,12 +367,23 @@ class Trainer:
         dataloader: Optional[DataLoader] = None,
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
+        with self._seed_context(
+            computational.seed, computational.deterministic
+        ), self._exception_context():
+            self._test(model_checkpoint, metrics, group_name, dataloader, computational)
+
+    def _test(
+        self,
+        model_checkpoint: str,
+        metrics: Sequence[str],
+        group_name: str,
+        dataloader: Optional[DataLoader] = None,
+        computational: ComputationalConfig = ComputationalConfig(),
+    ) -> None:
         """
         Evaluate the model on a validation or test dataset.
         """
         self.maps.read()
-
-        self._seed(computational)
 
         if not dataloader:
             self._check_group_exists(group_name)
@@ -479,11 +517,20 @@ class Trainer:
         metrics.reset(reset_df=True)
 
     @staticmethod
-    def _seed(computational: ComputationalConfig) -> None:
-        if computational.seed is not None:
-            seed_everything(
-                computational.seed, deterministic=computational.deterministic
-            )
+    def _seed_context(seed: Optional[int], deterministic: bool) -> ContextManager[None]:
+        return (
+            seed_everything_context(seed=seed, deterministic=deterministic)
+            if seed is not None
+            else nullcontext()
+        )
+
+    @contextmanager
+    def _exception_context(self) -> Generator[None, None, None]:
+        try:
+            yield
+        except Exception as e:
+            self._call_event(Events.EXCEPTION, exception=e)
+            raise
 
     def _model_to(self, comp_config: ComputationalConfig) -> None:
         comp_config.check_device()
@@ -512,10 +559,21 @@ class Trainer:
             for b in batch:
                 cls._batch_to(b, computational=computational)
 
+    def _load_model_checkpoint(self, model_path: Path) -> None:
+        self.model.to(CPU)  # load weights on cpu
+        state_dict = self.maps.open_file(model_path)
+        self.model.load_state_dict(state_dict)
+
     def _call_event(self, event: Events, **kwargs):
         self.callbacks.call_event(
             event, model=self.model, maps=self.maps, state=self.state, **kwargs
         )
+
+    def _get_old_reprod_config(self, split_idx) -> tuple[Optional[int], bool]:
+        comp = ComputationalConfig.from_json(
+            self.maps.training.splits[split_idx].computational_json
+        )
+        return comp.seed, comp.deterministic
 
     def _get_models_in_split(
         self, split_idx: int, model_checkpoint: Optional[str]
@@ -532,11 +590,6 @@ class Trainer:
                 split_idx
             ].models.get_all_models():
                 yield from self._get_models_in_split(split_idx, model_checkpoint)
-
-    def _load_model_checkpoint(self, model_path: Path) -> None:
-        self.model.to(CPU)  # load weights on cpu
-        state_dict = self.maps.open_file(model_path)
-        self.model.load_state_dict(state_dict)
 
     def _get_dataloader(self, data_dir: DataDir) -> DataLoader:
         def _error_msg(obj: str, path: Path) -> str:
@@ -561,10 +614,17 @@ class Trainer:
 
         return dataloader_config.get_object(dataset)
 
-    def _create_split(self, split_idx: int) -> None:
-        if split_idx in self.maps.training.splits_list:
+    def _create_split(self, split_idx: int, resume: bool) -> None:
+        if resume and split_idx not in self.maps.training.splits_list:
+            raise KeyError(
+                f"Cannot resume training on split {split_idx} because no training found "
+                "for this split."
+            )
+        if not resume and split_idx in self.maps.training.splits_list:
             raise ValueError(
-                f"Training on split {split_idx} has already been performed. To relaunch a training on this split, first delete it properly with clinicadl.io.Maps.delete_split"
+                f"Training on split {split_idx} has already been performed. To relaunch a training on this split, "
+                "first delete it properly with clinicadl.io.Maps.delete_split; to resume a training on this split, "
+                "set resume=True."
             )
         self.maps.training.create_split(split_idx)
 

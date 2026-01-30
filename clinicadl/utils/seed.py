@@ -2,7 +2,7 @@ import logging
 import os
 import random
 from contextlib import contextmanager
-from typing import ContextManager, Optional
+from typing import Generator, Optional
 
 import numpy as np
 import torch
@@ -97,7 +97,7 @@ def seed_everything(seed: Optional[int] = None, deterministic: bool = False) -> 
 @contextmanager
 def seed_everything_context(
     seed: Optional[int] = None, deterministic: bool = False
-) -> ContextManager[None]:
+) -> Generator[None, None, None]:
     """
     Context manager to control reproducibility.
 
