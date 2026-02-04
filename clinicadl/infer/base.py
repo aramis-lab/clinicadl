@@ -13,6 +13,7 @@ from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.handlers import Postprocessing
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import CPU
 from clinicadl.utils.objects import HasConfig
 
 from .abstract import Inferer
@@ -90,7 +91,7 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
         self._add_output(x, output)
 
         if self.config.postprocessing_on_cpu and self.config.postprocessing.transforms:
-            x.to(device="cpu")
+            x.to(device=CPU)
 
         return self._postprocess(x)
 

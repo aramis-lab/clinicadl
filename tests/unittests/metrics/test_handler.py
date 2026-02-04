@@ -422,6 +422,7 @@ def test_save_and_merge_df(tmp_path):
 def test_read_write_json(tmp_path):
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
+        metrics_on_cpu=False,
     )
     metrics.add_metrics(my_metric=CustomMetric())
     metrics.to_json(tmp_path / "metrics.json")
@@ -439,6 +440,7 @@ def test_read_write_json(tmp_path):
             },
             "my_metric": "CustomMetric",
         },
+        "metrics_on_cpu": False,
     }
     with open(tmp_path / "metrics.json", "r") as f:
         d = json.load(f)
@@ -454,8 +456,26 @@ def test_read_write_json(tmp_path):
         json_path=tmp_path / "metrics.json",
         my_metric=CustomMetric(),
     )
+    assert not metrics.config.metrics_on_cpu
     assert isinstance(metrics.config.metrics.values["mse"].value, MSEMetricConfig)
     assert isinstance(metrics.config.metrics.values["my_metric"].value, CustomMetric)
+
+
+@pytest.mark.gpu
+def test_cpu_gpu():
+    BATCH_1.to("gpu")
+    assert BATCH_1.device == torch.device("cuda:0")
+    metrics = MetricsHandler(
+        my_metric=CustomMetric(),
+    )
+    metrics(BATCH_1)
+
+    metrics = MetricsHandler(
+        my_metric=CustomMetric(),
+        metrics_on_cpu=True,
+    )
+    metrics(BATCH_1)
+    assert BATCH_1.device == torch.device("cpu")
 
 
 def test_empty():

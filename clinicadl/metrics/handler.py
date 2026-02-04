@@ -2,21 +2,24 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, ValidationError, ValidationInfo, field_validator
+from typing_extensions import Self
 
-from clinicadl.utils.config import DictOfObjects, KwargsConfig
+from clinicadl.utils.config import DictOfObjects, ObjectConfig
 from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.dictionary.words import (
+    CPU,
     EPOCH,
+    METRICS,
     PARTICIPANT,
     PARTICIPANT_ID,
     SESSION,
     SESSION_ID,
 )
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+from clinicadl.utils.exceptions import CannotReadFieldError, ClinicaDLConfigurationError
 from clinicadl.utils.objects import HasConfig
 
 from .base import Metric
@@ -29,7 +32,7 @@ if TYPE_CHECKING:
     from clinicadl.models import Model
 
 
-class MetricsHandlerConfig(KwargsConfig["MetricsHandler"]):
+class MetricsHandlerConfig(ObjectConfig["MetricsHandler"]):
     """
     To check and convert metrics passed by the user.
     """
@@ -37,6 +40,31 @@ class MetricsHandlerConfig(KwargsConfig["MetricsHandler"]):
     metrics: DictOfObjects[Metric, MetricConfig] = Field(
         reader=DictOfObjects.build_reader(get_metric_from_dict)
     )
+    metrics_on_cpu: bool
+
+    @field_validator("metrics", mode="before")
+    @classmethod
+    def _handle_dict(cls, v: Any, info: ValidationInfo) -> DictOfObjects:
+        return DictOfObjects.from_dict(v, field_name=info.field_name)
+
+    @classmethod
+    def from_dict(cls, dict_: dict[str, Any], **kwargs) -> Self:
+        dict_ = cls._check_dict(dict_)
+
+        dict_[METRICS].update(
+            {arg: value for arg, value in kwargs.items() if arg != "metrics_on_cpu"}
+        )
+
+        if cpu := kwargs.get("metrics_on_cpu", None):
+            dict_["metrics_on_cpu"] = cpu
+
+        try:
+            return super().from_dict(dict_)
+        except CannotReadFieldError as e:
+            wrong_metrics = cls._read_pydantic_error(e.error)
+            raise CannotReadFieldError(
+                field_names=wrong_metrics, object_name=cls._get_name()
+            ) from e
 
     @property
     def metric_names(self) -> list[str]:
@@ -56,6 +84,18 @@ class MetricsHandlerConfig(KwargsConfig["MetricsHandler"]):
             if name in self.metric_names:
                 raise ValueError(f"A metric named '{name}' already exists!")
         self.metrics = self.metrics.values | metrics
+
+    @staticmethod
+    def _read_pydantic_error(error: ValidationError) -> list[str]:
+        """
+        To read a pydantic validation error and determine
+        what key of the dict is failing validation.
+        """
+        wrong_keys = []
+        for e in error.errors():
+            wrong_keys.append(e["loc"][2])
+
+        return list(set(wrong_keys))
 
     @classmethod
     def _get_class(cls) -> type[MetricsHandler]:
@@ -89,12 +129,15 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
 
     def __init__(
         self,
+        metrics_on_cpu: bool = True,
         **metrics: MetricOrConfig,
     ):
         if not metrics:
             metrics = {}
 
-        self.config = MetricsHandlerConfig(metrics=metrics)
+        self.config = MetricsHandlerConfig(
+            metrics_on_cpu=metrics_on_cpu, metrics=metrics
+        )
         self._metrics = None
         self._model = None
 
@@ -280,6 +323,9 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             raise ClinicaDLConfigurationError(
                 "First, call 'init_metrics' to instantiate the metrics."
             )
+
+        if self.config.metrics_on_cpu:
+            batch.to(device=CPU)
 
         participants = batch.get_field(PARTICIPANT)
         sessions = batch.get_field(SESSION)
@@ -476,7 +522,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
 
         subset = {
             name: metric
-            for name, metric in self.config.to_raw_dict().items()
+            for name, metric in self.config.to_raw_dict()[METRICS].items()
             if name in metrics
         }
 
@@ -485,3 +531,9 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             new_metrics.init_metrics(model=self._model)
 
         return new_metrics
+
+    @classmethod
+    def _from_config(cls: type[Self], config: MetricsHandlerConfig) -> Self:
+        """To create the object from the associated config."""
+        args = config.to_raw_dict()
+        return cls(metrics_on_cpu=args["metrics_on_cpu"], **args[METRICS])

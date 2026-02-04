@@ -710,67 +710,6 @@ class DictOfObjects(BaseModel, Generic[T, TConfig]):
         return dict_reader
 
 
-class KwargsConfig(ObjectConfig[T]):
-    """
-    Config class to handle kwargs.
-    It accepts only ONE field, which must be a :py:class:`DictOfObjects`.
-    """
-
-    @field_validator("*", mode="before")
-    @classmethod
-    def _handle_dict(cls, v: Any, info: ValidationInfo) -> DictOfObjects:
-        return DictOfObjects.from_dict(v, field_name=info.field_name)
-
-    @model_validator(mode="after")
-    def _count_fields(self) -> Self:
-        """
-        Check that a the KwargsConfig contain only one field.
-        """
-        fields = self.get_fields()
-        assert (
-            len(fields) == 1
-        ), f"KwargsConfig should contain only one field, found {fields} here."
-
-        return self
-
-    @classmethod
-    def from_dict(cls, dict_: dict[str, Any], **kwargs) -> Self:
-        dict_ = cls._check_dict(dict_)
-
-        main_field_name = list(dict_.keys())[0]  # only one field in KwargsConfig
-
-        values: dict = dict_[list(dict_.keys())[0]]
-        values.update(kwargs)
-
-        dict_[main_field_name] = values
-
-        try:
-            return super().from_dict(dict_)
-        except CannotReadFieldError as e:
-            wrong_metrics = cls._read_pydantic_error(e.error)
-            raise CannotReadFieldError(
-                field_names=wrong_metrics, object_name=cls._get_name()
-            ) from e
-
-    def to_raw_dict(self, exclude: Optional[Sequence[str]] = None) -> dict[str, Any]:
-        dict_ = super().to_raw_dict(exclude)
-        main_field_name = self.get_fields(alias=False)[0]
-
-        return dict_[main_field_name]
-
-    @staticmethod
-    def _read_pydantic_error(error: ValidationError) -> list[str]:
-        """
-        To read a pydantic validation error and determine
-        what key of the dict is failing validation.
-        """
-        wrong_keys = []
-        for e in error.errors():
-            wrong_keys.append(e["loc"][2])
-
-        return list(set(wrong_keys))
-
-
 def _order_dict(model_or_field: Any) -> Any:
     """
     To always have the field 'name' at the beginning.
