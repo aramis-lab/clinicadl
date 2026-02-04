@@ -25,6 +25,9 @@ from clinicadl.utils.exceptions import CannotReadJsonError
 from clinicadl.utils.seed import seed_everything_context
 
 if TYPE_CHECKING:
+    from torch.amp.grad_scaler import GradScaler
+    from torch.optim import Optimizer
+
     from clinicadl.callbacks import Callback
     from clinicadl.data.dataloader import BatchType, DataLoader
     from clinicadl.io.maps.utils import DataDir
@@ -121,26 +124,45 @@ class Trainer:
 
     @property
     def maps(self) -> Maps:
+        """
+        The py:class:`clinicadl.io.Maps` associated to the ``Trainer``.
+        """
         return self._maps
 
     @property
     def model(self) -> Model:
+        """
+        The py:class:`clinicadl.models.Model` associated to the ``Trainer``.
+        """
         return self._model
 
     @property
     def metrics(self) -> MetricsHandler:
+        """
+        The py:class:`metrics clinicadl.metrics` computed by ``Trainer``.
+        """
         return self._metrics
 
     @property
     def callbacks(self) -> CallbacksHandler:
+        """
+        The py:class:`callbacks clinicadl.callbacks` called by ``Trainer``.
+        """
         return self._callbacks
 
     @property
     def optimization(self) -> OptimizationConfig:
+        """
+        The py:class:`optimization configuration clinicadl.optim.OptimizationConfig`
+        of the ``Trainer``.
+        """
         return self._optim_config
 
     @property
     def state(self) -> TrainerState:
+        """
+        The current py:class:`state clinicadl.state.TrainerState` of the ``Trainer``.
+        """
         return self._state
 
     @classmethod
@@ -161,12 +183,29 @@ class Trainer:
         )
 
     def add_metrics(self, **metrics: MetricOrConfig) -> None:
+        """
+        To add new metrics to compute to the `py:class:`clinicadl.metrics.MetricsHandler`.
+
+        Parameters
+        ----------
+        **metrics : MetricConfig
+            The metrics, passed as a :py:class:`clinicadl.metrics.config.MetricConfig`
+            or a :py:class:`clinicadl.metrics.Metric`.
+        """
         self._metrics.add_metrics(**metrics)
         self._metrics.to_json(self._maps.metrics_json, overwrite=True)
 
     def add_callbacks(self, callbacks: Sequence[Callback]) -> None:
+        """
+        To add new callbacks to the `py:class:`clinicadl.callbacks.CallbacksHandler`.
+
+        Parameters
+        ----------
+        callbacks : Sequence[Callback]
+            The :py:class:`Callbacks <clinicadl.callbacks.Callback` to add.
+        """
         self._callbacks.add_callbacks(callbacks)
-        self._metrics.to_json(self._maps.callbacks_json, overwrite=True)
+        self._callbacks.to_json(self._maps.callbacks_json, overwrite=True)
 
     def train(
         self,
@@ -184,16 +223,22 @@ class Trainer:
             seed, deterministic = computational.seed, computational.deterministic
 
         with self._seed_context(seed, deterministic), self._exception_context():
-            self._train(split, computational, metrics, resume)
+            self._train(
+                split=split, computational=computational, metrics=metrics, resume=resume
+            )
 
     def _train(
         self,
         split: Split,
-        computational: ComputationalConfig = ComputationalConfig(),
-        metrics: Optional[Sequence[str]] = None,
-        resume: bool = False,
+        computational: ComputationalConfig,
+        metrics: Optional[Sequence[str]],
+        resume: bool,
     ) -> None:
-        """ """
+        """
+        Instantiates/restarts the required objects (e.g. optimizers),
+        sends the model to the specified device and starts the
+        training loop.
+        """
         if metrics:
             metrics_handler = self._metrics.subset(metrics)
         else:
@@ -227,6 +272,24 @@ class Trainer:
                 computational=computational,
             )
 
+        self._train_loop(
+            split=split,
+            optimizers=optimizers,
+            grad_scaler=grad_scaler,
+            metrics=metrics_handler,
+            computational=computational,
+        )
+
+        self._call_event(Events.TRAIN_END)
+
+    def _train_loop(
+        self,
+        split: Split,
+        optimizers: dict[str, Optimizer],
+        grad_scaler: GradScaler,
+        metrics: MetricsHandler,
+        computational: ComputationalConfig,
+    ) -> None:
         for epoch in range(
             self.state.current_epoch + 1, self.optimization.num_epochs + 1
         ):
@@ -250,7 +313,7 @@ class Trainer:
                     device_type=computational.device.type,
                     enabled=computational.amp,
                 ):
-                    loss = self.model.forward_step(batch=batch)
+                    loss = self.model.forward_step(batch)
 
                 self._call_event(
                     Events.BACKWARD_START, loss=loss, grad_scaler=grad_scaler
@@ -267,7 +330,9 @@ class Trainer:
                         grad_scaler=grad_scaler,
                     )
 
-                    self.model.optimization_step(grad_scaler=grad_scaler)
+                    self.model.optimization_step(
+                        optimizers=optimizers, grad_scaler=grad_scaler
+                    )
                     self.state.optim_step += 1
 
                     grad_scaler.update()
@@ -290,13 +355,11 @@ class Trainer:
             ):
                 self._validation(
                     split.val_loader,
-                    metrics=metrics_handler,
+                    metrics=metrics,
                     computational=computational,
                 )
 
             self._call_event(Events.EPOCH_END)
-
-        self._call_event(Events.TRAIN_END)
 
     def validate(
         self,
@@ -307,7 +370,7 @@ class Trainer:
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
         self.maps.read()
-        self._check_split(split_idx)
+        self._check_split_exists(split_idx)
 
         seed, deterministic = self._get_old_reprod_config(split_idx)
 
@@ -569,7 +632,7 @@ class Trainer:
     @classmethod
     def _batch_to(cls, batch: BatchType, computational: ComputationalConfig) -> None:
         """
-        Send the data to the right device and converts to the specified memory format.
+        Sends the data to the right device and converts to the specified memory format.
         """
         if isinstance(batch, Batch):
             batch.to(
@@ -585,16 +648,25 @@ class Trainer:
                 cls._batch_to(b, computational=computational)
 
     def _load_model_checkpoint(self, model_path: Path) -> None:
+        """
+        Loads model weights on CPU.
+        """
         self.model.to(CPU)  # load weights on cpu
         state_dict = self.maps.open_file(model_path)
         self.model.load_state_dict(state_dict)
 
     def _call_event(self, event: Events, **kwargs):
+        """
+        Calls a callback event.
+        """
         self.callbacks.call_event(
             event, model=self.model, maps=self.maps, state=self.state, **kwargs
         )
 
     def _get_old_reprod_config(self, split_idx) -> tuple[Optional[int], bool]:
+        """
+        Gets the seed and the deterministic setting from an old experiment.
+        """
         comp = ComputationalConfig.from_json(
             self.maps.training.splits[split_idx].computational_json
         )
@@ -603,6 +675,10 @@ class Trainer:
     def _get_models_in_split(
         self, split_idx: int, model_checkpoint: Optional[str]
     ) -> Iterator[tuple[str, Path]]:
+        """
+        Gets either the paths to all the models in a split, or the
+        path to a specific checkpoint. Returns a generator in both cases.
+        """
         if model_checkpoint:
             yield (
                 model_checkpoint,
@@ -617,6 +693,11 @@ class Trainer:
                 yield from self._get_models_in_split(split_idx, model_checkpoint)
 
     def _get_dataloader(self, data_dir: DataDir) -> DataLoader:
+        """
+        To load old dataset and dataloader config and build a dataloader
+        with them.
+        """
+
         def _error_msg(obj: str, path: Path) -> str:
             return (
                 f"ClinicaDL could not read the {obj} in {path}. Please pass directly the dataloader "
@@ -640,25 +721,35 @@ class Trainer:
         return dataloader_config.get_object(dataset)
 
     def _create_split(self, split_idx: int, resume: bool) -> None:
+        """
+        If resume, checks if the split directory exists.
+        If not resume, checks that the split directory doesn't exist and creates it.
+        """
         if resume and split_idx not in self.maps.training.splits_list:
             raise KeyError(
                 f"Cannot resume training on split {split_idx} because no training found "
                 "for this split."
             )
-        if not resume and split_idx in self.maps.training.splits_list:
+        elif not resume and split_idx in self.maps.training.splits_list:
             raise ValueError(
                 f"Training on split {split_idx} has already been performed. To relaunch a training on this split, "
                 "first delete it properly with clinicadl.io.Maps.delete_split; to resume a training on this split, "
                 "set resume=True."
             )
-        self.maps.training.create_split(split_idx)
+        self.maps.training.create_split(split_idx, exist_ok=True)
 
-    def _check_split(self, split_idx: int) -> None:
+    def _check_split_exists(self, split_idx: int) -> None:
+        """
+        Checks that a split directory exists.
+        """
         if split_idx not in self.maps.training.splits_list:
             raise KeyError(f"No training performed on split {split_idx}.")
 
     def _check_group_exists(self, group: str) -> None:
+        """
+        Checks that a group already exists.
+        """
         if group not in self.maps.test.groups_list:
-            raise ValueError(
-                f"The group you passed ('{group}'), so you must pass a dataloader."
+            raise KeyError(
+                f"The group you passed ('{group}') does not exist yet, so you must pass a dataloader."
             )
