@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Mapping
 
@@ -59,7 +58,7 @@ class Events(str, Enum):
     PREDICT_END = "on_predict_end"
 
 
-class Callback(ABC):
+class Callback:
     """
     To define arbitrary action to perform at certain points of the training, evaluation or
     prediction loop.
@@ -77,12 +76,6 @@ class Callback(ABC):
     the recover the state of your callback when resuming an interrupted training.
 
     """
-
-    def reset(self) -> None:
-        """
-        Called every time :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`, :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`,
-        :py:meth:`Trainer.test <clinicadl.train.Trainer.test>` or :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>` are called.
-        """
 
     def on_trainer_init(
         self,

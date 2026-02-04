@@ -19,7 +19,7 @@ class TrainingSummary:
         """
         Creates a new summary file.
         """
-        summary = "============================================ Training =============================================\n\n"
+        summary = "================================================ Training ================================================\n\n"
         summary += "Date: " + datetime.now().strftime("%Y %b %d, %H:%M:%S") + "\n\n"
         with self.file.open(mode="w") as f:
             f.write(summary)

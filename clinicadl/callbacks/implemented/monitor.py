@@ -422,37 +422,37 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         """
 
         lines = [
-            "\n*********************** Computational Summary (mean ± std [n measurements]) ***********************\n"
+            "\n*************************** Computational Summary (mean ± std [n measurements]) **************************\n"
         ]
         if self._gpus_used:
             lines.append(
                 f"""GPU: {" then ".join([f"'{gpu}'" for gpu in self._gpus_used])}\n"""
             )
         lines.append(
-            f"{'Phase':^15} | {'Time (s)':^25} | {'GPU Time (s)':^25} | {'GPU Max Memory (MB)':^25}\n"
-            + "-" * 99
+            f"{'Phase':^22} | {'Time (s)':^25} | {'GPU Time (s)':^25} | {'GPU Max Memory (MB)':^25}\n"
+            + "-" * 106
         )
 
         lines.append(
-            f"{'Training':<15} | {_repr_series(df[_add_s_suffix(TRAIN)]):<25} | {'':<25} | {'':<25}"
+            f"{'Training':<22} | {_repr_series(df[_add_s_suffix(TRAIN)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' + 'Epoch':<15} | {_repr_series(df[_add_s_suffix(EPOCH)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' + 'Epoch':<22} | {_repr_series(df[_add_s_suffix(EPOCH)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 2 + 'Iteration':<15} | {_repr_series(df[_add_s_suffix(TRAIN_LOOP)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' * 2 + 'Iteration':<22} | {_repr_series(df[_add_s_suffix(TRAIN_LOOP)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 3 + 'Data loading':<15} | {_repr_series(df[_add_s_suffix(TRAIN_LOAD)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' * 3 + 'Data loading':<22} | {_repr_series(df[_add_s_suffix(TRAIN_LOAD)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 3 + 'Forward':<15} | {_repr_series(df[_add_s_suffix(FORWARD)]):<25} | {_repr_series(df[FORWARD_GPU]):<25} | {_repr_series(df[FORWARD_MEM]):<25}"
+            f"{' ' * 3 + 'Forward':<22} | {_repr_series(df[_add_s_suffix(FORWARD)]):<25} | {_repr_series(df[FORWARD_GPU]):<25} | {_repr_series(df[FORWARD_MEM]):<25}"
         )
         lines.append(
-            f"{' ' * 3 + 'Backward':<15} | {_repr_series(df[_add_s_suffix(BACKWARD)]):<25} | {_repr_series(df[BACKWARD_GPU]):<25} | {_repr_series(df[BACKWARD_MEM]):<25}"
+            f"{' ' * 3 + 'Backward':<22} | {_repr_series(df[_add_s_suffix(BACKWARD)]):<25} | {_repr_series(df[BACKWARD_GPU]):<25} | {_repr_series(df[BACKWARD_MEM]):<25}"
         )
         lines.append(
-            f"{' ' * 3 + 'Optimization':<15} | {_repr_series(df[_add_s_suffix(OPT)]):<25} | {_repr_series(df[OPT_GPU]):<25} | {_repr_series(df[OPT_MEM]):<25}"
+            f"{' ' * 3 + 'Optimization':<22} | {_repr_series(df[_add_s_suffix(OPT)]):<25} | {_repr_series(df[OPT_GPU]):<25} | {_repr_series(df[OPT_MEM]):<25}"
         )
 
         lines.append(
@@ -466,21 +466,21 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
                 f"GPU throughput: {self._train_batch_size / total_gpu_time:.2f} images/s"
             )
 
-        lines.append("-" * 99)
+        lines.append("-" * 106)
         lines.append(
-            f"{'Validation':<15} | {_repr_series(df[_add_s_suffix(VAL)]):<25} | {'':<25} | {'':<25}"
+            f"{'Validation':<22} | {_repr_series(df[_add_s_suffix(VAL)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' + 'Iteration':<15} | {_repr_series(df[_add_s_suffix(VAL_LOOP)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' + 'Iteration':<22} | {_repr_series(df[_add_s_suffix(VAL_LOOP)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 2 + 'Data loading':<15} | {_repr_series(df[_add_s_suffix(VAL_LOAD)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' * 2 + 'Data loading':<22} | {_repr_series(df[_add_s_suffix(VAL_LOAD)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 2 + 'Evaluation':<15} | {_repr_series(df[_add_s_suffix(EVAL)]):<25} | {_repr_series(df[EVAL_GPU]):<25} | {_repr_series(df[EVAL_MEM]):<25}"
+            f"{' ' * 2 + 'Evaluation':<22} | {_repr_series(df[_add_s_suffix(EVAL)]):<25} | {_repr_series(df[EVAL_GPU]):<25} | {_repr_series(df[EVAL_MEM]):<25}"
         )
         lines.append(
-            f"{' ' * 2 + 'Metrics computation':<15} | {_repr_series(df[_add_s_suffix(METRIC)]):<25} | {_repr_series(df[METRIC_GPU]):<25} | {_repr_series(df[METRIC_MEM]):<25}"
+            f"{' ' * 2 + 'Metrics computation':<22} | {_repr_series(df[_add_s_suffix(METRIC)]):<25} | {_repr_series(df[METRIC_GPU]):<25} | {_repr_series(df[METRIC_MEM]):<25}"
         )
 
         lines.append(
@@ -491,7 +491,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
                 f"GPU throughput: {self._val_batch_size / df[EVAL_GPU].mean():.2f} images/s"
             )
 
-        lines.append("*" * 99 + "\n")
+        lines.append("*" * 106 + "\n")
 
         return "\n".join(lines)
 
