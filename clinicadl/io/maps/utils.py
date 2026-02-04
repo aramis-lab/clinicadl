@@ -69,6 +69,12 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
         dict_ = getattr(self, self._items_dict_private_name())
         dict_[item] = dir_
 
+    def _delete_item(self, item: ItemType) -> None:
+        dir_: DirType = self._dir_type(self._item_path(str(item)))
+        dir_.remove(non_empty_ok=True)
+        dict_ = getattr(self, self._items_dict_private_name())
+        del dict_[item]
+
     @classmethod
     def _items_dict_private_name(cls) -> str:
         return "_" + cls._item_key + "s"
@@ -114,6 +120,9 @@ class SplitsDir(CollectionOfDirs[DirType, int]):
     ) -> None:
         self._create_item(split_idx, overwrite=overwrite, exist_ok=exist_ok)
 
+    def delete_split(self, split_idx: int) -> None:
+        self._delete_item(split_idx)
+
 
 class EpochsDir(CollectionOfDirs[DirType, int]):
     _item_key = EPOCH
@@ -135,6 +144,9 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
         self, epoch: int, overwrite: bool = False, exist_ok: bool = False
     ) -> None:
         self._create_item(epoch, overwrite=overwrite, exist_ok=exist_ok)
+
+    def delete_epoch(self, epoch: int) -> None:
+        self._delete_item(epoch)
 
 
 class ModelDir(Directory):

@@ -54,6 +54,9 @@ class BestModelsDir(CollectionOfDirs[TrainingModelDir, str]):
     ) -> None:
         self._create_item(metric, overwrite=overwrite, exist_ok=exist_ok)
 
+    def delete_metric(self, metric: str) -> None:
+        self._delete_item(metric)
+
     @classmethod
     def _items_dict_private_name(cls) -> str:
         return "_" + METRICS

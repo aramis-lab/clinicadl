@@ -43,6 +43,20 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
             split_idx, overwrite=overwrite, exist_ok=exist_ok
         )
 
+    def delete_split(self, split_idx: int) -> None:
+        split_exists = False
+        for dir in [super(), self.data.train, self.data.validation]:
+            try:
+                dir.delete_split(split_idx)
+            except FileNotFoundError:
+                continue
+            else:
+                split_exists = True
+        if not split_exists:
+            raise FileNotFoundError(
+                f"No mention of split {split_idx} found in {self.path}"
+            )
+
     def read(self) -> None:
         super().read()
 

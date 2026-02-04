@@ -44,3 +44,6 @@ class ExecDir(CollectionOfDirs[RunDir, str]):
         self._create_item(run_name, overwrite=True, exist_ok=True)
 
         return run_name
+
+    def delete_run(self, run: str) -> str:
+        self._delete_item(run)

@@ -41,6 +41,9 @@ class InferenceSplitDir(CollectionOfDirs[DirType, str]):
     ) -> None:
         self._create_item(model, overwrite=overwrite, exist_ok=exist_ok)
 
+    def delete_model(self, model: str) -> None:
+        self._delete_item(model)
+
     @classmethod
     def _items_dict_private_name(cls) -> str:
         return "_" + MODELS
@@ -81,3 +84,6 @@ class InferenceDir(CollectionOfDirs[DirType, str]):
         self, group: str, overwrite: bool = False, exist_ok: bool = False
     ) -> None:
         self._create_item(group, overwrite=overwrite, exist_ok=exist_ok)
+
+    def delete_group(self, group: str) -> None:
+        self._delete_item(group)
