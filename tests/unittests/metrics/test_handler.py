@@ -49,8 +49,8 @@ class CustomMetric(Metric):
     _optimum = "max"
 
     def _accumulate(self, batch):
-        pred = torch.tensor([datapoint["output"] for datapoint in batch])
-        gt = torch.tensor([datapoint["label"] for datapoint in batch])
+        pred = batch.get_field("output")
+        gt = batch.get_field("label")
         return pred == gt
 
     def _aggregate(self, data):
@@ -463,17 +463,20 @@ def test_read_write_json(tmp_path):
 
 @pytest.mark.gpu
 def test_cpu_gpu():
-    BATCH_1.to("gpu")
-    assert BATCH_1.device == torch.device("cuda:0")
+    BATCH_1.to("cuda:0")
     metrics = MetricsHandler(
         my_metric=CustomMetric(),
+        metrics_on_cpu=False,
     )
+    metrics.init_metrics()
     metrics(BATCH_1)
+    assert BATCH_1.device == torch.device("cuda:0")
 
     metrics = MetricsHandler(
         my_metric=CustomMetric(),
         metrics_on_cpu=True,
     )
+    metrics.init_metrics()
     metrics(BATCH_1)
     assert BATCH_1.device == torch.device("cpu")
 
