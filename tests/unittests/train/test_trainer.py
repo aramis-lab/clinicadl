@@ -1127,12 +1127,12 @@ class TestEvaluationLoop:
         metrics.assert_has_calls([call("out", epoch=None)] * len(batches))
         metrics.aggregate.assert_called_once_with(epoch=None)
 
-    def test_train_loop_real(self, trainer: Trainer):
+    def test_evaluation_loop_real(self, trainer: Trainer):
         computational = ComputationalConfig(amp=False, channels_last=False, gpu=False)
         self._real_test(trainer, computational)
 
     @pytest.mark.gpu
-    def test_train_loop_real_gpu(self, trainer: Trainer):
+    def test_evaluation_loop_real_gpu(self, trainer: Trainer):
         computational = ComputationalConfig(amp=True, channels_last=True, gpu=True)
         self._real_test(trainer, computational)
 

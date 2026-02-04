@@ -533,6 +533,10 @@ class Trainer:
         computational: ComputationalConfig,
         epoch: Optional[int] = None,
     ) -> None:
+        """
+        The core evaluation logic, with the iteration on the
+        evaluation batches.
+        """
         with torch.no_grad():
             for batch_idx, batch in enumerate(dataloader, start=1):
                 self.state.current_val_batch = batch_idx
