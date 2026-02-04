@@ -47,7 +47,8 @@ class Events(str, Enum):
     VALIDATE_START = "on_validate_start"
     VALIDATE_END = "on_validate_end"
     EVAL_START = "on_evaluation_step_start"
-    EVAL_END = "on_evaluation_step_end"
+    METRIC_START = "on_metrics_computation_start"
+    METRIC_END = "on_metrics_computation_end"
 
     # Test
     TEST_START = "on_test_start"
@@ -506,7 +507,6 @@ class Callback(ABC):
         state: TrainerState,
         dataloader: DataLoader,
         metrics: MetricsHandler,
-        computational: ComputationalConfig,
     ) -> None:
         """
         Called at the beginning of every validation loop in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
@@ -525,9 +525,6 @@ class Callback(ABC):
             The dataloader on which validation is performed.
         metrics : MetricsHandler
             The :py:class:`~clinicadl.metrics.MetricsHandler` containing the validation metrics.
-        computational : ComputationalConfig
-            The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
-            of the validation phase.
         """
 
     def on_validate_end(
@@ -605,19 +602,21 @@ class Callback(ABC):
             The batch input to :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>`.
         """
 
-    def on_evaluation_step_end(
+    def on_metrics_computation_start(
         self,
         *,
         model: Model,
         maps: Maps,
         state: TrainerState,
         output: Batch,
-        detailed_metrics_df: pd.DataFrame,
+        metrics: MetricsHandler,
     ) -> None:
         """
-        Called every time :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>` has just
-        been called in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`, :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`,
-        or :py:meth:`Trainer.test <clinicadl.train.Trainer.test>`.
+        Called every time :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>` has been called
+        be called and metrics will now be computed.
+
+        .. note::
+            This event is equivalent to ``on_evaluation_step_end``.
 
         Parameters
         ----------
@@ -629,6 +628,29 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         output : Batch
             The :py:class:`clinicadl.data.dataloader.Batch` output by :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>`.
+        metrics : MetricsHandler
+            The :py:class:`~clinicadl.metrics.MetricsHandler` containing the metrics that will be computed.
+        """
+
+    def on_metrics_computation_end(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        detailed_metrics_df: pd.DataFrame,
+    ) -> None:
+        """
+        Called every time metrics have just been computed on a batch.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
         detailed_metrics_df : pd.DataFrame
             The evaluation metrics on the batch.
         """

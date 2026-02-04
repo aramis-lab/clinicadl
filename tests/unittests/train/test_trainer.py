@@ -17,7 +17,7 @@ from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
 from clinicadl.io import Maps
 from clinicadl.metrics import MetricsHandler
-from clinicadl.metrics.config import MetricConfig
+from clinicadl.metrics.config import MetricConfig, MSEMetricConfig
 from clinicadl.train import ComputationalConfig, Trainer
 from clinicadl.utils.exceptions import CannotReadJsonError
 
@@ -34,7 +34,7 @@ def _add_maps_to_trainer(trainer: Trainer, tmp_path: Path) -> Maps:
     return maps
 
 
-def _setup_real_split():
+def _setup_dataloader():
     from clinicadl.data.dataloader import Batch
     from clinicadl.data.structures import DataPoint
 
@@ -47,11 +47,12 @@ def _setup_real_split():
         )
         for i in range(2)
     )
-    split = MagicMock()
-    split.train_loader.__len__.return_value = 2
-    split.train_loader.__iter__.return_value = [batch, batch]
 
-    return split
+    loader = MagicMock()
+    loader.__len__.return_value = 2
+    loader.__iter__.return_value = [batch, batch]
+
+    return loader
 
 
 def _setup_real_model():
@@ -767,7 +768,10 @@ class TestTrain:
     def _real_test(self, trainer: Trainer, computational: ComputationalConfig):
         from clinicadl.optim import OptimizationConfig
 
-        split = _setup_real_split()
+        loader = _setup_dataloader()
+        split = Mock()
+        split.index = 0
+        split.train_loader = loader
 
         trainer._validation = Mock()
         trainer._optim_config = OptimizationConfig(num_epochs=1)
@@ -782,3 +786,362 @@ class TestTrain:
         trainer._train_loop(
             split, optimizers, scaler, metrics=Mock(), computational=computational
         )
+
+
+class TestValidation:
+    def test_validate(self, trainer: Trainer):
+        trainer._maps = Mock()
+
+        def _simulate_validate(*args, **kwargs):
+            assert torch.initial_seed() == 1
+            assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
+            raise ValueError()
+
+        trainer._validate = Mock()
+        trainer._check_split_exists = Mock()
+        trainer._get_old_reprod_config = Mock()
+        trainer._get_old_reprod_config.return_value = (1, True)
+
+        trainer._validate.side_effect = _simulate_validate
+        with pytest.raises(ValueError):
+            trainer.validate(
+                split_idx=0,
+                metrics=["loss"],
+                dataloader=(loader := Mock()),
+                model_checkpoint="x",
+                computational=(comp := Mock()),
+            )
+        trainer.maps.read.assert_called_once()
+        trainer._check_split_exists.assert_called_once_with(0)
+        trainer._validate.assert_called_once_with(
+            split_idx=0,
+            metrics=["loss"],
+            dataloader=loader,
+            model_checkpoint="x",
+            computational=comp,
+        )
+        trainer.callbacks.callbacks[-3].on_exception.assert_called()
+        assert torch.initial_seed() != 7
+        assert not os.environ.get("CLINICADL_DETERMINISTIC")
+
+    def test__validate(self, custom_metric, trainer: Trainer):
+        trainer._maps = Maps(MAPS_PATH)
+        trainer.maps.read()
+        trainer._metrics = MetricsHandler(loss=custom_metric, my_metric=custom_metric)
+        trainer.metrics.init_metrics()
+
+        trainer._evaluation_loop = Mock()
+        trainer._check_split_exists = Mock()
+        trainer._get_dataloader = Mock()
+        trainer._get_dataloader.return_value = (loader := Mock())
+        trainer._reset_validate = Mock()
+        trainer._load_model_checkpoint = Mock()
+        trainer._model_to = Mock()
+
+        trainer._validate(
+            split_idx=0,
+            metrics=["loss"],
+            dataloader=None,
+            model_checkpoint="best-loss",
+            computational=(comp := Mock()),
+        )
+        metrics = trainer._evaluation_loop.call_args.kwargs["metrics"]
+        assert list(metrics.metrics.keys()) == ["loss"]
+
+        trainer._get_dataloader.assert_called_once_with(
+            trainer.maps.training.data.validation.splits[0]
+        )
+        trainer._reset_validate.assert_called_once_with(0, loader, metrics)
+        trainer._load_model_checkpoint.assert_called_once_with(
+            trainer.maps.training.splits[0].models.best_models.metrics["loss"].model_pt
+        )
+        trainer._model_to.assert_called_once_with(comp)
+        trainer._evaluation_loop.assert_called_once_with(
+            loader, metrics=metrics, computational=comp
+        )
+        trainer.callbacks.callbacks[-3].on_validate_start.assert_called_once_with(
+            model=trainer.model,
+            maps=trainer.maps,
+            state=trainer.state,
+            dataloader=loader,
+            model_checkpoint="best-loss",
+            metrics=metrics,
+            callbacks=trainer.callbacks,
+            computational=comp,
+        )
+        trainer.callbacks.callbacks[-3].on_validate_end.assert_called_once_with(
+            model=trainer.model,
+            maps=trainer.maps,
+            state=trainer.state,
+            metrics=metrics,
+        )
+
+        # multiple checkpoints and dataloder
+        trainer._get_dataloader.reset_mock()
+        trainer._load_model_checkpoint.reset_mock()
+
+        trainer._validate(
+            split_idx=0,
+            metrics=["loss"],
+            dataloader=(loader := Mock()),
+            model_checkpoint=None,
+        )
+
+        trainer._get_dataloader.assert_not_called()
+        trainer._load_model_checkpoint.assert_has_calls(
+            [
+                call(
+                    trainer.maps.training.splits[0]
+                    .models.best_models.metrics["loss"]
+                    .model_pt
+                ),
+                call(
+                    trainer.maps.training.splits[0]
+                    .models.checkpoints.epochs[3]
+                    .model_pt
+                ),
+                call(trainer.maps.training.splits[0].models.final.model_pt),
+            ]
+        )
+        trainer._evaluation_loop.assert_has_calls(
+            [call(loader, metrics=ANY, computational=ANY)] * 3
+        )
+
+    def test_validation(self, trainer: Trainer):
+        trainer._reset_validation = Mock()
+        trainer._evaluation_loop = Mock()
+
+        trainer.state.current_epoch = 2
+        trainer._validation(
+            (loader := Mock()),
+            metrics=(metrics := Mock()),
+            computational=(comp := Mock()),
+        )
+
+        trainer._reset_validation.assert_called_once_with(loader, metrics)
+        trainer._evaluation_loop.assert_called_once_with(
+            loader, metrics=metrics, epoch=2, computational=comp
+        )
+        trainer.callbacks.callbacks[-3].on_validation_start.assert_called_once_with(
+            model=trainer.model,
+            maps=trainer.maps,
+            state=trainer.state,
+            dataloader=loader,
+            metrics=metrics,
+        )
+        trainer.callbacks.callbacks[-3].on_validation_end.assert_called_once_with(
+            model=trainer.model,
+            maps=trainer.maps,
+            state=trainer.state,
+            metrics=metrics,
+        )
+
+
+class TestTest:
+    def test_test(self, trainer: Trainer):
+        def _simulate_test(*args, **kwargs):
+            assert torch.initial_seed() == 1
+            assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
+            raise ValueError()
+
+        trainer._test = Mock()
+        trainer._test.side_effect = _simulate_test
+        with pytest.raises(ValueError):
+            trainer.test(
+                model_checkpoint="x",
+                metrics=["loss"],
+                group_name="y",
+                dataloader=(loader := Mock()),
+                computational=(comp := ComputationalConfig(deterministic=True, seed=1)),
+            )
+        trainer._test.assert_called_once_with(
+            model_checkpoint="x",
+            metrics=["loss"],
+            group_name="y",
+            dataloader=loader,
+            computational=comp,
+        )
+        trainer.callbacks.callbacks[-3].on_exception.assert_called()
+        assert torch.initial_seed() != 7
+        assert not os.environ.get("CLINICADL_DETERMINISTIC")
+
+    def test__test(self, custom_metric, trainer: Trainer):
+        trainer._maps = Maps(MAPS_PATH)
+        trainer.maps.read()
+        trainer._metrics = MetricsHandler(loss=custom_metric, my_metric=custom_metric)
+        trainer.metrics.init_metrics()
+
+        trainer._evaluation_loop = Mock()
+        trainer._get_dataloader = Mock()
+        trainer._get_dataloader.return_value = (loader := Mock())
+        trainer._reset_test = Mock()
+        trainer._load_model_checkpoint = Mock()
+        trainer._model_to = Mock()
+
+        trainer._test(
+            model_checkpoint="split-0_best-loss",
+            metrics=["loss"],
+            group_name="X",
+            dataloader=None,
+            computational=(comp := Mock()),
+        )
+
+        metrics = trainer._evaluation_loop.call_args.kwargs["metrics"]
+        assert list(metrics.metrics.keys()) == ["loss"]
+
+        trainer._get_dataloader.assert_called_once_with(trainer.maps.test.groups["X"])
+        trainer._reset_test.assert_called_once_with(loader, metrics)
+        trainer._load_model_checkpoint.assert_called_once_with(
+            trainer.maps.training.splits[0].models.best_models.metrics["loss"].model_pt
+        )
+        trainer._model_to.assert_called_once_with(comp)
+        trainer._evaluation_loop.assert_called_once_with(
+            loader, metrics=metrics, computational=comp
+        )
+        trainer.callbacks.callbacks[-3].on_test_start.assert_called_once_with(
+            model=trainer.model,
+            maps=trainer.maps,
+            state=trainer.state,
+            dataloader=loader,
+            model_checkpoint="split-0_best-loss",
+            metrics=metrics,
+            group_name="X",
+            callbacks=trainer.callbacks,
+            computational=comp,
+        )
+        trainer.callbacks.callbacks[-3].on_test_end.assert_called_once_with(
+            model=trainer.model,
+            maps=trainer.maps,
+            state=trainer.state,
+            metrics=metrics,
+        )
+
+        # multiple checkpoints and dataloder
+        trainer._get_dataloader.reset_mock()
+
+        trainer._test(
+            model_checkpoint="split-0_best-loss",
+            metrics=["loss"],
+            group_name="X",
+            dataloader=(loader := Mock()),
+        )
+
+        trainer._get_dataloader.assert_not_called()
+
+
+class TestEvaluationLoop:
+    @patch(
+        "clinicadl.train.trainer.autocast",
+        side_effect=lambda *args, **kwargs: nullcontext(),
+    )
+    def test_evaluation_loop(self, autocast, trainer: Trainer):
+        def _simulate_evaluation(*args, **kwargs):
+            assert not torch.is_grad_enabled()
+            return "out"
+
+        loader = MagicMock()
+        loader.__len__.return_value = 3
+        loader.__iter__.return_value = (batches := ["a", "b", "c"])
+
+        trainer._batch_to = Mock()
+        trainer.model.evaluation_step.side_effect = _simulate_evaluation
+        metrics = Mock()
+        metrics.return_value = "metrics"
+
+        trainer._evaluation_loop(
+            dataloader=loader,
+            metrics=metrics,
+            computational=(comp := ComputationalConfig(amp=True)),
+            epoch=None,
+        )
+
+        trainer.state.current_val_batch == 3
+        trainer._batch_to.assert_has_calls(
+            [call(batch, computational=comp) for batch in batches]
+        )
+        trainer.model.evaluation_step.assert_has_calls(
+            [call(batch) for batch in batches]
+        )
+        assert autocast.call_count == 3
+        autocast.assert_called_with(device_type="cuda", enabled=True)
+        metrics.assert_has_calls([call("out", epoch=None)] * len(batches))
+        metrics.aggregate.assert_called_once_with(epoch=None)
+        trainer.callbacks.callbacks[-3].on_batch_start.assert_has_calls(
+            [
+                call(
+                    model=trainer.model,
+                    maps=trainer.maps,
+                    state=trainer.state,
+                    batch=batch,
+                )
+                for batch in batches
+            ]
+        )
+        trainer.callbacks.callbacks[-3].on_evaluation_step_start.assert_has_calls(
+            [
+                call(
+                    model=trainer.model,
+                    maps=trainer.maps,
+                    state=trainer.state,
+                    batch=batch,
+                )
+                for batch in batches
+            ]
+        )
+        trainer.callbacks.callbacks[-3].on_metrics_computation_start.assert_has_calls(
+            [
+                call(
+                    model=trainer.model,
+                    maps=trainer.maps,
+                    state=trainer.state,
+                    output="out",
+                    metrics=metrics,
+                )
+            ]
+            * len(batches)
+        )
+        trainer.callbacks.callbacks[-3].on_metrics_computation_end.assert_has_calls(
+            [
+                call(
+                    model=trainer.model,
+                    maps=trainer.maps,
+                    state=trainer.state,
+                    detailed_metrics_df="metrics",
+                )
+            ]
+            * len(batches)
+        )
+        trainer.callbacks.callbacks[-3].on_batch_end.assert_has_calls(
+            [call(model=trainer.model, maps=trainer.maps, state=trainer.state)]
+            * len(batches)
+        )
+
+        # with epoch
+        metrics.reset_mock()
+        trainer._evaluation_loop(
+            dataloader=loader,
+            metrics=metrics,
+            computational=(comp := ComputationalConfig(amp=True)),
+            epoch=None,
+        )
+        metrics.assert_has_calls([call("out", epoch=None)] * len(batches))
+        metrics.aggregate.assert_called_once_with(epoch=None)
+
+    def test_train_loop_real(self, trainer: Trainer):
+        computational = ComputationalConfig(amp=False, channels_last=False, gpu=False)
+        self._real_test(trainer, computational)
+
+    @pytest.mark.gpu
+    def test_train_loop_real_gpu(self, trainer: Trainer):
+        computational = ComputationalConfig(amp=True, channels_last=True, gpu=True)
+        self._real_test(trainer, computational)
+
+    def _real_test(self, trainer: Trainer, computational: ComputationalConfig):
+        loader = _setup_dataloader()
+
+        trainer._model = _setup_real_model()
+        trainer._model_to(computational)
+        metrics = MetricsHandler(metric=MSEMetricConfig())
+        metrics.init_metrics()
+
+        trainer._evaluation_loop(loader, metrics, computational=computational)

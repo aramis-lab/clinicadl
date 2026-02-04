@@ -13,7 +13,7 @@ from ...utils import mandatory
 from ..utils import SplitsDir
 from .data import TrainingDataDir
 from .splits import TrainingSplitDir
-from .splits.models import BestModelsDir, CheckpointsDir, ModelDir
+from .splits.models import BestModelsDir, CheckpointsDir, TrainingModelDir
 
 SEPARATOR = "_"
 
@@ -70,7 +70,7 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
                     f"split-{split} not found in the validation data ({str(self._data._validation.path)})"
                 )
 
-    def get_checkpoint_dir(self, checkpoint_name: str) -> ModelDir:
+    def get_checkpoint_dir(self, checkpoint_name: str) -> TrainingModelDir:
         """
         To get the directory of a model checkpoint from a descriptive name of this
         checkpoint.
@@ -86,7 +86,7 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
 
         Returns
         -------
-        ModelDir
+        TrainingModelDir
             The :py:class:`clinicadl.io.base.Directory` associated to the checkpoint.
         """
         split, name = self.read_checkpoint_name(checkpoint_name)

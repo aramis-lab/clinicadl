@@ -290,6 +290,10 @@ class Trainer:
         metrics: MetricsHandler,
         computational: ComputationalConfig,
     ) -> None:
+        """
+        The core training logic with the iteration on the epochs, and the
+        nested iteration on the training batches.
+        """
         for epoch in range(
             self.state.current_epoch + 1, self.optimization.num_epochs + 1
         ):
@@ -376,7 +380,11 @@ class Trainer:
 
         with self._seed_context(seed, deterministic), self._exception_context():
             self._validate(
-                split_idx, metrics, dataloader, model_checkpoint, computational
+                split_idx=split_idx,
+                metrics=metrics,
+                dataloader=dataloader,
+                model_checkpoint=model_checkpoint,
+                computational=computational,
             )
 
     def _validate(
@@ -388,7 +396,9 @@ class Trainer:
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
         """
-        Evaluate the model on a validation or test dataset.
+        Instantiates/restarts the required objects (e.g. metrics),
+        loads the model weights, sends the model to the specified device and starts the
+        evaluation loop.
         """
         if not dataloader:
             dataloader = self._get_dataloader(
@@ -433,7 +443,13 @@ class Trainer:
         with self._seed_context(
             computational.seed, computational.deterministic
         ), self._exception_context():
-            self._test(model_checkpoint, metrics, group_name, dataloader, computational)
+            self._test(
+                model_checkpoint=model_checkpoint,
+                metrics=metrics,
+                group_name=group_name,
+                dataloader=dataloader,
+                computational=computational,
+            )
 
     def _test(
         self,
@@ -444,7 +460,9 @@ class Trainer:
         computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
         """
-        Evaluate the model on a validation or test dataset.
+        Instantiates/restarts the required objects (e.g. metrics),
+        loads the model weights, sends the model to the specified device and starts the
+        evaluation loop.
         """
         self.maps.read()
 
@@ -456,7 +474,7 @@ class Trainer:
 
         self._reset_test(dataloader, metrics_handler)
         self._load_model_checkpoint(
-            self.maps.training.get_checkpoint_dir(model_checkpoint)
+            self.maps.training.get_checkpoint_dir(model_checkpoint).model_pt
         )
         self._model_to(computational)
 
@@ -485,14 +503,15 @@ class Trainer:
         metrics: MetricsHandler,
         computational: ComputationalConfig,
     ) -> None:
+        """
+        Validation phase during training.
+        """
         self._reset_validation(dataloader, metrics)
 
         self._call_event(
             Events.VAL_START,
             dataloader=dataloader,
             metrics=metrics,
-            callbacks=self.callbacks,
-            computational=computational,
         )
 
         self._evaluation_loop(
@@ -524,16 +543,23 @@ class Trainer:
 
                 self._call_event(Events.EVAL_START, batch=batch)
 
-                output_batch = self.model.evaluation_step(batch)
+                with autocast(
+                    device_type=computational.device.type,
+                    enabled=computational.amp,
+                ):
+                    output_batch = self.model.evaluation_step(batch)
 
                 self._call_event(
-                    Events.EVAL_END,
+                    Events.METRIC_START,
                     output=output_batch,
-                    detailed_metrics_df=metrics_df,
+                    metrics=metrics,
                 )
 
-                metrics_df = metrics(
-                    output_batch, epoch=self.state.current_epoch, metrics=metrics
+                metrics_df = metrics(output_batch, epoch=epoch)
+
+                self._call_event(
+                    Events.METRIC_END,
+                    detailed_metrics_df=metrics_df,
                 )
 
                 self._call_event(Events.BATCH_END)
