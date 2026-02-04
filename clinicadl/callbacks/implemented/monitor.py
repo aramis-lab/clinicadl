@@ -45,6 +45,9 @@ VAL_LOAD = "Validation data loading"
 EVAL = "Evaluation"
 EVAL_GPU = "Evaluation GPU (s)"
 EVAL_MEM = "Evaluation GPU max memory (MB)"
+METRIC = "Metrics computation"
+METRIC_GPU = "Metrics computation GPU (s)"
+METRIC_MEM = "Metrics computation GPU max memory (MB)"
 
 OOM = "CUDA out of memory"
 
@@ -123,6 +126,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         self.monitor_val_batch = None
         self.monitor_val_batch_loading = None
         self.monitor_evaluation = None
+        self.monitor_metric = None
 
         self._optimization_config = None
         self._train_batch_size = None
@@ -150,6 +154,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             self.monitor_val_batch.enabled = warm
             self.monitor_val_batch_loading.enabled = warm
             self.monitor_evaluation.enabled = warm
+            self.monitor_metric.enabled = warm
 
     def on_exception(
         self,
@@ -243,10 +248,15 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             self.monitor_val_batch_loading.stop()
             self.monitor_evaluation.start()
 
-    def on_evaluation_step_end(self, *, state: TrainerState, **kwargs) -> None:
+    def on_metrics_computation_start(self, *, state: TrainerState, **kwargs) -> None:
         if state.called == TrainerCall.TRAIN:
             self.monitor_evaluation.stop()
+            self.monitor_metric.start()
             self.n_iterations += 1
+
+    def on_metrics_computation_end(self, *, state: TrainerState, **kwargs) -> None:
+        if state.called == TrainerCall.TRAIN:
+            self.monitor_metric.stop()
 
     def on_validation_end(self, **kwargs) -> None:
         self.monitor_validation.stop()
@@ -358,6 +368,9 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         self.monitor_evaluation = self._init_monitor(
             gpu=computational.gpu, memory=True, limited_measurements=True, name=EVAL
         )
+        self.monitor_metric = self._init_monitor(
+            gpu=computational.gpu, memory=True, limited_measurements=True, name=METRIC
+        )
 
         self.n_iterations = 0
         self.monitor_global_training.start()
@@ -372,6 +385,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         """
         Gathers all the computational metrics in a DataFrame.
         """
+        MEME_SCALE = 1024**2
         results = {
             _add_s_suffix(TRAIN): self.monitor_global_training.times,
             _add_s_suffix(EPOCH): self.monitor_epoch.times,
@@ -379,19 +393,22 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             _add_s_suffix(TRAIN_LOAD): self.monitor_train_batch_loading.times,
             _add_s_suffix(FORWARD): self.monitor_forward.times,
             FORWARD_GPU: self.monitor_forward.gpu_times,
-            FORWARD_MEM: np.array(self.monitor_forward.gpu_max_mem) / 1024**2,
+            FORWARD_MEM: np.array(self.monitor_forward.gpu_max_mem) / MEME_SCALE,
             _add_s_suffix(BACKWARD): self.monitor_backward.times,
             BACKWARD_GPU: self.monitor_backward.gpu_times,
-            BACKWARD_MEM: np.array(self.monitor_backward.gpu_max_mem) / 1024**2,
+            BACKWARD_MEM: np.array(self.monitor_backward.gpu_max_mem) / MEME_SCALE,
             _add_s_suffix(OPT): self.monitor_optimization.times,
             OPT_GPU: self.monitor_optimization.gpu_times,
-            OPT_MEM: np.array(self.monitor_optimization.gpu_max_mem) / 1024**2,
+            OPT_MEM: np.array(self.monitor_optimization.gpu_max_mem) / MEME_SCALE,
             _add_s_suffix(VAL): self.monitor_validation.times,
             _add_s_suffix(VAL_LOOP): self.monitor_val_batch.times,
             _add_s_suffix(VAL_LOAD): self.monitor_val_batch.times,
             _add_s_suffix(EVAL): self.monitor_evaluation.times,
             EVAL_GPU: self.monitor_evaluation.gpu_times,
-            EVAL_MEM: np.array(self.monitor_evaluation.gpu_max_mem) / 1024**2,
+            EVAL_MEM: np.array(self.monitor_evaluation.gpu_max_mem) / MEME_SCALE,
+            _add_s_suffix(METRIC): self.monitor_metric.times,
+            METRIC_GPU: self.monitor_metric.gpu_times,
+            METRIC_MEM: np.array(self.monitor_metric.gpu_max_mem) / MEME_SCALE,
         }
         df = pd.DataFrame({name: pd.Series(col) for name, col in results.items()})
         df = df.rename_axis(index="measurement #")
@@ -461,6 +478,9 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         )
         lines.append(
             f"{' ' * 2 + 'Evaluation':<15} | {_repr_series(df[_add_s_suffix(EVAL)]):<25} | {_repr_series(df[EVAL_GPU]):<25} | {_repr_series(df[EVAL_MEM]):<25}"
+        )
+        lines.append(
+            f"{' ' * 2 + 'Metrics computation':<15} | {_repr_series(df[_add_s_suffix(METRIC)]):<25} | {_repr_series(df[METRIC_GPU]):<25} | {_repr_series(df[METRIC_MEM]):<25}"
         )
 
         lines.append(
