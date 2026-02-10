@@ -1,3 +1,5 @@
+from enum import Enum
+
 from clinicadl.utils.enum import BaseEnum
 
 
@@ -53,7 +55,7 @@ class ImplementedTransform(str, BaseEnum):
         )
 
 
-class AnatomicalLabel(str, BaseEnum):
+class AnatomicalLabel(str, Enum):
     """
     Anatomical regions provided by TorchIO.
     see: https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.preprocessing.intensity.NormalizationTransform

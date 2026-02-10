@@ -1,4 +1,5 @@
 import os
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -40,6 +41,7 @@ def test_ComputationalConfig():
         config.check_device()
 
 
+@patch.dict(os.environ, {}, clear=True)
 def test_global_variables():
     config = ComputationalConfig()
     assert config.seed is None

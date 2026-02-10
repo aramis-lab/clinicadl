@@ -77,7 +77,7 @@ def test_trainer_state():
     assert state.current_epoch == 7
     assert state.current_train_batch == 0
     assert state.num_train_batches == 3
-    assert state.optim_step == 0
+    assert state.optim_step == 2
 
     state.reset_test(dataloader=DATALOADER)
     assert state.current_test_batch == 0

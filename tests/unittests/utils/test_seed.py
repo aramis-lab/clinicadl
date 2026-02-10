@@ -13,6 +13,7 @@ from clinicadl.utils.seed import (
 )
 
 
+@patch.dict(os.environ, {}, clear=True)
 def test_seed_everything(caplog):
     assert "CLINICADL_GLOBAL_SEED" not in os.environ
     assert "CLINICADL_DETERMINISTIC" not in os.environ
@@ -56,9 +57,8 @@ def test_seed_everything(caplog):
     assert not np.isclose(n1, n2)
     assert not torch.isclose(t1, t2)
 
-    os.environ.pop("CLINICADL_DETERMINISTIC", None)
 
-
+@patch.dict(os.environ, {}, clear=True)
 def test_seed_everything_context():
     os.environ["CLINICADL_GLOBAL_SEED"] = "0"
     assert "CLINICADL_DETERMINISTIC" not in os.environ
