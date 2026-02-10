@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Sequence
-from copy import deepcopy
+from copy import copy
 from pathlib import Path
 from typing import Any, Callable, Generic, Optional, TypeVar, Union
 
@@ -11,11 +11,8 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     ValidationError,
-    ValidationInfo,
     computed_field,
     field_serializer,
-    field_validator,
-    model_validator,
 )
 from pydantic.fields import FieldInfo
 from typing_extensions import Self
@@ -251,7 +248,7 @@ class ClinicaDLConfig(BaseModel):
                 return reader(value)
             except Exception as e:
                 raise CannotReadFieldError(
-                    field_names=[field], object_name=cls._get_name()
+                    field_names=[field], object_name=cls._get_name(), error=e
                 ) from e
         return value
 
@@ -321,7 +318,7 @@ class ConfigWithName(ClinicaDLConfig):
         """
         Checks the input of :py:meth:`from_dict`.
         """
-        dict_ = deepcopy(dict_)
+        dict_ = copy(dict_)
         if NAME in dict_:
             assert (
                 dict_[NAME] == cls._get_name()
@@ -703,9 +700,16 @@ class DictOfObjects(BaseModel, Generic[T, TConfig]):
 
         def dict_reader(serialized_objects: dict[str, Any]) -> Self:
             obj_reader = ObjectOrConfig.build_reader(config_reader)
-            return cls(
-                {name: obj_reader(obj) for name, obj in serialized_objects.items()}
-            )
+            deserialized = {}
+            for name, obj in serialized_objects.items():
+                try:
+                    deserialized[name] = obj_reader(obj)
+                except Exception as e:
+                    raise CannotReadFieldError(
+                        object_name=cls.__name__, error=e, field_names=[name]
+                    ) from e
+
+            return deserialized
 
         return dict_reader
 

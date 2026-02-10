@@ -1,6 +1,6 @@
-import json
 import re
 from pathlib import Path
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ from torch.nn import BCELoss
 from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics import Metric
-from clinicadl.metrics.config import LossMetricConfig, MSEMetricConfig
+from clinicadl.metrics.config import LossMetricConfig, MetricConfig, MSEMetricConfig
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.utils.exceptions import (
     CannotReadJsonFieldError,
@@ -419,46 +419,52 @@ def test_save_and_merge_df(tmp_path):
     pd.testing.assert_frame_equal(df, expected_df)
 
 
-def test_read_write_json(tmp_path):
+@pytest.fixture()
+def custom_metric() -> MetricConfig:
+    class CustomMetricConfig(MetricConfig):
+        @staticmethod
+        def optimum():
+            return "max"
+
+        @classmethod
+        def _get_class(cls):
+            return Mock()
+
+    return CustomMetricConfig()
+
+
+def test_read_write_json(tmp_path, custom_metric):
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
+        custom=custom_metric,
         metrics_on_cpu=False,
     )
     metrics.add_metrics(my_metric=CustomMetric())
     metrics.to_json(tmp_path / "metrics.json")
 
-    excepted_dict = {
-        "name": "MetricsHandler",
-        "metrics": {
-            "mse": {
-                "name": "MSEMetric",
-                "get_not_nans": False,
-                "pred_key": "output",
-                "label_key": "label",
-                "postprocessing": {"name": "Postprocessing", "transforms": []},
-                "reduction": "mean",
-            },
-            "my_metric": "CustomMetric",
-        },
-        "metrics_on_cpu": False,
-    }
-    with open(tmp_path / "metrics.json", "r") as f:
-        d = json.load(f)
-    assert d == excepted_dict
-
+    with pytest.raises(
+        CannotReadJsonFieldError,
+        match="MetricsHandler cannot read the field\\(s\\) \\['custom'\\] in .*\nPlease pass this field via kwargs.",
+    ):
+        MetricsHandler.from_json(json_path=tmp_path / "metrics.json")
     with pytest.raises(
         CannotReadJsonFieldError,
         match="MetricsHandler cannot read the field\\(s\\) \\['my_metric'\\] in .*\nPlease pass this field via kwargs.",
     ):
-        MetricsHandler.from_json(json_path=tmp_path / "metrics.json")
+        MetricsHandler.from_json(
+            json_path=tmp_path / "metrics.json", custom=custom_metric
+        )
 
     metrics = MetricsHandler.from_json(
         json_path=tmp_path / "metrics.json",
-        my_metric=CustomMetric(),
+        custom=custom_metric,
+        my_metric=(my_metric := CustomMetric()),
     )
+
     assert not metrics.config.metrics_on_cpu
     assert isinstance(metrics.config.metrics.values["mse"].value, MSEMetricConfig)
-    assert isinstance(metrics.config.metrics.values["my_metric"].value, CustomMetric)
+    assert metrics.config.metrics.values["custom"].value is custom_metric
+    assert metrics.config.metrics.values["my_metric"].value is my_metric
 
 
 @pytest.mark.gpu

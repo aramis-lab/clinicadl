@@ -19,7 +19,7 @@ class BaseEnum(Enum):
 
     @classmethod
     def _missing_(cls, value):
-        raise ValueError(
+        raise NotImplementedError(
             f"{value} is not a valid {cls.__name__}. Valid ones are: "
             + ", ".join([repr(m.value) for m in cls])
         )

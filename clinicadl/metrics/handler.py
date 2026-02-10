@@ -61,10 +61,13 @@ class MetricsHandlerConfig(ObjectConfig["MetricsHandler"]):
         try:
             return super().from_dict(dict_)
         except CannotReadFieldError as e:
-            wrong_metrics = cls._read_pydantic_error(e.error)
-            raise CannotReadFieldError(
-                field_names=wrong_metrics, object_name=cls._get_name()
-            ) from e
+            if wrong_metrics := cls._read_field_reading_error(e):
+                raise CannotReadFieldError(
+                    field_names=wrong_metrics,
+                    object_name=cls._get_name(),
+                    error=e.error,
+                ) from e
+            raise
 
     @property
     def metric_names(self) -> list[str]:
@@ -86,16 +89,14 @@ class MetricsHandlerConfig(ObjectConfig["MetricsHandler"]):
         self.metrics = self.metrics.values | metrics
 
     @staticmethod
-    def _read_pydantic_error(error: ValidationError) -> list[str]:
+    def _read_field_reading_error(error: CannotReadFieldError) -> Optional[list[str]]:
         """
-        To read a pydantic validation error and determine
-        what key of the dict is failing validation.
+        To get the potential metrics that are causing troubles.
         """
-        wrong_keys = []
-        for e in error.errors():
-            wrong_keys.append(e["loc"][2])
-
-        return list(set(wrong_keys))
+        if isinstance(error.error, CannotReadFieldError):
+            return error.error.field_names
+        elif isinstance(error.error, ValidationError):
+            return sorted(list(set(e["loc"][2] for e in error.error.errors())))
 
     @classmethod
     def _get_class(cls) -> type[MetricsHandler]:
