@@ -88,7 +88,8 @@ class Callback:
         callbacks: CallbacksHandler,
     ) -> None:
         """
-        Called once when the :py:class:`~clinicadl.train.Trainer` is instantiated.
+        Called once when the :py:class:`~clinicadl.train.Trainer` is created or restored with
+        :py:meth:`Trainer.from_maps <clinicadl.train.Trainer.from_maps>`.
 
         Parameters
         ----------

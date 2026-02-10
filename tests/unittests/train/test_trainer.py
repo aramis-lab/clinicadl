@@ -75,7 +75,7 @@ def trainer(tmp_path) -> Trainer:
     cb = Callback()
     cb.on_exception = Mock()
     trainer = Trainer(
-        maps_path=tmp_path / "maps",
+        maps=tmp_path / "maps",
         model=Mock(),
         metrics={},
         optimization=optim,
@@ -108,7 +108,7 @@ class TestSideMethods:
         cb.on_trainer_init = Mock()
 
         trainer = Trainer(
-            maps_path=tmp_path / "maps",
+            maps=tmp_path / "maps",
             model=model,
             metrics={"my_metric": custom_metric},
             optimization=optimization,
@@ -132,12 +132,13 @@ class TestSideMethods:
         metrics = MetricsHandler(my_metric=custom_metric)
         callbacks = CallbacksHandler([cb])
         trainer = Trainer(
-            maps_path=tmp_path / "maps",
+            maps=Maps(tmp_path / "maps"),
             model=model,
             metrics=metrics,
             callbacks=callbacks,
             overwrite=True,
         )
+        assert trainer.maps.path == tmp_path / "maps"
         assert trainer.callbacks is callbacks
         assert trainer.metrics is metrics
         assert trainer.optimization.num_epochs == 10
@@ -1145,3 +1146,75 @@ class TestEvaluationLoop:
         metrics.init_metrics()
 
         trainer._evaluation_loop(loader, metrics, computational=computational)
+
+
+def test_from_maps(tmp_path, custom_metric):
+    from clinicadl.callbacks import LoggerCallback
+    from clinicadl.losses.config import MSELossConfig
+    from clinicadl.metrics.config import MSEMetricConfig
+    from clinicadl.models import SupervisedModel
+    from clinicadl.networks.config import MLPConfig
+    from clinicadl.optim import OptimizationConfig
+    from clinicadl.optim.optimizers.config import AdamConfig
+
+    model_with_config = SupervisedModel(
+        network=MLPConfig(num_inputs=1, num_outputs=1, hidden_dims=[1]),
+        loss=MSELossConfig(),
+        optimizer=AdamConfig(),
+    )
+
+    Trainer(
+        maps=tmp_path,
+        model=model_with_config,
+        overwrite=True,
+    )
+    trainer = Trainer.from_maps(tmp_path)
+    assert trainer.maps.path == tmp_path
+    assert trainer.model.config.network.value.num_inputs == 1
+    assert trainer.model.config.network.value.num_inputs == 1
+    assert trainer.metrics.config.metric_names == ["loss"]
+    assert trainer.optimization.num_epochs == 10
+    assert len(trainer.callbacks.config.callbacks) == 0
+
+    Trainer(
+        maps=tmp_path,
+        model=model_with_config,
+        optimization=OptimizationConfig(num_epochs=7),
+        metrics={"mse": MSEMetricConfig()},
+        callbacks=[LoggerCallback(save_logs=False)],
+        overwrite=True,
+    )
+    trainer = Trainer.from_maps(tmp_path)
+    assert trainer.metrics.config.metric_names == ["mse"]
+    assert trainer.optimization.num_epochs == 7
+    assert not trainer.callbacks.config.callbacks[0].config.save_logs
+
+    # kwargs
+    Trainer(
+        maps=tmp_path,
+        model=(model := _setup_real_model()),
+        metrics=(metrics := {"mse": custom_metric}),
+        callbacks=[cb := Callback()],
+        overwrite=True,
+    )
+    with pytest.raises(
+        CannotReadJsonError,
+        match=re.escape(
+            f"Cannot read the model (in {Maps(tmp_path).model_json}). Please pass it to from_maps via a keyword argument (e.g. Trainer.from_maps(..., model=...))."
+        ),
+    ):
+        Trainer.from_maps(tmp_path)
+    with pytest.raises(
+        CannotReadJsonError,
+        match="Cannot read the metrics",
+    ):
+        Trainer.from_maps(tmp_path, model=Mock())
+    with pytest.raises(
+        CannotReadJsonError,
+        match="Cannot read the callbacks",
+    ):
+        Trainer.from_maps(tmp_path, model=Mock(), metrics=Mock())
+    trainer = Trainer.from_maps(tmp_path, model=model, metrics=metrics, callbacks=[cb])
+    assert trainer.model is model
+    assert trainer.metrics.config.metrics.values["mse"].value is metrics["mse"]
+    assert trainer.callbacks.config.callbacks[0] is cb

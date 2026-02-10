@@ -3,7 +3,17 @@ from __future__ import annotations
 from collections.abc import Sequence
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
-from typing import TYPE_CHECKING, ContextManager, Generator, Iterator, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ContextManager,
+    Generator,
+    Iterator,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 import torch
 from torch.amp.autocast_mode import autocast
@@ -21,7 +31,7 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.dictionary.words import CPU
-from clinicadl.utils.exceptions import CannotReadJsonError
+from clinicadl.utils.exceptions import CannotReadJsonError, CannotReadJsonFieldError
 from clinicadl.utils.seed import seed_everything_context
 
 if TYPE_CHECKING:
@@ -35,6 +45,9 @@ if TYPE_CHECKING:
     from clinicadl.models import Model
     from clinicadl.split.split import Split
     from clinicadl.utils.typing import PathType
+
+
+T = TypeVar("T")
 
 
 class Trainer:
@@ -86,7 +99,7 @@ class Trainer:
 
     def __init__(
         self,
-        maps_path: PathType,
+        maps: Union[PathType, Maps],
         model: Model,
         metrics: Union[dict[str, MetricOrConfig], MetricsHandler] = {
             "loss": LossMetricConfig(loss_name="loss")
@@ -95,32 +108,11 @@ class Trainer:
         callbacks: Optional[Union[list[Callback], CallbacksHandler]] = None,
         overwrite: bool = False,
     ) -> None:
-        self._maps = Maps(maps_path)
-        self._maps.create(overwrite=overwrite)
+        if not isinstance(maps, Maps):
+            maps = Maps(maps)
+        maps.create(overwrite=overwrite)
 
-        self._model = model
-
-        if isinstance(metrics, MetricsHandler):
-            self._metrics = metrics
-        else:
-            self._metrics = MetricsHandler(**metrics)
-        self._metrics.init_metrics(self._model)
-
-        if isinstance(callbacks, CallbacksHandler):
-            self._callbacks = callbacks
-        else:
-            self._callbacks = CallbacksHandler(callbacks=callbacks if callbacks else [])
-
-        self._optim_config = optimization
-
-        self._state = TrainerState()
-
-        self._call_event(
-            Events.INIT,
-            metrics=self._metrics,
-            optimization=self.optimization,
-            callbacks=self.callbacks,
-        )
+        self._instantiate_attributes(maps, model, metrics, optimization, callbacks)
 
     @property
     def maps(self) -> Maps:
@@ -165,22 +157,74 @@ class Trainer:
         """
         return self._state
 
+    def _instantiate_attributes(
+        self,
+        maps: Maps,
+        model: Model,
+        metrics: Union[dict[str, MetricOrConfig], MetricsHandler],
+        optimization: OptimizationConfig = OptimizationConfig(),
+        callbacks: Optional[Union[list[Callback], CallbacksHandler]] = None,
+    ) -> None:
+        """
+        Defines the Trainer's attributes.
+        """
+        self._maps = maps
+        self._model = model
+
+        if isinstance(metrics, MetricsHandler):
+            self._metrics = metrics
+        else:
+            self._metrics = MetricsHandler(**metrics)
+        self._metrics.init_metrics(self._model)
+
+        if isinstance(callbacks, CallbacksHandler):
+            self._callbacks = callbacks
+        else:
+            self._callbacks = CallbacksHandler(callbacks=callbacks if callbacks else [])
+
+        self._optim_config = optimization
+
+        self._state = TrainerState()
+
+        self._call_event(
+            Events.INIT,
+            metrics=self.metrics,
+            optimization=self.optimization,
+            callbacks=self.callbacks,
+        )
+
     @classmethod
     def from_maps(cls, maps_path: PathType, **kwargs) -> Self:
         maps = Maps(maps_path)
         maps.read()
-        model = get_model_from_json(maps.model_json)
-        metrics = MetricsHandler.from_json(maps.model_json)
-        optimization = OptimizationConfig.from_json(maps.training.optimization_json)
-        callbacks = CallbacksHandler.from_json(maps.callbacks_json)
 
-        return cls(
-            maps_path=maps_path,
-            model=model,
-            metrics=metrics,
-            optimization=optimization,
-            callbacks=callbacks,
+        model = cls._read_attribute_in_json(
+            "model", maps.model_json, get_model_from_json, kwargs
         )
+        metrics = cls._read_attribute_in_json(
+            "metrics", maps.metrics_json, MetricsHandler.from_json, kwargs
+        )
+        callbacks = cls._read_attribute_in_json(
+            "callbacks", maps.callbacks_json, CallbacksHandler.from_json, kwargs
+        )
+        optimization = OptimizationConfig.from_json(maps.training.optimization_json)
+
+        trainer = cls.__new__(cls)  # bypass init because maps exist
+        trainer._instantiate_attributes(maps, model, metrics, optimization, callbacks)
+
+        return trainer
+
+    @staticmethod
+    def _read_attribute_in_json(
+        name: str, path: Path, reader: Callable[[Path], T], kwargs: dict[str, Any]
+    ) -> T:
+        try:
+            return kwargs.get(name) or reader(path)
+        except CannotReadJsonFieldError as e:
+            raise CannotReadJsonError(
+                f"Cannot read the {name} (in {path}). Please pass it to from_maps via a keyword "
+                f"argument (e.g. Trainer.from_maps(..., {name}=...))."
+            ) from e
 
     def add_metrics(self, **metrics: MetricOrConfig) -> None:
         """
