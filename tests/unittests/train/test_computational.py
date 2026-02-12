@@ -61,7 +61,7 @@ def test_gpu():
     config = ComputationalConfig(gpu=True, amp=True)
     config.check_device()
     assert config.gpu
-    assert config.device == torch.device("gpu")
+    assert config.device == torch.device("cuda")
     scaler = config.get_scaler()
     assert scaler._enabled
-    assert scaler._device == "gpu"
+    assert scaler._device == "cuda"
