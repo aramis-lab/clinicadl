@@ -30,8 +30,9 @@ STATE.split_idx = 0
 
 CALLBACKS = Mock()
 CALLBACKS.callbacks = [Mock(), Mock(), MagicMock()]
-for c in CALLBACKS.callbacks:
+for c in CALLBACKS.callbacks[:2]:
     c.state_dict.return_value = type(c).__name__
+CALLBACKS.callbacks[2].state_dict.return_value = None
 
 METRICS = Mock()
 METRICS.save.side_effect = _save_files
@@ -78,6 +79,11 @@ def test_saving(caplog, tmp_path):
     tmp_dir.clear()
 
     chkpt.on_trainer_init(callbacks=CALLBACKS, metrics=METRICS)
+
+    with caplog.at_level("INFO"):
+        chkpt.on_exception(maps=maps, state=STATE)
+    assert len(caplog.records) == 0
+
     for epoch in range(1, 6):
         STATE.current_epoch = epoch
         chkpt.on_optimization_step_end(optimizers=OPTIMIZERS, grad_scaler=SCALER)
@@ -118,7 +124,7 @@ def test_saving(caplog, tmp_path):
         maps.open_file(
             maps.training.splits[0].tmp.epochs[4].callbacks / "magic_mock.pt"
         )
-        == "MagicMock"
+        is None
     )
     pd.testing.assert_frame_equal(
         maps.open_file(
@@ -137,12 +143,13 @@ def test_saving(caplog, tmp_path):
     assert tmp_dir.epochs_list == []
 
 
-def test_loading(caplog):
+def test_resume(caplog):
     maps = Maps(MAPS_PATH)
     maps.read()
+    chkpt = TrainingCheckpointCallback()
 
     with caplog.at_level("INFO"):
-        TrainingCheckpointCallback.load_checkpoint(
+        chkpt.on_resume(
             state=STATE,
             model=MODEL,
             maps=maps,
@@ -173,9 +180,3 @@ def test_from_to_dict():
     monitor = TrainingCheckpointCallback(every_n_epochs=7)
     new_monitor = TrainingCheckpointCallback.from_dict(monitor.to_dict())
     assert new_monitor.config.every_n_epochs == 7
-
-
-def test_state_dict():
-    TrainingCheckpointCallback().load_state_dict(
-        TrainingCheckpointCallback().state_dict()
-    )

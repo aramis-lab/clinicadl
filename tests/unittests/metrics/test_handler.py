@@ -1,6 +1,6 @@
-import json
 import re
 from pathlib import Path
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ from torch.nn import BCELoss
 from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics import Metric
-from clinicadl.metrics.config import LossMetricConfig, MSEMetricConfig
+from clinicadl.metrics.config import LossMetricConfig, MetricConfig, MSEMetricConfig
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.utils.exceptions import (
     CannotReadJsonFieldError,
@@ -49,8 +49,8 @@ class CustomMetric(Metric):
     _optimum = "max"
 
     def _accumulate(self, batch):
-        pred = torch.tensor([datapoint["output"] for datapoint in batch])
-        gt = torch.tensor([datapoint["label"] for datapoint in batch])
+        pred = batch.get_field("output")
+        gt = batch.get_field("label")
         return pred == gt
 
     def _aggregate(self, data):
@@ -224,52 +224,24 @@ def test_load(tmp_path):
 def test_metrics_subset():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
-        my_metric=CustomMetric(),
+        my_metric=(my_metric := CustomMetric()),
     )
-    metrics.init_metrics(MODEL)
-
-    metrics(BATCH_1, epoch=0)
-    metrics.aggregate(epoch=0)
-    metrics.reset()
 
     with pytest.raises(
-        ValueError,
+        KeyError,
         match=re.escape(
-            "'abc' does not match any metrics. Metrics are: ['mse', 'my_metric']"
+            "'abc' not found in the computed metrics! Metrics are: ['mse', 'my_metric']"
         ),
     ):
-        output = metrics(BATCH_2, epoch=1, metrics=["abc"])
+        metrics.subset(["abc"])
 
-    output = metrics(BATCH_2, epoch=1, metrics=["mse"])
-    metrics.aggregate(epoch=1, metrics=["mse"])
+    new_metrics = metrics.subset(["my_metric"])
 
-    expected_output_df = pd.DataFrame.from_dict(
-        {
-            "epoch": [1, 1, 1],
-            "participant_id": [f"sub-{i}" for i in range(3, 6)],
-            "session_id": [f"ses-{i}" for i in range(3, 6)],
-            "mse": pd.Series([1.0, 1.0, 0.0], dtype=np.float32),
-        }
+    assert new_metrics.config.metric_names == ["my_metric"]
+    assert isinstance(
+        new_metrics.config.metrics.values["my_metric"].value, CustomMetric
     )
-    expected_detailed_df = pd.DataFrame.from_dict(
-        {
-            "epoch": [0, 0, 0, 1, 1, 1],
-            "participant_id": [f"sub-{i}" for i in range(6)],
-            "session_id": [f"ses-{i}" for i in range(6)],
-            "mse": pd.Series([0.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32),
-            "my_metric": pd.Series([1.0, 0.0, 1.0, -1, -1, -1], dtype=np.float32),
-        }
-    )
-    expected_df = pd.DataFrame.from_dict(
-        {
-            "epoch": [0, 1],
-            "mse": pd.Series([0.333333, 0.666666], dtype=np.float64),
-            "my_metric": pd.Series([0.666666, -1], dtype=np.float64),
-        }
-    )
-    pd.testing.assert_frame_equal(output, expected_output_df)
-    pd.testing.assert_frame_equal(metrics.detailed_df.fillna(-1), expected_detailed_df)
-    pd.testing.assert_frame_equal(metrics.df.fillna(-1), expected_df)
+    assert new_metrics.config.metrics.values["my_metric"].value is not my_metric
 
 
 def test_epochs():
@@ -417,68 +389,102 @@ def test_save_and_merge_df(tmp_path):
 
     metrics(BATCH_1, epoch=0)
     metrics.aggregate(epoch=0)
+    metrics(BATCH_1, epoch=1)
+    metrics.aggregate(epoch=1)
     metrics.merge(tmp_path / "df.tsv", details_path=tmp_path / "detailed_df.tsv")
 
     df = pd.read_csv(tmp_path / "df.tsv", sep="\t")
     expected_df = pd.DataFrame.from_dict(
         {
-            "epoch": [0],
-            "mse": pd.Series([0.333333]),
-            "my_metric": pd.Series([0.666666]),
+            "epoch": [0, 1],
+            "mse": pd.Series([0.333333, float("nan")]),
+            "my_metric": pd.Series([0.666666, 0.666666]),
         }
     )
-    pd.testing.assert_frame_equal(df, expected_df)
+    pd.testing.assert_frame_equal(
+        df,
+        expected_df,
+    )
 
     df = pd.read_csv(tmp_path / "detailed_df.tsv", sep="\t")
     expected_df = pd.DataFrame.from_dict(
         {
-            "epoch": [0, 0, 0],
-            "participant_id": [f"sub-{i}" for i in range(3)],
-            "session_id": [f"ses-{i}" for i in range(3)],
-            "mse": pd.Series([0.0, 1.0, 0.0]),
-            "my_metric": pd.Series([1.0, 0.0, 1.0]),
+            "epoch": [0, 0, 0, 1, 1, 1],
+            "participant_id": [f"sub-{i}" for i in range(3)] * 2,
+            "session_id": [f"ses-{i}" for i in range(3)] * 2,
+            "mse": pd.Series([0.0, 1.0, 0.0, float("nan"), float("nan"), float("nan")]),
+            "my_metric": pd.Series([1.0, 0.0, 1.0, 1.0, 0.0, 1.0]),
         }
     )
     pd.testing.assert_frame_equal(df, expected_df)
 
 
-def test_read_write_json(tmp_path):
+@pytest.fixture()
+def custom_metric() -> MetricConfig:
+    class CustomMetricConfig(MetricConfig):
+        @staticmethod
+        def optimum():
+            return "max"
+
+        @classmethod
+        def _get_class(cls):
+            return Mock()
+
+    return CustomMetricConfig()
+
+
+def test_read_write_json(tmp_path, custom_metric):
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
+        custom=custom_metric,
+        metrics_on_cpu=False,
     )
     metrics.add_metrics(my_metric=CustomMetric())
     metrics.to_json(tmp_path / "metrics.json")
 
-    excepted_dict = {
-        "name": "MetricsHandler",
-        "metrics": {
-            "mse": {
-                "name": "MSEMetric",
-                "get_not_nans": False,
-                "pred_key": "output",
-                "label_key": "label",
-                "postprocessing": {"name": "Postprocessing", "transforms": []},
-                "reduction": "mean",
-            },
-            "my_metric": "CustomMetric",
-        },
-    }
-    with open(tmp_path / "metrics.json", "r") as f:
-        d = json.load(f)
-    assert d == excepted_dict
-
+    with pytest.raises(
+        CannotReadJsonFieldError,
+        match="MetricsHandler cannot read the field\\(s\\) \\['custom'\\] in .*\nPlease pass this field via kwargs.",
+    ):
+        MetricsHandler.from_json(json_path=tmp_path / "metrics.json")
     with pytest.raises(
         CannotReadJsonFieldError,
         match="MetricsHandler cannot read the field\\(s\\) \\['my_metric'\\] in .*\nPlease pass this field via kwargs.",
     ):
-        MetricsHandler.from_json(json_path=tmp_path / "metrics.json")
+        MetricsHandler.from_json(
+            json_path=tmp_path / "metrics.json", custom=custom_metric
+        )
 
     metrics = MetricsHandler.from_json(
         json_path=tmp_path / "metrics.json",
-        my_metric=CustomMetric(),
+        custom=custom_metric,
+        my_metric=(my_metric := CustomMetric()),
     )
-    assert isinstance(metrics.metrics["mse"], MSEMetricConfig)
-    assert isinstance(metrics.metrics["my_metric"], CustomMetric)
+
+    assert not metrics.config.metrics_on_cpu
+    assert isinstance(metrics.config.metrics.values["mse"].value, MSEMetricConfig)
+    assert metrics.config.metrics.values["custom"].value is custom_metric
+    assert metrics.config.metrics.values["my_metric"].value is my_metric
+
+
+@pytest.mark.gpu
+def test_cpu_gpu():
+    BATCH_1.to("cuda:0")
+    metrics = MetricsHandler(
+        my_metric=CustomMetric(),
+        metrics_on_cpu=False,
+    )
+    metrics.init_metrics()
+    metrics(BATCH_1)
+    assert BATCH_1.device == torch.device("cuda:0")
+
+    metrics = MetricsHandler(
+        my_metric=CustomMetric(),
+        metrics_on_cpu=True,
+    )
+    metrics.init_metrics()
+    metrics(BATCH_1)
+    assert BATCH_1.device == torch.device("cpu")
 
 
 def test_empty():

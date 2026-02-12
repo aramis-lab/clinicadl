@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Mapping
 
 import pandas as pd
 import torch
@@ -29,6 +28,7 @@ class Events(str, Enum):
 
     # Training
     TRAIN_START = "on_train_start"
+    RESUME = "on_resume"
     TRAIN_END = "on_train_end"
     EPOCH_START = "on_epoch_start"
     EPOCH_END = "on_epoch_end"
@@ -46,7 +46,8 @@ class Events(str, Enum):
     VALIDATE_START = "on_validate_start"
     VALIDATE_END = "on_validate_end"
     EVAL_START = "on_evaluation_step_start"
-    EVAL_END = "on_evaluation_step_end"
+    METRIC_START = "on_metrics_computation_start"
+    METRIC_END = "on_metrics_computation_end"
 
     # Test
     TEST_START = "on_test_start"
@@ -57,29 +58,24 @@ class Events(str, Enum):
     PREDICT_END = "on_predict_end"
 
 
-class Callback(ABC):
+class Callback:
     """
     To define arbitrary action to perform at certain points of the training, evaluation or
-    prediction loop.
+    prediction workflows.
 
     Each method of this class starting by ``on_...`` is associated to an event of
     the training, evaluation or prediction phase of the :py:class:`~clinicadl.train.Trainer`.
     By overriding these methods, the user can define action to perform when the event happens.
 
     .. important::
-        Callbacks should capture NON-ESSENTIAL logic such as saving checkpoints or logging.
+        Callbacks should capture **NON-ESSENTIAL** logic such as saving checkpoints or logging.
         The essential logic should be defined in a :py:class:`clinicadl.models.Model`.
 
-    To define you own callback, you can override any of the method associated to an event,
-    and you must override :py:meth:`state_dict` and :py:meth:`load_state_dict`.
+    To define you own callback, you can override any of the method associated to an event.
+    You can also override :py:meth:`state_dict` and :py:meth:`load_state_dict`, to be able
+    the recover the state of your callback when resuming an interrupted training.
 
     """
-
-    def reset(self) -> None:
-        """
-        Called every time :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`, :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`,
-        :py:meth:`Trainer.test <clinicadl.train.Trainer.test>` or :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>` are called.
-        """
 
     def on_trainer_init(
         self,
@@ -92,7 +88,8 @@ class Callback(ABC):
         callbacks: CallbacksHandler,
     ) -> None:
         """
-        Called once when the :py:class:`~clinicadl.train.Trainer` is instantiated.
+        Called once when the :py:class:`~clinicadl.train.Trainer` is created or restored with
+        :py:meth:`Trainer.from_maps <clinicadl.train.Trainer.from_maps>`.
 
         Parameters
         ----------
@@ -145,10 +142,14 @@ class Callback(ABC):
         split: Split,
         optimizers: dict[str, torch.optim.Optimizer],
         optimization: OptimizationConfig,
+        metrics: MetricsHandler,
+        callbacks: CallbacksHandler,
         computational: ComputationalConfig,
     ) -> None:
         """
-        Called once at the beginning of :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
+        Called once at the beginning of :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` if ``resume=False``.
+
+        If resuming a training, :py:meth:`on_resume` will be called instead.
 
         Parameters
         ----------
@@ -166,11 +167,59 @@ class Callback(ABC):
         optimization : OptimizationConfig
             The :py:class:`clinicadl.optim.OptimizationConfig` defining the optimization specifications
             of the training phase.
+        metrics : MetricsHandler
+            The :py:class:`~clinicadl.metrics.MetricsHandler` containing the validation metrics.
+        callbacks : CallbacksHandler
+            The :py:class:`~clinicadl.callbacks.CallbacksHandler` containing the callbacks passed to the :py:class:`~clinicadl.train.Trainer`.
         computational : ComputationalConfig
             The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
             of the training phase.
-        callbacks : list[Callback]
-            The list of :py:class:`Callbacks <clinicadl.callbacks.Callback>` associated to the :py:class:`~clinicadl.train.Trainer`.
+        """
+
+    def on_resume(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        split: Split,
+        optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler,
+        optimization: OptimizationConfig,
+        metrics: MetricsHandler,
+        callbacks: CallbacksHandler,
+        computational: ComputationalConfig,
+    ) -> None:
+        """
+        Called when :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` is resuming a training.
+
+        More precisely, this method will be called just before loading the checkpoints.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
+        split : Split
+            The :py:class:`clinicadl.split.Split` on which training is performed.
+        optimizers : dict[str, torch.optim.Optimizer]
+            The :py:class`Optimizer <torch.optim.Optimizer>` returned
+            by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`.
+        grad_scaler : torch.amp.GradScaler
+            The :py:class:`torch.amp.GradScaler` used to scale gradients.
+        optimization : OptimizationConfig
+            The :py:class:`clinicadl.optim.OptimizationConfig` defining the optimization specifications
+            of the training phase.
+        metrics : MetricsHandler
+            The :py:class:`~clinicadl.metrics.MetricsHandler` containing the validation metrics.
+        callbacks : CallbacksHandler
+            The :py:class:`~clinicadl.callbacks.CallbacksHandler` containing the callbacks passed to the :py:class:`~clinicadl.train.Trainer`.
+        computational : ComputationalConfig
+            The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
+            of the training phase.
         """
 
     def on_train_end(
@@ -408,14 +457,20 @@ class Callback(ABC):
         maps: Maps,
         state: TrainerState,
         dataloader: DataLoader,
-        model_checkpoint: Optional[str],
+        model_checkpoint: str,
         metrics: MetricsHandler,
+        callbacks: CallbacksHandler,
         computational: ComputationalConfig,
     ) -> None:
         """
-        Called once at the beginning of :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
+        Called when a model is validated in :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
 
         Not to be confused with :py:meth:`on_validation_start`.
+
+        .. important::
+            If ``model_checkpoint=None`` was passed to :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`,
+            all the models saved during training will be validated. Therefore, ``on_validate_start`` will be
+            called for each model.
 
         Parameters
         ----------
@@ -427,10 +482,12 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         dataloader : DataLoader
             The dataloader on which validation is performed.
-        model_checkpoint : str, default=None
+        model_checkpoint : str
             The model checkpoint currently being validated.
         metrics : MetricsHandler
             The :py:class:`~clinicadl.metrics.MetricsHandler` containing the validation metrics.
+        callbacks : CallbacksHandler
+            The :py:class:`~clinicadl.callbacks.CallbacksHandler` containing the callbacks passed to the :py:class:`~clinicadl.train.Trainer`.
         computational : ComputationalConfig
             The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
             of the validation phase.
@@ -444,7 +501,6 @@ class Callback(ABC):
         state: TrainerState,
         dataloader: DataLoader,
         metrics: MetricsHandler,
-        computational: ComputationalConfig,
     ) -> None:
         """
         Called at the beginning of every validation loop in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
@@ -463,9 +519,6 @@ class Callback(ABC):
             The dataloader on which validation is performed.
         metrics : MetricsHandler
             The :py:class:`~clinicadl.metrics.MetricsHandler` containing the validation metrics.
-        computational : ComputationalConfig
-            The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
-            of the validation phase.
         """
 
     def on_validate_end(
@@ -477,7 +530,7 @@ class Callback(ABC):
         metrics: MetricsHandler,
     ) -> None:
         """
-        Called once at the end of :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
+        Called at the end of a model validation in :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
 
         Not to be confused with :py:meth:`on_validation_end`.
 
@@ -543,19 +596,21 @@ class Callback(ABC):
             The batch input to :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>`.
         """
 
-    def on_evaluation_step_end(
+    def on_metrics_computation_start(
         self,
         *,
         model: Model,
         maps: Maps,
         state: TrainerState,
         output: Batch,
-        detailed_metrics_df: pd.DataFrame,
+        metrics: MetricsHandler,
     ) -> None:
         """
-        Called every time :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>` has just
-        been called in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`, :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`,
-        or :py:meth:`Trainer.test <clinicadl.train.Trainer.test>`.
+        Called every time :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>` has been called
+        be called and metrics will now be computed.
+
+        .. note::
+            This event is equivalent to ``on_evaluation_step_end``.
 
         Parameters
         ----------
@@ -567,6 +622,29 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         output : Batch
             The :py:class:`clinicadl.data.dataloader.Batch` output by :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>`.
+        metrics : MetricsHandler
+            The :py:class:`~clinicadl.metrics.MetricsHandler` containing the metrics that will be computed.
+        """
+
+    def on_metrics_computation_end(
+        self,
+        *,
+        model: Model,
+        maps: Maps,
+        state: TrainerState,
+        detailed_metrics_df: pd.DataFrame,
+    ) -> None:
+        """
+        Called every time metrics have just been computed on a batch.
+
+        Parameters
+        ----------
+        model : Model
+            The :py:class:`clinicadl.models.Model` associated to the :py:class:`clinicadl.train.Trainer`.
+        maps : Maps
+            The :py:class:`clinicadl.io.Maps` associated to the :py:class:`clinicadl.train.Trainer`.
+        state : TrainerState
+            The current :py:class:`clinicadl.train.TrainerState`.
         detailed_metrics_df : pd.DataFrame
             The evaluation metrics on the batch.
         """
@@ -580,9 +658,10 @@ class Callback(ABC):
         maps: Maps,
         state: TrainerState,
         dataloader: DataLoader,
-        group_name: str,
         model_checkpoint: str,
         metrics: MetricsHandler,
+        group_name: str,
+        callbacks: CallbacksHandler,
         computational: ComputationalConfig,
     ) -> None:
         """
@@ -598,12 +677,14 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         dataloader : DataLoader
             The dataloader on which the test is performed.
-        model_checkpoint : Optional[str]
+        model_checkpoint : str
             The model checkpoint currently being tested.
-        group_name : str
-            The name given to the test data.
         metrics : MetricsHandler
             The :py:class:`~clinicadl.metrics.MetricsHandler` containing the test metrics.
+        group_name : str
+            The name given to the test data.
+        callbacks : CallbacksHandler
+            The :py:class:`~clinicadl.callbacks.CallbacksHandler` containing the callbacks passed to the :py:class:`~clinicadl.train.Trainer`.
         computational : ComputationalConfig
             The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
             of the validation phase.
@@ -643,6 +724,7 @@ class Callback(ABC):
         dataloader: DataLoader,
         model_checkpoint: str,
         group_name: str,
+        callbacks: CallbacksHandler,
         computational: ComputationalConfig,
     ) -> None:
         """
@@ -658,10 +740,12 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         dataloader : DataLoader
             The dataloader on which the prediction is performed.
-        model_checkpoint : Optional[str]
+        model_checkpoint : str
             The model checkpoint currently being used.
         group_name : str
             The name given to the data.
+        callbacks : CallbacksHandler
+            The :py:class:`~clinicadl.callbacks.CallbacksHandler` containing the callbacks passed to the :py:class:`~clinicadl.train.Trainer`.
         computational : ComputationalConfig
             The :py:class:`clinicadl.train.ComputationalConfig` defining the computational specifications
             of the prediction phase.
@@ -687,7 +771,6 @@ class Callback(ABC):
             The current :py:class:`clinicadl.train.TrainerState`.
         """
 
-    @abstractmethod
     def state_dict(self) -> Mapping[str, Any]:
         """
         To get a checkpoint of the current state of the callback.
@@ -698,7 +781,6 @@ class Callback(ABC):
             The current state in a ``dict``.
         """
 
-    @abstractmethod
     def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
         """
         Sets to callbacks to a given state.

@@ -1,6 +1,7 @@
 import inspect
 import linecache
 import logging
+import os
 from dataclasses import dataclass
 from functools import partial
 from logging import Logger
@@ -316,3 +317,13 @@ def init_ddp(gpu: bool = True, logger: Optional[Logger] = None) -> None:
     assert (
         dist.is_initialized()
     ), "Something went wrong with the distribution initialization!"
+
+
+def get_rank() -> int:
+    """Returns 0 unless the environment specifies a rank."""
+    rank_keys = ("RANK", "SLURM_PROCID", "LOCAL_RANK")
+    for key in rank_keys:
+        rank = os.environ.get(key)
+        if rank is not None:
+            return int(rank)
+    return 0

@@ -1,11 +1,12 @@
+import os
 from typing import Optional
 
 import torch
-from pydantic import NonNegativeInt, PositiveInt, field_validator
+from pydantic import NonNegativeInt, field_validator
 from torch.amp.grad_scaler import GradScaler
 
 from clinicadl.utils.config import ClinicaDLConfig
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.seed import DETERMINISTIC, GLOBAL_SEED
 
 
 class ComputationalConfig(ClinicaDLConfig):
@@ -27,32 +28,45 @@ class ComputationalConfig(ClinicaDLConfig):
     channels_last : bool, default=True
         Whether to use `Channels Last Memory Format <https://docs.pytorch.org/tutorials/intermediate/memory_format_tutorial.html>`_
         when possible.
-    checkpoint_every : PositiveInt, default=1
-        Save checkpoint every x epochs. If your training fails, ``ClinicaDL`` will resume
-        from the last checkpoint.
     seed : Optional[NonNegativeInt], default=None
-        To seed the randomness in your training.
+        Global seed to control the randomness. If ``None``, ``ComputationalConfig`` will look for a global seed set
+        with :py:func:`clinicadl.utils.seed.seed_everything`. If passed, it will override any global seed.
+    deterministic : Optional[bool], default=None
+        Whether to configure PyTorch's operations in deterministic mode. If ``None``, ``ComputationalConfig`` will look for a global configuration set
+        with :py:func:`clinicadl.utils.seed.seed_everything`. If passed, it will override any global configuration.
     """
 
     gpu: bool = True
     non_blocking: bool = True
     amp: bool = True
     channels_last: bool = True
-    checkpoint_every: PositiveInt = 1
     seed: Optional[NonNegativeInt] = None
+    deterministic: Optional[bool] = None
 
-    @field_validator("gpu", mode="after")
+    def check_device(self) -> None:
+        """
+        Checks that the requested device is available.
+        """
+        if self.gpu:
+            assert torch.cuda.is_available(), "No GPU with CUDA available."
+
+    @field_validator("seed", mode="after")
     @classmethod
-    def _check_gpu(cls, value: bool) -> bool:
-        """
-        Check if GPU is indeed available.
-        """
-        if value:
-            import torch
+    def _check_global_seed(
+        cls, seed: Optional[NonNegativeInt]
+    ) -> Optional[NonNegativeInt]:
+        """If no seed, look for a global seed."""
+        if seed is None and (glob_seed := os.environ.get(GLOBAL_SEED)) is not None:
+            return int(glob_seed)
+        return seed
 
-            if not torch.cuda.is_available():
-                raise ClinicaDLArgumentError("No GPU available!.")
-        return value
+    @field_validator("deterministic", mode="after")
+    @classmethod
+    def _check_deterministic(cls, deterministic: Optional[bool]) -> bool:
+        """If no deterministic arg, look for a global configuration."""
+        if deterministic is None:
+            return bool(os.environ.get(DETERMINISTIC))
+        return deterministic
 
     @property
     def device(self):

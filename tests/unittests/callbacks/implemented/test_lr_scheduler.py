@@ -71,7 +71,10 @@ def test__init__():
     )
 
 
-def test_on_train_start():
+def test_on_train_start(caplog):
+    METRICS_HANDLER.config.metrics = {"mae": MSE}
+    METRICS_HANDLER.init_metrics()
+
     # raw scheduler
     optimizer = build_optimizer("my_optimizer")
     raw_scheduler = StepLR(optimizer["my_optimizer"], step_size=1)
@@ -88,7 +91,7 @@ def test_on_train_start():
             )
         ),
     ):
-        scheduler.on_train_start(optimizers=optimizer)
+        scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
 
     scheduler = LRSchedulerCallback(
         scheduler=deepcopy(raw_scheduler),
@@ -104,21 +107,21 @@ def test_on_train_start():
             )
         ),
     ):
-        scheduler.on_train_start(optimizers=optimizer)
+        scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
 
     scheduler = LRSchedulerCallback(
         scheduler=raw_scheduler,
         scheduler_type="epoch-based",
         optimizer_name="my_optimizer",
     )
-    scheduler.on_train_start(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
     optimizer["my_optimizer"].step()
     scheduler.scheduler.step()
     np.testing.assert_almost_equal(
         scheduler.scheduler.state_dict()["_last_lr"], [0.0001]
     )
 
-    scheduler.on_train_start(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
     np.testing.assert_almost_equal(
         scheduler.scheduler.state_dict()["_last_lr"], [0.001]
     )
@@ -128,7 +131,7 @@ def test_on_train_start():
     scheduler = LRSchedulerCallback(
         scheduler=StepLRConfig(step_size=1),
     )
-    scheduler.on_train_start(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
     assert isinstance(scheduler.scheduler, StepLR)
     assert scheduler.scheduler.optimizer is optimizer["optimizer"]
     optimizer["optimizer"].step()
@@ -138,9 +141,33 @@ def test_on_train_start():
     )
 
     optimizer = build_optimizer()
-    scheduler.on_train_start(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
     np.testing.assert_almost_equal(
         scheduler.scheduler.state_dict()["_last_lr"], [0.001]
+    )
+
+    # ReduceLROnPlateau
+    metric_scheduler = LRSchedulerCallback(
+        ReduceLROnPlateauConfig(mode="max"),
+        scheduler_type="metric-based",
+        metric_name="mse",
+    )
+
+    with pytest.raises(
+        KeyError,
+        match=re.escape(
+            "'mse' not found in the computed metrics! Metrics are: ['mae']"
+        ),
+    ):
+        METRICS_HANDLER.config.metrics = {"mae": MSE}
+        metric_scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
+    METRICS_HANDLER.config.metrics = {"mse": MSE}
+    METRICS_HANDLER.init_metrics()
+    with caplog.at_level(logging.WARNING):
+        metric_scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
+    assert (
+        "Found mode='max' in ReduceLROnPlateau, but found optimum='min' in 'mse'. This may be an error."
+        in caplog.text
     )
 
 
@@ -148,6 +175,7 @@ def test_steps_scheduler():
     optimizer = build_optimizer()
     state = TrainerState(called="train")
     METRICS_HANDLER.config.metrics = {"mse": MSE}
+    METRICS_HANDLER.init_metrics()
     METRICS_HANDLER._df = pd.DataFrame(
         {"epoch": [0, 1], "mse": [0.7, 1.1], "loss": [0.1, 0.5]}
     )
@@ -159,9 +187,9 @@ def test_steps_scheduler():
         ReduceLROnPlateauConfig(), scheduler_type="metric-based", metric_name="mse"
     )
 
-    epoch_scheduler.on_train_start(optimizers=optimizer)
-    step_scheduler.on_train_start(optimizers=optimizer)
-    metric_scheduler.on_train_start(optimizers=optimizer)
+    epoch_scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
+    step_scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
+    metric_scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
 
     epoch_scheduler.scheduler.step = MagicMock()
     step_scheduler.scheduler.step = MagicMock()
@@ -193,27 +221,6 @@ def test_steps_scheduler():
     metric_scheduler.scheduler.step.assert_called_once_with(1.1)
 
 
-def test_on_validation_start(caplog):
-    metric_scheduler = LRSchedulerCallback(
-        ReduceLROnPlateauConfig(mode="max"),
-        scheduler_type="metric-based",
-        metric_name="mse",
-    )
-
-    METRICS_HANDLER.config.metrics = {"mae": MSE}
-    metric_scheduler.on_train_start(optimizers=build_optimizer())
-    with pytest.raises(KeyError, match="'mse' not found in the computed metrics!"):
-        METRICS_HANDLER.config.metrics = {"mae": MSE}
-        metric_scheduler.on_validation_start(metrics=METRICS_HANDLER)
-    with caplog.at_level(logging.WARNING):
-        METRICS_HANDLER.config.metrics = {"mse": MSE}
-        metric_scheduler.on_validation_start(metrics=METRICS_HANDLER)
-    assert (
-        "Found mode='max' in ReduceLROnPlateau, but found optimum='min' in 'mse'. This may be an error."
-        in caplog.text
-    )
-
-
 def test_on_train_end(tmp_path):
     shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
@@ -233,7 +240,7 @@ def test_on_train_end(tmp_path):
         ]
     )
     scheduler = LRSchedulerCallback(StepLRConfig(step_size=1), optimizer_name="my_opt")
-    scheduler.on_train_start(optimizers={"my_opt": optimizer})
+    scheduler.on_train_start(optimizers={"my_opt": optimizer}, metrics=METRICS_HANDLER)
 
     state = TrainerState(
         current_epoch=1,
@@ -301,7 +308,7 @@ def test_state_dict():
         current_train_batch=1,
     )
 
-    scheduler.on_train_start(optimizers=optimizer)
+    scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
     np.testing.assert_almost_equal(scheduler.scheduler.state_dict()["_last_lr"], [1e-3])
     optimizer["optimizer"].step()
     scheduler.on_epoch_end(state=state)
@@ -321,3 +328,16 @@ def test_state_dict():
     np.testing.assert_almost_equal(scheduler.scheduler.state_dict()["_last_lr"], [1e-5])
     assert scheduler._lrs == {(1, 1): [1e-3], (2, 1): [1e-4]}
     np.testing.assert_almost_equal(scheduler._current_lrs, [1e-5])
+
+
+def test_resume():
+    optimizer = build_optimizer()
+    scheduler = LRSchedulerCallback(
+        scheduler=StepLRConfig(step_size=1),
+    )
+    scheduler.on_train_start(optimizers=optimizer, metrics=METRICS_HANDLER)
+    state_dict = scheduler.state_dict()
+
+    new_scheduler = LRSchedulerCallback.from_dict(scheduler.to_dict())
+    new_scheduler.on_resume(optimizers=optimizer)
+    new_scheduler.load_state_dict(state_dict)

@@ -337,6 +337,17 @@ def test_maps(tmp_path: Path):
         / "best-loss"
         / "warning.log"
     )
+    assert maps.test.groups["X"].results.splits[0].models[
+        "best-loss"
+    ].computational_json == (
+        maps_path
+        / "test"
+        / "group-X"
+        / "results"
+        / "split-0"
+        / "best-loss"
+        / "computational.json"
+    )
 
     # test - group - splits - model - metrics
     assert maps.test.groups["X"].results.splits[0].models[
@@ -400,6 +411,17 @@ def test_maps(tmp_path: Path):
         / "split-0"
         / "best-loss"
         / "warning.log"
+    )
+    assert maps.prediction.groups["X"].results.splits[0].models[
+        "best-loss"
+    ].computational_json == (
+        maps_path
+        / "prediction"
+        / "group-X"
+        / "results"
+        / "split-0"
+        / "best-loss"
+        / "computational.json"
     )
 
     # prediction - group - splits - model - output_tsv
@@ -746,6 +768,24 @@ def test_delete_split(tmp_path):
     maps = Maps(tmp_path)
     maps.read()
 
+    maps.training.data.train.delete_split(1)
+    assert not (maps.training.data.train.path / "split-1").exists()
+    assert 1 not in maps.training.data.train.splits_list
+
+    maps.training.delete_split(1)
+    assert not (maps.training.path / "split-1").exists()
+    assert 1 not in maps.training.splits_list
+    assert not (maps.training.data.validation.path / "split-1").exists()
+    assert 1 not in maps.training.data.validation.splits_list
+
+    with pytest.raises(FileNotFoundError, match="No mention of split 2 found in"):
+        maps.training.delete_split(2)
+
+    # global
+    shutil.copytree(REFERENCE_MAPS, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.read()
+
     assert (maps.training.path / "split-1").exists()
     assert (maps.training.data.train.path / "split-1").exists()
     assert (maps.training.data.validation.path / "split-1").exists()
@@ -775,3 +815,59 @@ def test_delete_split(tmp_path):
             }
         ),
     )
+
+
+def test_get_all_models(tmp_path):
+    shutil.copytree(REFERENCE_MAPS, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.read()
+    maps.training.splits[0].models.best_models.create_metric("mse")
+    maps.training.splits[0].models.checkpoints.create_epoch(1)
+
+    assert maps.training.splits[0].models.get_all_models() == [
+        "best-loss",
+        "best-mse",
+        "epoch-1",
+        "epoch-3",
+        "final",
+    ]
+
+    maps.training.splits[0].models.final.remove(non_empty_ok=True)
+    assert maps.training.splits[0].models.get_all_models() == [
+        "best-loss",
+        "best-mse",
+        "epoch-1",
+        "epoch-3",
+    ]
+
+
+def test_delete(tmp_path):
+    shutil.copytree(REFERENCE_MAPS, tmp_path, dirs_exist_ok=True)
+    maps = Maps(tmp_path)
+    maps.read()
+
+    # epoch
+    maps.training.splits[0].models.checkpoints.delete_epoch(3)
+    assert not (maps.training.splits[0].models.checkpoints.path / "split-1").exists()
+    assert 3 not in maps.training.splits[0].models.checkpoints.epochs_list
+
+    maps.training.splits[0].tmp.delete_epoch(3)
+    assert not (maps.training.splits[0].tmp.path / "split-1").exists()
+    assert 3 not in maps.training.splits[0].tmp.epochs_list
+
+    # metric
+    maps.training.splits[0].models.best_models.delete_metric("loss")
+    assert not (maps.training.splits[0].models.best_models.path / "best-loss").exists()
+    assert "loss" not in maps.training.splits[0].models.best_models.metrics_list
+
+    # group
+    maps.test.delete_group("X")
+    assert not (maps.test.path / "group-X").exists()
+    assert "X" not in maps.test.groups_list
+
+    # model
+    maps.prediction.groups["X"].results.splits[0].delete_model("best-loss")
+    assert not (
+        maps.prediction.groups["X"].results.splits[0].path / "best-loss"
+    ).exists()
+    assert "best-loss" not in maps.prediction.groups["X"].results.splits[0].models

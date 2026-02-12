@@ -3,19 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Generic
 
-from clinicadl.utils.dictionary.suffixes import JSON, TSV
+from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.dictionary.words import (
-    DATA,
-    DATALOADER,
-    DATASET,
+    COMPUTATIONAL,
     GROUP,
     MODELS,
     RESULTS,
 )
 
-from ...base import Directory
-from ...utils import mandatory
-from ..utils import CollectionOfDirs, DirType, SplitsDir
+from ..utils import CollectionOfDirs, DataDir, DirType, ModelDir, SplitsDir
+
+
+class InferenceModelDir(ModelDir):
+    @property
+    def computational_json(self) -> Path:
+        return (self.path / COMPUTATIONAL).with_suffix(JSON)
 
 
 class InferenceSplitDir(CollectionOfDirs[DirType, str]):
@@ -39,6 +41,9 @@ class InferenceSplitDir(CollectionOfDirs[DirType, str]):
     ) -> None:
         self._create_item(model, overwrite=overwrite, exist_ok=exist_ok)
 
+    def delete_model(self, model: str) -> None:
+        self._delete_item(model)
+
     @classmethod
     def _items_dict_private_name(cls) -> str:
         return "_" + MODELS
@@ -48,7 +53,7 @@ class InferenceResultsDir(SplitsDir[DirType]):
     pass
 
 
-class InferenceGroupDir(Directory, Generic[DirType]):
+class InferenceGroupDir(DataDir, Generic[DirType]):
     _results_dir_type: type[DirType]
 
     def __init__(self, path: Path):
@@ -58,21 +63,6 @@ class InferenceGroupDir(Directory, Generic[DirType]):
     @property
     def results(self) -> DirType:
         return self._results
-
-    @property
-    @mandatory
-    def dataset_json(self) -> Path:
-        return (self.path / DATASET).with_suffix(JSON)
-
-    @property
-    @mandatory
-    def dataloader_json(self) -> Path:
-        return (self.path / DATALOADER).with_suffix(JSON)
-
-    @property
-    @mandatory
-    def data_tsv(self) -> Path:
-        return (self.path / DATA).with_suffix(TSV)
 
 
 class InferenceDir(CollectionOfDirs[DirType, str]):
@@ -94,3 +84,6 @@ class InferenceDir(CollectionOfDirs[DirType, str]):
         self, group: str, overwrite: bool = False, exist_ok: bool = False
     ) -> None:
         self._create_item(group, overwrite=overwrite, exist_ok=exist_ok)
+
+    def delete_group(self, group: str) -> None:
+        self._delete_item(group)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Sequence
-from copy import deepcopy
+from copy import copy
 from pathlib import Path
 from typing import Any, Callable, Generic, Optional, TypeVar, Union
 
@@ -11,11 +11,8 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     ValidationError,
-    ValidationInfo,
     computed_field,
     field_serializer,
-    field_validator,
-    model_validator,
 )
 from pydantic.fields import FieldInfo
 from typing_extensions import Self
@@ -251,7 +248,7 @@ class ClinicaDLConfig(BaseModel):
                 return reader(value)
             except Exception as e:
                 raise CannotReadFieldError(
-                    field_names=[field], object_name=cls._get_name()
+                    field_names=[field], object_name=cls._get_name(), error=e
                 ) from e
         return value
 
@@ -321,7 +318,7 @@ class ConfigWithName(ClinicaDLConfig):
         """
         Checks the input of :py:meth:`from_dict`.
         """
-        dict_ = deepcopy(dict_)
+        dict_ = copy(dict_)
         if NAME in dict_:
             assert (
                 dict_[NAME] == cls._get_name()
@@ -703,72 +700,18 @@ class DictOfObjects(BaseModel, Generic[T, TConfig]):
 
         def dict_reader(serialized_objects: dict[str, Any]) -> Self:
             obj_reader = ObjectOrConfig.build_reader(config_reader)
-            return cls(
-                {name: obj_reader(obj) for name, obj in serialized_objects.items()}
-            )
+            deserialized = {}
+            for name, obj in serialized_objects.items():
+                try:
+                    deserialized[name] = obj_reader(obj)
+                except Exception as e:
+                    raise CannotReadFieldError(
+                        object_name=cls.__name__, error=e, field_names=[name]
+                    ) from e
+
+            return deserialized
 
         return dict_reader
-
-
-class KwargsConfig(ObjectConfig[T]):
-    """
-    Config class to handle kwargs.
-    It accepts only ONE field, which must be a :py:class:`DictOfObjects`.
-    """
-
-    @field_validator("*", mode="before")
-    @classmethod
-    def _handle_dict(cls, v: Any, info: ValidationInfo) -> DictOfObjects:
-        return DictOfObjects.from_dict(v, field_name=info.field_name)
-
-    @model_validator(mode="after")
-    def _count_fields(self) -> Self:
-        """
-        Check that a the KwargsConfig contain only one field.
-        """
-        fields = self.get_fields()
-        assert (
-            len(fields) == 1
-        ), f"KwargsConfig should contain only one field, found {fields} here."
-
-        return self
-
-    @classmethod
-    def from_dict(cls, dict_: dict[str, Any], **kwargs) -> Self:
-        dict_ = cls._check_dict(dict_)
-
-        main_field_name = list(dict_.keys())[0]  # only one field in KwargsConfig
-
-        values: dict = dict_[list(dict_.keys())[0]]
-        values.update(kwargs)
-
-        dict_[main_field_name] = values
-
-        try:
-            return super().from_dict(dict_)
-        except CannotReadFieldError as e:
-            wrong_metrics = cls._read_pydantic_error(e.error)
-            raise CannotReadFieldError(
-                field_names=wrong_metrics, object_name=cls._get_name()
-            ) from e
-
-    def to_raw_dict(self, exclude: Optional[Sequence[str]] = None) -> dict[str, Any]:
-        dict_ = super().to_raw_dict(exclude)
-        main_field_name = self.get_fields(alias=False)[0]
-
-        return dict_[main_field_name]
-
-    @staticmethod
-    def _read_pydantic_error(error: ValidationError) -> list[str]:
-        """
-        To read a pydantic validation error and determine
-        what key of the dict is failing validation.
-        """
-        wrong_keys = []
-        for e in error.errors():
-            wrong_keys.append(e["loc"][2])
-
-        return list(set(wrong_keys))
 
 
 def _order_dict(model_or_field: Any) -> Any:

@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -29,6 +30,23 @@ def test_on_trainer_init(tmp_path):
     METRICS.to_json.assert_called_once_with(maps.metrics_json)
     OPTIMIZATION.to_json.assert_called_once_with(maps.training.optimization_json)
     CALLBACKS.to_json.assert_called_once_with(maps.callbacks_json)
+
+    MODEL.reset_mock()
+    METRICS.reset_mock()
+    OPTIMIZATION.reset_mock()
+    CALLBACKS.reset_mock()
+    maps = Maps(MAPS_PATH)
+    saver.on_trainer_init(
+        model=MODEL,
+        metrics=METRICS,
+        optimization=OPTIMIZATION,
+        callbacks=CALLBACKS,
+        maps=maps,
+    )
+    MODEL.to_json.assert_not_called()
+    METRICS.to_json.assert_not_called()
+    OPTIMIZATION.to_json.assert_not_called()
+    CALLBACKS.to_json.assert_not_called()
 
 
 def test_on_train_start(tmp_path):
@@ -117,6 +135,7 @@ def test_on_train_start(tmp_path):
 
 
 def test_on_test_start(tmp_path):
+    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     DATALOADER = Mock()
     DATALOADER.dataset.df = pd.DataFrame(
         {
@@ -131,20 +150,31 @@ def test_on_test_start(tmp_path):
             "session_id": ["ses-M000", "ses-100"],
         }
     )
+    COMPUTATIONAL = Mock()
     maps = Maps(tmp_path)
+    maps.read()
 
     saver = ConfigSaverCallback()
-    saver.on_test_start(maps=maps, dataloader=DATALOADER, group_name="X")
+    saver.on_test_start(
+        maps=maps,
+        dataloader=DATALOADER,
+        group_name="Z",
+        model_checkpoint="split-0_best-loss",
+        computational=COMPUTATIONAL,
+    )
     DATALOADER.dataset.to_json.assert_called_once_with(
-        maps.test.groups["X"].dataset_json, overwrite=False
+        maps.test.groups["Z"].dataset_json, overwrite=False
     )
     DATALOADER.config.to_json.assert_called_once_with(
-        maps.test.groups["X"].dataloader_json
+        maps.test.groups["Z"].dataloader_json
     )
-    df = maps.open_file(maps.test.groups["X"].data_tsv)
+    df = maps.open_file(maps.test.groups["Z"].data_tsv)
     pd.testing.assert_frame_equal(
         df,
         EXPECTED_DF,
+    )
+    COMPUTATIONAL.to_json.assert_called_once_with(
+        maps.test.groups["Z"].results.splits[0].models["best-loss"].computational_json
     )
 
     DATALOADER.dataset.df = pd.DataFrame(
@@ -153,8 +183,14 @@ def test_on_test_start(tmp_path):
             "session_id": ["ses-999"],
         }
     )
-    saver.on_test_start(maps=maps, dataloader=DATALOADER, group_name="X")
-    df = maps.open_file(maps.test.groups["X"].data_tsv)
+    saver.on_test_start(
+        maps=maps,
+        dataloader=DATALOADER,
+        group_name="Z",
+        model_checkpoint="split-0_final",
+        computational=COMPUTATIONAL,
+    )
+    df = maps.open_file(maps.test.groups["Z"].data_tsv)
     pd.testing.assert_frame_equal(
         df,
         EXPECTED_DF,
@@ -162,6 +198,7 @@ def test_on_test_start(tmp_path):
 
 
 def test_on_predict_start(tmp_path):
+    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     DATALOADER = Mock()
     DATALOADER.dataset.df = pd.DataFrame(
         {
@@ -176,20 +213,34 @@ def test_on_predict_start(tmp_path):
             "session_id": ["ses-M000", "ses-100"],
         }
     )
+    COMPUTATIONAL = Mock()
     maps = Maps(tmp_path)
+    maps.read()
 
     saver = ConfigSaverCallback()
-    saver.on_predict_start(maps=maps, dataloader=DATALOADER, group_name="X")
+    saver.on_predict_start(
+        maps=maps,
+        dataloader=DATALOADER,
+        group_name="Z",
+        model_checkpoint="split-0_best-loss",
+        computational=COMPUTATIONAL,
+    )
     DATALOADER.dataset.to_json.assert_called_once_with(
-        maps.prediction.groups["X"].dataset_json, overwrite=False
+        maps.prediction.groups["Z"].dataset_json, overwrite=False
     )
     DATALOADER.config.to_json.assert_called_once_with(
-        maps.prediction.groups["X"].dataloader_json
+        maps.prediction.groups["Z"].dataloader_json
     )
-    df = maps.open_file(maps.prediction.groups["X"].data_tsv)
+    df = maps.open_file(maps.prediction.groups["Z"].data_tsv)
     pd.testing.assert_frame_equal(
         df,
         EXPECTED_DF,
+    )
+    COMPUTATIONAL.to_json.assert_called_once_with(
+        maps.prediction.groups["Z"]
+        .results.splits[0]
+        .models["best-loss"]
+        .computational_json
     )
 
     DATALOADER.dataset.df = pd.DataFrame(
@@ -198,13 +249,15 @@ def test_on_predict_start(tmp_path):
             "session_id": ["ses-999"],
         }
     )
-    saver.on_predict_start(maps=maps, dataloader=DATALOADER, group_name="X")
-    df = maps.open_file(maps.prediction.groups["X"].data_tsv)
+    saver.on_predict_start(
+        maps=maps,
+        dataloader=DATALOADER,
+        group_name="Z",
+        model_checkpoint="split-0_final",
+        computational=COMPUTATIONAL,
+    )
+    df = maps.open_file(maps.prediction.groups["Z"].data_tsv)
     pd.testing.assert_frame_equal(
         df,
         EXPECTED_DF,
     )
-
-
-def test_state_dict():
-    ConfigSaverCallback().load_state_dict(ConfigSaverCallback().state_dict())

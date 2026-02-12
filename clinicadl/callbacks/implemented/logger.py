@@ -3,15 +3,15 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from typing import TYPE_CHECKING, Optional
 
 import torch
 from tqdm import tqdm
 
 from clinicadl.io.maps import MapsSummary
 from clinicadl.io.maps.training import TrainingSummary
-from clinicadl.train.trainer_state import TrainerCall, TrainerStage
 from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.enum import TrainerCall, TrainerStage
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
@@ -46,6 +46,11 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
     `Logging <https://docs.python.org/3/library/logging.html>`_ is a convenient way to get insight of the current status of
     the :py:class:`~clinicadl.train.Trainer`, to record the important information
     that it raises, and to get clues on how to debug a failed execution.
+
+    .. note::
+        Some messages logged during the setup phase of :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`
+        (or :py:meth:`validate <clinicadl.train.Trainer.train>`, etc.) may not be handled by this callback, because
+        this callback is activated after that setup phase.
 
     Parameters
     ----------
@@ -110,15 +115,15 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         state: TrainerState,
         **kwargs,
     ) -> None:
-        if state.called == TrainerCall.TRAIN:
+        if state.called == TrainerCall.TRAIN and self._train_summary:
             self._train_summary.add_training_end_info(
                 n_epochs=state.current_epoch, interrupted=True
             )
-        if self.config.save_logs:
+        if self.config.save_logs and self.logger:
             self.logger.error(
                 "An exception occurred. To debug, check the logs in %s", self._log_path
             )
-        _shutdown_logging(self.logger)
+            _shutdown_logging(self.logger)
 
     def on_train_start(
         self,
@@ -129,16 +134,16 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         computational: ComputationalConfig,
         **kwargs,
     ) -> None:
-        split_dir = maps.training.splits[state.split_idx]
+        split_dir = maps.training.splits[split.index]
         self._setup_logging(maps, state, warning_file=split_dir.warning_log)
 
-        self.logger.info("Beginning of training on split %s", state.split_idx)
+        self.logger.info("Beginning of training on split %s", split.index)
         self.logger.info("Computational configuration: %s", computational)
 
         self._output_path = split_dir.path
 
         self._train_summary = TrainingSummary(
-            maps.training.splits[state.split_idx].summary_log
+            maps.training.splits[split.index].summary_log
         )
         self._train_summary.create()
         self._train_summary.add_data_info(
@@ -147,27 +152,58 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         )
         self._summary.add_training_split(split.index)
 
+    def on_resume(
+        self,
+        *,
+        maps: Maps,
+        state: TrainerState,
+        split: Split,
+        computational: ComputationalConfig,
+        **kwargs,
+    ) -> None:
+        split_dir = maps.training.splits[split.index]
+        self._setup_logging(maps, state, warning_file=split_dir.warning_log)
+
+        last_epoch = sorted(maps.training.splits[split.index].tmp.epochs_list)[-1]
+        self.logger.info(
+            "Resuming training on split %s from epoch %d", split.index, last_epoch + 1
+        )
+        self.logger.info("Computational configuration: %s", computational)
+
+        self._output_path = split_dir.path
+        self._train_summary = TrainingSummary(
+            maps.training.splits[split.index].summary_log
+        )
+
     def on_validate_start(
         self,
         *,
         maps: Maps,
         state: TrainerState,
-        model_checkpoint: Optional[str],
+        model_checkpoint: str,
         **kwargs,
     ) -> None:
-        if model_checkpoint:
-            model_dir = maps.training.splits[state.split_idx].models.get_checkpoint_dir(
-                model_checkpoint
-            )
-            log_dir = model_dir
-        else:
-            model_dir = maps.training.splits[state.split_idx].models
-            log_dir = maps.training.splits[state.split_idx]
+        model_dir = maps.training.splits[state.split_idx].models.get_checkpoint_dir(
+            model_checkpoint
+        )
 
-        self._setup_logging(maps, state, warning_file=log_dir.warning_log)
+        self._setup_logging(maps, state, warning_file=model_dir.warning_log)
         self._output_path = model_dir.path
 
-        self.on_validation_start(state=state)
+        self.logger.info(
+            "Beginning of validation of checkpoint '%s' on split %d",
+            model_checkpoint,
+            state.split_idx,
+        )
+
+        self._val_progress_bar = tqdm(
+            total=state.num_val_batches,
+            unit="batch",
+            desc="Validation",
+            initial=1,
+            disable=not self.config.progress_bar,
+            file=sys.stdout,
+        )
 
     def on_validation_start(
         self,
@@ -394,12 +430,6 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             loss = {name: tensor.item() for name, tensor in loss.items()}
 
             self._train_progress_bar.set_postfix(loss)
-
-    def state_dict(self) -> Mapping[str, Any]:
-        return {}
-
-    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
-        pass
 
     def _setup_logging(
         self, maps: Maps, state: TrainerState, warning_file: Path

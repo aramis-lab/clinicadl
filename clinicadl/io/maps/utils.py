@@ -3,10 +3,20 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Generator, Generic, TypeVar
 
-from clinicadl.utils.dictionary.suffixes import LOG, TSV
-from clinicadl.utils.dictionary.words import AGGREGATED, DETAILS, EPOCH, SPLIT, WARNING
+from clinicadl.utils.dictionary.suffixes import JSON, LOG, TSV
+from clinicadl.utils.dictionary.words import (
+    AGGREGATED,
+    DATA,
+    DATALOADER,
+    DATASET,
+    DETAILS,
+    EPOCH,
+    SPLIT,
+    WARNING,
+)
 
 from ..base import Directory
+from ..utils import mandatory
 
 DirType = TypeVar("DirType", bound=Directory)
 ItemType = TypeVar("ItemType", int, str)
@@ -59,6 +69,12 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
         dict_ = getattr(self, self._items_dict_private_name())
         dict_[item] = dir_
 
+    def _delete_item(self, item: ItemType) -> None:
+        dir_: DirType = self._dir_type(self._item_path(str(item)))
+        dir_.remove(non_empty_ok=True)
+        dict_ = getattr(self, self._items_dict_private_name())
+        del dict_[item]
+
     @classmethod
     def _items_dict_private_name(cls) -> str:
         return "_" + cls._item_key + "s"
@@ -104,6 +120,9 @@ class SplitsDir(CollectionOfDirs[DirType, int]):
     ) -> None:
         self._create_item(split_idx, overwrite=overwrite, exist_ok=exist_ok)
 
+    def delete_split(self, split_idx: int) -> None:
+        self._delete_item(split_idx)
+
 
 class EpochsDir(CollectionOfDirs[DirType, int]):
     _item_key = EPOCH
@@ -126,6 +145,9 @@ class EpochsDir(CollectionOfDirs[DirType, int]):
     ) -> None:
         self._create_item(epoch, overwrite=overwrite, exist_ok=exist_ok)
 
+    def delete_epoch(self, epoch: int) -> None:
+        self._delete_item(epoch)
+
 
 class ModelDir(Directory):
     @property
@@ -141,3 +163,20 @@ class MetricsDir(Directory):
     @property
     def details_tsv(self) -> Path:
         return (self.path / DETAILS).with_suffix(TSV)
+
+
+class DataDir(Directory):
+    @property
+    @mandatory
+    def data_tsv(self) -> Path:
+        return (self.path / DATA).with_suffix(TSV)
+
+    @property
+    @mandatory
+    def dataset_json(self) -> Path:
+        return (self.path / DATASET).with_suffix(JSON)
+
+    @property
+    @mandatory
+    def dataloader_json(self) -> Path:
+        return (self.path / DATALOADER).with_suffix(JSON)

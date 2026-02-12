@@ -1,26 +1,8 @@
-from enum import Enum
 from typing import Any, Optional
 
 from clinicadl.data.dataloader import DataLoader
 from clinicadl.utils.config import ClinicaDLConfig
-
-
-class TrainerStage(str, Enum):
-    """Possible stages of the trainer."""
-
-    TRAIN = "training"
-    EVAL = "evaluation"
-    PRED = "prediction"
-    INTERRUPTED = "interrupted"
-
-
-class TrainerCall(str, Enum):
-    """Methods of :py:class:`clinicadl.train.Trainer`."""
-
-    TRAIN = "train"
-    VALIDATE = "validate"
-    TEST = "test"
-    PREDICT = "predict"
+from clinicadl.utils.enum import TrainerCall, TrainerStage
 
 
 class TrainerState(ClinicaDLConfig):
@@ -61,7 +43,7 @@ class TrainerState(ClinicaDLConfig):
     num_epochs : int
         Total number of epochs in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
     optim_step : int
-        The number of optimization steps performed so far in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
+        The total number of optimization steps performed so far in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
     split_idx : Optional[int]
         Index of the split on which training/validation is currently performed in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`
         or :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
@@ -108,7 +90,6 @@ class TrainerState(ClinicaDLConfig):
         self.current_train_batch = 0
         self.num_train_batches = len(train_loader)
         self.current_epoch = current_epoch
-        self.optim_step = 0
 
     def reset_validation(
         self, split_idx: int, val_loader: DataLoader, in_training: bool = True

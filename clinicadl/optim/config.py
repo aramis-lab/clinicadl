@@ -11,7 +11,7 @@ class OptimizationConfig(ClinicaDLConfig):
 
     Parameters
     ----------
-    epochs : PositiveInt, default=10
+    num_epochs : PositiveInt, default=10
         Number of epochs.
     accumulation_steps : PositiveInt, default=1
         The number of loss computations during which gradients are accumulated before performing the weights update.
@@ -20,6 +20,6 @@ class OptimizationConfig(ClinicaDLConfig):
         Perform evaluation on the validation every x epochs.
     """
 
-    epochs: PositiveInt = 10
+    num_epochs: PositiveInt = 10
     accumulation_steps: PositiveInt = 1
     evaluation_steps: PositiveInt = 1

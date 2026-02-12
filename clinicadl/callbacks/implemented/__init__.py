@@ -3,6 +3,7 @@ from .config_saver import ConfigSaverCallback
 from .early_stopping import EarlyStoppingCallback
 from .logger import LoggerCallback
 from .lr_scheduler import LRSchedulerCallback
+from .metrics_saver import MetricsSaverCallback
 from .model_checkpoint import ModelCheckpointCallback
 from .monitor import MonitorCallback
 from .training_checkpoint import TrainingCheckpointCallback

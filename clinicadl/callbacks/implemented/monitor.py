@@ -10,10 +10,10 @@ import torch
 from pydantic import NonNegativeInt
 
 from clinicadl.io.maps.training import TrainingSummary
-from clinicadl.train.trainer_state import TrainerCall, TrainerStage, TrainerState
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.dictionary.words import GPU
+from clinicadl.utils.enum import TrainerCall, TrainerStage
 from clinicadl.utils.objects import HasConfig
 
 from ..base import Callback
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from clinicadl.io import Maps
     from clinicadl.optim import OptimizationConfig
     from clinicadl.split import Split
-    from clinicadl.train import ComputationalConfig
+    from clinicadl.train import ComputationalConfig, TrainerState
 
 logger = logging.getLogger("clinicadl.callbacks.MonitorCallback")
 
@@ -45,6 +45,9 @@ VAL_LOAD = "Validation data loading"
 EVAL = "Evaluation"
 EVAL_GPU = "Evaluation GPU (s)"
 EVAL_MEM = "Evaluation GPU max memory (MB)"
+METRIC = "Metrics computation"
+METRIC_GPU = "Metrics computation GPU (s)"
+METRIC_MEM = "Metrics computation GPU max memory (MB)"
 
 OOM = "CUDA out of memory"
 
@@ -123,6 +126,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         self.monitor_val_batch = None
         self.monitor_val_batch_loading = None
         self.monitor_evaluation = None
+        self.monitor_metric = None
 
         self._optimization_config = None
         self._train_batch_size = None
@@ -150,6 +154,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             self.monitor_val_batch.enabled = warm
             self.monitor_val_batch_loading.enabled = warm
             self.monitor_evaluation.enabled = warm
+            self.monitor_metric.enabled = warm
 
     def on_exception(
         self,
@@ -159,6 +164,9 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         exception: Exception,
         **kwargs,
     ) -> None:
+        if not self.monitor_global_training:
+            return
+
         df = self._build_df()
         tsv_path = maps.training.splits[state.split_idx].logs.computational_tsv
         df.to_csv(tsv_path, sep=SEP)
@@ -178,54 +186,17 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         computational: ComputationalConfig,
         **kwargs,
     ) -> None:
-        self._optimization_config = optimization
-        self._train_batch_size = split.train_loader.batch_size
-        self._val_batch_size = split.val_loader.batch_size
+        self._init_all_monitors(split, optimization, computational)
 
-        if computational.gpu:
-            self._gpus_used.append(torch.cuda.get_device_name(0))
-
-        self.monitor_global_training = self._init_monitor(name=TRAIN, save_time=True)
-        self.monitor_epoch = self._init_monitor(name=EPOCH)
-
-        self.monitor_train_loop = self._init_monitor(
-            gpu=computational.gpu, limited_measurements=True, name=TRAIN_LOOP
-        )
-        self.monitor_train_batch_loading = self._init_monitor(
-            limited_measurements=True, name=TRAIN_LOAD
-        )
-        self.monitor_forward = self._init_monitor(
-            gpu=computational.gpu,
-            memory=True,
-            limited_measurements=True,
-            name=FORWARD,
-        )
-        self.monitor_backward = self._init_monitor(
-            gpu=computational.gpu,
-            memory=True,
-            limited_measurements=True,
-            name=BACKWARD,
-        )
-        self.monitor_optimization = self._init_monitor(
-            gpu=computational.gpu,
-            memory=True,
-            limited_measurements=True,
-            name=OPT,
-        )
-
-        self.monitor_validation = self._init_monitor(name=VAL)
-        self.monitor_val_batch = self._init_monitor(
-            gpu=computational.gpu, limited_measurements=True, name=VAL_LOOP
-        )
-        self.monitor_val_batch_loading = self._init_monitor(
-            limited_measurements=True, name=VAL_LOAD
-        )
-        self.monitor_evaluation = self._init_monitor(
-            gpu=computational.gpu, memory=True, limited_measurements=True, name=EVAL
-        )
-
-        self.n_iterations = 0
-        self.monitor_global_training.start()
+    def on_resume(
+        self,
+        *,
+        split: Split,
+        optimization: OptimizationConfig,
+        computational: ComputationalConfig,
+        **kwargs,
+    ) -> None:
+        self._init_all_monitors(split, optimization, computational)
 
     def on_epoch_start(self, **kwargs) -> None:
         self.monitor_epoch.start()
@@ -277,10 +248,15 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             self.monitor_val_batch_loading.stop()
             self.monitor_evaluation.start()
 
-    def on_evaluation_step_end(self, *, state: TrainerState, **kwargs) -> None:
+    def on_metrics_computation_start(self, *, state: TrainerState, **kwargs) -> None:
         if state.called == TrainerCall.TRAIN:
             self.monitor_evaluation.stop()
+            self.monitor_metric.start()
             self.n_iterations += 1
+
+    def on_metrics_computation_end(self, *, state: TrainerState, **kwargs) -> None:
+        if state.called == TrainerCall.TRAIN:
+            self.monitor_metric.stop()
 
     def on_validation_end(self, **kwargs) -> None:
         self.monitor_validation.stop()
@@ -341,6 +317,64 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             name=name,
         )
 
+    def _init_all_monitors(
+        self,
+        split: Split,
+        optimization: OptimizationConfig,
+        computational: ComputationalConfig,
+    ) -> None:
+        self._optimization_config = optimization
+        self._train_batch_size = split.train_loader.batch_size
+        self._val_batch_size = split.val_loader.batch_size
+
+        if computational.gpu:
+            self._gpus_used.append(torch.cuda.get_device_name(0))
+
+        self.monitor_global_training = self._init_monitor(name=TRAIN, save_time=True)
+        self.monitor_epoch = self._init_monitor(name=EPOCH)
+
+        self.monitor_train_loop = self._init_monitor(
+            gpu=computational.gpu, limited_measurements=True, name=TRAIN_LOOP
+        )
+        self.monitor_train_batch_loading = self._init_monitor(
+            limited_measurements=True, name=TRAIN_LOAD
+        )
+        self.monitor_forward = self._init_monitor(
+            gpu=computational.gpu,
+            memory=True,
+            limited_measurements=True,
+            name=FORWARD,
+        )
+        self.monitor_backward = self._init_monitor(
+            gpu=computational.gpu,
+            memory=True,
+            limited_measurements=True,
+            name=BACKWARD,
+        )
+        self.monitor_optimization = self._init_monitor(
+            gpu=computational.gpu,
+            memory=True,
+            limited_measurements=True,
+            name=OPT,
+        )
+
+        self.monitor_validation = self._init_monitor(name=VAL)
+        self.monitor_val_batch = self._init_monitor(
+            gpu=computational.gpu, limited_measurements=True, name=VAL_LOOP
+        )
+        self.monitor_val_batch_loading = self._init_monitor(
+            limited_measurements=True, name=VAL_LOAD
+        )
+        self.monitor_evaluation = self._init_monitor(
+            gpu=computational.gpu, memory=True, limited_measurements=True, name=EVAL
+        )
+        self.monitor_metric = self._init_monitor(
+            gpu=computational.gpu, memory=True, limited_measurements=True, name=METRIC
+        )
+
+        self.n_iterations = 0
+        self.monitor_global_training.start()
+
     def _optimization_condition(self, batch_idx: int) -> bool:
         """
         If optimization will be performed on this batch.
@@ -351,6 +385,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         """
         Gathers all the computational metrics in a DataFrame.
         """
+        MEME_SCALE = 1024**2
         results = {
             _add_s_suffix(TRAIN): self.monitor_global_training.times,
             _add_s_suffix(EPOCH): self.monitor_epoch.times,
@@ -358,19 +393,22 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             _add_s_suffix(TRAIN_LOAD): self.monitor_train_batch_loading.times,
             _add_s_suffix(FORWARD): self.monitor_forward.times,
             FORWARD_GPU: self.monitor_forward.gpu_times,
-            FORWARD_MEM: np.array(self.monitor_forward.gpu_max_mem) / 1024**2,
+            FORWARD_MEM: np.array(self.monitor_forward.gpu_max_mem) / MEME_SCALE,
             _add_s_suffix(BACKWARD): self.monitor_backward.times,
             BACKWARD_GPU: self.monitor_backward.gpu_times,
-            BACKWARD_MEM: np.array(self.monitor_backward.gpu_max_mem) / 1024**2,
+            BACKWARD_MEM: np.array(self.monitor_backward.gpu_max_mem) / MEME_SCALE,
             _add_s_suffix(OPT): self.monitor_optimization.times,
             OPT_GPU: self.monitor_optimization.gpu_times,
-            OPT_MEM: np.array(self.monitor_optimization.gpu_max_mem) / 1024**2,
+            OPT_MEM: np.array(self.monitor_optimization.gpu_max_mem) / MEME_SCALE,
             _add_s_suffix(VAL): self.monitor_validation.times,
             _add_s_suffix(VAL_LOOP): self.monitor_val_batch.times,
             _add_s_suffix(VAL_LOAD): self.monitor_val_batch.times,
             _add_s_suffix(EVAL): self.monitor_evaluation.times,
             EVAL_GPU: self.monitor_evaluation.gpu_times,
-            EVAL_MEM: np.array(self.monitor_evaluation.gpu_max_mem) / 1024**2,
+            EVAL_MEM: np.array(self.monitor_evaluation.gpu_max_mem) / MEME_SCALE,
+            _add_s_suffix(METRIC): self.monitor_metric.times,
+            METRIC_GPU: self.monitor_metric.gpu_times,
+            METRIC_MEM: np.array(self.monitor_metric.gpu_max_mem) / MEME_SCALE,
         }
         df = pd.DataFrame({name: pd.Series(col) for name, col in results.items()})
         df = df.rename_axis(index="measurement #")
@@ -384,37 +422,37 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         """
 
         lines = [
-            "\n*********************** Computational Summary (mean ± std [n measurements]) ***********************\n"
+            "\n*************************** Computational Summary (mean ± std [n measurements]) **************************\n"
         ]
         if self._gpus_used:
             lines.append(
                 f"""GPU: {" then ".join([f"'{gpu}'" for gpu in self._gpus_used])}\n"""
             )
         lines.append(
-            f"{'Phase':^15} | {'Time (s)':^25} | {'GPU Time (s)':^25} | {'GPU Max Memory (MB)':^25}\n"
-            + "-" * 99
+            f"{'Phase':^22} | {'Time (s)':^25} | {'GPU Time (s)':^25} | {'GPU Max Memory (MB)':^25}\n"
+            + "-" * 106
         )
 
         lines.append(
-            f"{'Training':<15} | {_repr_series(df[_add_s_suffix(TRAIN)]):<25} | {'':<25} | {'':<25}"
+            f"{'Training':<22} | {_repr_series(df[_add_s_suffix(TRAIN)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' + 'Epoch':<15} | {_repr_series(df[_add_s_suffix(EPOCH)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' + 'Epoch':<22} | {_repr_series(df[_add_s_suffix(EPOCH)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 2 + 'Iteration':<15} | {_repr_series(df[_add_s_suffix(TRAIN_LOOP)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' * 2 + 'Iteration':<22} | {_repr_series(df[_add_s_suffix(TRAIN_LOOP)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 3 + 'Data loading':<15} | {_repr_series(df[_add_s_suffix(TRAIN_LOAD)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' * 3 + 'Data loading':<22} | {_repr_series(df[_add_s_suffix(TRAIN_LOAD)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 3 + 'Forward':<15} | {_repr_series(df[_add_s_suffix(FORWARD)]):<25} | {_repr_series(df[FORWARD_GPU]):<25} | {_repr_series(df[FORWARD_MEM]):<25}"
+            f"{' ' * 3 + 'Forward':<22} | {_repr_series(df[_add_s_suffix(FORWARD)]):<25} | {_repr_series(df[FORWARD_GPU]):<25} | {_repr_series(df[FORWARD_MEM]):<25}"
         )
         lines.append(
-            f"{' ' * 3 + 'Backward':<15} | {_repr_series(df[_add_s_suffix(BACKWARD)]):<25} | {_repr_series(df[BACKWARD_GPU]):<25} | {_repr_series(df[BACKWARD_MEM]):<25}"
+            f"{' ' * 3 + 'Backward':<22} | {_repr_series(df[_add_s_suffix(BACKWARD)]):<25} | {_repr_series(df[BACKWARD_GPU]):<25} | {_repr_series(df[BACKWARD_MEM]):<25}"
         )
         lines.append(
-            f"{' ' * 3 + 'Optimization':<15} | {_repr_series(df[_add_s_suffix(OPT)]):<25} | {_repr_series(df[OPT_GPU]):<25} | {_repr_series(df[OPT_MEM]):<25}"
+            f"{' ' * 3 + 'Optimization':<22} | {_repr_series(df[_add_s_suffix(OPT)]):<25} | {_repr_series(df[OPT_GPU]):<25} | {_repr_series(df[OPT_MEM]):<25}"
         )
 
         lines.append(
@@ -428,18 +466,21 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
                 f"GPU throughput: {self._train_batch_size / total_gpu_time:.2f} images/s"
             )
 
-        lines.append("-" * 99)
+        lines.append("-" * 106)
         lines.append(
-            f"{'Validation':<15} | {_repr_series(df[_add_s_suffix(VAL)]):<25} | {'':<25} | {'':<25}"
+            f"{'Validation':<22} | {_repr_series(df[_add_s_suffix(VAL)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' + 'Iteration':<15} | {_repr_series(df[_add_s_suffix(VAL_LOOP)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' + 'Iteration':<22} | {_repr_series(df[_add_s_suffix(VAL_LOOP)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 2 + 'Data loading':<15} | {_repr_series(df[_add_s_suffix(VAL_LOAD)]):<25} | {'':<25} | {'':<25}"
+            f"{' ' * 2 + 'Data loading':<22} | {_repr_series(df[_add_s_suffix(VAL_LOAD)]):<25} | {'':<25} | {'':<25}"
         )
         lines.append(
-            f"{' ' * 2 + 'Evaluation':<15} | {_repr_series(df[_add_s_suffix(EVAL)]):<25} | {_repr_series(df[EVAL_GPU]):<25} | {_repr_series(df[EVAL_MEM]):<25}"
+            f"{' ' * 2 + 'Evaluation':<22} | {_repr_series(df[_add_s_suffix(EVAL)]):<25} | {_repr_series(df[EVAL_GPU]):<25} | {_repr_series(df[EVAL_MEM]):<25}"
+        )
+        lines.append(
+            f"{' ' * 2 + 'Metrics computation':<22} | {_repr_series(df[_add_s_suffix(METRIC)]):<25} | {_repr_series(df[METRIC_GPU]):<25} | {_repr_series(df[METRIC_MEM]):<25}"
         )
 
         lines.append(
@@ -450,7 +491,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
                 f"GPU throughput: {self._val_batch_size / df[EVAL_GPU].mean():.2f} images/s"
             )
 
-        lines.append("*" * 99 + "\n")
+        lines.append("*" * 106 + "\n")
 
         return "\n".join(lines)
 

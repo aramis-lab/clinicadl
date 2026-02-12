@@ -54,6 +54,9 @@ class BestModelsDir(CollectionOfDirs[TrainingModelDir, str]):
     ) -> None:
         self._create_item(metric, overwrite=overwrite, exist_ok=exist_ok)
 
+    def delete_metric(self, metric: str) -> None:
+        self._delete_item(metric)
+
     @classmethod
     def _items_dict_private_name(cls) -> str:
         return "_" + METRICS
@@ -130,3 +133,19 @@ class ModelsDir(Directory):
                 f"'{self.checkpoints._item_key}{self.checkpoints._separator}...' "
                 f"or '{FINAL}'. Got: {checkpoint_name}"
             )
+
+    def get_all_models(self) -> list[str]:
+        """
+        Returns the list of all the model checkpoints that have been saved
+        when training.
+
+        Returns
+        -------
+            The list of models.
+        """
+        models = [folder.path.stem for folder in self.best_models.iterdir()]
+        models += [folder.path.stem for folder in self.checkpoints.iterdir()]
+        if self.final.path.exists():
+            models += [FINAL]
+
+        return models

@@ -151,7 +151,6 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         self._initial_state: Optional[dict] = None
         self._current_lrs: Optional[list[float]] = None
         self._lrs: dict[tuple[int, int], list[float]] = {}
-        self._param_groups: Optional[list[str]] = None
 
         scheduler = self.config.scheduler.value
         if isinstance(scheduler, LRScheduler):
@@ -165,6 +164,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         self,
         *,
         optimizers: dict[str, torch.optim.Optimizer],
+        metrics: MetricsHandler,
         **kwargs,
     ) -> None:
         try:
@@ -185,24 +185,17 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
                 )
             self.scheduler.load_state_dict(self._initial_state)
 
+        self._validate_metric_scheduler(metrics)
+
         self._lrs = {}
         self._current_lrs = self.scheduler.get_last_lr()
-        self._param_groups = self._get_param_groups(optimizer)
 
-    def on_validation_start(self, *, metrics: MetricsHandler, **kwargs) -> None:
-        if self.config.scheduler_type == LRSchedulerType.METRIC:
-            metrics.check_metric_name(self.config.metric_name)
-            opt = metrics.metrics[self.config.metric_name].optimum
-
-            if isinstance(self.scheduler, ReduceLROnPlateau):
-                if self.scheduler.mode != opt:
-                    logger.warning(
-                        "Found mode='%s' in ReduceLROnPlateau, but found optimum='%s' in '%s'. "
-                        "This may be an error.",
-                        self.scheduler.mode,
-                        opt.value,
-                        self.config.metric_name,
-                    )
+    def on_resume(
+        self, *, optimizers: dict[str, torch.optim.Optimizer], **kwargs
+    ) -> None:
+        optimizer = optimizers[self.config.optimizer_name]
+        if self.scheduler_config:
+            self.scheduler = self.scheduler_config.get_object(optimizer)
 
     def on_optimization_step_end(self, state: TrainerState, **kwargs) -> None:
         if self.config.scheduler_type == LRSchedulerType.STEP:
@@ -242,8 +235,8 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
                 names=[EPOCH, BATCH],
             ),
         )
-        if self._param_groups:
-            df.columns = self._param_groups
+        if param_groups := self._get_param_groups(self.scheduler.optimizer):
+            df.columns = param_groups
 
         df = df.backfill()
 
@@ -271,6 +264,24 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         self.scheduler.step(*args)
         self._lrs[(state.current_epoch, state.current_train_batch)] = self._current_lrs
         self._current_lrs = self.scheduler.get_last_lr()
+
+    def _validate_metric_scheduler(self, metrics: MetricsHandler) -> None:
+        """
+        Checks consistency if is a metric-based.
+        """
+        if self.config.scheduler_type == LRSchedulerType.METRIC:
+            metrics.check_metric_name(self.config.metric_name)
+            opt = metrics.metrics[self.config.metric_name].optimum
+
+            if isinstance(self.scheduler, ReduceLROnPlateau):
+                if self.scheduler.mode != opt:
+                    logger.warning(
+                        "Found mode='%s' in ReduceLROnPlateau, but found optimum='%s' in '%s'. "
+                        "This may be an error.",
+                        self.scheduler.mode,
+                        opt.value,
+                        self.config.metric_name,
+                    )
 
     @staticmethod
     def _get_param_groups(optimizer: torch.optim.Optimizer) -> list[str]:

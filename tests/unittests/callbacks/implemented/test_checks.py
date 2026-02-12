@@ -1,8 +1,8 @@
 import re
 import shutil
-from copy import copy, deepcopy
+from copy import deepcopy
 from pathlib import Path
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
@@ -14,48 +14,44 @@ from clinicadl.callbacks.implemented.checks import (
     _compare_dataloaders,
     _compare_datasets,
 )
-from clinicadl.data.dataloader import CollateFn, DataLoaderConfig, MergeBatchesCollate
+from clinicadl.data.dataloader import (
+    Batch,
+    CollateFn,
+    DataLoaderConfig,
+    MergeBatchesCollate,
+)
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.io import Maps
 from clinicadl.transforms.extraction import Slice
 from clinicadl.transforms.handlers import Transforms
-from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.exceptions import DataFrameError, DataLeakageError
 from clinicadl.utils.json import write_json
-from clinicadl.utils.objects import HasConfig
 
 MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
 CAPS_PATH = Path(__file__).parents[2] / "resources" / "caps_example"
 MAPS = Maps(MAPS_PATH)
+CAPS = CapsDataset(
+    directory=CAPS_PATH,
+    datatype=PETLinear(
+        tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
+    ),
+    data=CAPS_PATH / "tsv" / "labels.tsv",
+)
 MAPS.read()
 MODEL = Mock()
 LOSS = Mock()
 MODEL.get_loss_functions.return_value = {"my_loss": LOSS}
-DATALOADER = Mock()
 SPLIT = Mock()
-SPLIT.index = 2
-SPLIT.train_dataset.__class__ = HasConfig
-SPLIT.val_dataset.__class__ = HasConfig
-SPLIT.config.train_loader_config = ClinicaDLConfig()
-SPLIT.train_dataset.df = pd.DataFrame(
-    {
-        "participant_id": ["sub-000", "sub-001"],
-        "session_id": ["ses-M000", "ses-M006"],
-    }
-)
-SPLIT.val_dataset.df = pd.DataFrame(
-    {
-        "participant_id": ["sub-002", "sub-002"],
-        "session_id": ["ses-M001", "ses-M000"],
-    }
-)
-DATALOADER.dataset.df = pd.DataFrame(
-    {
-        "participant_id": ["sub-003", "sub-004"],
-        "session_id": ["ses-M000", "ses-M000"],
-    }
-)
+SPLIT.index = 0
+SPLIT.train_dataset = CAPS.subset([("sub-000", "ses-M000")])
+SPLIT.val_dataset = CAPS.subset([("sub-010", "ses-M003")])
+SPLIT.config.train_loader_config = DataLoaderConfig()
+SPLIT.config.val_loader_config = DataLoaderConfig()
+VAL_DATALOADER = Mock()
+VAL_DATALOADER.dataset = CAPS.subset([("sub-010", "ses-M003")])
+DATALOADER = Mock()
+DATALOADER.dataset = CAPS.subset([("sub-100", "ses-M000")])
 GROUP = "X"
 MODEL_CHECKPOINT = "split-0_final"
 STATE = Mock()
@@ -77,16 +73,15 @@ def create_new_maps(path):
 
 class TestInputs:
     checker = ChecksCallback()
-    SPLIT = copy(SPLIT)
+    SPLIT = deepcopy(SPLIT)
 
     def test_on_train_start(self):
-        self.SPLIT.index = 1
-        with pytest.raises(
-            ValueError,
-            match="Training on split 1. To relaunch a training on this split, first delete it properly with clinicadl.io.Maps.delete_split",
-        ):
-            self.checker.on_train_start(split=self.SPLIT, model=MODEL, maps=MAPS)
+        self._split_check(self.checker.on_train_start)
 
+    def test_on_resume(self):
+        self._split_check(self.checker.on_resume)
+
+    def _split_check(self, method):
         self.SPLIT.index = 2
         self.SPLIT.train_loader = None
         self.SPLIT.val_loader = Mock()
@@ -94,7 +89,7 @@ class TestInputs:
             RuntimeError,
             match="The split has no training dataloder defined. Please run 'build_train_loader'",
         ):
-            self.checker.on_train_start(split=self.SPLIT, model=MODEL, maps=MAPS)
+            method(split=self.SPLIT, model=MODEL, maps=MAPS)
 
         self.SPLIT.train_loader = Mock()
         self.SPLIT.val_loader = None
@@ -102,20 +97,20 @@ class TestInputs:
             RuntimeError,
             match="The split has no validation dataloder defined. Please run 'build_val_loader'",
         ):
-            self.checker.on_train_start(split=self.SPLIT, model=MODEL, maps=MAPS)
+            method(split=self.SPLIT, model=MODEL, maps=MAPS)
 
     def test_on_test_start(self):
         with pytest.raises(
             FileExistsError,
             match=re.escape(
-                f"There are already some results for checkpoint 'best-loss' in {MAPS.test.groups['X'].results.splits[0].path}. "
-                f"Set overwrite=True in Trainer.test to overwrite them."
+                f"There are already some results for checkpoint 'best-loss' in {MAPS.test.groups[GROUP].results.splits[0].models['best-loss'].path}. "
+                "If you want to continue, please first delete the folder."
             ),
         ):
             self.checker.on_test_start(
                 dataloader=DATALOADER,
                 maps=MAPS,
-                group_name="X",
+                group_name=GROUP,
                 model_checkpoint="split-0_best-loss",
             )
 
@@ -123,14 +118,14 @@ class TestInputs:
         with pytest.raises(
             FileExistsError,
             match=re.escape(
-                f"There are already some results for checkpoint 'best-loss' in {MAPS.prediction.groups['X'].results.splits[0].path}. "
-                f"Set overwrite=True in Trainer.predict to overwrite them."
+                f"There are already some results for checkpoint 'best-loss' in {MAPS.prediction.groups[GROUP].results.splits[0].models['best-loss'].path}. "
+                "If you want to continue, please first delete the folder."
             ),
         ):
             self.checker.on_predict_start(
                 dataloader=DATALOADER,
                 maps=MAPS,
-                group_name="X",
+                group_name=GROUP,
                 model_checkpoint="split-0_best-loss",
             )
 
@@ -147,9 +142,6 @@ class TestCheckLosses:
         ):
             self.checker.on_train_start(model=self.MODEL, split=SPLIT, maps=MAPS)
         self.MODEL.get_loss_functions.return_value = {"my_loss": LOSS}
-        print(isinstance(SPLIT.train_dataset, HasConfig))
-        print(isinstance(SPLIT.val_dataset, HasConfig))
-        print(isinstance(SPLIT.config.train_loader_config, ClinicaDLConfig))
         self.checker.on_train_start(model=self.MODEL, split=SPLIT, maps=MAPS)
 
     def test_on_backward_step_start(self):
@@ -201,26 +193,45 @@ class TestCheckLosses:
 
 class TestCheckDataFrames:
     checker = ChecksCallback()
-    SPLIT = copy(SPLIT)
+    SPLIT = deepcopy(SPLIT)
     MAPS = Mock()
     DATALOADER = Mock()
     BAD_DF = pd.DataFrame({"participant_id": ["sub-000"], "session": ["ses-M000"]})
 
     def test_on_train_start(self):
-        self.SPLIT.train_dataset.df = self.BAD_DF
-        self.SPLIT.val_dataset.df = SPLIT.val_dataset.df
+        self._test_train(self.checker.on_train_start)
+
+    def test_on_resume(self):
+        self._test_train(self.checker.on_resume)
+
+    def _test_train(self, method):
+        self.SPLIT.train_dataset._df = self.BAD_DF
+        self.SPLIT.val_dataset._df = SPLIT.val_dataset.df
         with pytest.raises(
             DataFrameError,
             match="The DataFrame of your clinicadl.data.dataset.Dataset is not valid.",
         ):
-            self.checker.on_train_start(split=self.SPLIT, model=MODEL, maps=MAPS)
-        self.SPLIT.train_dataset.df = SPLIT.train_dataset.df
-        self.SPLIT.val_dataset.df = self.BAD_DF
+            method(split=self.SPLIT, model=MODEL, maps=MAPS)
+        self.SPLIT.train_dataset._df = SPLIT.train_dataset.df
+        self.SPLIT.val_dataset._df = self.BAD_DF
         with pytest.raises(
             DataFrameError,
             match="The DataFrame of your clinicadl.data.dataset.Dataset is not valid.",
         ):
-            self.checker.on_train_start(split=self.SPLIT, model=MODEL, maps=MAPS)
+            method(split=self.SPLIT, model=MODEL, maps=MAPS)
+
+    def test_on_validate_start(self):
+        self.DATALOADER.dataset.df = self.BAD_DF
+        with pytest.raises(
+            DataFrameError,
+            match="The DataFrame of your clinicadl.data.dataset.Dataset is not valid.",
+        ):
+            self.checker.on_validate_start(
+                dataloader=self.DATALOADER,
+                maps=MAPS,
+                group_name=GROUP,
+                model_checkpoint=MODEL_CHECKPOINT,
+            )
 
     def test_on_test_start(self, tmp_path):
         MAPS = create_new_maps(tmp_path)
@@ -304,13 +315,6 @@ class TestDataLeakage:
 
 class TestDataConsistency:
     checker = ChecksCallback()
-    GOOD_DATASET = CapsDataset(
-        directory=CAPS_PATH,
-        datatype=PETLinear(
-            tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
-        ),
-        data=CAPS_PATH / "tsv" / "labels.tsv",
-    )
     BAD_DATASET = CapsDataset(
         directory=CAPS_PATH,
         datatype=PETLinear(
@@ -321,18 +325,13 @@ class TestDataConsistency:
         label="age",
         columns=["age"],
     )
-    GOOD_DATALOADER = DataLoaderConfig()
     BAD_DATALOADER = DataLoaderConfig(batch_size=2, collate_fn=CustomCollate())
-
-    SPLIT = copy(SPLIT)
+    SPLIT = deepcopy(SPLIT)
     STATE = Mock()
-    DATALOADER = Mock()
 
     def test_on_train_start(self, caplog, tmp_path):
         MAPS = create_new_maps(tmp_path)
-        self.SPLIT.train_dataset = self.GOOD_DATASET.subset([("sub-000", "ses-M000")])
-        self.SPLIT.val_dataset = self.GOOD_DATASET.subset([("sub-010", "ses-M003")])
-        self.SPLIT.config.train_loader_config = self.GOOD_DATALOADER
+        self.SPLIT.index = 2
 
         self.BAD_DATASET.subset([("sub-000", "ses-M000")]).to_json(
             MAPS.training.data.train.splits[0].dataset_json, overwrite=True
@@ -343,13 +342,13 @@ class TestDataConsistency:
         self.BAD_DATALOADER.to_json(
             MAPS.training.data.train.splits[0].dataloader_json, overwrite=True
         )
-        self.GOOD_DATASET.subset([("sub-000", "ses-M003")]).to_json(
+        self.SPLIT.train_dataset.to_json(
             MAPS.training.data.train.splits[1].dataset_json, overwrite=True
         )
-        self.GOOD_DATASET.subset([("sub-010", "ses-M012")]).to_json(
+        self.SPLIT.val_dataset.to_json(
             MAPS.training.data.validation.splits[1].dataset_json, overwrite=True
         )
-        self.GOOD_DATALOADER.to_json(
+        self.SPLIT.config.train_loader_config.to_json(
             MAPS.training.data.train.splits[1].dataloader_json, overwrite=True
         )
 
@@ -412,10 +411,117 @@ class TestDataConsistency:
         )
         assert len(caplog.records) == 3
 
+    def test_on_resume(self, caplog, tmp_path):
+        MAPS = create_new_maps(tmp_path)
+        self.SPLIT.index = 0
+        self.SPLIT.train_dataset = CAPS.subset([("sub-000", "ses-M003")])
+        self.SPLIT.val_dataset = CAPS.subset([("sub-010", "ses-M012")])
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"The training dataset passed does not contain the same (participant, session) pairs as in the original training dataset of split-0 (in {MAPS.training.data.train.splits[0].data_tsv}). "
+                "Difference: [('sub-000', 'ses-M000'), ('sub-000', 'ses-M003')]",
+            ),
+        ):
+            self.checker.on_resume(maps=MAPS, split=self.SPLIT)
+        self.SPLIT.train_dataset = CAPS.subset([("sub-000", "ses-M000")])
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"The validation dataset passed does not contain the same (participant, session) pairs as in the original validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].data_tsv}). "
+                "Difference: [('sub-010', 'ses-M003'), ('sub-010', 'ses-M012')]",
+            ),
+        ):
+            self.checker.on_resume(maps=MAPS, split=self.SPLIT)
+        self.SPLIT.val_dataset = CAPS.subset([("sub-010", "ses-M003")])
+
+        self.SPLIT.train_dataset.to_json(
+            MAPS.training.data.train.splits[0].dataset_json, overwrite=True
+        )
+        self.SPLIT.val_dataset.to_json(
+            MAPS.training.data.validation.splits[0].dataset_json, overwrite=True
+        )
+        self.SPLIT.config.train_loader_config.to_json(
+            MAPS.training.data.train.splits[0].dataloader_json, overwrite=True
+        )
+        with caplog.at_level("WARNING"):
+            self.checker.on_resume(maps=MAPS, split=self.SPLIT)
+        assert len(caplog.records) == 0
+
+        self.BAD_DATASET.subset([("sub-000", "ses-M000")]).to_json(
+            MAPS.training.data.train.splits[0].dataset_json, overwrite=True
+        )
+        self.BAD_DATASET.subset([("sub-010", "ses-M003")]).to_json(
+            MAPS.training.data.validation.splits[0].dataset_json, overwrite=True
+        )
+        self.BAD_DATALOADER.to_json(
+            MAPS.training.data.train.splits[0].dataloader_json, overwrite=True
+        )
+        with caplog.at_level("WARNING"):
+            self.checker.on_resume(maps=MAPS, split=self.SPLIT)
+        assert len(caplog.records) == 6
+        assert caplog.records[0].message == (
+            f"Could not read the arguments ['transforms'] of the training dataset of split-0 (in {MAPS.training.data.train.splits[0].dataset_json}), "
+            "and thus could not compare with the dataset passed for resuming training. Beware that differences between datasets could lead to inconsistent results."
+        )
+        assert caplog.records[1].message == (
+            "The training datasets of split-0 and the one passed for resuming training are different: the two datasets don't have the same label. Got None and age\n"
+            "This may lead to inconsistent results."
+        )
+        assert caplog.records[2].message == (
+            f"Could not read the arguments ['transforms'] of the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
+            "and thus could not compare with the dataset passed for resuming training. Beware that differences between datasets could lead to inconsistent results."
+        )
+        assert caplog.records[3].message == (
+            "The validation datasets of split-0 and the one passed for resuming training are different: the two datasets don't have the same label. Got None and age\n"
+            "This may lead to inconsistent results."
+        )
+        assert caplog.records[4].message == (
+            f"Could not read the arguments ['collate_fn'] of the training dataloader of split-0 (in {MAPS.training.data.train.splits[0].dataloader_json}), "
+            "and thus could not compare with the dataloader passed for resuming training. Beware that differences between dataloaders could lead to inconsistent results."
+        )
+        assert caplog.records[5].message == (
+            "The training dataloaders of split-0 and the one passed for resuming training are different: the two dataloaders have different batch sizes. Got 1 and 2\n"
+            "This may lead to inconsistent results."
+        )
+
+        write_json(
+            MAPS.training.data.train.splits[0].dataset_json, {"abc": 0}, overwrite=True
+        )
+        write_json(
+            MAPS.training.data.validation.splits[0].dataset_json,
+            {"abc": 0},
+            overwrite=True,
+        )
+        write_json(
+            MAPS.training.data.train.splits[0].dataloader_json,
+            {"abc": 0},
+            overwrite=True,
+        )
+
+        caplog.clear()
+        with caplog.at_level("WARNING"):
+            self.checker.on_resume(maps=MAPS, split=self.SPLIT)
+        assert caplog.records[0].message == (
+            f"Could not read the training dataset of split-0 (in {MAPS.training.data.train.splits[0].dataset_json}), "
+            "and thus could not compare with the dataset passed for resuming training. Beware that differences between datasets could lead to inconsistent results."
+        )
+        assert caplog.records[1].message == (
+            f"Could not read the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
+            "and thus could not compare with the dataset passed for resuming training. Beware that differences between datasets could lead to inconsistent results."
+        )
+        assert caplog.records[2].message == (
+            f"Could not read the training dataloader of split-0 (in {MAPS.training.data.train.splits[0].dataloader_json}), "
+            "and thus could not compare with the dataloader passed for resuming training. Beware that differences between dataloaders could lead to inconsistent results."
+        )
+        assert len(caplog.records) == 3
+
     def test_on_validate_start(self, caplog, tmp_path):
         MAPS = create_new_maps(tmp_path)
         self.STATE.split_idx = 0
-        self.DATALOADER.dataset = self.GOOD_DATASET.subset([("sub-000", "ses-M000")])
+        dataloader = Mock()
+        dataloader.dataset = CAPS.subset([("sub-000", "ses-M000")])
 
         with pytest.raises(
             ValueError,
@@ -425,16 +531,15 @@ class TestDataConsistency:
             ),
         ):
             self.checker.on_validate_start(
-                state=self.STATE, maps=MAPS, dataloader=self.DATALOADER
+                state=self.STATE, maps=MAPS, dataloader=dataloader
             )
 
-        self.DATALOADER.dataset = self.GOOD_DATASET.subset([("sub-010", "ses-M003")])
-        self.GOOD_DATASET.to_json(
+        VAL_DATALOADER.dataset.to_json(
             MAPS.training.data.validation.splits[0].dataset_json, overwrite=True
         )
         with caplog.at_level("WARNING"):
             self.checker.on_validate_start(
-                state=self.STATE, maps=MAPS, dataloader=self.DATALOADER
+                state=self.STATE, maps=MAPS, dataloader=VAL_DATALOADER
             )
         assert len(caplog.records) == 0
 
@@ -444,7 +549,7 @@ class TestDataConsistency:
         caplog.clear()
         with caplog.at_level("WARNING"):
             self.checker.on_validate_start(
-                state=self.STATE, maps=MAPS, dataloader=self.DATALOADER
+                state=self.STATE, maps=MAPS, dataloader=VAL_DATALOADER
             )
         assert caplog.records[0].message == (
             f"Could not read the arguments ['transforms'] of the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
@@ -464,7 +569,7 @@ class TestDataConsistency:
         caplog.clear()
         with caplog.at_level("WARNING"):
             self.checker.on_validate_start(
-                state=self.STATE, maps=MAPS, dataloader=self.DATALOADER
+                state=self.STATE, maps=MAPS, dataloader=VAL_DATALOADER
             )
         assert caplog.records[0].message == (
             f"Could not read the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
@@ -474,44 +579,44 @@ class TestDataConsistency:
 
     def test_on_test_start(self, caplog, tmp_path):
         MAPS = create_new_maps(tmp_path)
-        self.DATALOADER.dataset = self.GOOD_DATASET.subset([("sub-999", "ses-M999")])
+        dataloader = Mock()
+        dataloader.dataset = CAPS.subset([("sub-999", "ses-M999")])
 
         with pytest.raises(
             ValueError,
             match=re.escape(
-                f"The test dataset passed does not contain the same (participant, session) pairs as in the original test dataset of group-X (in {MAPS.test.groups['X'].data_tsv}). "
+                f"The test dataset passed does not contain the same (participant, session) pairs as in the original test dataset of group-X (in {MAPS.test.groups[GROUP].data_tsv}). "
                 "Difference: [('sub-100', 'ses-M000'), ('sub-999', 'ses-M999')]",
             ),
         ):
             self.checker.on_test_start(
-                group_name="X",
+                group_name=GROUP,
                 maps=MAPS,
-                dataloader=self.DATALOADER,
+                dataloader=dataloader,
                 model_checkpoint=MODEL_CHECKPOINT,
             )
 
-        self.DATALOADER.dataset = self.GOOD_DATASET.subset([("sub-100", "ses-M000")])
-        self.GOOD_DATASET.to_json(MAPS.test.groups["X"].dataset_json, overwrite=True)
+        DATALOADER.dataset.to_json(MAPS.test.groups[GROUP].dataset_json, overwrite=True)
         with caplog.at_level("WARNING"):
             self.checker.on_test_start(
-                group_name="X",
+                group_name=GROUP,
                 maps=MAPS,
-                dataloader=self.DATALOADER,
+                dataloader=DATALOADER,
                 model_checkpoint=MODEL_CHECKPOINT,
             )
         assert len(caplog.records) == 0
 
-        self.BAD_DATASET.to_json(MAPS.test.groups["X"].dataset_json, overwrite=True)
+        self.BAD_DATASET.to_json(MAPS.test.groups[GROUP].dataset_json, overwrite=True)
         caplog.clear()
         with caplog.at_level("WARNING"):
             self.checker.on_test_start(
-                group_name="X",
+                group_name=GROUP,
                 maps=MAPS,
-                dataloader=self.DATALOADER,
+                dataloader=DATALOADER,
                 model_checkpoint=MODEL_CHECKPOINT,
             )
         assert caplog.records[0].message == (
-            f"Could not read the arguments ['transforms'] of the test dataset of group-X (in {MAPS.test.groups['X'].dataset_json}), "
+            f"Could not read the arguments ['transforms'] of the test dataset of group-X (in {MAPS.test.groups[GROUP].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.test. Beware that differences between datasets could lead to inconsistent results in test metrics."
         )
         assert caplog.records[1].message == (
@@ -521,68 +626,68 @@ class TestDataConsistency:
         assert len(caplog.records) == 2
 
         write_json(
-            MAPS.test.groups["X"].dataset_json,
+            MAPS.test.groups[GROUP].dataset_json,
             {"abc": 0},
             overwrite=True,
         )
         caplog.clear()
         with caplog.at_level("WARNING"):
             self.checker.on_test_start(
-                group_name="X",
+                group_name=GROUP,
                 maps=MAPS,
-                dataloader=self.DATALOADER,
+                dataloader=DATALOADER,
                 model_checkpoint=MODEL_CHECKPOINT,
             )
         assert caplog.records[0].message == (
-            f"Could not read the test dataset of group-X (in {MAPS.test.groups['X'].dataset_json}), "
+            f"Could not read the test dataset of group-X (in {MAPS.test.groups[GROUP].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.test. Beware that differences between datasets could lead to inconsistent results in test metrics."
         )
         assert len(caplog.records) == 1
 
     def test_on_predict_start(self, caplog, tmp_path):
         MAPS = create_new_maps(tmp_path)
-        self.DATALOADER.dataset = self.GOOD_DATASET.subset([("sub-999", "ses-M999")])
+        dataloader = Mock()
+        dataloader.dataset = CAPS.subset([("sub-999", "ses-M999")])
 
         with pytest.raises(
             ValueError,
             match=re.escape(
-                f"The prediction dataset passed does not contain the same (participant, session) pairs as in the original prediction dataset of group-X (in {MAPS.prediction.groups['X'].data_tsv}). "
+                f"The prediction dataset passed does not contain the same (participant, session) pairs as in the original prediction dataset of group-X (in {MAPS.prediction.groups[GROUP].data_tsv}). "
                 "Difference: [('sub-100', 'ses-M000'), ('sub-999', 'ses-M999')]",
             ),
         ):
             self.checker.on_predict_start(
-                group_name="X",
+                group_name=GROUP,
                 maps=MAPS,
-                dataloader=self.DATALOADER,
+                dataloader=dataloader,
                 model_checkpoint=MODEL_CHECKPOINT,
             )
 
-        self.DATALOADER.dataset = self.GOOD_DATASET.subset([("sub-100", "ses-M000")])
-        self.GOOD_DATASET.to_json(
-            MAPS.prediction.groups["X"].dataset_json, overwrite=True
+        DATALOADER.dataset.to_json(
+            MAPS.prediction.groups[GROUP].dataset_json, overwrite=True
         )
         with caplog.at_level("WARNING"):
             self.checker.on_predict_start(
-                group_name="X",
+                group_name=GROUP,
                 maps=MAPS,
-                dataloader=self.DATALOADER,
+                dataloader=DATALOADER,
                 model_checkpoint=MODEL_CHECKPOINT,
             )
         assert len(caplog.records) == 0
 
         self.BAD_DATASET.to_json(
-            MAPS.prediction.groups["X"].dataset_json, overwrite=True
+            MAPS.prediction.groups[GROUP].dataset_json, overwrite=True
         )
         caplog.clear()
         with caplog.at_level("WARNING"):
             self.checker.on_predict_start(
-                group_name="X",
+                group_name=GROUP,
                 maps=MAPS,
-                dataloader=self.DATALOADER,
+                dataloader=DATALOADER,
                 model_checkpoint=MODEL_CHECKPOINT,
             )
         assert caplog.records[0].message == (
-            f"Could not read the arguments ['transforms'] of the prediction dataset of group-X (in {MAPS.prediction.groups['X'].dataset_json}), "
+            f"Could not read the arguments ['transforms'] of the prediction dataset of group-X (in {MAPS.prediction.groups[GROUP].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.predict. Beware that differences between datasets could lead to inconsistent results in predictions."
         )
         assert caplog.records[1].message == (
@@ -592,20 +697,20 @@ class TestDataConsistency:
         assert len(caplog.records) == 2
 
         write_json(
-            MAPS.prediction.groups["X"].dataset_json,
+            MAPS.prediction.groups[GROUP].dataset_json,
             {"abc": 0},
             overwrite=True,
         )
         caplog.clear()
         with caplog.at_level("WARNING"):
             self.checker.on_predict_start(
-                group_name="X",
+                group_name=GROUP,
                 maps=MAPS,
-                dataloader=self.DATALOADER,
+                dataloader=DATALOADER,
                 model_checkpoint=MODEL_CHECKPOINT,
             )
         assert caplog.records[0].message == (
-            f"Could not read the prediction dataset of group-X (in {MAPS.prediction.groups['X'].dataset_json}), "
+            f"Could not read the prediction dataset of group-X (in {MAPS.prediction.groups[GROUP].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.predict. Beware that differences between datasets could lead to inconsistent results in predictions."
         )
         assert len(caplog.records) == 1
@@ -742,5 +847,58 @@ def test_compare_dataloaders(name, arg, error_msg):
     )
 
 
-def test_state_dict():
-    ChecksCallback().load_state_dict(ChecksCallback().state_dict())
+class TestBatch:
+    checker = ChecksCallback()
+    BATCH = Batch(["x"])
+
+    def test_train(self):
+        self._test_phase(
+            self.checker.on_train_start, {"split": SPLIT, "model": MODEL, "maps": MAPS}
+        )
+
+    def test_resume(self):
+        self._test_phase(self.checker.on_resume, {"split": SPLIT, "maps": MAPS})
+
+    def test_validate(self):
+        self._test_phase(
+            self.checker.on_validate_start,
+            {"state": STATE, "maps": MAPS, "dataloader": VAL_DATALOADER},
+        )
+
+    def test_test(self):
+        self._test_phase(
+            self.checker.on_test_start,
+            {
+                "dataloader": DATALOADER,
+                "maps": MAPS,
+                "group_name": GROUP,
+                "model_checkpoint": MODEL_CHECKPOINT,
+            },
+        )
+
+    def test_predict(self):
+        self._test_phase(
+            self.checker.on_predict_start,
+            {
+                "dataloader": DATALOADER,
+                "maps": MAPS,
+                "group_name": GROUP,
+                "model_checkpoint": MODEL_CHECKPOINT,
+            },
+        )
+
+    def _test_phase(self, method, args):
+        method(**args)
+        with pytest.raises(
+            ValueError,
+            match="The batch returned by your dataloader can be either a Batch, a sequence of Batch, "
+            "or a dict or Batch. Got: abc",
+        ):
+            self.checker.on_batch_start(batch="abc")
+
+        self.checker.on_batch_start(batch=self.BATCH)
+        method(**args)
+        self.checker.on_batch_start(batch=[self.BATCH])
+        method(**args)
+        self.checker.on_batch_start(batch={"x": self.BATCH})
+        self.checker.on_batch_start(batch="abc")  # already checked

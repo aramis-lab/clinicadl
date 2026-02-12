@@ -55,8 +55,6 @@ class TrainingLossCallback(Callback):
         )
 
     def state_dict(self) -> Mapping[str, Any]:
-        if self.df is None:
-            return {}
         return self.df.to_dict()
 
     def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:

@@ -151,8 +151,17 @@ def _training(
                     monitor.monitor_val_batch,
                     monitor.monitor_evaluation,
                 )
-                monitor.on_evaluation_step_end(state=STATE)
+                monitor.on_metrics_computation_start(state=STATE)
                 _assert_not_running(monitor.monitor_evaluation)
+                _assert_running(
+                    monitor.monitor_global_training,
+                    monitor.monitor_epoch,
+                    monitor.monitor_validation,
+                    monitor.monitor_val_batch,
+                    monitor.monitor_metric,
+                )
+                monitor.on_metrics_computation_end(state=STATE)
+                _assert_not_running(monitor.monitor_metric)
                 _assert_running(
                     monitor.monitor_global_training,
                     monitor.monitor_epoch,
@@ -222,9 +231,11 @@ def test_monitor(tmp_path):
     assert len(df["Evaluation (s)"].dropna()) == 1 + 2
     assert len(df["Evaluation GPU (s)"].dropna()) == 0
     assert len(df["Evaluation GPU max memory (MB)"].dropna()) == 0
+    assert len(df["Metrics computation (s)"].dropna()) == 1 + 2
+    assert len(df["Metrics computation GPU (s)"].dropna()) == 0
+    assert len(df["Metrics computation GPU max memory (MB)"].dropna()) == 0
 
     summary = maps.open_file(maps.training.splits[STATE.split_idx].summary_log)
-    print(summary)
     assert "Training completed after 1,000 epochs\n\n***" in summary
     assert "GPU:" not in summary
     assert "GPU throughput:" not in summary
@@ -261,6 +272,12 @@ def test_exception(caplog, tmp_path):
     COMPUTATIONAL.gpu = False
 
     monitor = MonitorCallback(warmup_iterations=0)
+
+    with caplog.at_level("ERROR"):
+        monitor.on_exception(
+            maps=maps, state=STATE, exception=RuntimeError("CUDA out of memory")
+        )
+    assert len(caplog.records) == 0
 
     try:
         _training(
@@ -309,12 +326,14 @@ def test_checkpoint(tmp_path):
         )
 
     state_dict = monitor.state_dict()
+    assert state_dict["Training"]["elapsed"] > 1
     monitor = MonitorCallback(warmup_iterations=0)
-    monitor.on_train_start(
+    monitor.on_resume(
         split=SPLIT, optimization=OPTIMIZATION, computational=COMPUTATIONAL
     )
     monitor.load_state_dict(state_dict)
 
+    assert monitor.n_iterations == 0
     assert len(monitor.monitor_global_training.times) == 0
     assert len(monitor.monitor_epoch.times) == 1
     assert len(monitor.monitor_train_loop.times) == 3
@@ -323,6 +342,7 @@ def test_checkpoint(tmp_path):
     assert len(monitor.monitor_backward.times) == 3
     assert len(monitor.monitor_optimization.times) == 3
     assert len(monitor.monitor_evaluation.times) == 2
+    assert len(monitor.monitor_metric.times) == 2
     assert len(monitor.monitor_val_batch.times) == 2
     assert len(monitor.monitor_val_batch_loading.times) == 2
     assert len(monitor.monitor_validation.times) == 1
@@ -364,6 +384,8 @@ def test_monitor_gpu(tmp_path):
     assert len(df["Optimization GPU max memory (MB)"].dropna()) == 2 * 2
     assert len(df["Evaluation GPU (s)"].dropna()) == 1 + 2
     assert len(df["Evaluation GPU max memory (MB)"].dropna()) == 1 + 2
+    assert len(df["Metrics computation GPU (s)"].dropna()) == 1 + 2
+    assert len(df["Metrics computation GPU max memory (MB)"].dropna()) == 1 + 2
 
     summary = maps.open_file(maps.training.splits[STATE.split_idx].summary_log)
 

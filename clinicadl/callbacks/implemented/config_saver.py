@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -37,10 +37,14 @@ class ConfigSaverCallback(Callback):
         callbacks: CallbacksHandler,
         **kwargs,
     ) -> None:
-        to_json_safe(model, maps.model_json)
-        metrics.to_json(maps.metrics_json)
-        optimization.to_json(maps.training.optimization_json)
-        callbacks.to_json(maps.callbacks_json)
+        if not maps.model_json.exists():
+            to_json_safe(model, maps.model_json)
+        if not maps.metrics_json.exists():
+            metrics.to_json(maps.metrics_json)
+        if not maps.training.optimization_json.exists():
+            optimization.to_json(maps.training.optimization_json)
+        if not maps.callbacks_json.exists():
+            callbacks.to_json(maps.callbacks_json)
 
     def on_train_start(
         self,
@@ -85,7 +89,9 @@ class ConfigSaverCallback(Callback):
         *,
         maps: Maps,
         dataloader: DataLoader,
+        model_checkpoint: str,
         group_name: str,
+        computational: ComputationalConfig,
         **kwargs,
     ) -> None:
         if group_name not in maps.test.groups_list:
@@ -101,12 +107,24 @@ class ConfigSaverCallback(Callback):
                 maps.test.groups[group_name].data_tsv,
             )
 
+        split_idx, chkpt = maps.training.read_checkpoint_name(model_checkpoint)
+        maps.test.groups[group_name].results.create_split(split_idx, exist_ok=True)
+        maps.test.groups[group_name].results.splits[split_idx].create_model(chkpt)
+        computational.to_json(
+            maps.test.groups[group_name]
+            .results.splits[split_idx]
+            .models[chkpt]
+            .computational_json
+        )
+
     def on_predict_start(
         self,
         *,
         maps: Maps,
         dataloader: DataLoader,
+        model_checkpoint: str,
         group_name: str,
+        computational: ComputationalConfig,
         **kwargs,
     ) -> None:
         if group_name not in maps.prediction.groups_list:
@@ -124,11 +142,17 @@ class ConfigSaverCallback(Callback):
                 maps.prediction.groups[group_name].data_tsv,
             )
 
-    def state_dict(self) -> Mapping[str, Any]:
-        return {}
-
-    def load_state_dict(self, state_dict: Mapping[str, Any]) -> None:
-        pass
+        split_idx, chkpt = maps.training.read_checkpoint_name(model_checkpoint)
+        maps.prediction.groups[group_name].results.create_split(
+            split_idx, exist_ok=True
+        )
+        maps.prediction.groups[group_name].results.splits[split_idx].create_model(chkpt)
+        computational.to_json(
+            maps.prediction.groups[group_name]
+            .results.splits[split_idx]
+            .models[chkpt]
+            .computational_json
+        )
 
 
 def _clean_df(df: pd.DataFrame) -> pd.DataFrame:

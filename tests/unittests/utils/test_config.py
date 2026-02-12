@@ -11,7 +11,6 @@ from clinicadl.utils.config import (
     ClinicaDLConfig,
     ConfigWithName,
     DictOfObjects,
-    KwargsConfig,
     ObjectConfig,
     ObjectOrConfig,
     SequenceOfObjects,
@@ -131,27 +130,6 @@ class CollectionTestConfig(ObjectConfig[CollectionTest]):
     @classmethod
     def _get_class(cls) -> type[CollectionTest]:
         return CollectionTest
-
-
-class KwargsObject:
-    def __init__(self, **kwargs):
-        pass
-
-
-class KwargsTestConfig(KwargsConfig):
-    kwargs: DictOfObjects[ObjectTest, ObjectTestConfig] = Field(
-        reader=DictOfObjects.build_reader(ObjectTestConfig.from_dict)
-    )
-
-    @classmethod
-    def _get_class(cls) -> type[KwargsObject]:
-        return KwargsObject
-
-
-class KwargsWrongConfig(KwargsTestConfig):
-    kwargs_bis: DictOfObjects[ObjectTest, ObjectTestConfig] = Field(
-        reader=DictOfObjects.build_reader(ObjectTestConfig.from_dict)
-    )
 
 
 def test_clinicadl_config(tmp_path):
@@ -377,51 +355,8 @@ def test_to_raw_dict():
     d = t.to_raw_dict(exclude=["object"])
     assert "object" not in d
 
-    kwargs = KwargsTestConfig(
-        kwargs={"a": ObjectTest(a=0)},
-    )
-    d = kwargs.to_raw_dict()
-    assert isinstance(d["a"], ObjectTest)
 
-
-def test_config_with_name(tmp_path):
+def test_config_with_name():
     c = ConfigWithNameTest(a=0)
     assert c.name == "ConfigWithNameTest"
     assert c.to_dict()["name"] == "ConfigWithNameTest"
-
-
-def test_kwargs_config(tmp_path):
-    with pytest.raises(
-        ValidationError,
-        match=r".*Assertion failed, KwargsConfig should contain only one field, found \['kwargs', 'kwargs_bis'\] here.*",
-    ):
-        KwargsWrongConfig(
-            kwargs={"a": ObjectTestConfig(a=0), "b": ObjectTestConfig(a=1)},
-            kwargs_bis={"a": ObjectTestConfig(a=0), "b": ObjectTestConfig(a=1)},
-        )
-
-    kwargs = KwargsTestConfig(
-        kwargs={"a": ObjectTestConfig(a=0), "b": ObjectTest(a=1)},
-    )
-
-    d = kwargs.to_dict()
-    kwargs = KwargsTestConfig.from_dict(d)
-    assert kwargs.kwargs.values["a"].value.a == 0
-    assert kwargs.kwargs.values["b"].value.a == 1
-
-    kwargs.to_json(tmp_path / "config.json")
-    with pytest.raises(
-        CannotReadJsonFieldError,
-        match="KwargsTest cannot read the field\\(s\\) \\['b'\\] in .*\nPlease pass this field via kwargs.",
-    ):
-        KwargsTestConfig.from_json(tmp_path / "config.json")
-
-    kwargs = KwargsTestConfig.from_json(tmp_path / "config.json", b=ObjectTest(a=1))
-    assert kwargs.kwargs.values["a"].value.a == 0
-    assert kwargs.kwargs.values["b"].value.a == 1
-
-    kwargs = KwargsTestConfig(
-        kwargs={"a": ObjectTestConfig(a=0), "b": ObjectTestConfig(a=1)},
-    )
-    kwargs.to_json(tmp_path / "config.json", overwrite=True)
-    kwargs = KwargsTestConfig.from_json(tmp_path / "config.json")

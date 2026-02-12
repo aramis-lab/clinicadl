@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence
 
-import pandas as pd
 from pydantic import PositiveInt, field_validator
 
 from clinicadl.metrics.enum import Optimum
@@ -101,20 +100,15 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         )
 
     # pylint: disable=arguments-differ, unused-argument
-    def on_train_start(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
+    def on_train_start(
+        self, *, maps: Maps, state: TrainerState, metrics: MetricsHandler, **kwargs
+    ) -> None:
         if self.config.metric:
+            metrics.check_metric_name(self.config.metric)
+            self._init_metric_monitoring(metrics.metrics[self.config.metric].optimum)
             maps.training.splits[state.split_idx].models.best_models.create_metric(
                 metric=self.config.metric, exist_ok=True
             )
-
-        if self.metric_monitoring:
-            self.metric_monitoring.reset()
-
-    def on_validation_start(self, *, metrics: MetricsHandler, **kwargs) -> None:
-        if self.config.metric and self.metric_monitoring is None:
-            metrics.check_metric_name(self.config.metric)
-
-            self._init_metric_monitoring(metrics.metrics[self.config.metric].optimum)
 
     def on_validation_end(
         self,

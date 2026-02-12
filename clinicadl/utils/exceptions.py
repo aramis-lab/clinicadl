@@ -117,17 +117,19 @@ class CannotReadFieldError(ClinicaDLException):
     def __init__(
         self,
         object_name: str,
+        error: Exception,
         field_names: Optional[list[str]] = None,
-        error: Optional[ValidationError] = None,
     ):
-        if field_names and not error:
+        if field_names:
             self.field_names = field_names
-        elif error and not field_names:
+        else:
+            if not isinstance(error, ValidationError):
+                raise ValueError(
+                    "If 'field_names' is not passed, 'error' must be a pydantic.ValidationError."
+                )
             self.field_names = sorted(
                 list(set([err["loc"][0] for err in error.errors()]))
             )
-        else:
-            raise ValueError("Pass either the field names OR the pydantic error.")
 
         self.object_name = object_name
         self.error = error
