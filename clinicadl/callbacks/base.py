@@ -61,14 +61,14 @@ class Events(str, Enum):
 class Callback:
     """
     To define arbitrary action to perform at certain points of the training, evaluation or
-    prediction loop.
+    prediction workflows.
 
     Each method of this class starting by ``on_...`` is associated to an event of
     the training, evaluation or prediction phase of the :py:class:`~clinicadl.train.Trainer`.
     By overriding these methods, the user can define action to perform when the event happens.
 
     .. important::
-        Callbacks should capture NON-ESSENTIAL logic such as saving checkpoints or logging.
+        Callbacks should capture **NON-ESSENTIAL** logic such as saving checkpoints or logging.
         The essential logic should be defined in a :py:class:`clinicadl.models.Model`.
 
     To define you own callback, you can override any of the method associated to an event.

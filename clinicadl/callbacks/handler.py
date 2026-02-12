@@ -110,8 +110,7 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
 
     Note that some callbacks are instantiated by default: :py:class:`~clinicadl.callbacks.LoggerCallback`,
     :py:class:`~clinicadl.callbacks.MonitorCallback`, :py:class:`~clinicadl.callbacks.ModelCheckpointCallback`
-    and :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback`. To override them, just pass a new instance via
-    ``callbacks``.
+    and :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback`. To override them, just pass a new instance.
 
     Parameters
     ----------

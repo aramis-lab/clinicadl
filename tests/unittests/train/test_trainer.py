@@ -1017,17 +1017,21 @@ class TestTest:
             metrics=metrics,
         )
 
-        # multiple checkpoints and dataloder
+        # dataloder and metrics=None
         trainer._get_dataloader.reset_mock()
+        trainer._evaluation_loop.reset_mock()
 
         trainer._test(
             model_checkpoint="split-0_best-loss",
-            metrics=["loss"],
+            metrics=None,
             group_name="X",
             dataloader=(loader := Mock()),
         )
 
         trainer._get_dataloader.assert_not_called()
+        trainer._evaluation_loop.assert_called_once_with(
+            ANY, metrics=trainer.metrics, computational=ANY
+        )
 
 
 class TestEvaluationLoop:
