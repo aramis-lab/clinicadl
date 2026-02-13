@@ -184,8 +184,8 @@ class TestSideMethods:
         assert trainer.state.num_epochs == 5
         assert trainer.state.called == "train"
         trainer.model.reset.assert_called_once()
-        split.train_loader.dataset.train.assert_called_once()
-        split.val_loader.dataset.eval.assert_called_once()
+        split.train_dataset.train.assert_called_once()
+        split.val_dataset.eval.assert_called_once()
         metrics.reset.assert_called_once_with(reset_df=True)
 
     def test_reset_epoch(self, trainer: Trainer):

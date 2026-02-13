@@ -886,8 +886,8 @@ class Trainer:
             split_idx=split.index, num_epochs=self._optim_config.num_epochs
         )
         self.model.reset()
-        split.train_loader.dataset.train()
-        split.val_loader.dataset.eval()
+        split.train_dataset.train()
+        split.val_dataset.eval()
         metrics.reset(reset_df=True)
 
     def _reset_epoch(self, epoch: int, train_loader: DataLoader) -> None:
