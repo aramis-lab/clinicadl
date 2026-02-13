@@ -23,8 +23,8 @@ from clinicadl.data.dataloader import (
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.io import Maps
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.extraction import Slice
-from clinicadl.transforms.handlers import Transforms
 from clinicadl.utils.exceptions import DataFrameError, DataLeakageError
 from clinicadl.utils.json import write_json
 
@@ -321,7 +321,7 @@ class TestDataConsistency:
             tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
         ),
         data=CAPS_PATH / "tsv" / "labels.tsv",
-        transforms=Transforms(image_transforms=[tio.ZNormalization()]),
+        transforms=TransformsHandler(image_transforms=[tio.ZNormalization()]),
         label="age",
         columns=["age"],
     )
@@ -782,8 +782,8 @@ class TestCompareDatasets:
             ),
             (
                 "transforms",
-                Transforms(extraction=Slice()),
-                "the two datasets don't have the same transforms. Got Transforms configuration for slice extraction.*Transforms configuration for image extraction.*",
+                TransformsHandler(extraction=Slice()),
+                "the two datasets don't have the same transforms. Got TransformsHandler configuration for slice extraction.*TransformsHandler configuration for image extraction.*",
             ),
             (
                 "masks",

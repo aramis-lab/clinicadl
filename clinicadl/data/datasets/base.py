@@ -18,7 +18,7 @@ import torchio as tio
 from pydantic import Field, field_validator, model_validator
 from typing_extensions import Self
 
-from clinicadl.transforms.handlers import Transforms
+from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import (
     AFFINE,
@@ -60,7 +60,7 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
     datatype: DataType = Field(reader=get_datatype_from_dict)
     data: Optional[DataFrameType] = Field(reader=_dataframe_from_dict)
     label: Optional[Union[str, list[str]]]
-    transforms: Transforms = Field(reader=Transforms.from_dict)
+    transforms: TransformsHandler = Field(reader=TransformsHandler.from_dict)
     columns: dict[str, Optional[Callable[[pd.Series], pd.Series]]]
     masks: list[PathType]
 
@@ -274,7 +274,7 @@ class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
         datatype: DataType,
         data: Optional[DataFrameType] = None,
         label: Optional[Union[str, Sequence[str]]] = None,
-        transforms: Transforms = Transforms(),
+        transforms: TransformsHandler = TransformsHandler(),
         columns: Optional[
             Union[Sequence[str], dict[str, Optional[Callable[[pd.Series], pd.Series]]]]
         ] = None,

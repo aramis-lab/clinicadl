@@ -9,17 +9,17 @@ from pydantic import ValidationError
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.config import AsDiscreteConfig
-from clinicadl.transforms.handlers import Postprocessing
+from clinicadl.transforms.handlers import PostprocessingHandler
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 
 
 def test_args():
     with pytest.raises(ValidationError):
-        Postprocessing(transforms=["AsDiscrete"])
+        PostprocessingHandler(transforms=["AsDiscrete"])
 
 
 def test_check_transforms():
-    transforms = Postprocessing(
+    transforms = PostprocessingHandler(
         transforms=[AsDiscreteConfig(threshold=1), tio.RescaleIntensity()],
     )
     assert [type(t) for t in transforms.transforms] == [
@@ -35,7 +35,7 @@ def test_apply():
         participant="abc",
         session="0",
     )
-    transforms = Postprocessing(
+    transforms = PostprocessingHandler(
         transforms=[
             AsDiscreteConfig(threshold=1, include=["label"]),
             tio.RescaleIntensity(copy=False),
@@ -57,7 +57,7 @@ def test_apply():
     assert batch[1].image.tensor.max() == 1
 
     # copy
-    transforms = Postprocessing(
+    transforms = PostprocessingHandler(
         transforms=[
             AsDiscreteConfig(threshold=1, include=["label"]),
             tio.RescaleIntensity(copy=True),
@@ -71,16 +71,19 @@ def test_apply():
 
 
 def test_str():
-    transforms = Postprocessing(
+    transforms = PostprocessingHandler(
         transforms=[tio.RescaleIntensity(), AsDiscreteConfig(threshold=1)]
     )
-    assert str(transforms) == "Postprocessing:\n  - RescaleIntensity\n  - AsDiscrete\n"
-    transforms = Postprocessing(transforms=[])
-    assert str(transforms) == "Postprocessing:\nNo transform applied.\n"
+    assert (
+        str(transforms)
+        == "PostprocessingHandler:\n  - RescaleIntensity\n  - AsDiscrete\n"
+    )
+    transforms = PostprocessingHandler(transforms=[])
+    assert str(transforms) == "PostprocessingHandler:\nNo transform applied.\n"
 
 
 def test_serialization():
-    transforms = Postprocessing(
+    transforms = PostprocessingHandler(
         transforms=[
             AsDiscreteConfig(threshold=1),
             tio.Resample(),
@@ -88,8 +91,8 @@ def test_serialization():
     )
     d = transforms.to_dict()
 
-    new_transforms = Postprocessing.from_dict(d)
-    assert isinstance(new_transforms, Postprocessing)
+    new_transforms = PostprocessingHandler.from_dict(d)
+    assert isinstance(new_transforms, PostprocessingHandler)
     assert isinstance(
         new_transforms.config.transforms.values[0].value, AsDiscreteConfig
     )

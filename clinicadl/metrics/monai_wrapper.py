@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import torch
 from monai.metrics import CumulativeIterationMetric
 
-from clinicadl.transforms.handlers import Postprocessing
+from clinicadl.transforms.handlers import PostprocessingHandler
 
 from .base import Metric, TensorOrList
 from .enum import Optimum
@@ -49,7 +49,7 @@ class MonaiMetricWrapper(Metric):
         pred_key: str,
         label_key: Optional[str] = None,
         postprocessing: Optional[
-            Union[Sequence[TransformOrConfig], Postprocessing]
+            Union[Sequence[TransformOrConfig], PostprocessingHandler]
         ] = None,
     ) -> None:
         super().__init__()
@@ -62,8 +62,8 @@ class MonaiMetricWrapper(Metric):
             postprocessing = []
         self.postprocessing = (
             postprocessing
-            if isinstance(postprocessing, Postprocessing)
-            else Postprocessing(postprocessing)
+            if isinstance(postprocessing, PostprocessingHandler)
+            else PostprocessingHandler(postprocessing)
         )
 
     def __repr__(self):

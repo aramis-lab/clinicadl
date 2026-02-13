@@ -8,8 +8,8 @@ import pytest
 
 from clinicadl.data.datasets import CapsDataset, ConcatDataset, MultiSamplesDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.extraction import Image, Slice
-from clinicadl.transforms.handlers import Transforms
 from clinicadl.utils.exceptions import TensorConversionError
 
 from .utils import subset_df
@@ -51,7 +51,7 @@ def create_caps_datasets(pet_all: bool = False):
         CAPS_DIR,
         datatype=T1Linear(use_uncropped_image=True),
         data=t1_data,
-        transforms=Transforms(extraction=Slice(squeeze=True)),
+        transforms=TransformsHandler(extraction=Slice(squeeze=True)),
     )
     caps_pet = CapsDataset(
         CAPS_DIR,
@@ -241,7 +241,7 @@ def test_df():
         data=sub_data([("sub-000", "ses-M000")]).drop(
             columns=["diagnosis", "category"]
         ),
-        transforms=Transforms(extraction=Slice(squeeze=True)),
+        transforms=TransformsHandler(extraction=Slice(squeeze=True)),
     )
     caps_pet = CapsDataset(
         CAPS_DIR,

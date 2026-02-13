@@ -147,7 +147,10 @@ def test_good_split():
 
 def test_special_cases():
     # no output dir
-    with pytest.raises(ValueError, match="You must specify the output directory."):
+    with pytest.raises(
+        ValueError,
+        match="If you pass a DataFrame, you must specify the output directory.",
+    ):
         make_split(
             DF,
             output_dir=None,

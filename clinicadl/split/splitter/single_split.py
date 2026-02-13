@@ -101,7 +101,7 @@ class SingleSplit(Splitter):
 
             from clinicadl.split import SingleSplit
             from clinicadl.data import datasets, datatypes
-            from clinicadl.transforms import Transforms, extraction
+            from clinicadl.transforms import TransformsHandler, extraction
 
             dataset = datasets.CapsDataset(
                 "caps_dir",
@@ -109,7 +109,7 @@ class SingleSplit(Splitter):
                 datatype=datatypes.PETLinear(
                     tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
                 ),
-                transforms=Transforms(extraction=extraction.Patch()),
+                transforms=TransformsHandler(extraction=extraction.Patch()),
             )
             splitter = SingleSplit("split_dir")
             split = splitter.get_split(dataset)

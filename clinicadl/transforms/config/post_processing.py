@@ -50,7 +50,7 @@ FORMAT_DEFAULTS = get_defaults_from(Format)
 
 class MonaiTransformConfig(TransformConfig):
     """
-    Base config class for MONAI Transforms.
+    Base config class for MONAI TransformsHandler.
     """
 
     def get_object(self) -> Transform:

@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 DataPointT = TypeVar("DataPointT", bound="DataPoint")
 
 
-class PostprocessingConfig(ObjectConfig["Postprocessing"]):
-    """Config class for ``Postprocessing``."""
+class PostprocessingHandlerConfig(ObjectConfig["PostprocessingHandler"]):
+    """Config class for ``PostprocessingHandler``."""
 
     transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
         reader=SequenceOfObjects.build_reader(get_transform_from_dict)
@@ -33,12 +33,12 @@ class PostprocessingConfig(ObjectConfig["Postprocessing"]):
         return SequenceOfObjects.from_sequence(v, field_name=info.field_name)
 
     @classmethod
-    def _get_class(cls) -> type[Postprocessing]:
+    def _get_class(cls) -> type[PostprocessingHandler]:
         """Returns the class associated to this config class."""
-        return Postprocessing
+        return PostprocessingHandler
 
 
-class Postprocessing(HasConfig[PostprocessingConfig]):
+class PostprocessingHandler(HasConfig[PostprocessingHandlerConfig]):
     """
     A configuration class for applying transformations on the outputs of a network.
 
@@ -48,13 +48,13 @@ class Postprocessing(HasConfig[PostprocessingConfig]):
         A list of transformations to apply on the outputs.
     """
 
-    _config_type = PostprocessingConfig
+    _config_type = PostprocessingHandlerConfig
 
     def __init__(
         self,
         transforms: Sequence[TransformOrConfig] = [],
     ):
-        self.config = PostprocessingConfig(
+        self.config = PostprocessingHandlerConfig(
             transforms=transforms,
         )
         self.transforms = tio.Compose(
@@ -63,9 +63,9 @@ class Postprocessing(HasConfig[PostprocessingConfig]):
 
     def __str__(self) -> str:
         """
-        Returns a detailed string representation of the ``Postprocessing`` object.
+        Returns a detailed string representation of the ``PostprocessingHandler`` object.
         """
-        str_ = "Postprocessing:\n"
+        str_ = "PostprocessingHandler:\n"
 
         if self.transforms.transforms:
             for transform in self.transforms.transforms:

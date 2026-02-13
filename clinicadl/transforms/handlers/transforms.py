@@ -20,13 +20,13 @@ from .utils import get_transform_name
 if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
 
-logger = getLogger("clinicadl.transforms.Transforms")
+logger = getLogger("clinicadl.transforms.TransformsHandler")
 
 DataPointT = TypeVar("DataPointT", bound="DataPoint")
 
 
-class TransformsConfig(ObjectConfig["Transforms"]):
-    """Config class for ``Transforms``."""
+class TransformsHandlerConfig(ObjectConfig["TransformsHandler"]):
+    """Config class for ``TransformsHandler``."""
 
     extraction: Extraction = Field(reader=get_extraction_from_dict)
     image_transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
@@ -67,13 +67,13 @@ class TransformsConfig(ObjectConfig["Transforms"]):
         return self
 
     @classmethod
-    def _get_class(cls) -> type[Transforms]:
+    def _get_class(cls) -> type[TransformsHandler]:
         """Returns the class associated to this config class."""
-        return Transforms
+        return TransformsHandler
 
 
 @equal_if_config_equal
-class Transforms(HasConfig[TransformsConfig]):
+class TransformsHandler(HasConfig[TransformsHandlerConfig]):
     """
     Configuration class to define all the transforms applied to images in
     a :py:mod:`dataset <clinicadl.data.datasets>` (extraction, preprocessing, and augmentation).
@@ -97,9 +97,9 @@ class Transforms(HasConfig[TransformsConfig]):
         (so you passed ``extraction=Slice()``), the effective length of your dataset will be :math:`10\\times100=1,000`.
 
     For ``image_transforms``, ``sample_transforms`` and ``augmentations``, the transforms must be passed as sequences.
-    ``Transforms`` will compose the transforms in these sequences, so **the order in the sequences is important**.
+    ``TransformsHandler`` will compose the transforms in these sequences, so **the order in the sequences is important**.
 
-    Finally, ``Transforms`` accepts preferably configuration classes (see :py:mod:`clinicadl.transforms.config`), but also
+    Finally, ``TransformsHandler`` accepts preferably configuration classes (see :py:mod:`clinicadl.transforms.config`), but also
     any custom transform created by the user (see examples). The only requirement is that this custom transform
     is a callable that takes as input and returns a :py:class:`~clinicadl.data.structures.DataPoint`.
 
@@ -131,11 +131,11 @@ class Transforms(HasConfig[TransformsConfig]):
     --------
     .. code-block:: python
 
-        >>> from clinicadl.transforms import Transforms
+        >>> from clinicadl.transforms import TransformsHandler
         >>> from clinicadl.transforms.extraction import Patch
         >>> from clinicadl.transforms.config import ZNormalizationConfig, RandomFlipConfig
         >>> import torchio
-        >>> transforms = Transforms(
+        >>> transforms = TransformsHandler(
                 extraction=Patch(patch_size=32, stride=32),
                 image_transforms=[ZNormalizationConfig(), torchio.CropOrPad(64)],  # torchio.CropOrPad is not a config class, so it is a custom transform
                 sample_transforms=[],
@@ -144,7 +144,7 @@ class Transforms(HasConfig[TransformsConfig]):
 
     """
 
-    _config_type = TransformsConfig
+    _config_type = TransformsHandlerConfig
 
     def __init__(
         self,
@@ -153,7 +153,7 @@ class Transforms(HasConfig[TransformsConfig]):
         sample_transforms: Sequence[TransformOrConfig] = [],
         augmentations: Sequence[TransformOrConfig] = [],
     ):
-        self.config = TransformsConfig(
+        self.config = TransformsHandlerConfig(
             extraction=extraction,
             image_transforms=image_transforms,
             sample_transforms=sample_transforms,
@@ -172,13 +172,11 @@ class Transforms(HasConfig[TransformsConfig]):
 
     def __str__(self) -> str:
         """
-        Returns a detailed string representation of the ``Transforms`` object,
+        Returns a detailed string representation of the ``TransformsHandler`` object,
         showing the current configuration of image and sample transforms,
         augmentations, and other settings.
         """
-        transform_str = (
-            f"Transforms configuration for {self.extraction.sample_type} extraction:\n"
-        )
+        transform_str = f"TransformsHandler configuration for {self.extraction.sample_type} extraction:\n"
 
         def _to_str(
             list_: list[Transform],

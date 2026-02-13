@@ -39,7 +39,7 @@ from clinicadl.metrics.config.segmentation import (
 )
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
 from clinicadl.transforms.config import AsDiscreteConfig
-from clinicadl.transforms.handlers import Postprocessing
+from clinicadl.transforms.handlers import PostprocessingHandler
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 
 BAD_INPUTS = [
@@ -370,7 +370,7 @@ def test_get_object(config, expected_class):
 
     # postprocessing
     new_args = deepcopy(MANDATORY_ARGS)
-    new_args["postprocessing"] = Postprocessing(MANDATORY_ARGS["postprocessing"])
+    new_args["postprocessing"] = PostprocessingHandler(MANDATORY_ARGS["postprocessing"])
     c: MetricConfig = config(**MANDATORY_ARGS)
     transform_from_config = c.get_object()
     assert len(transform_from_config.postprocessing.transforms) == 2

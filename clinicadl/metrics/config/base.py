@@ -5,7 +5,7 @@ from typing import Any, Optional, Sequence, Union
 import monai.metrics
 from pydantic import Field, field_validator
 
-from clinicadl.transforms.handlers import Postprocessing
+from clinicadl.transforms.handlers import PostprocessingHandler
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 from clinicadl.utils.dictionary.words import LABEL, OUTPUT
@@ -24,8 +24,8 @@ class MetricConfig(ObjectConfig[Metric]):
 
     pred_key: str = OUTPUT
     label_key: Optional[str] = LABEL
-    postprocessing: Union[list[TransformOrConfig], Postprocessing] = Field(
-        default=[], reader=Postprocessing.from_dict
+    postprocessing: Union[list[TransformOrConfig], PostprocessingHandler] = Field(
+        default=[], reader=PostprocessingHandler.from_dict
     )
 
     def get_object(self, **kwargs: Any) -> Metric:
@@ -53,13 +53,13 @@ class MetricConfig(ObjectConfig[Metric]):
     @field_validator("postprocessing", mode="after")
     @classmethod
     def _validate_postprocessing(
-        cls, postprocessing: Union[Sequence[TransformOrConfig], Postprocessing]
-    ) -> Postprocessing:
+        cls, postprocessing: Union[Sequence[TransformOrConfig], PostprocessingHandler]
+    ) -> PostprocessingHandler:
         """
-        Puts postprocessing transforms in a Postprocessing object.
+        Puts postprocessing transforms in a PostprocessingHandler object.
         """
         if isinstance(postprocessing, list):
-            return Postprocessing(postprocessing)
+            return PostprocessingHandler(postprocessing)
         return postprocessing
 
     @classmethod

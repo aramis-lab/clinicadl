@@ -10,7 +10,7 @@ from typing import (
 
 import pandas as pd
 
-from clinicadl.transforms.handlers import Transforms
+from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType, PathType
 
@@ -41,7 +41,7 @@ class CapsDataset(TensorDataset):
     The user can add additional data in this ``DataPoint`` via the arguments ``columns``, to add the values
     of columns of the DataFrame ``data``, and ``masks``, to add masks associated to the image.
 
-    Transforms to apply to the images are passed via the argument ``transforms``.
+    TransformsHandler to apply to the images are passed via the argument ``transforms``.
 
     .. note::
         More precisely, transforms are applied to the ``DataPoint``. If you need any additional data to compute
@@ -49,7 +49,7 @@ class CapsDataset(TensorDataset):
         ``columns`` or ``masks``.
 
     With ``CapsDataset``, it is possible to work on the whole images, or on patches or slices extracted from the
-    images. This is also specified via the ``transforms`` argument (e.g. ``transforms=Transforms(extraction=Slice())``).
+    images. This is also specified via the ``transforms`` argument (e.g. ``transforms=TransformsHandler(extraction=Slice())``).
 
     .. note::
         - Depending on the type of data you are working on (images, patches, or slices), you may not find the same information
@@ -96,9 +96,9 @@ class CapsDataset(TensorDataset):
         - For ``segmentation``: a segmentation mask passed in the argument ``mask``.
         - For ``reconstruction`` or ``generation``: ``None``.
 
-    transforms : Transforms, default=Transforms()
+    transforms : TransformsHandler, default=TransformsHandler()
         Transformation pipeline to apply to the data during loading. The user also specifies here whether to work on images, patches, or slices.
-        See :py:class:`clinicadl.transforms.Transforms`.
+        See :py:class:`clinicadl.transforms.TransformsHandler`.
     columns : Optional[Union[Sequence[str], dict[str, Optional[Callable[[pd.Series], pd.Series]]]]], default=None
         Columns to get in the DataFrame ``data``, and to put in the :py:class:`~clinicadl.data.structures.DataPoint` returned
         by the ``CapsDataset``.\n
@@ -188,7 +188,7 @@ class CapsDataset(TensorDataset):
     .. code-block:: python
 
         from clinicadl.data import datasets, datatypes
-        from clinicadl.transforms import Transforms, extraction
+        from clinicadl.transforms import TransformsHandler, extraction
         from clinicadl.transforms.config import (
                 ZNormalizationConfig,
                 MaskConfig,
@@ -213,7 +213,7 @@ class CapsDataset(TensorDataset):
                 tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
             ),
             data="mycaps/data.tsv",
-            transforms=Transforms(
+            transforms=TransformsHandler(
                 image_transforms=[
                     ZNormalizationConfig(masking_method="brain"),
                     MaskConfig(masking_method="leftHippocampus"),
@@ -245,7 +245,7 @@ class CapsDataset(TensorDataset):
                 tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
             ),
             data="mycaps/data.tsv",
-            transforms=Transforms(extraction=extraction.Patch(patch_size=32, stride=32)),
+            transforms=TransformsHandler(extraction=extraction.Patch(patch_size=32, stride=32)),
             label="brain",
             masks=["brain"],
         )
@@ -274,7 +274,7 @@ class CapsDataset(TensorDataset):
         datatype: DataType,
         data: Optional[DataFrameType] = None,
         label: Optional[Union[str, Sequence[str]]] = None,
-        transforms: Transforms = Transforms(),
+        transforms: TransformsHandler = TransformsHandler(),
         columns: Optional[
             Union[Sequence[str], dict[str, Optional[Callable[[pd.Series], pd.Series]]]]
         ] = None,

@@ -1,2 +1,2 @@
-from .postprocessing import Postprocessing
-from .transforms import Transforms
+from .postprocessing import PostprocessingHandler
+from .transforms import TransformsHandler

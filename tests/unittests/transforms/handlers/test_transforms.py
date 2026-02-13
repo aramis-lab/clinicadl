@@ -5,6 +5,7 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import (
     ActivationsConfig,
     PadConfig,
@@ -14,18 +15,17 @@ from clinicadl.transforms.config import (
     ZNormalizationConfig,
 )
 from clinicadl.transforms.extraction import Patch
-from clinicadl.transforms.handlers import Transforms
 
 
 def test_args():
     with pytest.raises(ValidationError):
-        Transforms(extraction=tio.ZNormalization())
+        TransformsHandler(extraction=tio.ZNormalization())
     with pytest.raises(ValidationError):
-        Transforms(image_transforms=["ZNormalization"])
+        TransformsHandler(image_transforms=["ZNormalization"])
 
 
 def test_check_transforms():
-    transforms = Transforms(
+    transforms = TransformsHandler(
         image_transforms=[ZNormalizationConfig()],
         sample_transforms=[tio.Resize((16, 16, 16))],
         augmentations=[tio.RandomAffine()],
@@ -47,7 +47,7 @@ def test_apply_transforms():
     data_point = DataPoint(
         image, label=label, mask_1=mask_1, participant="abc", session="0"
     )
-    transforms = Transforms(
+    transforms = TransformsHandler(
         extraction=Patch(patch_size=4, overlap=0),
         image_transforms=[
             tio.Crop(1, copy=False),
@@ -96,18 +96,18 @@ def test_apply_transforms():
 
 
 def test_str():
-    transforms = Transforms(
+    transforms = TransformsHandler(
         image_transforms=[RescaleIntensityConfig()],
         augmentations=[tio.RescaleIntensity()],
     )
     assert (
         str(transforms)
-        == "Transforms configuration for image extraction:\n* image transformation:\n  - RescaleIntensity\n* No sample transformation applied.\n* sample augmentation:\n  - RescaleIntensity\n"
+        == "TransformsHandler configuration for image extraction:\n* image transformation:\n  - RescaleIntensity\n* No sample transformation applied.\n* sample augmentation:\n  - RescaleIntensity\n"
     )
 
 
 def test_serialization():
-    transforms = Transforms(
+    transforms = TransformsHandler(
         extraction=Patch(patch_size=3),
         image_transforms=[
             ResizeConfig(target_shape=3),
@@ -119,8 +119,8 @@ def test_serialization():
     )
     d = transforms.to_dict()
 
-    new_transforms = Transforms.from_dict(d)
-    assert isinstance(new_transforms, Transforms)
+    new_transforms = TransformsHandler.from_dict(d)
+    assert isinstance(new_transforms, TransformsHandler)
     assert isinstance(
         new_transforms.config.image_transforms.values[0].value, ResizeConfig
     )

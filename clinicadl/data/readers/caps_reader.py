@@ -264,7 +264,7 @@ class CapsReader(Reader):
 
     def _write_caps_json(
         self,
-        # transforms: Transforms,
+        # transforms: TransformsHandler,
         # preprocessing: Preprocessing,
         # data_tsv: Path,
         name: Optional[str] = None,
@@ -273,7 +273,7 @@ class CapsReader(Reader):
         Writes the preprocessing and transformation configurations into a JSON file.
 
         Args:
-            transforms: Transforms
+            transforms: TransformsHandler
                 The transformations applied to the data.
             preprocessing: Preprocessing
                 Preprocessing configuration.
