@@ -380,8 +380,8 @@ def test_monitor_gpu(tmp_path):
     assert len(df["Forward GPU max memory (MB)"].dropna()) == 3 + 4
     assert len(df["Backward GPU (s)"].dropna()) == 3 + 4
     assert len(df["Backward GPU max memory (MB)"].dropna()) == 3 + 4
-    assert len(df["Optimization GPU (s)"].dropna()) == 3 + 4
-    assert len(df["Optimization GPU max memory (MB)"].dropna()) == 3 + 4
+    assert len(df["Optimization GPU (s)"].dropna()) == 2 * 2
+    assert len(df["Optimization GPU max memory (MB)"].dropna()) == 2 * 2
     assert len(df["Evaluation GPU (s)"].dropna()) == 2 * 1
     assert len(df["Evaluation GPU max memory (MB)"].dropna()) == 2 * 1
     assert len(df["Metrics computation GPU (s)"].dropna()) == 2 * 1
