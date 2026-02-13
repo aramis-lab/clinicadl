@@ -154,7 +154,7 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         self.config.add_callbacks(callbacks)
         self._complete_callbacks()
 
-    def call_event(self, event: Events, **kwargs) -> None:
+    def call_event(self, event: str | Events, **kwargs) -> None:
         """
         Call a specific event method on all callbacks
         (see :py:class:`~clinicadl.callbacks.Callback` to get
@@ -162,10 +162,11 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
 
         Parameters
         ----------
-        event : Events
+        event : str | Events
             Name of the event to call (e.g. ``"on_train_start"``).
         kwargs : Any
-            Keyword arguments to pass to every callback's event methods.
+            Keyword arguments that will be passed to the methods
+            associated to this event.
         """
         for callback in self._all_callbacks:
             getattr(callback, Events(event).value)(**kwargs)
