@@ -37,7 +37,7 @@ authors:
     given-names: Nathan
   - family-names: Gensollen
     given-names: Nicolas
-title: "ClinicaDL: Python library for the reproducible processing of neuroimaging data with deep learning methods."
+title: " ClinicaDL: an open-source Python library for reproducible deep learning in neuroimaging."
 version: 2.0.0rc2
 doi: 10.1016/j.cmpb.2022.106818
 license: MIT
