@@ -68,11 +68,11 @@ intersphinx_mapping = {
 }
 extlinks = {
     "pathlib.Path": (
-        "https://docs.python.org/fr/3.13/library/pathlib.html#concrete-paths%s",
+        "https://docs.python.org/fr/3/library/pathlib.html#concrete-paths%s",
         None,
     ),
     "Path": (
-        "https://docs.python.org/fr/3.13/library/pathlib.html#concrete-paths%s",
+        "https://docs.python.org/fr/3/library/pathlib.html#concrete-paths%s",
         None,
     ),
     "tutorials": (

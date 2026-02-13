@@ -1,3 +1,2 @@
 include README.md
 include LICENSE.txt
-include clinicadl/clinicadl/preprocessing/t1_extensive/info.json

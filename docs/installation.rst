@@ -16,7 +16,7 @@ Once it is forked, clone it and checkout to ``clinicadl_v2`` branch::
 
 Then create your conda environment::
 
-    conda create --name clinicadl_beta python=3.11
+    conda create --name clinicadl_beta python=3.12
     conda activate clinicadl_beta
 
 And install the dependencies using ``poetry``::
