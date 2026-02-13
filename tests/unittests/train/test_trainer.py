@@ -604,7 +604,7 @@ class TestTrain:
         trainer.state.current_epoch = 0
         trainer.optimization.num_epochs = 5
         trainer.optimization.accumulation_steps = 2
-        trainer.optimization.evaluation_steps = 3
+        trainer.optimization.evaluation_interval = 3
 
         trainer.model.forward_step.return_value = "loss"
         reset_epoch = trainer._reset_epoch
@@ -741,7 +741,7 @@ class TestTrain:
         comp = Mock()
 
         trainer.optimization.accumulation_steps = 1
-        trainer.optimization.evaluation_steps = 1
+        trainer.optimization.evaluation_interval = 1
 
         reset_epoch = trainer._reset_epoch
         trainer._reset_epoch = Mock()

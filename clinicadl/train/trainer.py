@@ -477,8 +477,7 @@ class Trainer:
 
             if (
                 self.state.current_epoch
-                - 1
-                % self.optimization.evaluation_steps  # always validate the first epoch
+                % self.optimization.evaluation_interval  # always validate the first epoch
                 == 0
             ):
                 self._validation(
