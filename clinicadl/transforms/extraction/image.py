@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
 
 
-logger = getLogger("clinicadl.transforms.extraction.image")
+logger = getLogger(__name__)
 
 DataPointT = TypeVar("DataPointT", bound="DataPoint")
 

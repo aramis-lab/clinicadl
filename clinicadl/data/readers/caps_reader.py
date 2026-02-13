@@ -25,7 +25,7 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.tsvtools import df_to_tsv
 from clinicadl.utils.typing import PathType
 
-logger = getLogger("clinicadl.data.readers.caps_reader")
+logger = getLogger(__name__)
 
 COMMON_MASKS_DIR = "masks"
 CONVERSION_JSON_DIRECTORY = "tensor_conversion"
@@ -264,7 +264,7 @@ class CapsReader(Reader):
 
     def _write_caps_json(
         self,
-        # transforms: Transforms,
+        # transforms: TransformsHandler,
         # preprocessing: Preprocessing,
         # data_tsv: Path,
         name: Optional[str] = None,
@@ -273,7 +273,7 @@ class CapsReader(Reader):
         Writes the preprocessing and transformation configurations into a JSON file.
 
         Args:
-            transforms: Transforms
+            transforms: TransformsHandler
                 The transformations applied to the data.
             preprocessing: Preprocessing
                 Preprocessing configuration.

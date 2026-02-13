@@ -32,7 +32,7 @@ from .base import Extraction, ImplementedExtraction
 if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
 
-logger = getLogger("clinicadl.extraction.slice")
+logger = getLogger(__name__)
 
 
 class SliceConfig(ObjectConfig["Slice"]):

@@ -12,8 +12,8 @@ from clinicadl.split.make_splits.utils import (
     find_available_split_dir,
     write_to_tsv,
 )
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.extraction import Slice
-from clinicadl.transforms.handlers import Transforms
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 FULL_DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
@@ -36,7 +36,7 @@ caps_t1 = CapsDataset(
     label="age",
     columns=["age"],
     data=sub_data([("sub-000", "ses-M000"), ("sub-010", "ses-M003")]),
-    transforms=Transforms(extraction=Slice(slices=[0, 1])),
+    transforms=TransformsHandler(extraction=Slice(slices=[0, 1])),
 )
 caps_pet = CapsDataset(
     CAPS_DIR,

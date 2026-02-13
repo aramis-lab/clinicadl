@@ -106,7 +106,7 @@ class TensorDataset(BaseDataset):
         inference.
 
         The user has the possibility to store transformed images, i.e. images on which
-        image transforms have already been applied (see ``image_transforms`` in :py:class:`clinicadl.transforms.Transforms`).
+        image transforms have already been applied (see ``image_transforms`` in :py:class:`clinicadl.transforms.TransformsHandler`).
         This practice will speed up dataloading during training or inference as the images don't have
         to be transformed each time they are loaded. The drawback is that the saved images can't be
         used by a dataset with other image transforms.

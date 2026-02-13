@@ -23,9 +23,9 @@ from clinicadl.data.datasets import (
     UnpairedDataset,
 )
 from clinicadl.data.datatypes import PETLinear, T1Linear
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import PadConfig
 from clinicadl.transforms.extraction import Slice
-from clinicadl.transforms.handlers import Transforms
 from clinicadl.utils.seed import pl_worker_init_function
 
 BAD_INPUTS = [
@@ -217,7 +217,7 @@ def test_train_eval():
         datatype=PETLinear(
             use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
         ),
-        transforms=Transforms(augmentations=[PadConfig(padding=1)]),
+        transforms=TransformsHandler(augmentations=[PadConfig(padding=1)]),
         data=DATA,
     )
     caps.read_tensor_conversion()
@@ -377,7 +377,7 @@ def test_ddp():
         datatype=T1Linear(use_uncropped_image=True),
         label="seg",
         data=sub_data,
-        transforms=Transforms(extraction=Slice(slices=[0, 1])),
+        transforms=TransformsHandler(extraction=Slice(slices=[0, 1])),
         masks=["brain", "seg"],
     )
     caps.read_tensor_conversion("t1_masks")

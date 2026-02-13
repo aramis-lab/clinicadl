@@ -477,8 +477,7 @@ class Trainer:
 
             if (
                 self.state.current_epoch
-                - 1
-                % self.optimization.evaluation_steps  # always validate the first epoch
+                % self.optimization.evaluation_interval  # always validate the first epoch
                 == 0
             ):
                 self._validation(
@@ -788,6 +787,23 @@ class Trainer:
             metrics=metrics_handler,
         )
 
+    def predict(
+        self,
+        model_checkpoint: str,
+        group_name: str,
+        dataloader: Optional[DataLoader] = None,
+        computational: ComputationalConfig = ComputationalConfig(),
+    ) -> None:
+        """
+        .. admonition:: Not Implemented
+            :class: warning
+
+            ``Trainer.predict`` will be implemented in a future release.
+        """
+        raise NotImplementedError(
+            "Trainer.predict will be implemented in a future release"
+        )
+
     def _validation(
         self,
         dataloader: DataLoader,
@@ -869,8 +885,8 @@ class Trainer:
             split_idx=split.index, num_epochs=self._optim_config.num_epochs
         )
         self.model.reset()
-        split.train_loader.dataset.train()
-        split.val_loader.dataset.eval()
+        split.train_dataset.train()
+        split.val_dataset.eval()
         metrics.reset(reset_df=True)
 
     def _reset_epoch(self, epoch: int, train_loader: DataLoader) -> None:

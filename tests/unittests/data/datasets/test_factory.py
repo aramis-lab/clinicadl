@@ -11,7 +11,7 @@ from clinicadl.data.datasets.factory import (
     get_dataset_from_json_safely,
 )
 from clinicadl.data.datatypes import T1Linear
-from clinicadl.transforms.handlers import Transforms
+from clinicadl.transforms import TransformsHandler
 
 from .utils import subset_df
 
@@ -90,7 +90,7 @@ def test_dataset_from_json(tmp_path, dataset):
 def test_dataset_from_json_safely(tmp_path):
     dataset = CapsDataset(
         **MANDATORY_ARGS["CapsDataset"],
-        transforms=Transforms(image_transforms=[tio.ZNormalization()]),
+        transforms=TransformsHandler(image_transforms=[tio.ZNormalization()]),
         columns={"abc": lambda x: str(x)},
     )
     dataset.to_json(tmp_path / "dataset.json")

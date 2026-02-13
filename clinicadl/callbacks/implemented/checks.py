@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from clinicadl.split import Split
     from clinicadl.train import TrainerState
 
-logger = logging.getLogger("clinicadl.callbacks.implemented.ChecksCallback")
+logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 

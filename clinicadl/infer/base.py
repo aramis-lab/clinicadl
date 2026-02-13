@@ -10,7 +10,7 @@ from pydantic import Field
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms.handlers import Postprocessing
+from clinicadl.transforms.handlers import PostprocessingHandler
 from clinicadl.transforms.types import TransformOrConfig
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import CPU
@@ -18,7 +18,7 @@ from clinicadl.utils.objects import HasConfig
 
 from .abstract import Inferer
 
-logger = getLogger("clinicadl.infer.base")
+logger = getLogger(__name__)
 
 T = TypeVar("T", DataPoint, Batch)
 DataPointT = TypeVar("DataPointT", bound=DataPoint)
@@ -35,7 +35,9 @@ class OutputType(str, Enum):
 class BaseInfererConfig(ObjectConfig["BaseInferer"]):
     """Base config class for the inferers implemented in ``ClinicaDL``."""
 
-    postprocessing: Postprocessing = Field(reader=Postprocessing.from_dict)
+    postprocessing: PostprocessingHandler = Field(
+        reader=PostprocessingHandler.from_dict
+    )
     postprocessing_on_cpu: bool
     output_name: str
     output_type: Optional[OutputType]
@@ -51,7 +53,7 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
     ):
         if not postprocessing:
             postprocessing = []
-        postprocessing = Postprocessing(postprocessing)
+        postprocessing = PostprocessingHandler(postprocessing)
         self.config = self._config_type(
             postprocessing=postprocessing,
             **kwargs,

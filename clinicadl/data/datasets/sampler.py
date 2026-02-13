@@ -3,7 +3,7 @@ from typing import Optional
 
 from tqdm import tqdm
 
-from clinicadl.transforms.handlers import Transforms
+from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.dictionary.words import (
     N_SAMPLES,
     PARTICIPANT_ID,
@@ -26,7 +26,7 @@ class SamplerDataset(MultiSamplesDataset):
     the method :py:meth:`_count_samples`.
 
     This dataset also deals with the transformation pipeline to apply to the data, with a distinction between the transformations
-    apply to the whole 3D images, and those apply to the sample (e.g. a patch or a slice). See :py:class:`clinicadl.transforms.Transforms`.
+    apply to the whole 3D images, and those apply to the sample (e.g. a patch or a slice). See :py:class:`clinicadl.transforms.TransformsHandler`.
 
     See Also
     --------
@@ -34,7 +34,7 @@ class SamplerDataset(MultiSamplesDataset):
     """
 
     eval_mode: bool
-    transforms: Transforms
+    transforms: TransformsHandler
     _initial_shape: Optional[
         tuple[int, int, int, int]
     ] = None  # the shape (C, W, H, D) of the image before any transformation (if it is consistent across the dataset)

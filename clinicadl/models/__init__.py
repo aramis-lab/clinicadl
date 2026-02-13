@@ -1,6 +1,6 @@
 """
-To define **models**, which encompass **neural networks**, **loss functions**, **optimizers**,
-and the logic to use them during **training** and **evaluation**.
+For defining models, which encompass neural networks, loss functions, optimizers,
+and the training and evaluation logic.
 """
 
 from .base import Model

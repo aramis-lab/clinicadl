@@ -11,9 +11,9 @@ from pydantic import ValidationError
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes.preprocessing import PETLinear, T1Linear
 from clinicadl.data.structures import DataPoint, Mask, Sample, Sample2D
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import CropConfig, PadConfig
 from clinicadl.transforms.extraction import Patch, Slice
-from clinicadl.transforms.handlers import Transforms
 from clinicadl.utils.exceptions import CannotReadJsonFieldError
 
 from .utils import subset_df
@@ -51,7 +51,7 @@ def encode_diagnosis(x: pd.Series) -> pd.Series:
 
 def test_good_caps_dataset():
     preprocessing = T1Linear(use_uncropped_image=True)
-    transforms = Transforms(
+    transforms = TransformsHandler(
         extraction=Slice(slices=[0]),
         image_transforms=[tio.RescaleIntensity()],
         sample_transforms=[
@@ -411,7 +411,7 @@ def test_describe(tmp_path):
         tmp_path,
         T1Linear(use_uncropped_image=True),
         data=data,
-        transforms=Transforms(extraction=Slice()),
+        transforms=TransformsHandler(extraction=Slice()),
     )
     with pytest.raises(
         RuntimeError,
@@ -475,7 +475,7 @@ def test_get_sample_info():
         data=data,
         label="seg",
         masks=["seg"],
-        transforms=Transforms(
+        transforms=TransformsHandler(
             extraction=Patch(patch_size=1),
             image_transforms=[CropConfig(cropping=(0, 1, 0, 1, 0, 1))],
         ),
@@ -500,7 +500,7 @@ def test_train_eval():
         CAPS_DIR,
         T1Linear(use_uncropped_image=True),
         data=data,
-        transforms=Transforms(augmentations=[tio.RescaleIntensity()]),
+        transforms=TransformsHandler(augmentations=[tio.RescaleIntensity()]),
     )
     caps_dataset.read_tensor_conversion()
     assert not caps_dataset.eval_mode
@@ -528,7 +528,7 @@ def test_subset(tmp_path):
     caps_dataset = CapsDataset(
         tmp_path,
         T1Linear(use_uncropped_image=True),
-        transforms=Transforms(extraction=Slice(slices=[0, 1])),
+        transforms=TransformsHandler(extraction=Slice(slices=[0, 1])),
         data=data,
     )
     caps_dataset.to_tensors(conversion_name="for_subset")
@@ -573,7 +573,7 @@ def test__getitem__(tmp_path):
         label="seg",
         masks=["brain", "seg", "leftHippocampus.nii.gz"],
         columns={"age": None, "diagnosis": encode_diagnosis},
-        transforms=Transforms(
+        transforms=TransformsHandler(
             extraction=Slice(squeeze=False),
             image_transforms=[
                 CropConfig(cropping=(0, 0, 0, 1, 0, 1)),
@@ -658,7 +658,7 @@ def test__getitem__(tmp_path):
         CAPS_DIR,
         datatype=T1Linear(use_uncropped_image=True),
         data=data,
-        transforms=Transforms(
+        transforms=TransformsHandler(
             image_transforms=[CropConfig(cropping=(0, 1, 0, 1, 0, 1))]
         ),
     )
@@ -677,7 +677,7 @@ def test__getitem__(tmp_path):
     caps_dataset = CapsDataset(
         CAPS_DIR,
         datatype=T1Linear(use_uncropped_image=True),
-        transforms=Transforms(extraction=Patch(patch_size=3)),
+        transforms=TransformsHandler(extraction=Patch(patch_size=3)),
         data=data,
         label="age",
         columns=["age"],
@@ -711,7 +711,7 @@ def test__getitem__(tmp_path):
         CAPS_DIR,
         datatype=T1Linear(use_uncropped_image=True),
         data=data,
-        transforms=Transforms(
+        transforms=TransformsHandler(
             sample_transforms=[CustomSampleTransform()],
         ),
     )
@@ -739,7 +739,7 @@ def test__getitem__(tmp_path):
         tmp_path,
         datatype=T1Linear(use_uncropped_image=True),
         data=data,
-        transforms=Transforms(
+        transforms=TransformsHandler(
             image_transforms=[CustomImageTransform()],
             sample_transforms=[CustomSampleTransform()],
         ),
@@ -769,7 +769,7 @@ def test_from_json_to_json(tmp_path):
         label="seg",
         masks=["brain", "seg", "leftHippocampus.nii.gz"],
         columns=["age", "diagnosis"],
-        transforms=Transforms(
+        transforms=TransformsHandler(
             extraction=Slice(squeeze=False),
             image_transforms=[
                 CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
@@ -824,7 +824,7 @@ def test_from_json_to_json(tmp_path):
         label="seg",
         masks=["brain", "seg", "leftHippocampus.nii.gz"],
         columns=["age", "diagnosis"],
-        transforms=Transforms(
+        transforms=TransformsHandler(
             extraction=Slice(squeeze=False),
             image_transforms=[
                 CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
@@ -838,7 +838,7 @@ def test_from_json_to_json(tmp_path):
     caps_dataset.to_json(tmp_path / "dataset.json", overwrite=True)
     caps_dataset = CapsDataset.from_json(
         tmp_path / "dataset.json",
-        transforms=Transforms(
+        transforms=TransformsHandler(
             extraction=Slice(squeeze=False),
             image_transforms=[
                 CropConfig(cropping=(0, 1, 0, 1, 0, 1)),

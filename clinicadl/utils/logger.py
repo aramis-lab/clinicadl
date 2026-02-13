@@ -40,7 +40,7 @@ def setup_logging(verbose: bool = False) -> None:
     logging_level = "DEBUG" if verbose else "INFO"
 
     # Define the module level logger.
-    logger = logging.getLogger("clinicadl")
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging_level)
 
     console_formatter = ConsoleFormatter()
@@ -93,7 +93,7 @@ def cprint(msg: str, lvl: str = "info") -> None:
     from logging import getLogger
 
     # Use the package level logger.
-    logger = getLogger("clinicadl.clinica")
+    logger = getLogger(__name__)
 
     # Log message as info level.
     if lvl == LoggingLevel.debug:

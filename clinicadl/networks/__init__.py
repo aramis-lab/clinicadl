@@ -1,1 +1,1 @@
-"""To build neural networks."""
+"""For building neural networks."""

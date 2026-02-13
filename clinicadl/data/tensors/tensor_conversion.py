@@ -48,7 +48,7 @@ from .utils import path_to_tensors
 if TYPE_CHECKING:
     from ..datasets.tensor import TensorDataset
 
-logger = getLogger("clinicadl.data.tensors.tensor_conversion")
+logger = getLogger(__name__)
 
 
 class AlsoType(str, Enum):

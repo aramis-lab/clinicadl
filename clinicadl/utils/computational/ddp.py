@@ -34,7 +34,7 @@ else:
 
 from clinicadl.utils import cluster
 
-logger = logging.getLogger("DDP")
+logger = logging.getLogger(__name__)
 
 
 @dataclass

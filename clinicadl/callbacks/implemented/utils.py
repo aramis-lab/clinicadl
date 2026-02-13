@@ -7,7 +7,7 @@ import numpy as np
 
 from clinicadl.metrics.enum import Optimum
 
-logger = getLogger("clinicadl.callbacks.implemented.utils.QuantityMonitoring")
+logger = getLogger(__name__)
 
 
 class QuantityMonitoring:

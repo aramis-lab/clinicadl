@@ -1,1 +1,3 @@
-"""To transform 3D images."""
+"""For transforming 3D neuroimaging data."""
+
+from .handlers import TransformsHandler

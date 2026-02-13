@@ -1,7 +1,7 @@
 from logging import getLogger
 from pathlib import Path
 
-logger = getLogger("clinicadl.utils.io")
+logger = getLogger(__name__)
 
 
 def remove_non_empty_dir(dir_path: Path) -> None:

@@ -12,6 +12,7 @@ import torchio as tio
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.data.structures import DataPoint, Mask
 from clinicadl.data.tensors import TensorConversion
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import (
     ClampConfig,
     CropConfig,
@@ -20,7 +21,6 @@ from clinicadl.transforms.config import (
     ToCanonicalConfig,
 )
 from clinicadl.transforms.extraction import Slice
-from clinicadl.transforms.handlers import Transforms
 from clinicadl.utils.exceptions import (
     CannotReadJsonFieldError,
     MissingFieldsJsonError,
@@ -59,7 +59,7 @@ class TensorDataset:
         self.config = Mock()
         self.config.directory = None
         self.config.datatype = PET_DATATYPE
-        self.config.transforms = Transforms()
+        self.config.transforms = TransformsHandler()
 
         self.individual_masks = []
         self.common_masks = []
@@ -270,7 +270,7 @@ def test_read_tensor_conversion():
     )
 
     # check transforms
-    dataset.config.transforms = Transforms(
+    dataset.config.transforms = TransformsHandler(
         extraction=Slice(slices=[0]),
         image_transforms=[
             RescaleIntensityConfig(),
@@ -292,7 +292,7 @@ def test_read_tensor_conversion():
     )
     assert len(converter.get_info().transforms) == 2
 
-    dataset.config.transforms = Transforms(
+    dataset.config.transforms = TransformsHandler(
         extraction=Slice(slices=[0]),
         image_transforms=[
             RescaleIntensityConfig(),
@@ -310,7 +310,7 @@ def test_read_tensor_conversion():
             "pet_transform",
         )
 
-    dataset.config.transforms = Transforms(
+    dataset.config.transforms = TransformsHandler(
         extraction=Slice(slices=[0]),
         image_transforms=[
             RescaleIntensityConfig(),
@@ -330,7 +330,7 @@ def test_read_tensor_conversion():
     assert converter.get_info().transforms == []
 
     # check subject session
-    dataset.config.transforms = Transforms()
+    dataset.config.transforms = TransformsHandler()
     dataset.sub_ses = [
         ("sub-000", "ses-M000"),
         ("sub-000", "ses-M003"),
@@ -367,7 +367,7 @@ def test_to_tensors(tmp_path):
     # control
     dataset.individual_masks = [Mask("brain"), Mask("seg")]
     dataset.common_masks = [Mask(DATASET_DIR / "masks" / "leftHippocampus.nii.gz")]
-    dataset.config.transforms = Transforms(
+    dataset.config.transforms = TransformsHandler(
         image_transforms=[
             CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
             tio.Clamp(out_max=10),
@@ -453,7 +453,7 @@ def test_to_tensors(tmp_path):
     # test without saving transforms
     dataset.individual_masks = []
     dataset.common_masks = []
-    dataset.config.transforms = Transforms(
+    dataset.config.transforms = TransformsHandler(
         image_transforms=[
             CropConfig(cropping=(0, 1, 0, 1, 0, 1)),
         ]
@@ -478,7 +478,7 @@ def test_to_tensors(tmp_path):
     assert tensors["image"].shape == (1, 3, 3, 3)  # not cropped
 
     # spacing checked
-    dataset.config.transforms = Transforms()
+    dataset.config.transforms = TransformsHandler()
     dataset.sub_ses = [
         ("sub-000", "ses-M000"),
         ("sub-010", "ses-M012"),
@@ -599,7 +599,7 @@ def test_to_tensors(tmp_path):
         ("sub-000", "ses-M000"),
         ("sub-010", "ses-M003"),
     ]
-    dataset.config.transforms = Transforms(
+    dataset.config.transforms = TransformsHandler(
         image_transforms=[CustomTransform()],
     )
     dataset.individual_masks = [Mask("brain"), Mask("seg")]
@@ -824,7 +824,9 @@ def test_merge_conversions(tmp_path):
             check_transforms=False,
         )
 
-    dataset.config.transforms = Transforms(image_transforms=[CustomTransformBis()])
+    dataset.config.transforms = TransformsHandler(
+        image_transforms=[CustomTransformBis()]
+    )
     converter = TensorConversion(dataset)
     with pytest.raises(
         TensorConversionError,
@@ -836,7 +838,7 @@ def test_merge_conversions(tmp_path):
             check_transforms=False,
         )
 
-    dataset.config.transforms = Transforms(image_transforms=[CustomTransform()])
+    dataset.config.transforms = TransformsHandler(image_transforms=[CustomTransform()])
     converter = TensorConversion(dataset)
     converter.to_tensors(
         conversion_name="t1_custom_interrupted",
@@ -845,7 +847,7 @@ def test_merge_conversions(tmp_path):
     )
 
     # check transforms
-    dataset.config.transforms = Transforms(
+    dataset.config.transforms = TransformsHandler(
         extraction=Slice(slices=[0]),
         image_transforms=[
             RescaleIntensityConfig(),
@@ -874,7 +876,7 @@ def test_merge_conversions(tmp_path):
             save_transforms=False,
         )
 
-    dataset.config.transforms = Transforms()
+    dataset.config.transforms = TransformsHandler()
     converter = TensorConversion(dataset)
     with pytest.raises(
         TensorConversionError,

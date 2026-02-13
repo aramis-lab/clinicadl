@@ -26,7 +26,7 @@ TensorOrList = Union[torch.Tensor, Sequence[torch.Tensor]]
 
 class Metric(CumulativeIterationMetric, ABC):
     """
-    Transforms must inherit from this class to work with ``ClinicaDL``.
+    TransformsHandler must inherit from this class to work with ``ClinicaDL``.
 
     The user must override :py:meth:`_aggregate`, and :py:meth:`_accumulate`.
 

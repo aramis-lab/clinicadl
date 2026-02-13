@@ -123,7 +123,7 @@ def _training(
         )
         _assert_running(monitor.monitor_global_training, monitor.monitor_epoch)
 
-        if (STATE.current_epoch - 1) % OPTIMIZATION.evaluation_steps == 0:
+        if STATE.current_epoch % OPTIMIZATION.evaluation_interval == 0:
             monitor.on_validation_start()
             STATE.stage = "evaluation"
             _assert_running(
@@ -200,7 +200,7 @@ def test_monitor(tmp_path):
     maps.read()
 
     OPTIMIZATION.accumulation_steps = 2
-    OPTIMIZATION.evaluation_steps = 2
+    OPTIMIZATION.evaluation_interval = 2
     COMPUTATIONAL.gpu = False
 
     monitor = MonitorCallback(num_measurements=100, warmup_iterations=5)
@@ -210,28 +210,28 @@ def test_monitor(tmp_path):
     df = pd.read_csv(
         maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
     )
-    assert len(df["measurement #"].dropna()) == 2 * 4
+    assert len(df["measurement #"].dropna()) == 3 + 4
     assert len(df["Training (s)"].dropna()) == 1
     assert len(df["Training (s)"].dropna()) == 1
     assert len(df["Epoch (s)"].dropna()) == 3
     assert len(df["Training loop (s)"].dropna()) == 2 * 2
-    assert len(df["Training data loading (s)"].dropna()) == 2 * 4
-    assert len(df["Forward (s)"].dropna()) == 2 * 4
+    assert len(df["Training data loading (s)"].dropna()) == 3 + 4
+    assert len(df["Forward (s)"].dropna()) == 3 + 4
     assert len(df["Forward GPU (s)"].dropna()) == 0
     assert len(df["Forward GPU max memory (MB)"].dropna()) == 0
-    assert len(df["Backward (s)"].dropna()) == 2 * 4
+    assert len(df["Backward (s)"].dropna()) == 3 + 4
     assert len(df["Backward GPU (s)"].dropna()) == 0
     assert len(df["Backward GPU max memory (MB)"].dropna()) == 0
     assert len(df["Optimization (s)"].dropna()) == 2 * 2
     assert len(df["Optimization GPU (s)"].dropna()) == 0
     assert len(df["Optimization GPU max memory (MB)"].dropna()) == 0
-    assert len(df["Validation (s)"].dropna()) == 2
-    assert len(df["Validation loop (s)"].dropna()) == 1 + 2
-    assert len(df["Validation data loading (s)"].dropna()) == 1 + 2
-    assert len(df["Evaluation (s)"].dropna()) == 1 + 2
+    assert len(df["Validation (s)"].dropna()) == 1
+    assert len(df["Validation loop (s)"].dropna()) == 2 * 1
+    assert len(df["Validation data loading (s)"].dropna()) == 2 * 1
+    assert len(df["Evaluation (s)"].dropna()) == 2 * 1
     assert len(df["Evaluation GPU (s)"].dropna()) == 0
     assert len(df["Evaluation GPU max memory (MB)"].dropna()) == 0
-    assert len(df["Metrics computation (s)"].dropna()) == 1 + 2
+    assert len(df["Metrics computation (s)"].dropna()) == 2 * 1
     assert len(df["Metrics computation GPU (s)"].dropna()) == 0
     assert len(df["Metrics computation GPU max memory (MB)"].dropna()) == 0
 
@@ -268,7 +268,7 @@ def test_exception(caplog, tmp_path):
     maps.read()
 
     OPTIMIZATION.accumulation_steps = 1
-    OPTIMIZATION.evaluation_steps = 1
+    OPTIMIZATION.evaluation_interval = 1
     COMPUTATIONAL.gpu = False
 
     monitor = MonitorCallback(warmup_iterations=0)
@@ -309,7 +309,7 @@ def test_checkpoint(tmp_path):
     maps.read()
 
     OPTIMIZATION.accumulation_steps = 1
-    OPTIMIZATION.evaluation_steps = 1
+    OPTIMIZATION.evaluation_interval = 1
     COMPUTATIONAL.gpu = False
 
     monitor = MonitorCallback(warmup_iterations=0)
@@ -366,7 +366,7 @@ def test_monitor_gpu(tmp_path):
     maps.read()
 
     OPTIMIZATION.accumulation_steps = 2
-    OPTIMIZATION.evaluation_steps = 2
+    OPTIMIZATION.evaluation_interval = 2
     COMPUTATIONAL.gpu = True
 
     monitor = MonitorCallback(num_measurements=100, warmup_iterations=5)
@@ -375,17 +375,17 @@ def test_monitor_gpu(tmp_path):
     df = pd.read_csv(
         maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
     )
-    assert len(df["measurement #"].dropna()) == 2 * 4
-    assert len(df["Forward GPU (s)"].dropna()) == 2 * 4
-    assert len(df["Forward GPU max memory (MB)"].dropna()) == 2 * 4
-    assert len(df["Backward GPU (s)"].dropna()) == 2 * 4
-    assert len(df["Backward GPU max memory (MB)"].dropna()) == 2 * 4
+    assert len(df["measurement #"].dropna()) == 3 + 4
+    assert len(df["Forward GPU (s)"].dropna()) == 3 + 4
+    assert len(df["Forward GPU max memory (MB)"].dropna()) == 3 + 4
+    assert len(df["Backward GPU (s)"].dropna()) == 3 + 4
+    assert len(df["Backward GPU max memory (MB)"].dropna()) == 3 + 4
     assert len(df["Optimization GPU (s)"].dropna()) == 2 * 2
     assert len(df["Optimization GPU max memory (MB)"].dropna()) == 2 * 2
-    assert len(df["Evaluation GPU (s)"].dropna()) == 1 + 2
-    assert len(df["Evaluation GPU max memory (MB)"].dropna()) == 1 + 2
-    assert len(df["Metrics computation GPU (s)"].dropna()) == 1 + 2
-    assert len(df["Metrics computation GPU max memory (MB)"].dropna()) == 1 + 2
+    assert len(df["Evaluation GPU (s)"].dropna()) == 2 * 1
+    assert len(df["Evaluation GPU max memory (MB)"].dropna()) == 2 * 1
+    assert len(df["Metrics computation GPU (s)"].dropna()) == 2 * 1
+    assert len(df["Metrics computation GPU max memory (MB)"].dropna()) == 2 * 1
 
     summary = maps.open_file(maps.training.splits[STATE.split_idx].summary_log)
 

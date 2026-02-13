@@ -11,6 +11,7 @@ from tqdm import tqdm
 from clinicadl.io.maps import MapsSummary
 from clinicadl.io.maps.training import TrainingSummary
 from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.dictionary.words import CLINICADL
 from clinicadl.utils.enum import TrainerCall, TrainerStage
 from clinicadl.utils.objects import HasConfig
 
@@ -463,7 +464,7 @@ def _setup_logging(
     """
     Setup ClinicaDL's logging facilities.
     """
-    logger = logging.getLogger("clinicadl")
+    logger = logging.getLogger(CLINICADL)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
     logger.handlers = []  # clear existing handlers
     if log_directory:

@@ -133,7 +133,7 @@ class KFold(Splitter):
 
             from clinicadl.split import KFold
             from clinicadl.data import datasets, datatypes
-            from clinicadl.transforms import Transforms, extraction
+            from clinicadl.transforms import TransformsHandler, extraction
 
             dataset = datasets.CapsDataset(
                 "caps_dir",
@@ -141,7 +141,7 @@ class KFold(Splitter):
                 datatype=datatypes.PETLinear(
                     tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
                 ),
-                transforms=Transforms(extraction=extraction.Patch()),
+                transforms=TransformsHandler(extraction=extraction.Patch()),
             )
             splitter = KFold("split_dir/3_fold")
 

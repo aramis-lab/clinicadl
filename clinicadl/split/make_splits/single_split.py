@@ -31,7 +31,7 @@ from .utils import (
     write_to_tsv,
 )
 
-logger = getLogger("clinicadl.split.make_splits.single_split")
+logger = getLogger(__name__)
 
 
 def make_split(
@@ -189,7 +189,9 @@ def make_split(
     if isinstance(data, (str, Path)):
         output_dir = output_dir or Path(data).parent
     elif isinstance(data, pd.DataFrame) and not output_dir:
-        raise ValueError("You must specify the output directory.")
+        raise ValueError(
+            "If you pass a DataFrame, you must specify the output directory."
+        )
     output_dir = Path(output_dir)
 
     stratification = _validate_stratification(df, stratification)

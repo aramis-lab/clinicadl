@@ -184,8 +184,8 @@ class TestSideMethods:
         assert trainer.state.num_epochs == 5
         assert trainer.state.called == "train"
         trainer.model.reset.assert_called_once()
-        split.train_loader.dataset.train.assert_called_once()
-        split.val_loader.dataset.eval.assert_called_once()
+        split.train_dataset.train.assert_called_once()
+        split.val_dataset.eval.assert_called_once()
         metrics.reset.assert_called_once_with(reset_df=True)
 
     def test_reset_epoch(self, trainer: Trainer):
@@ -604,7 +604,7 @@ class TestTrain:
         trainer.state.current_epoch = 0
         trainer.optimization.num_epochs = 5
         trainer.optimization.accumulation_steps = 2
-        trainer.optimization.evaluation_steps = 3
+        trainer.optimization.evaluation_interval = 3
 
         trainer.model.forward_step.return_value = "loss"
         reset_epoch = trainer._reset_epoch
@@ -741,7 +741,7 @@ class TestTrain:
         comp = Mock()
 
         trainer.optimization.accumulation_steps = 1
-        trainer.optimization.evaluation_steps = 1
+        trainer.optimization.evaluation_interval = 1
 
         reset_epoch = trainer._reset_epoch
         trainer._reset_epoch = Mock()

@@ -1,6 +1,6 @@
 """
-To customize model inference, such as post-processing
-or merging multiple neural network outputs.
+For customizing the inference stage, such as performing post-processing or
+combining outputs from multiple neural networks.
 """
 
 from .abstract import Inferer

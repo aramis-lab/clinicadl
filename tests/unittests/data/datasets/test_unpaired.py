@@ -6,8 +6,8 @@ import pytest
 
 from clinicadl.data.datasets import CapsDataset, UnpairedDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.extraction import Slice
-from clinicadl.transforms.handlers import Transforms
 from clinicadl.utils.exceptions import TensorConversionError
 
 from .utils import subset_df
@@ -43,7 +43,7 @@ def create_caps_datasets():
         CAPS_DIR,
         datatype=T1Linear(use_uncropped_image=True),
         data=t1_data,
-        transforms=Transforms(extraction=Slice(slices=[0, 1])),
+        transforms=TransformsHandler(extraction=Slice(slices=[0, 1])),
     )
     caps_pet = CapsDataset(
         CAPS_DIR,

@@ -1,1 +1,1 @@
-"""To create a criterion to minimize during training."""
+"""For creating a criterion to minimize during training."""

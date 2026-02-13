@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 DataPointT = TypeVar("DataPointT", bound="DataPoint")
 
-logger = getLogger("clinicadl.transforms.extraction.base")
+logger = getLogger(__name__)
 
 
 class ImplementedExtraction(str, Enum):
