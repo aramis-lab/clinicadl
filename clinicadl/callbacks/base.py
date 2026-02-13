@@ -62,7 +62,7 @@ class Events(str, Enum):
 
 class Callback:
     """
-    To define arbitrary actions to perform at certain points of the training and evaluation workflows.
+    To define arbitrary actions to perform at certain points of the training, evaluation and prediction workflows.
 
     Each method of this class starting by ``on_...`` is associated to an event of
     the training, evaluation or prediction phase of the :py:class:`~clinicadl.train.Trainer`.
