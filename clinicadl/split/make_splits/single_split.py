@@ -31,7 +31,7 @@ from .utils import (
     write_to_tsv,
 )
 
-logger = getLogger("clinicadl.split.make_splits.single_split")
+logger = getLogger(__name__)
 
 
 def make_split(

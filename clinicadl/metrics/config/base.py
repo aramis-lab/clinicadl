@@ -16,7 +16,7 @@ from ..monai_wrapper import MonaiMetricWrapper
 
 __all__ = ["MetricConfig"]
 
-logger = getLogger("clinicadl.metrics")
+logger = getLogger(__name__)
 
 
 class MetricConfig(ObjectConfig[Metric]):

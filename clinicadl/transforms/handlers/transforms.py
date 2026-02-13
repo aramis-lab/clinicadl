@@ -20,7 +20,7 @@ from .utils import get_transform_name
 if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
 
-logger = getLogger("clinicadl.transforms.TransformsHandler")
+logger = getLogger(__name__)
 
 DataPointT = TypeVar("DataPointT", bound="DataPoint")
 

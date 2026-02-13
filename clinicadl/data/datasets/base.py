@@ -39,7 +39,7 @@ from ..datatypes.factory import get_datatype_from_dict
 from ..structures import Column, DataPoint, Mask, Sample
 from .sampler import SamplerDataset
 
-logger = getLogger("clinicadl.data.datasets.base")
+logger = getLogger(__name__)
 
 T = TypeVar("T")
 

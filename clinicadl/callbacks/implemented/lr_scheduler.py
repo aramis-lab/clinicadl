@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from clinicadl.io import Maps
     from clinicadl.train import TrainerState
 
-logger = getLogger("clinicadl.callbacks.LRSchedulerCallback")
+logger = getLogger(__name__)
 
 SCHEDULERS = "schedulers"
 LRS = "lrs"

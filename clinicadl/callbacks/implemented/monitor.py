@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from clinicadl.split import Split
     from clinicadl.train import ComputationalConfig, TrainerState
 
-logger = logging.getLogger("clinicadl.callbacks.MonitorCallback")
+logger = logging.getLogger(__name__)
 
 TRAIN = "Training"
 EPOCH = "Epoch"

@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from clinicadl.data.structures import DataPoint
 
 
-logger = getLogger("clinicadl.transforms.extraction.patch")
+logger = getLogger(__name__)
 
 
 class PatchConfig(ObjectConfig["Patch"]):

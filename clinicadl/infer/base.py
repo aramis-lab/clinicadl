@@ -18,7 +18,7 @@ from clinicadl.utils.objects import HasConfig
 
 from .abstract import Inferer
 
-logger = getLogger("clinicadl.infer.base")
+logger = getLogger(__name__)
 
 T = TypeVar("T", DataPoint, Batch)
 DataPointT = TypeVar("DataPointT", bound=DataPoint)

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from clinicadl.train import TrainerState
 
 
-logger = getLogger("clinicadl.callbacks.EarlyStoppingCallback")
+logger = getLogger(__name__)
 
 
 class OneMetricEarlyStoppingConfig(ObjectConfig["OneMetricEarlyStopping"]):

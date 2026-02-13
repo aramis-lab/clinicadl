@@ -25,7 +25,7 @@ from clinicadl.utils.exceptions import (
 from clinicadl.utils.tsvtools import df_to_tsv
 from clinicadl.utils.typing import PathType
 
-logger = getLogger("clinicadl.data.readers.caps_reader")
+logger = getLogger(__name__)
 
 COMMON_MASKS_DIR = "masks"
 CONVERSION_JSON_DIRECTORY = "tensor_conversion"

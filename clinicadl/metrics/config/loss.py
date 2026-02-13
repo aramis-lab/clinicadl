@@ -18,7 +18,7 @@ from .base import MetricConfig, _GetNotNansConfig
 if TYPE_CHECKING:
     from clinicadl.models import Model
 
-logger = getLogger("clinicadl.metrics.loss")
+logger = getLogger(__name__)
 
 LOSS_METRIC_MONAI_DEFAULTS = get_defaults_from(LossMetric)
 

@@ -7,7 +7,7 @@ from typing import Tuple
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.typing import PathType
 
-logger = getLogger("clinicadl.reader")
+logger = getLogger(__name__)
 
 
 class Reader(ABC):

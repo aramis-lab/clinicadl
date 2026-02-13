@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
     from ..handler import CallbacksHandler
 
-logger = logging.getLogger("clinicadl.callbacks.TrainingCheckpointCallback")
+logger = logging.getLogger(__name__)
 
 
 class TrainingCheckpointCallbackConfig(ObjectConfig["TrainingCheckpointCallback"]):
