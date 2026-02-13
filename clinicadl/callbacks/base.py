@@ -60,7 +60,7 @@ class Events(str, Enum):
 
 class Callback:
     """
-    To define arbitrary action to perform at certain points of the training, evaluation or
+    To define arbitrary action to perform at certain points of the training, evaluation and
     prediction workflows.
 
     Each method of this class starting by ``on_...`` is associated to an event of

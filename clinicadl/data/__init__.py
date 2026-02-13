@@ -1,1 +1,1 @@
-"""Tools to manipulate neuroimaging data."""
+"""For manipulating neuroimaging data."""

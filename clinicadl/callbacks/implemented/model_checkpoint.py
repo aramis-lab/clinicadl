@@ -42,7 +42,7 @@ class ModelCheckpointCallbackConfig(ObjectConfig["ModelCheckpointCallback"]):
 
 class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]):
     """
-    To save checkpoints of the neural network weights at different point of the training.
+    To save checkpoints of the neural network weights at different points of the training.
 
     Checkpoints can be saved after specified epochs and/or according to a monitored
     metric. In the latter case, only the best model according to this metric will be saved.

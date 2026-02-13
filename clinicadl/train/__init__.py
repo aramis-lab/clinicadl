@@ -1,5 +1,5 @@
 """
-To train/evaluate/predict with a model with ``ClinicaDL``'s trainer.
+For training, evaluating and predicting with a model.
 """
 
 from .computational import ComputationalConfig

@@ -13,3 +13,4 @@
    :template: autosummary/function.rst
 
     seed.seed_everything
+    seed.seed_everything_context

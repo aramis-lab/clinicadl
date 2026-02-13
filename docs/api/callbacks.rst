@@ -10,13 +10,12 @@
    :nosignatures:
    :template: autosummary/class.rst
 
+    CallbacksHandler
     Callback
-    Checkpoint
-    CodeCarbon
-    EarlyStopping
-    LRScheduler
-    MLflow
-    ModelSelection
-    TensorBoard
-    WandB
+    EarlyStoppingCallback
+    LoggerCallback
+    LRSchedulerCallback
+    ModelCheckpointCallback
+    MonitorCallback
+    TrainingCheckpointCallback
 

@@ -1,3 +1,3 @@
-"""Tools for optimization during training."""
+"""For configuring optimization during training."""
 
 from .config import OptimizationConfig
