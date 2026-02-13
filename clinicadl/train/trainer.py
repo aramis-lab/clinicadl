@@ -788,6 +788,23 @@ class Trainer:
             metrics=metrics_handler,
         )
 
+    def predict(
+        self,
+        model_checkpoint: str,
+        group_name: str,
+        dataloader: Optional[DataLoader] = None,
+        computational: ComputationalConfig = ComputationalConfig(),
+    ) -> None:
+        """
+        .. admonition:: Not Implemented
+            :class: warning
+
+            ``Trainer.predict`` will be implemented in a future release.
+        """
+        raise NotImplementedError(
+            "Trainer.predict will be implemented in a future release"
+        )
+
     def _validation(
         self,
         dataloader: DataLoader,
