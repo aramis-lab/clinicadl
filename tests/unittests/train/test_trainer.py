@@ -468,7 +468,11 @@ class TestSideMethods:
 
 
 class TestTrain:
-    def test_train(self, trainer: Trainer, tmp_path):
+    @patch(
+        "clinicadl.train.trainer.warnings",
+        side_effect=lambda *args, **kwargs: nullcontext(),
+    )
+    def test_train(self, warnings, trainer: Trainer, tmp_path):
         _add_maps_to_trainer(trainer, tmp_path)
 
         def _simulate_train(*args, **kwargs):
@@ -487,6 +491,8 @@ class TestTrain:
                 computational=(comp := ComputationalConfig(seed=7, deterministic=True)),
                 metrics=["loss"],
             )
+        warnings.catch_warnings.assert_called_once()
+        warnings.simplefilter.assert_called_once()
         trainer._train.assert_called_once_with(
             split=split, computational=comp, metrics=["loss"], resume=False
         )
@@ -790,7 +796,11 @@ class TestTrain:
 
 
 class TestValidation:
-    def test_validate(self, trainer: Trainer):
+    @patch(
+        "clinicadl.train.trainer.warnings",
+        side_effect=lambda *args, **kwargs: nullcontext(),
+    )
+    def test_validate(self, warnings, trainer: Trainer):
         trainer._maps = Mock()
 
         def _simulate_validate(*args, **kwargs):
@@ -813,6 +823,8 @@ class TestValidation:
                 computational=(comp := Mock()),
             )
         trainer.maps.read.assert_called_once()
+        warnings.catch_warnings.assert_called_once()
+        warnings.simplefilter.assert_called_once()
         trainer._check_split_exists.assert_called_once_with(0)
         trainer._validate.assert_called_once_with(
             split_idx=0,
@@ -939,7 +951,11 @@ class TestValidation:
 
 
 class TestTest:
-    def test_test(self, trainer: Trainer):
+    @patch(
+        "clinicadl.train.trainer.warnings",
+        side_effect=lambda *args, **kwargs: nullcontext(),
+    )
+    def test_test(self, warnings, trainer: Trainer):
         def _simulate_test(*args, **kwargs):
             assert torch.initial_seed() == 1
             assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
@@ -963,6 +979,8 @@ class TestTest:
             computational=comp,
         )
         trainer.callbacks.callbacks[-3].on_exception.assert_called()
+        warnings.catch_warnings.assert_called_once()
+        warnings.simplefilter.assert_called_once()
         assert torch.initial_seed() != 7
         assert not os.environ.get("CLINICADL_DETERMINISTIC")
 
