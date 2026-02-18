@@ -321,6 +321,9 @@ class _CheckDataConsistency:
         Raises warnings if these objects differ or cannot be compared.
         """
         for split_idx in maps.training.splits_list:
+            if split_idx == split.index:
+                continue
+
             self._compare(
                 split.train_dataset,
                 maps.training.data.train.splits[split_idx].dataset_json,
