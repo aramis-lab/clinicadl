@@ -123,6 +123,7 @@ def test_train(caplog, tmp_path):
     state.stage = "evaluation"
     with contextlib.redirect_stdout(stdout_capture), caplog.at_level(logging.INFO):
         logger.on_validation_start(state=state)
+    assert logger._train_progress_bar.disable
     assert "Validation: " in stdout_capture.getvalue()
     assert "Beginning of validation" in caplog.text
     assert logger._val_progress_bar.total == 4
@@ -138,6 +139,9 @@ def test_train(caplog, tmp_path):
     assert logger._val_progress_bar.disable
 
     state.stage = "training"
+    logger._train_progress_bar.disable = (
+        True  # as if it has not been closed (e.g. no validation)
+    )
     with caplog.at_level(logging.INFO):
         logger.on_epoch_end(state=state)
     assert "Epoch 2 completed" in caplog.text

@@ -31,6 +31,7 @@ class MetricsSaverCallback(Callback):
         state: TrainerState,
         **kwargs,
     ) -> None:
+        maps.training.splits[state.split_idx].validation_metrics.create()
         self._training_metrics.save(
             path=maps.training.splits[
                 state.split_idx

@@ -15,7 +15,9 @@ def test_train():
     METRICS = Mock()
     saver = MetricsSaverCallback()
     saver.on_validation_end(metrics=METRICS)
+    MAPS.training.splits[0].validation_metrics.create = Mock()
     saver.on_train_end(state=STATE, maps=MAPS)
+    MAPS.training.splits[0].validation_metrics.create.assert_called()
 
     METRICS.save.assert_called_once_with(
         path=MAPS.training.splits[0].validation_metrics.aggregated_tsv,
@@ -24,6 +26,7 @@ def test_train():
 
 
 def test_validate():
+    STATE.split_idx = 0
     METRICS = Mock()
     saver = MetricsSaverCallback()
     saver.on_validate_start(model_checkpoint="best-loss")
@@ -40,6 +43,7 @@ def test_validate():
 
 
 def test_test():
+    STATE.split_idx = 0
     METRICS = Mock()
     saver = MetricsSaverCallback()
     saver.on_test_start(model_checkpoint="split-0_best-loss", group_name="X")

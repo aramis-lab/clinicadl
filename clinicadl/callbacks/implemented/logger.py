@@ -204,6 +204,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             initial=1,
             disable=not self.config.progress_bar,
             file=sys.stdout,
+            dynamic_ncols=True,
         )
 
     def on_validation_start(
@@ -212,6 +213,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         state: TrainerState,
         **kwargs,
     ) -> None:
+        self._train_progress_bar.close()
         self.logger.info("Beginning of validation")
 
         self._val_progress_bar = tqdm(
@@ -221,6 +223,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             initial=1,
             disable=not self.config.progress_bar,
             file=sys.stdout,
+            dynamic_ncols=True,
         )
 
     def on_test_start(
@@ -249,6 +252,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             initial=1,
             disable=not self.config.progress_bar,
             file=sys.stdout,
+            dynamic_ncols=True,
         )
 
         self._summary.add_test_group(group_name)
@@ -281,6 +285,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             initial=1,
             disable=not self.config.progress_bar,
             file=sys.stdout,
+            dynamic_ncols=True,
         )
 
         self._summary.add_prediction_group(group_name)
@@ -351,6 +356,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             initial=1,
             disable=not self.config.progress_bar,
             file=sys.stdout,
+            dynamic_ncols=True,
         )
 
     def on_epoch_end(self, *, state: TrainerState, **kwargs) -> None:
