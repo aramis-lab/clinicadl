@@ -40,7 +40,7 @@ joblib = "^1.2.0"
 click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
-torchio = "^0.20"
+torchio = { version = "^0.20", extras = ["plot"]}
 urllib3= "<2.0.0"
 nilearn = "^0.9.2"
 pydantic = "^2.7.0"
