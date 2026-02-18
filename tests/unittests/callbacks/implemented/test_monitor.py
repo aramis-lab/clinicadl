@@ -279,6 +279,7 @@ def test_exception(caplog, tmp_path):
         )
     assert len(caplog.records) == 0
 
+    maps.training.splits[STATE.split_idx].logs.create = Mock()
     try:
         _training(
             monitor,
@@ -293,6 +294,7 @@ def test_exception(caplog, tmp_path):
         with caplog.at_level("ERROR"):
             monitor.on_exception(maps=maps, state=STATE, exception=e)
 
+    maps.training.splits[STATE.split_idx].logs.create.assert_called()
     df = pd.read_csv(
         maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
     )

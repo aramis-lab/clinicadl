@@ -168,6 +168,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             return
 
         df = self._build_df()
+        maps.training.splits[state.split_idx].logs.create(exist_ok=True)
         tsv_path = maps.training.splits[state.split_idx].logs.computational_tsv
         df.to_csv(tsv_path, sep=SEP)
 
