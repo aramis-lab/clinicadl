@@ -372,11 +372,11 @@ class Trainer:
         else:
             metrics_handler = self.metrics
 
-        self._reset_train(split=split, metrics=metrics_handler)
-        self._model_to(computational)
-
         optimizers = self.model.build_optimizers()
         grad_scaler = computational.get_scaler()
+
+        self._reset_train(split=split, metrics=metrics_handler, optimizers=optimizers)
+        self._model_to(computational)
 
         if resume:
             self._call_event(
@@ -885,7 +885,9 @@ class Trainer:
 
         metrics.aggregate(epoch=epoch)
 
-    def _reset_train(self, split: Split, metrics: MetricsHandler) -> None:
+    def _reset_train(
+        self, split: Split, metrics: MetricsHandler, optimizers: dict[str, Optimizer]
+    ) -> None:
         """
         Resets the relevant objects before training.
         """
@@ -896,6 +898,8 @@ class Trainer:
         split.train_dataset.train()
         split.val_dataset.eval()
         metrics.reset(reset_df=True)
+        for optimizer in optimizers.values():
+            optimizer.zero_grad()
 
     def _reset_epoch(self, epoch: int, train_loader: DataLoader) -> None:
         """

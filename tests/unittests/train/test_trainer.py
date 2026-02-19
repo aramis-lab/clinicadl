@@ -177,8 +177,9 @@ class TestSideMethods:
         split = Mock()
         split.index = 1
         metrics = Mock()
+        optimizers = {"opt": Mock()}
 
-        trainer._reset_train(split, metrics)
+        trainer._reset_train(split, metrics, optimizers)
 
         assert trainer.state.split_idx == 1
         assert trainer.state.num_epochs == 5
@@ -187,6 +188,7 @@ class TestSideMethods:
         split.train_dataset.train.assert_called_once()
         split.val_dataset.eval.assert_called_once()
         metrics.reset.assert_called_once_with(reset_df=True)
+        optimizers["opt"].zero_grad.assert_called_once()
 
     def test_reset_epoch(self, trainer: Trainer):
         train_loader = MagicMock()
@@ -531,7 +533,9 @@ class TestTrain:
         metrics = trainer._train_loop.call_args.kwargs["metrics"]
         assert list(metrics.metrics.keys()) == ["loss"]
 
-        trainer._reset_train.assert_called_once_with(split=split, metrics=metrics)
+        trainer._reset_train.assert_called_once_with(
+            split=split, metrics=metrics, optimizers=optimizers
+        )
         trainer._model_to.assert_called_once_with(comp)
         trainer.callbacks.callbacks[-3].on_train_start.assert_called_once_with(
             model=trainer.model,
@@ -783,7 +787,7 @@ class TestTrain:
         trainer._validation = Mock()
         trainer._optim_config = OptimizationConfig(num_epochs=1)
         trainer._model = _setup_real_model()
-        trainer._reset_train(split, metrics=Mock())
+        trainer._reset_train(split, metrics=Mock(), optimizers={"opt": Mock()})
         trainer._model_to(computational)
         trainer.state.current_epoch = 0
 
