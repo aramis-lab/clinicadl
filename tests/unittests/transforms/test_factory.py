@@ -6,6 +6,7 @@ from clinicadl.transforms.config.intensity_augmentations import (
     RandomNoiseConfig,
 )
 from clinicadl.transforms.factory import get_transform_from_dict
+from clinicadl.utils.json import read_json
 
 MANDATORY_ARGS = {
     "masking_method": "mask",
@@ -60,9 +61,10 @@ MANDATORY_ARGS = {
         SobelGradientsConfig,
     ],
 )
-def test_get_transform_from_dict(config):
+def test_get_transform_from_dict(config, tmp_path):
     c = config(**MANDATORY_ARGS)
-    config_dict = c.to_dict()
+    c.to_json(tmp_path / "config.json")
+    config_dict = read_json(tmp_path / "config.json")
     c = get_transform_from_dict(config_dict)
     assert isinstance(c, config)
 

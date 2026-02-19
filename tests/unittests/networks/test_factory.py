@@ -32,6 +32,7 @@ from clinicadl.networks.config import (
     ViTL32Config,
 )
 from clinicadl.networks.factory import get_network_from_dict
+from clinicadl.utils.json import read_json
 
 MANDATORY_ARGS = {
     "MLP": {"num_inputs": 1, "num_outputs": 1, "hidden_dims": [1]},
@@ -108,9 +109,10 @@ MANDATORY_ARGS = {
         ViTL32Config,
     ],
 )
-def test_get_network_from_dict(config):
+def test_get_network_from_dict(config, tmp_path):
     c = config(**MANDATORY_ARGS[config._get_name()])
-    config_dict = c.to_dict()
+    c.to_json(tmp_path / "config.json")
+    config_dict = read_json(tmp_path / "config.json")
     c = get_network_from_dict(config_dict)
     assert isinstance(c, config)
 
