@@ -171,7 +171,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         df = self._build_df()
         maps.training.splits[state.split_idx].logs.create(exist_ok=True)
         tsv_path = maps.training.splits[state.split_idx].logs.computational_tsv
-        maps.save_file(df, tsv_path, sep=SEP)
+        maps.save_file(df, tsv_path)
 
         if isinstance(exception, torch.cuda.OutOfMemoryError) or OOM in str(exception):
             logger.error(
