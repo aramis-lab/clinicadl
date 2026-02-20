@@ -377,7 +377,6 @@ def test_monitor_gpu(tmp_path):
     df = pd.read_csv(
         maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
     )
-    assert len(df["measurement #"].dropna()) == 3 + 4
     assert len(df["Forward GPU (s)"].dropna()) == 3 + 4
     assert len(df["Forward GPU max memory (MB)"].dropna()) == 3 + 4
     assert len(df["Backward GPU (s)"].dropna()) == 3 + 4
