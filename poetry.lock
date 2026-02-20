@@ -1396,6 +1396,7 @@ files = [
     {file = "imagesize-1.4.1-py2.py3-none-any.whl", hash = "sha256:0d8d18d08f840c19d0ee7ca1fd82490fdc3729b7ac93f49870406ddde8ef8d8b"},
     {file = "imagesize-1.4.1.tar.gz", hash = "sha256:69150444affb9cb0d5cc5a92b3676f0b2fb7cd9ae39e947a5e11a36b4497cd4a"},
 ]
+markers = {main = "python_version == \"3.9\"", dev = "python_version == \"3.9\"", docs = "python_version == \"3.9\""}
 
 [[package]]
 name = "importlib-resources"
@@ -5691,6 +5692,7 @@ files = [
     {file = "wrapt-2.1.1-py3-none-any.whl", hash = "sha256:3b0f4629eb954394a3d7c7a1c8cca25f0b07cefe6aa8545e862e9778152de5b7"},
     {file = "wrapt-2.1.1.tar.gz", hash = "sha256:5fdcb09bf6db023d88f312bd0767594b414655d58090fc1c46b3414415f67fac"},
 ]
+markers = {main = "python_version == \"3.9\"", dev = "python_version == \"3.9\"", docs = "python_version == \"3.9\""}
 
 [package.extras]
 dev = ["pytest", "setuptools"]
