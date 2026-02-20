@@ -47,7 +47,11 @@ def test_test():
     METRICS = Mock()
     saver = MetricsSaverCallback()
     saver.on_test_start(model_checkpoint="split-0_best-loss", group_name="X")
+    MAPS.test.groups["X"].results.splits[0].models["best-loss"].metrics.create = Mock()
     saver.on_test_end(maps=MAPS, metrics=METRICS)
+    MAPS.test.groups["X"].results.splits[0].models[
+        "best-loss"
+    ].metrics.create.assert_called()
 
     METRICS.save.assert_called_once_with(
         path=MAPS.test.groups["X"]

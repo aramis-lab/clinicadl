@@ -452,6 +452,22 @@ class TestSideMethods:
         trainer._create_split(split_idx=2, resume=False)
         assert maps.training.splits[2].path.exists()
 
+    def test_create_results_dir(self, trainer: Trainer, tmp_path):
+        maps = _add_maps_to_trainer(trainer, tmp_path)
+
+        with pytest.raises(
+            FileExistsError,
+            match=f"There are already some results for checkpoint 'best-loss' in {maps.test.groups['X'].results.splits[0].models['best-loss'].path}. "
+            f"If you want to continue, please first delete the folder.",
+        ):
+            trainer._create_results_dir(
+                maps.test, group_name="X", model_checkpoint="split-0_best-loss"
+            )
+        trainer._create_results_dir(
+            maps.test, group_name="Z", model_checkpoint="split-0_best-loss"
+        )
+        assert maps.test.groups["Z"].results.splits[0].models["best-loss"].path.exists()
+
     def test_check_split_exists(self, trainer: Trainer):
         trainer._maps = Maps(MAPS_PATH)
         trainer._maps.read()
@@ -997,6 +1013,7 @@ class TestTest:
         trainer._evaluation_loop = Mock()
         trainer._get_dataloader = Mock()
         trainer._get_dataloader.return_value = (loader := Mock())
+        trainer._create_results_dir = Mock()
         trainer._reset_test = Mock()
         trainer._load_model_checkpoint = Mock()
         trainer._model_to = Mock()
@@ -1013,6 +1030,9 @@ class TestTest:
         assert list(metrics.metrics.keys()) == ["loss"]
 
         trainer._get_dataloader.assert_called_once_with(trainer.maps.test.groups["X"])
+        trainer._create_results_dir.assert_called_once_with(
+            trainer.maps.test, group_name="X", model_checkpoint="split-0_best-loss"
+        )
         trainer._reset_test.assert_called_once_with(loader, metrics)
         trainer._load_model_checkpoint.assert_called_once_with(
             trainer.maps.training.splits[0].models.best_models.metrics["loss"].model_pt

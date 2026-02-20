@@ -41,6 +41,7 @@ if TYPE_CHECKING:
 
     from clinicadl.callbacks import Callback
     from clinicadl.data.dataloader import BatchType, DataLoader
+    from clinicadl.io.maps.inference import InferenceDirType
     from clinicadl.io.maps.utils import DataDir
     from clinicadl.metrics.types import MetricOrConfig
     from clinicadl.models import Model
@@ -765,6 +766,10 @@ class Trainer:
             self._check_group_exists(group_name)
             dataloader = self._get_dataloader(self.maps.test.groups[group_name])
 
+        self._create_results_dir(
+            self.maps.test, group_name=group_name, model_checkpoint=model_checkpoint
+        )
+
         if metrics:
             metrics_handler = self.metrics.subset(metrics)
         else:
@@ -1086,6 +1091,26 @@ class Trainer:
                 "set resume=True."
             )
         self.maps.training.create_split(split_idx, exist_ok=True)
+
+    def _create_results_dir(
+        self,
+        inference_dir: InferenceDirType,
+        group_name: str,
+        model_checkpoint: str,
+    ) -> None:
+        """
+        Creates the directory to save the results of the checkpoint on the group.
+        """
+        split_idx, chkpt = self.maps.training.read_checkpoint_name(model_checkpoint)
+        inference_dir.create_group(group_name, exist_ok=True)
+        group_dir = inference_dir.groups[group_name].results
+        group_dir.create_split(split_idx, exist_ok=True)
+        if chkpt in group_dir.splits[split_idx].models_list:
+            raise FileExistsError(
+                f"There are already some results for checkpoint '{chkpt}' in {group_dir.splits[split_idx].models[chkpt].path}. "
+                f"If you want to continue, please first delete the folder."
+            )
+        group_dir.splits[split_idx].create_model(chkpt, exist_ok=True)
 
     def _check_split_exists(self, split_idx: int) -> None:
         """

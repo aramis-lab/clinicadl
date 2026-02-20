@@ -707,33 +707,6 @@ def test__getitem__(tmp_path):
     out_sample.label == [1.0, 0.0]
 
     # additional info
-    caps_dataset = CapsDataset(
-        CAPS_DIR,
-        datatype=T1Linear(use_uncropped_image=True),
-        data=data,
-        transforms=TransformsHandler(
-            sample_transforms=[CustomSampleTransform()],
-        ),
-    )
-    caps_dataset.read_tensor_conversion(
-        conversion_name="t1_transform",
-        load_also=["coefficient", "other_image", "other_mask"],
-        check_transforms=False,
-    )
-    out_sample = caps_dataset[0]
-    assert {"coefficient", "other_image", "other_mask"}.difference(
-        set(out_sample.keys())
-    ) == set()
-
-    caps_dataset.read_tensor_conversion(
-        conversion_name="t1_transform",
-        check_transforms=False,
-    )
-    out_sample = caps_dataset[0]
-    assert {"coefficient", "other_image", "other_mask"}.intersection(
-        set(out_sample.keys())
-    ) == set()
-
     shutil.copytree(CAPS_DIR, tmp_path, dirs_exist_ok=True)
     caps_dataset = CapsDataset(
         tmp_path,

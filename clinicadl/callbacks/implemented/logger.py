@@ -97,7 +97,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         self._test_progress_bar: Optional[tqdm] = None
         self._predict_progress_bar: Optional[tqdm] = None
         self._output_path: Optional[Path] = None
-        self._log_path: Optional[Path] = None
+        self._log_path: Optional[RunDir] = None
 
     def on_trainer_init(
         self,
@@ -121,8 +121,9 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
                 n_epochs=state.current_epoch, interrupted=True
             )
         if self.config.save_logs and self.logger:
-            self.logger.error(
-                "An exception occurred. To debug, check the logs in %s", self._log_path
+            self.logger.exception(
+                "The traceback and potential details remains available in %s",
+                self._log_path.path,
             )
             _shutdown_logging(self.logger)
 
@@ -451,7 +452,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
 
 class _LogsFilter(logging.Filter):
     """
-    Logging filter to filter out errors or keep only logs from one level.
+    To filter out errors or keep only logs from one level.
     """
 
     def __init__(self, level: Optional[logging.LogRecord] = None):
@@ -461,7 +462,18 @@ class _LogsFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if self.level:
             return record.levelno == self.level
-        return record.levelno <= logging.ERROR
+        return record.levelno < logging.ERROR
+
+
+class _NoTracebackFilter(logging.Filter):
+    """
+    To filter out exception tracebacks.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.exc_info = None
+        record.exc_text = None
+        return True
 
 
 def _setup_logging(
@@ -478,7 +490,7 @@ def _setup_logging(
 
     datefmt = "%Y-%m-%d %H:%M:%S"
 
-    # Standard output handler (INFO, WARNING)
+    # Console
     formatter = logging.Formatter(
         "%(asctime)s - %(levelname)s: %(message)s", datefmt=datefmt
     )
@@ -489,14 +501,15 @@ def _setup_logging(
     outputs_handler.setFormatter(formatter)
     logger.addHandler(outputs_handler)
 
+    # (INFO, WARNING)
     if log_directory:
-        info_handler = logging.FileHandler(
+        info_file_handler = logging.FileHandler(
             log_directory.info_log, mode="a", encoding="utf-8"
         )
-        info_handler.setLevel(logging.INFO)
-        info_handler.addFilter(_LogsFilter())
-        info_handler.setFormatter(formatter)
-        logger.addHandler(info_handler)
+        info_file_handler.setLevel(logging.INFO)
+        info_file_handler.addFilter(_LogsFilter())
+        info_file_handler.setFormatter(formatter)
+        logger.addHandler(info_file_handler)
 
         warning_file_handler = logging.FileHandler(
             warning_file, mode="a", encoding="utf-8"
@@ -516,23 +529,24 @@ def _setup_logging(
             debug_file_handler.setFormatter(formatter)
             logger.addHandler(debug_file_handler)
 
-    # Standard error handler (ERROR and above)
+    # (ERROR and above)
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s: %(message)s", datefmt=datefmt
     )
 
-    error_handler = logging.StreamHandler(stream=sys.stderr)
-    error_handler.setLevel(logging.ERROR)
-    error_handler.setFormatter(formatter)
-    logger.addHandler(error_handler)
-
-    if log_directory:
+    if log_directory:  # must be before because console handler modify the error (via _NoTracebackFilter)
         error_file_handler = logging.FileHandler(
             log_directory.error_log, mode="a", encoding="utf-8"
         )
         error_file_handler.setLevel(logging.ERROR)
         error_file_handler.setFormatter(formatter)
         logger.addHandler(error_file_handler)
+
+    error_handler = logging.StreamHandler(stream=sys.stderr)
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(formatter)
+    error_handler.addFilter(_NoTracebackFilter())
+    logger.addHandler(error_handler)
 
     return logger
 

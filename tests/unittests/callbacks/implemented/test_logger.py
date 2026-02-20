@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
 import torch
 
 from clinicadl.callbacks import LoggerCallback
@@ -566,9 +567,11 @@ def test_on_exception(caplog, tmp_path):
     log.warning("a warning")
 
     state.stage = "interrupted"
-    log.exception(ValueError("an error"))
     with caplog.at_level(logging.INFO):
-        logger.on_exception(state=state)
+        try:
+            raise ValueError("an error")
+        except ValueError:
+            logger.on_exception(state=state)
     log.warning("a second warning")
 
     with open(maps.training.splits[state.split_idx].summary_log, "r") as f:
@@ -578,13 +581,16 @@ def test_on_exception(caplog, tmp_path):
     run_dir = maps.exec.runs[run_name]
     f = maps.open_file(run_dir.error_log)
     assert "an error" in f
+    assert "ValueError" in f
     f = maps.open_file(run_dir.info_log)
     assert "a warning" in f
     assert "a second warning" not in f
 
     assert (
-        f"An exception occurred. To debug, check the logs in {run_dir}" in caplog.text
+        f"The traceback and potential details remains available in {run_dir.path}"
+        in caplog.text
     )
+    assert "ValueError" not in caplog.text  # no traceback in console
 
     # don't save files
     logger = LoggerCallback(save_logs=False)
@@ -595,7 +601,7 @@ def test_on_exception(caplog, tmp_path):
     with caplog.at_level(logging.INFO):
         logger.on_exception(state=state)
 
-    assert "An exception occurred. To debug, check the logs in" not in caplog.text
+    assert "The traceback and potential details remains available in" not in caplog.text
 
 
 def test_resume(caplog, tmp_path):
