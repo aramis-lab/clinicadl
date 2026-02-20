@@ -122,7 +122,6 @@ def test_on_train_start(tmp_path):
     maps.training.create_split(SPLIT.index)
     saver.on_train_start(maps=maps, split=SPLIT, computational=COMPUTATIONAL)
     global_df = maps.open_file(maps.training.data.data_tsv)
-    print(global_df)
     pd.testing.assert_frame_equal(
         global_df,
         pd.DataFrame(

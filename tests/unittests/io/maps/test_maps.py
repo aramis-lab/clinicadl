@@ -23,7 +23,6 @@ def _build_pattern(prefix: Path, suffix: str) -> re.Pattern:
         r"run\-train_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}"
         rf"{sep}{suffix}\.log$"
     )
-    print(pattern)
     return re.compile(pattern)
 
 
