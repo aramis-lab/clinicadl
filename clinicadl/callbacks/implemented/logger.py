@@ -390,11 +390,9 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
 
         self.logger.debug("Batch %d loaded", current_batch)
 
-    def on_forward_step_start(self, *, 
-        model: Model,
-        maps: Maps,
-        state: TrainerState,
-        batch: BatchType) -> None:  # not in on_batch_start because not the right device
+    def on_forward_step_start(
+        self, *, model: Model, maps: Maps, state: TrainerState, batch: BatchType
+    ) -> None:  # not in on_batch_start because not the right device
         if not maps.nn_summary_txt.is_file():
             with torch.no_grad():
                 nn_summary = model.get_summary(batch)
