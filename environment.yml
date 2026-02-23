@@ -1,6 +1,5 @@
-name: clinicadl_test
+name: clinicadl_env
 channels:
-  - defaults
   - conda-forge
 dependencies:
   - python=3.12
