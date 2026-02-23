@@ -70,7 +70,7 @@ def compare_maps_dir(out_dir: Path, ref_dir: Path) -> None:
         dirs.sort()  # will affect next iteration
         ref_dirs.sort()
 
-        for file, ref_file in zip(files, ref_files):
+        for file, ref_file in zip(sorted(files), sorted(ref_files)):
             assert file == ref_file, f"Comparing {file} and {ref_file}"
             try:
                 _compare_any_file(
