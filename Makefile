@@ -36,7 +36,7 @@ env: env.dev
 
 .PHONY: env.conda
 env.conda:
-	@$(CONDA) env create -p $(CONDA_ENV)
+	@$(CONDA) env create -p $(CONDA_ENV) -k
 
 .PHONY: env.dev
 env.dev:
