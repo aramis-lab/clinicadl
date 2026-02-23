@@ -23,7 +23,6 @@ def _build_pattern(prefix: Path, suffix: str) -> re.Pattern:
         r"run\-train_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}"
         rf"{sep}{suffix}\.log$"
     )
-    print(pattern)
     return re.compile(pattern)
 
 
@@ -482,6 +481,19 @@ def test_create(tmp_path: Path):
     assert maps.training.data.data_tsv.is_file()
     maps.create(overwrite=True)
     assert not maps.architecture_log.is_file()
+
+    # create in collections
+    maps.training.create_split(0)
+    maps.training.splits[0].models.best_models.create_metric("loss")
+    assert "loss" in maps.training.splits[0].models.best_models.metrics_list
+    with pytest.raises(
+        FileExistsError,
+    ):
+        maps.training.create_split(0)
+    maps.training.create_split(0, exist_ok=True)
+    assert "loss" in maps.training.splits[0].models.best_models.metrics_list
+    maps.training.create_split(0, overwrite=True)
+    assert "loss" not in maps.training.splits[0].models.best_models.metrics_list
 
 
 def test_read(tmp_path):

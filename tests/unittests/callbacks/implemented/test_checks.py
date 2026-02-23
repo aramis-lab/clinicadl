@@ -2,7 +2,7 @@ import re
 import shutil
 from copy import deepcopy
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, PropertyMock, patch
 
 import pandas as pd
 import pytest
@@ -28,6 +28,17 @@ from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.exceptions import DataFrameError, DataLeakageError
 from clinicadl.utils.json import write_json
 
+
+class Split(Mock):
+    @property
+    def train_loader(self):
+        ...
+
+    @property
+    def val_loader(self):
+        ...
+
+
 MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
 CAPS_PATH = Path(__file__).parents[2] / "resources" / "caps_example"
 MAPS = Maps(MAPS_PATH)
@@ -42,7 +53,7 @@ MAPS.read()
 MODEL = Mock()
 LOSS = Mock()
 MODEL.get_loss_functions.return_value = {"my_loss": LOSS}
-SPLIT = Mock()
+SPLIT = Split()
 SPLIT.index = 0
 SPLIT.train_dataset = CAPS.subset([("sub-000", "ses-M000")])
 SPLIT.val_dataset = CAPS.subset([("sub-010", "ses-M003")])
@@ -71,7 +82,7 @@ def create_new_maps(path):
     return maps
 
 
-class TestInputs:
+class TestCheckInputs:
     checker = ChecksCallback()
     SPLIT = deepcopy(SPLIT)
 
@@ -82,52 +93,15 @@ class TestInputs:
         self._split_check(self.checker.on_resume)
 
     def _split_check(self, method):
-        self.SPLIT.index = 2
-        self.SPLIT.train_loader = None
-        self.SPLIT.val_loader = Mock()
-        with pytest.raises(
-            RuntimeError,
-            match="The split has no training dataloder defined. Please run 'build_train_loader'",
-        ):
+        with patch.object(
+            Split, "train_loader", new_callable=PropertyMock
+        ) as mock_train, patch.object(
+            Split, "val_loader", new_callable=PropertyMock
+        ) as mock_val:
             method(split=self.SPLIT, model=MODEL, maps=MAPS)
 
-        self.SPLIT.train_loader = Mock()
-        self.SPLIT.val_loader = None
-        with pytest.raises(
-            RuntimeError,
-            match="The split has no validation dataloder defined. Please run 'build_val_loader'",
-        ):
-            method(split=self.SPLIT, model=MODEL, maps=MAPS)
-
-    def test_on_test_start(self):
-        with pytest.raises(
-            FileExistsError,
-            match=re.escape(
-                f"There are already some results for checkpoint 'best-loss' in {MAPS.test.groups[GROUP].results.splits[0].models['best-loss'].path}. "
-                "If you want to continue, please first delete the folder."
-            ),
-        ):
-            self.checker.on_test_start(
-                dataloader=DATALOADER,
-                maps=MAPS,
-                group_name=GROUP,
-                model_checkpoint="split-0_best-loss",
-            )
-
-    def test_on_predict_start(self):
-        with pytest.raises(
-            FileExistsError,
-            match=re.escape(
-                f"There are already some results for checkpoint 'best-loss' in {MAPS.prediction.groups[GROUP].results.splits[0].models['best-loss'].path}. "
-                "If you want to continue, please first delete the folder."
-            ),
-        ):
-            self.checker.on_predict_start(
-                dataloader=DATALOADER,
-                maps=MAPS,
-                group_name=GROUP,
-                model_checkpoint="split-0_best-loss",
-            )
+        mock_train.assert_called_once()
+        mock_val.assert_called_once()
 
 
 class TestCheckLosses:

@@ -14,6 +14,7 @@ from clinicadl.data.dataloader import (
 from clinicadl.data.dataloader.collate.factory import get_collate_from_dict
 from clinicadl.data.datatypes import T1Linear
 from clinicadl.data.structures import Sample, Sample2D
+from clinicadl.utils.json import read_json
 
 SAMPLE_1 = Sample(
     image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=np.eye(4)),
@@ -130,9 +131,10 @@ def test_merge_batches():
         MergeBatchesCollate,
     ],
 )
-def test_get_collate_from_dict(collate):
+def test_get_collate_from_dict(collate, tmp_path):
     c = collate()
-    dict_ = c.to_dict()
+    c.to_json(tmp_path / "config.json")
+    dict_ = read_json(tmp_path / "config.json")
     c = get_collate_from_dict(dict_)
     assert isinstance(c, collate)
 

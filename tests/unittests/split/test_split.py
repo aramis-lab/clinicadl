@@ -46,7 +46,7 @@ def test_build_loaders():
 
     with pytest.raises(
         RuntimeError,
-        match="Call 'build_train_loader' before accessing the 'train_loader'.",
+        match="The split has no training dataloader defined. Please run 'build_train_loader'",
     ):
         split.train_loader
     split.build_train_loader(config, batch_size=1)
@@ -54,7 +54,8 @@ def test_build_loaders():
     assert split.train_loader.sampler.num_replicas == 1
 
     with pytest.raises(
-        RuntimeError, match="Call 'build_val_loader' before accessing the 'val_loader'."
+        RuntimeError,
+        match="The split has no validation dataloader defined. Please run 'build_val_loader'",
     ):
         split.val_loader
     split.build_val_loader(config)

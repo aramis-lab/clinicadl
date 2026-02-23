@@ -2,6 +2,7 @@ import pytest
 
 from clinicadl.data.datatypes import *
 from clinicadl.data.datatypes.factory import get_datatype_from_dict
+from clinicadl.utils.json import read_json
 
 
 @pytest.mark.parametrize(
@@ -14,9 +15,10 @@ from clinicadl.data.datatypes.factory import get_datatype_from_dict
         ({"pattern": ".*.nii", "key": "anything"}, DataType),
     ],
 )
-def test_get_datatype_from_dict(args, datatype):
+def test_get_datatype_from_dict(args, datatype, tmp_path):
     c = datatype(**args)
-    dict_ = c.to_dict()
+    c.to_json(tmp_path / "config.json")
+    dict_ = read_json(tmp_path / "config.json")
     c = get_datatype_from_dict(dict_)
     assert isinstance(c, datatype)
 

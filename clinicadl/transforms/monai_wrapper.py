@@ -90,7 +90,7 @@ class MonaiTransformWrapper:
                     datapoint[key] = transform(value)
                 except Exception as e:
                     raise Exception(
-                        f"An error occurred while transforming the field '{key}'."
+                        f"An error occurred while transforming the field '{key}' with {type(self.transform).__name__}."
                     ) from e
 
         return datapoint

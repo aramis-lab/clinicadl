@@ -6,6 +6,7 @@ from clinicadl.transforms.extraction import (
     Slice,
     get_extraction_from_dict,
 )
+from clinicadl.utils.json import read_json
 
 
 @pytest.mark.parametrize(
@@ -16,9 +17,10 @@ from clinicadl.transforms.extraction import (
         (Patch, {"patch_size": (3, 2, 3), "overlap": (0.2, 0.2, 0.2)}),
     ],
 )
-def test_get_extraction_from_dict(extraction, params):
+def test_get_extraction_from_dict(extraction, params, tmp_path):
     extractor = extraction(**params)
-    dict_ = extractor.to_dict()
+    extractor.to_json(tmp_path / "config.json")
+    dict_ = read_json(tmp_path / "config.json")
     new_exctractor = get_extraction_from_dict(dict_)
     assert isinstance(new_exctractor, extraction)
     for param in params:

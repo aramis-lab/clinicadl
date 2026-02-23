@@ -418,6 +418,42 @@ def test_save_and_merge_df(tmp_path):
     )
     pd.testing.assert_frame_equal(df, expected_df)
 
+    # without epoch
+    metrics = MetricsHandler(
+        new_metric=CustomMetric(),
+    )
+    metrics.init_metrics(MODEL)
+    metrics.reset(reset_df=True)
+    metrics(BATCH_1)
+    metrics.aggregate()
+    metrics.merge(tmp_path / "df.tsv", details_path=tmp_path / "detailed_df.tsv")
+    df = pd.read_csv(tmp_path / "df.tsv", sep="\t")
+    expected_df = pd.DataFrame.from_dict(
+        {
+            "epoch": [0, 1],
+            "mse": pd.Series([0.333333, float("nan")]),
+            "my_metric": pd.Series([0.666666, 0.666666]),
+            "new_metric": pd.Series([0.666666, float("nan")]),
+        }
+    )
+    pd.testing.assert_frame_equal(
+        df,
+        expected_df,
+    )
+
+    df = pd.read_csv(tmp_path / "detailed_df.tsv", sep="\t")
+    expected_df = pd.DataFrame.from_dict(
+        {
+            "epoch": [0, 1, 0, 1, 0, 1],
+            "participant_id": [f"sub-{i}" for i in range(3) for _ in range(2)],
+            "session_id": [f"ses-{i}" for i in range(3) for _ in range(2)],
+            "mse": pd.Series([0.0, float("nan"), 1.0, float("nan"), 0.0, float("nan")]),
+            "my_metric": pd.Series([1.0, 1.0, 0.0, 0.0, 1.0, 1.0]),
+            "new_metric": pd.Series([1.0, 1.0, 0.0, 0.0, 1.0, 1.0]),
+        }
+    )
+    pd.testing.assert_frame_equal(df, expected_df)
+
 
 @pytest.fixture()
 def custom_metric() -> MetricConfig:
