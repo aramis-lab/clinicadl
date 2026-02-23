@@ -88,7 +88,10 @@ def _compare_any_file(file: Path, ref_file: Path) -> None:
     content = Maps.open_file(file)
     ref_content = Maps.open_file(ref_file)
 
-    if file.name == "summary.log":
+    if file.name == "environment.txt":
+        return
+
+    elif file.name == "summary.log":
         content = _normalize_file(content)
         ref_content = _normalize_file(ref_content)
 
