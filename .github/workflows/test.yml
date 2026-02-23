@@ -50,7 +50,7 @@ jobs:
           version: ${{ env.POETRY_VERSION }}
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
       - name: Run unit tests
         run: make gpu-unit-tests
