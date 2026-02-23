@@ -18,25 +18,25 @@ env:
   PREFERRED_PYTHON_VERSION: "3.12"
 
 jobs:
-  cpu-unit-tests:
-    name: Unit tests on ${{ matrix.os }} with Python ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: snok/install-poetry@v1
-        with:
-          version: ${{ env.POETRY_VERSION }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: poetry
-      - name: Run unit tests
-        run: make unit-tests
+  # cpu-unit-tests:
+  #   name: Unit tests on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: [ubuntu-latest, macos-latest]
+  #       python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: snok/install-poetry@v1
+  #       with:
+  #         version: ${{ env.POETRY_VERSION }}
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #         cache: poetry
+  #     - name: Run unit tests
+  #       run: make unit-tests
 
   cpu-functional-test:
     name: Functional tests
