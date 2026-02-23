@@ -105,15 +105,7 @@ jobs:
         with:
           python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
+      - name: Clean Poetry caches
+        run: rm -rf ~/.cache/pypoetry ~/.cache/pip
       - name: Run unit tests
-        run: |
-          echo ">>> Python info"
-          which python
-          python --version
-          python -c "import sysconfig; print(sysconfig.get_paths())"
-          echo ">>> Poetry info"
-          poetry env info
-          echo ">>> CUDA info"
-          nvidia-smi
-          echo ">>> LD_LIBRARY_PATH"
-          echo $LD_LIBRARY_PATH
+        run: make multi-gpu-unit-tests
