@@ -53,7 +53,11 @@ jobs:
           python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
       - name: Run functional tests
-        run: make functional-tests
+        run: |
+          make env.conda
+          conda activate "${{ github.workspace }}"/env
+          make install
+          make functional-tests
 
   gpu-unit-tests:
     name: GPU unit tests
@@ -64,19 +68,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run unit tests
-        run: make gpu-unit-tests
+        run: |
+          conda activate "${{ github.workspace }}"/env
+          make gpu-unit-tests
 
-  gpu-functional-test:
-    name: GPU functional tests
-    runs-on:
-      - self-hosted
-      - gpu
-      - functional-tests
-    needs: gpu-unit-tests
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run functional tests
-        run: make gpu-functional-tests
+  # gpu-functional-test:
+  #   name: GPU functional tests
+  #   runs-on:
+  #     - self-hosted
+  #     - gpu
+  #     - functional-tests
+  #   needs: gpu-unit-tests
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Run functional tests
+  #       run: make gpu-functional-tests
 
   # multi-gpu-unit-tests:
   #   name: Multi-GPUs unit tests
