@@ -53,14 +53,19 @@ def test_trainer(tmp_path):
         computational=ComputationalConfig(gpu=False),
     )
 
-    logger.on_batch_start(
+    logger.on_forward_step_start(
         model=MODEL,
         maps=maps,
-        state=state,
         batch=BATCH,
     )
     with open(maps.nn_summary_txt, "r") as f:
         assert "abc" == f.read()
+
+    logger.on_forward_step_start(
+        model=MODEL,
+        maps=maps,
+        batch=BATCH,
+    )
 
 
 def test_train(caplog, tmp_path):
