@@ -165,6 +165,6 @@ def test_train(tmp_path, ref_data, caps_dir, split_dir, kfold_dir):
 
 
 @pytest.mark.gpu
-def test_train_gpu(tmp_path, ref_data):
+def test_train_gpu(tmp_path, ref_data, caps_dir, split_dir, kfold_dir):
     ref_maps = ref_data / "maps_test_basics_gpu"
     _test_train(tmp_path, ref_maps, caps_dir, split_dir, kfold_dir, gpu=True)
