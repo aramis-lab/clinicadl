@@ -42,7 +42,7 @@ jobs:
     name: Functional tests
     runs-on:
       - self-hosted
-      - functional-tests
+      - gpu
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
@@ -56,18 +56,21 @@ jobs:
         run: |
           make install
           make functional-tests
-
-  gpu-unit-tests:
-    name: GPU unit tests
-    runs-on:
-      - self-hosted
-      - gpu
-    needs: cpu-functional-test
-    steps:
-      - uses: actions/checkout@v4
       - name: Run unit tests
         run: |
           make gpu-unit-tests
+
+  # gpu-unit-tests:
+  #   name: GPU unit tests
+  #   runs-on:
+  #     - self-hosted
+  #     - gpu
+  #   needs: cpu-functional-test
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Run unit tests
+  #       run: |
+  #         make gpu-unit-tests
 
   # gpu-functional-test:
   #   name: GPU functional tests
