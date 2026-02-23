@@ -82,6 +82,14 @@ class BaseDatasetConfig(ObjectConfig["BaseDataset"]):
     def _common_mask_names(self) -> list[str]:
         return list(map(Mask.get_mask_name, self._common_masks))
 
+    @field_validator("directory", "data", mode="after")
+    @classmethod
+    def _resolve_path(cls, path: Any) -> Any:
+        """Gets the full directory path."""
+        if isinstance(path, Path):
+            return path.resolve()
+        return path
+
     @field_validator("label", mode="after")
     @classmethod
     def _sort_labels(cls, labels: T) -> T:

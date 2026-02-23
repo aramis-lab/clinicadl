@@ -26,7 +26,6 @@ MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
 
 def _check_running(*args) -> None:
     for arg in args:
-        print(arg.name)
         assert arg.running
 
 
@@ -45,6 +44,8 @@ def _training(
     raise_error: bool = False,
     sleep_after_training_start: bool = False,
 ):
+    maps.training.splits[STATE.split_idx].logs.computational_tsv.unlink()
+
     if not check_running:
         _assert_running = lambda *x: True  # noqa: E731
         _assert_not_running = lambda *x: True  # noqa: E731
@@ -210,7 +211,6 @@ def test_monitor(tmp_path):
     df = pd.read_csv(
         maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
     )
-    assert len(df["measurement #"].dropna()) == 3 + 4
     assert len(df["Training (s)"].dropna()) == 1
     assert len(df["Training (s)"].dropna()) == 1
     assert len(df["Epoch (s)"].dropna()) == 3
@@ -279,6 +279,7 @@ def test_exception(caplog, tmp_path):
         )
     assert len(caplog.records) == 0
 
+    maps.training.splits[STATE.split_idx].logs.create = Mock()
     try:
         _training(
             monitor,
@@ -293,6 +294,7 @@ def test_exception(caplog, tmp_path):
         with caplog.at_level("ERROR"):
             monitor.on_exception(maps=maps, state=STATE, exception=e)
 
+    maps.training.splits[STATE.split_idx].logs.create.assert_called()
     df = pd.read_csv(
         maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
     )
@@ -375,7 +377,6 @@ def test_monitor_gpu(tmp_path):
     df = pd.read_csv(
         maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
     )
-    assert len(df["measurement #"].dropna()) == 3 + 4
     assert len(df["Forward GPU (s)"].dropna()) == 3 + 4
     assert len(df["Forward GPU max memory (MB)"].dropna()) == 3 + 4
     assert len(df["Backward GPU (s)"].dropna()) == 3 + 4

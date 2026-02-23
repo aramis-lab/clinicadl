@@ -224,7 +224,9 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
     ) -> None:
         self._lrs[(state.current_epoch, state.current_train_batch)] = self._current_lrs
 
-        df = pd.DataFrame.from_dict(self._lrs, orient="index")
+        df = pd.DataFrame.from_dict(self._lrs, orient="index").rename(
+            columns={0: "lr"}
+        )  # named 0 if no param group
         df.index = pd.MultiIndex.from_tuples(df.index)
         df = df.reindex(
             pd.MultiIndex.from_product(

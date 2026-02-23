@@ -465,7 +465,10 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             If ``None``, this DataFrame will not be saved.
         """
         old_df = pd.read_csv(path, sep=SEP)
-        new_df = pd.merge(old_df, self._df, how="outer")
+        try:
+            new_df = pd.merge(old_df, self._df, how="outer")
+        except pd.errors.MergeError:
+            new_df = pd.concat([old_df, self._df], axis=1)
         new_df.to_csv(path, sep=SEP, index=False)
 
         if details_path:

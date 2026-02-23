@@ -233,6 +233,11 @@ class Model(JsonReaderWriter, ABC, nn.Module):
         """
         Resets the neural network(s) weights.
         """
-        for layer in self.children():
-            if hasattr(layer, "reset_parameters"):
-                layer.reset_parameters()
+        _reset_recursively(self)
+
+
+def _reset_recursively(module: nn.Module) -> None:
+    for layer in module.children():
+        if hasattr(layer, "reset_parameters"):
+            layer.reset_parameters()
+        _reset_recursively(layer)

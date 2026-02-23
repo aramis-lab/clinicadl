@@ -64,10 +64,11 @@ class CollectionOfDirs(Generic[DirType, ItemType], Directory):
     def _create_item(
         self, item: ItemType, overwrite: bool = False, exist_ok: bool = False
     ) -> None:
+        dict_ = getattr(self, self._items_dict_private_name())
         dir_: DirType = self._dir_type(self._item_path(str(item)))
         dir_.create(overwrite=overwrite, exist_ok=exist_ok)
-        dict_ = getattr(self, self._items_dict_private_name())
-        dict_[item] = dir_
+        if (item not in dict_) or overwrite:
+            dict_[item] = dir_
 
     def _delete_item(self, item: ItemType) -> None:
         dir_: DirType = self._dir_type(self._item_path(str(item)))
