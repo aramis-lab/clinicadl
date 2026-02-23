@@ -102,4 +102,4 @@ functional-tests: install
 
 .PHONY: gpu-functional-tests
 gpu-functional-tests: install
-	@$(POETRY) python -m pytest -v -m "gpu" --ref /localdrive10TB/users/ci-clinicadl/clinicadl_data_ci/data_ci tests/functional
+	@$(POETRY) run python -m pytest -v -m "gpu" --ref /localdrive10TB/users/ci-clinicadl/clinicadl_data_ci/data_ci tests/functional
