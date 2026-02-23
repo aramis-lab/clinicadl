@@ -42,7 +42,7 @@ def _setup(caps_dir: Path, maps_path: Path) -> None:
         network=CNNConfig(
             in_shape=(1, 16, 20, 17),
             num_outputs=6,
-            conv_args={"channels": [1, 1], "pooling_indices": [0, 1]},
+            conv_args={"channels": [1, 1]},
         ),
         loss=BCEWithLogitsLossConfig(),
         optimizer=AdamConfig(),
@@ -72,7 +72,7 @@ def _setup(caps_dir: Path, maps_path: Path) -> None:
                     max_lr=1e-3, epochs=optim_config.num_epochs, steps_per_epoch=2
                 )
             ),
-            EarlyStoppingCallback(metric="loss", patience=7, min_delta=0.1),
+            EarlyStoppingCallback(metric="loss", patience=3, min_delta=0.1),
             ModelCheckpointCallback(metric="f1"),
             LoggerCallback(progress_bar=False, debug=False),
         ],
@@ -125,7 +125,7 @@ def _test(split_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool):
         dataloader=test_loader,
         group_name="oasis",
         computational=ComputationalConfig(
-            gpu=False, amp=False, channels_last=False, seed=0, deterministic=True
+            gpu=gpu, amp=False, channels_last=False, seed=0, deterministic=True
         ),
     )
     time.sleep(1)  # so that the exec files don't have the same name
