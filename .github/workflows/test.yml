@@ -105,5 +105,7 @@ jobs:
         with:
           python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
+      - name: Cache issue (to solve)
+        run: rm -rf ~/.cache/pypoetry ~/.cache/pip
       - name: Run unit tests
         run: make multi-gpu-unit-tests
