@@ -73,31 +73,37 @@ jobs:
       - name: Run functional tests
         run: make functional-tests
 
-  # gpu-functional-test:
-  #   name: GPU functional tests
-  #   runs-on:
-  #     - self-hosted
-  #     - gpu
-  #     - functional-tests
-  #   needs: gpu-unit-tests
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Run functional tests
-  #       run: make gpu-functional-tests
-
-  # multi-gpu-unit-tests:
-  #   name: Multi-GPUs unit tests
-  #   runs-on:
-  #     - self-hosted
-  #     - multi-gpu
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: snok/install-poetry@v1
-  #       with:
-  #         version: ${{ env.POETRY_VERSION }}
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
-  #         cache: poetry
-  #     - name: Run unit tests
-  #       run: make multi-gpu-unit-tests
+  gpu-functional-test:
+    name: Functional tests
+    runs-on:
+      - self-hosted
+      - functional-tests
+    needs: cpu-functional-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          cache: poetry
+      - name: Run functional tests
+        run: make gpu-functional-tests
+  
+  multi-gpu-unit-tests:
+    name: Multi-GPUs unit tests
+    runs-on:
+      - self-hosted
+      - multi-gpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          cache: poetry
+      - name: Run unit tests
+        run: make multi-gpu-unit-tests

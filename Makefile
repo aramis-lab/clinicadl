@@ -89,12 +89,12 @@ unit-tests: install
 	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" tests/unittests
 
 .PHONY: gpu-unit-tests
-gpu-unit-tests:
+gpu-unit-tests: install
 	@$(POETRY) run python -m pytest -v -m "gpu" tests/unittests
 
 .PHONY: multi-gpu-unit-tests
 multi-gpu-unit-tests: install
-	python -m pytest -v -m "multi_gpu" tests/unittests
+	@$(POETRY) run python -m pytest -v -m "multi_gpu" tests/unittests
 
 .PHONY: functional-tests
 functional-tests: install
