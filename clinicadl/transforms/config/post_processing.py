@@ -6,7 +6,6 @@ import torch
 from monai import transforms
 from monai.transforms import Transform as MonaiTransform
 from pydantic import (
-    Field,
     NonNegativeInt,
     PositiveFloat,
     PositiveInt,
@@ -113,15 +112,6 @@ class ActivationsConfig(MonaiTransformConfig, _DimConfig):
         return self
 
 
-def _read_dtype(dtype_str: str) -> torch.dtype:
-    """
-    To read a serialized torch.dtype.
-    """
-    import torch
-
-    return getattr(torch, dtype_str.split(".", 1)[1])
-
-
 class AsDiscreteConfig(MonaiTransformConfig, _DimConfig):
     """
     Config class for :py:class:`monai.transforms.AsDiscrete`.
@@ -131,7 +121,7 @@ class AsDiscreteConfig(MonaiTransformConfig, _DimConfig):
     to_onehot: Optional[PositiveInt] = AS_DISCRETE_MONAI_DEFAULTS["to_onehot"]
     threshold: Optional[float] = AS_DISCRETE_MONAI_DEFAULTS["threshold"]
     rounding: Optional[Rounding] = AS_DISCRETE_MONAI_DEFAULTS["rounding"]
-    dtype: torch.dtype = Field(default=torch.float, reader=_read_dtype)
+    dtype: torch.dtype = torch.float
 
     @model_validator(mode="after")
     def exclude_multiple_arguments(self):
@@ -215,9 +205,7 @@ class SobelGradientsConfig(MonaiTransformConfig):
     normalize_kernels: bool = SOBEL_MONAI_DEFAULTS["normalize_kernels"]
     normalize_gradients: bool = SOBEL_MONAI_DEFAULTS["normalize_gradients"]
     padding_mode: SobelPaddingMode = SOBEL_MONAI_DEFAULTS["padding_mode"]
-    dtype: torch.dtype = Field(
-        default=SOBEL_MONAI_DEFAULTS["dtype"], reader=_read_dtype
-    )
+    dtype: torch.dtype = SOBEL_MONAI_DEFAULTS["dtype"]
 
     @field_validator("kernel_size", mode="after")
     @classmethod
@@ -235,9 +223,7 @@ class FormatConfig(MonaiTransformConfig):
     Config class for :py:class:`clinicadl.transforms.homemade.Format`.
     """
 
-    dtype: Optional[torch.dtype] = Field(
-        default=FORMAT_DEFAULTS["dtype"], reader=_read_dtype
-    )
+    dtype: Optional[torch.dtype] = FORMAT_DEFAULTS["dtype"]
     squeeze: Union[bool, NonNegativeInt, Sequence[NonNegativeInt]] = FORMAT_DEFAULTS[
         "squeeze"
     ]

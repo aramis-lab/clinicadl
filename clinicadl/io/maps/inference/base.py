@@ -87,8 +87,3 @@ class InferenceDir(CollectionOfDirs[DirType, str]):
 
     def delete_group(self, group: str) -> None:
         self._delete_item(group)
-
-
-InferenceDirType = InferenceDir[
-    InferenceGroupDir[InferenceResultsDir[InferenceSplitDir[InferenceModelDir]]]
-]

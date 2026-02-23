@@ -11,7 +11,6 @@ from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.config import AsDiscreteConfig
 from clinicadl.transforms.handlers import PostprocessingHandler
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
-from clinicadl.utils.json import read_json
 
 
 def test_args():
@@ -83,17 +82,19 @@ def test_str():
     assert str(transforms) == "PostprocessingHandler:\nNo transform applied.\n"
 
 
-def test_serialization(tmp_path):
+def test_serialization():
     transforms = PostprocessingHandler(
         transforms=[
             AsDiscreteConfig(threshold=1),
+            tio.Resample(),
         ],
     )
-    transforms.to_json(tmp_path / "transform.json")
-    d = read_json(tmp_path / "transform.json")
+    d = transforms.to_dict()
 
     new_transforms = PostprocessingHandler.from_dict(d)
     assert isinstance(new_transforms, PostprocessingHandler)
     assert isinstance(
         new_transforms.config.transforms.values[0].value, AsDiscreteConfig
     )
+    assert isinstance(new_transforms.config.transforms.values[1].value, tio.Resample)
+    assert new_transforms.config.transforms.values[0].value.threshold == 1

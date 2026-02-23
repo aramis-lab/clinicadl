@@ -31,7 +31,6 @@ class MetricsSaverCallback(Callback):
         state: TrainerState,
         **kwargs,
     ) -> None:
-        maps.training.splits[state.split_idx].validation_metrics.create()
         self._training_metrics.save(
             path=maps.training.splits[
                 state.split_idx
@@ -81,7 +80,6 @@ class MetricsSaverCallback(Callback):
         results_dir = (
             maps.test.groups[self._group_name].results.splits[split_idx].models[chkpt]
         )
-        results_dir.metrics.create(exist_ok=True)
         metrics.save(
             path=results_dir.metrics.aggregated_tsv,
             details_path=results_dir.metrics.details_tsv,

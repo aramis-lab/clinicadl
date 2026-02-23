@@ -1,5 +1,5 @@
 from pathlib import Path
-from time import localtime, strftime
+from time import gmtime, strftime
 
 from clinicadl.utils.dictionary.suffixes import LOG
 from clinicadl.utils.dictionary.words import DEBUG, ERROR, INFO, RUN
@@ -39,7 +39,7 @@ class ExecDir(CollectionOfDirs[RunDir, str]):
         return self._items_list
 
     def create_run(self, process_called: str) -> str:
-        datetime = strftime("%Y_%m_%d_%H_%M_%S", localtime())
+        datetime = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
         run_name = f"{process_called}_{datetime}"
         self._create_item(run_name, overwrite=True, exist_ok=True)
 

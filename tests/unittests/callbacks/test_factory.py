@@ -3,7 +3,6 @@ import pytest
 from clinicadl.callbacks.factory import ImplementedCallback, get_callback_from_dict
 from clinicadl.callbacks.implemented import *
 from clinicadl.optim.lr_schedulers.config import StepLRConfig
-from clinicadl.utils.json import read_json
 
 MANDATORY_ARGS = {
     "EarlyStoppingCallback": {"metric": "mse"},
@@ -15,10 +14,9 @@ MANDATORY_ARGS = {
     "callback",
     [globals()[name.value] for name in ImplementedCallback],
 )
-def test_callback_from_dict(callback, tmp_path):
+def test_callback_from_dict(callback):
     c = callback(**MANDATORY_ARGS.get(callback.__name__, {}))
-    c.to_json(tmp_path / "config.json")
-    dict_ = read_json(tmp_path / "config.json")
+    dict_ = c.to_dict()
     c = get_callback_from_dict(dict_)
     assert isinstance(c, callback)
 

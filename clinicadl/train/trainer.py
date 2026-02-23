@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from collections.abc import Sequence
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
@@ -41,7 +40,6 @@ if TYPE_CHECKING:
 
     from clinicadl.callbacks import Callback
     from clinicadl.data.dataloader import BatchType, DataLoader
-    from clinicadl.io.maps.inference import InferenceDirType
     from clinicadl.io.maps.utils import DataDir
     from clinicadl.metrics.types import MetricOrConfig
     from clinicadl.models import Model
@@ -348,10 +346,7 @@ class Trainer:
         else:
             seed, deterministic = computational.seed, computational.deterministic
 
-        with self._seed_context(
-            seed, deterministic
-        ), self._exception_context(), warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        with self._seed_context(seed, deterministic), self._exception_context():
             self._train(
                 split=split, computational=computational, metrics=metrics, resume=resume
             )
@@ -373,11 +368,11 @@ class Trainer:
         else:
             metrics_handler = self.metrics
 
+        self._reset_train(split=split, metrics=metrics_handler)
+        self._model_to(computational)
+
         optimizers = self.model.build_optimizers()
         grad_scaler = computational.get_scaler()
-
-        self._reset_train(split=split, metrics=metrics_handler, optimizers=optimizers)
-        self._model_to(computational)
 
         if resume:
             self._call_event(
@@ -588,10 +583,7 @@ class Trainer:
 
         seed, deterministic = self._get_old_reprod_config(split_idx)
 
-        with self._seed_context(
-            seed, deterministic
-        ), self._exception_context(), warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        with self._seed_context(seed, deterministic), self._exception_context():
             self._validate(
                 split_idx=split_idx,
                 metrics=metrics,
@@ -737,8 +729,7 @@ class Trainer:
         """
         with self._seed_context(
             computational.seed, computational.deterministic
-        ), self._exception_context(), warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        ), self._exception_context():
             self._test(
                 model_checkpoint=model_checkpoint,
                 metrics=metrics,
@@ -765,10 +756,6 @@ class Trainer:
         if not dataloader:
             self._check_group_exists(group_name)
             dataloader = self._get_dataloader(self.maps.test.groups[group_name])
-
-        self._create_results_dir(
-            self.maps.test, group_name=group_name, model_checkpoint=model_checkpoint
-        )
 
         if metrics:
             metrics_handler = self.metrics.subset(metrics)
@@ -890,9 +877,7 @@ class Trainer:
 
         metrics.aggregate(epoch=epoch)
 
-    def _reset_train(
-        self, split: Split, metrics: MetricsHandler, optimizers: dict[str, Optimizer]
-    ) -> None:
+    def _reset_train(self, split: Split, metrics: MetricsHandler) -> None:
         """
         Resets the relevant objects before training.
         """
@@ -903,8 +888,6 @@ class Trainer:
         split.train_dataset.train()
         split.val_dataset.eval()
         metrics.reset(reset_df=True)
-        for optimizer in optimizers.values():
-            optimizer.zero_grad()
 
     def _reset_epoch(self, epoch: int, train_loader: DataLoader) -> None:
         """
@@ -1091,26 +1074,6 @@ class Trainer:
                 "set resume=True."
             )
         self.maps.training.create_split(split_idx, exist_ok=True)
-
-    def _create_results_dir(
-        self,
-        inference_dir: InferenceDirType,
-        group_name: str,
-        model_checkpoint: str,
-    ) -> None:
-        """
-        Creates the directory to save the results of the checkpoint on the group.
-        """
-        split_idx, chkpt = self.maps.training.read_checkpoint_name(model_checkpoint)
-        inference_dir.create_group(group_name, exist_ok=True)
-        group_dir = inference_dir.groups[group_name].results
-        group_dir.create_split(split_idx, exist_ok=True)
-        if chkpt in group_dir.splits[split_idx].models_list:
-            raise FileExistsError(
-                f"There are already some results for checkpoint '{chkpt}' in {group_dir.splits[split_idx].models[chkpt].path}. "
-                f"If you want to continue, please first delete the folder."
-            )
-        group_dir.splits[split_idx].create_model(chkpt, exist_ok=True)
 
     def _check_split_exists(self, split_idx: int) -> None:
         """
