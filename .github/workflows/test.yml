@@ -38,8 +38,8 @@ jobs:
   #     - name: Run unit tests
   #       run: make unit-tests
 
-  cpu-functional-test:
-    name: Functional tests
+  gpu-unit-tests:
+    name: GPU unit tests
     runs-on:
       - self-hosted
       - gpu
@@ -52,25 +52,26 @@ jobs:
         with:
           python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
-      - name: Run functional tests
-        run: |
-          make env.conda
-          conda activate "${{ github.workspace }}"/env
-          make install
-          make functional-tests
+      - name: Run unit tests
+        run: make gpu-unit-tests
 
-  gpu-unit-tests:
-    name: GPU unit tests
+  cpu-functional-test:
+    name: Functional tests
     runs-on:
       - self-hosted
-      - gpu
+      - functional-tests
     needs: cpu-functional-test
     steps:
       - uses: actions/checkout@v4
-      - name: Run unit tests
-        run: |
-          conda activate "${{ github.workspace }}"/env
-          make gpu-unit-tests
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          cache: poetry
+      - name: Run functional tests
+        run: make functional-tests
 
   # gpu-functional-test:
   #   name: GPU functional tests
