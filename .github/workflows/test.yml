@@ -59,17 +59,17 @@ jobs:
           make install
           make functional-tests
 
-  # gpu-unit-tests:
-  #   name: GPU unit tests
-  #   runs-on:
-  #     - self-hosted
-  #     - gpu
-  #   needs: cpu-functional-test
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Run unit tests
-  #       run: |
-  #         conda activate "${{ github.workspace }}"/env
+  gpu-unit-tests:
+    name: GPU unit tests
+    runs-on:
+      - self-hosted
+      - gpu
+    needs: cpu-functional-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run unit tests
+        run: |
+          conda activate "${{ github.workspace }}"/env
   #         make gpu-unit-tests
 
   # gpu-functional-test:
