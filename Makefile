@@ -83,17 +83,23 @@ install.dev: check.lock
 install.doc: check.lock
 	@$(POETRY) install --only docs
 
-## tests        : Run the unit tests
-.PHONY: test
-test: install
+## tests
+.PHONY: unit-tests
+unit-tests: install
 	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" tests/unittests
 
-## gpu-tests    : Run only GPU unit tests
-.PHONY: gpu-test
-gpu-test: install
+.PHONY: gpu-unit-tests
+gpu-unit-tests: install
 	@$(POETRY) run python -m pytest -v -m "gpu" tests/unittests
 
-## multi-gpu-tests    : Run only Multi-GPUs unit tests
-.PHONY: multi-gpu-test
-multi-gpu-test: install
+.PHONY: multi-gpu-unit-tests
+multi-gpu-unit-tests: install
 	@$(POETRY) run python -m pytest -v -m "multi_gpu" tests/unittests
+
+.PHONY: functional-tests
+functional-tests: install
+	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" tests/functional --ref /localdrive10TB/users/ci-clinicadl/clinicadl_data_ci/data_ci
+
+.PHONY: gpu-functional-tests
+gpu-functional-tests: install
+	@$(POETRY) run python -m pytest -v -m "gpu" tests/functional --ref /localdrive10TB/users/ci-clinicadl/clinicadl_data_ci/data_ci
