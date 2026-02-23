@@ -89,8 +89,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         The number of measurement to perform for averaging the statistics.
 
         .. note::
-            - Some statistics, like the total training time, are obviously not measured ``num_measurements`` times.
-            - All the epochs will be measured.
+            Some statistics, like the total training time, are obviously not measured ``num_measurements`` times.
 
     warmup_iterations : int, default=10
         The number of batches to wait before starting the monitoring. It is particularly important when working with GPUs, on
@@ -169,9 +168,8 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             return
 
         df = self._build_df()
-        maps.training.splits[state.split_idx].logs.create(exist_ok=True)
         tsv_path = maps.training.splits[state.split_idx].logs.computational_tsv
-        maps.save_file(df, tsv_path)
+        df.to_csv(tsv_path, sep=SEP)
 
         if isinstance(exception, torch.cuda.OutOfMemoryError) or OOM in str(exception):
             logger.error(
@@ -271,7 +269,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
 
         df = self._build_df()
         maps.training.splits[state.split_idx].logs.create(exist_ok=True)
-        maps.save_file(df, maps.training.splits[state.split_idx].logs.computational_tsv)
+        df.to_csv(maps.training.splits[state.split_idx].logs.computational_tsv, sep=SEP)
         summary = TrainingSummary(maps.training.splits[state.split_idx].summary_log)
         summary.add_info(self._write_summary(df))
 

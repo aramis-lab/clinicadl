@@ -13,7 +13,6 @@ from ..base import Callback
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import DataLoader
     from clinicadl.io import Maps
-    from clinicadl.io.maps.inference import InferenceDirType
     from clinicadl.models import Model
     from clinicadl.optim import OptimizationConfig
     from clinicadl.split import Split
@@ -95,13 +94,27 @@ class ConfigSaverCallback(Callback):
         computational: ComputationalConfig,
         **kwargs,
     ) -> None:
-        self._on_inference_start(
-            maps,
-            maps.test,
-            dataloader,
-            model_checkpoint,
-            group_name,
-            computational,
+        if group_name not in maps.test.groups_list:
+            maps.test.create_group(group_name)
+            to_json_safe(
+                dataloader.dataset,
+                maps.test.groups[group_name].dataset_json,
+            )
+            dataloader.config.to_json(maps.test.groups[group_name].dataloader_json)
+            df = _clean_df(dataloader.dataset.df)
+            maps.save_file(
+                df,
+                maps.test.groups[group_name].data_tsv,
+            )
+
+        split_idx, chkpt = maps.training.read_checkpoint_name(model_checkpoint)
+        maps.test.groups[group_name].results.create_split(split_idx, exist_ok=True)
+        maps.test.groups[group_name].results.splits[split_idx].create_model(chkpt)
+        computational.to_json(
+            maps.test.groups[group_name]
+            .results.splits[split_idx]
+            .models[chkpt]
+            .computational_json
         )
 
     def on_predict_start(
@@ -114,42 +127,28 @@ class ConfigSaverCallback(Callback):
         computational: ComputationalConfig,
         **kwargs,
     ) -> None:
-        self._on_inference_start(
-            maps,
-            maps.prediction,
-            dataloader,
-            model_checkpoint,
-            group_name,
-            computational,
-        )
-
-    def _on_inference_start(
-        self,
-        maps: Maps,
-        inference_dir: InferenceDirType,
-        dataloader: DataLoader,
-        model_checkpoint: str,
-        group_name: str,
-        computational: ComputationalConfig,
-    ):
-        group_dir = inference_dir.groups[group_name]
-        if not group_dir.dataset_json.exists():
+        if group_name not in maps.prediction.groups_list:
+            maps.prediction.create_group(group_name)
             to_json_safe(
                 dataloader.dataset,
-                group_dir.dataset_json,
+                maps.prediction.groups[group_name].dataset_json,
             )
-        if not group_dir.dataloader_json.exists():
-            dataloader.config.to_json(group_dir.dataloader_json)
-        if not group_dir.data_tsv.exists():
+            dataloader.config.to_json(
+                maps.prediction.groups[group_name].dataloader_json
+            )
             df = _clean_df(dataloader.dataset.df)
             maps.save_file(
                 df,
-                inference_dir.groups[group_name].data_tsv,
+                maps.prediction.groups[group_name].data_tsv,
             )
 
         split_idx, chkpt = maps.training.read_checkpoint_name(model_checkpoint)
+        maps.prediction.groups[group_name].results.create_split(
+            split_idx, exist_ok=True
+        )
+        maps.prediction.groups[group_name].results.splits[split_idx].create_model(chkpt)
         computational.to_json(
-            inference_dir.groups[group_name]
+            maps.prediction.groups[group_name]
             .results.splits[split_idx]
             .models[chkpt]
             .computational_json

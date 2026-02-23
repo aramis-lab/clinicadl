@@ -89,6 +89,7 @@ def compare_files(
     assert dict_ == expected_state_dict
 
     metrics_df = maps.open_file(model_dir.validation_metrics.aggregated_tsv)
+    print(metrics_df)
     pd.testing.assert_frame_equal(
         metrics_df,
         expected_metrics_df,

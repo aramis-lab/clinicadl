@@ -3,7 +3,6 @@ import pytest
 from clinicadl.metrics.config import *
 from clinicadl.metrics.factory import get_metric_from_dict
 from clinicadl.transforms.config import ActivationsConfig
-from clinicadl.utils.json import read_json
 
 MANDATORY_ARGS = {
     "max_val": 1,
@@ -33,10 +32,9 @@ MANDATORY_ARGS = {
         LossMetricConfig,
     ],
 )
-def test_get_metric_from_dict(config, tmp_path):
+def test_get_metric_from_dict(config):
     c = config(**MANDATORY_ARGS, postprocessing=[ActivationsConfig(sigmoid=True)])
-    c.to_json(tmp_path / "config.json")
-    config_dict = read_json(tmp_path / "config.json")
+    config_dict = c.to_dict()
     c = get_metric_from_dict(config_dict)
     assert isinstance(c, config)
 

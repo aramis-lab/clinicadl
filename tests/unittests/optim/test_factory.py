@@ -2,7 +2,6 @@ import pytest
 
 from clinicadl.optim.optimizers.config import *
 from clinicadl.optim.optimizers.factory import get_optimizer_from_dict
-from clinicadl.utils.json import read_json
 
 
 @pytest.mark.parametrize(
@@ -15,10 +14,9 @@ from clinicadl.utils.json import read_json
         SGDConfig,
     ],
 )
-def test_get_optimizer_from_dict(config, tmp_path):
+def test_get_optimizer_from_dict(config):
     c = config()
-    c.to_json(tmp_path / "config.json")
-    config_dict = read_json(tmp_path / "config.json")
+    config_dict = c.to_dict()
     c = get_optimizer_from_dict(config_dict)
     assert isinstance(c, config)
 

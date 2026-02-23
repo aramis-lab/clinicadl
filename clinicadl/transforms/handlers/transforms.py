@@ -4,7 +4,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, Sequence, TypeVar
 
 import torchio as tio
-from pydantic import Field, ValidationInfo, field_validator
+from pydantic import Field, ValidationInfo, field_validator, model_validator
 
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.transforms.extraction import Extraction, Image
@@ -45,6 +45,26 @@ class TransformsHandlerConfig(ObjectConfig["TransformsHandler"]):
     @classmethod
     def _handle_sequence(cls, v: Any, info: ValidationInfo) -> SequenceOfObjects:
         return SequenceOfObjects.from_sequence(v, field_name=info.field_name)
+
+    @model_validator(mode="after")
+    def _check_transforms(self):
+        """
+        If the `extraction` is of type `Image` and sample transforms or augmentations are provided,
+        they will be merged into the image transforms and augmentations. A warning is logged for
+        potential configuration conflicts.
+
+        Also converts the transform configs to actual transform objects.
+        """
+        if isinstance(self.extraction, Image) and self.sample_transforms.values:
+            logger.warning(
+                "You provided 'sample_transforms' but in the chosen configuration, image and sample are the same."
+            )
+            image_transforms = self.image_transforms.values
+            image_transforms.extend(self.sample_transforms.values)
+            self.__dict__["image_transforms"] = SequenceOfObjects(image_transforms)
+            self.__dict__["sample_transforms"] = SequenceOfObjects([])
+
+        return self
 
     @classmethod
     def _get_class(cls) -> type[TransformsHandler]:

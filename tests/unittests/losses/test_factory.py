@@ -2,7 +2,6 @@ import pytest
 
 from clinicadl.losses.config import *
 from clinicadl.losses.factory import get_loss_function_from_dict
-from clinicadl.utils.json import read_json
 
 
 @pytest.mark.parametrize(
@@ -20,11 +19,10 @@ from clinicadl.utils.json import read_json
         SmoothL1LossConfig,
     ],
 )
-def test_get_loss_function_from_dict(config, tmp_path):
+def test_get_loss_function_from_dict(config):
     c = config()
-    c.to_json(tmp_path / "config.json")
-    dict_ = read_json(tmp_path / "config.json")
-    c = get_loss_function_from_dict(dict_)
+    config_dict = c.to_dict()
+    c = get_loss_function_from_dict(config_dict)
     assert isinstance(c, config)
 
     if config is NLLLossConfig:

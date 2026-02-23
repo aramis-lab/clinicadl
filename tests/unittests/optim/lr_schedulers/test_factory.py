@@ -2,7 +2,6 @@ import pytest
 
 from clinicadl.optim.lr_schedulers.config import *
 from clinicadl.optim.lr_schedulers.factory import get_lr_scheduler_from_dict
-from clinicadl.utils.json import read_json
 
 MANDATORY_FIELDS = {
     "step_size": 1,
@@ -26,10 +25,9 @@ MANDATORY_FIELDS = {
         StepLRConfig,
     ],
 )
-def test_get_lr_scheduler_from_dict(config, tmp_path):
+def test_get_lr_scheduler_from_dict(config):
     c = config(**MANDATORY_FIELDS)
-    c.to_json(tmp_path / "config.json")
-    config_dict = read_json(tmp_path / "config.json")
+    config_dict = c.to_dict()
     c = get_lr_scheduler_from_dict(config_dict)
     assert isinstance(c, config)
 

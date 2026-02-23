@@ -122,6 +122,7 @@ def test_on_train_start(tmp_path):
     maps.training.create_split(SPLIT.index)
     saver.on_train_start(maps=maps, split=SPLIT, computational=COMPUTATIONAL)
     global_df = maps.open_file(maps.training.data.data_tsv)
+    print(global_df)
     pd.testing.assert_frame_equal(
         global_df,
         pd.DataFrame(
@@ -152,10 +153,6 @@ def test_on_test_start(tmp_path):
     COMPUTATIONAL = Mock()
     maps = Maps(tmp_path)
     maps.read()
-    maps.test.create_group("Z")
-    maps.test.groups["Z"].results.create_split(0)
-    maps.test.groups["Z"].results.splits[0].create_model("best-loss")
-    maps.test.groups["Z"].results.splits[0].create_model("final")
 
     saver = ConfigSaverCallback()
     saver.on_test_start(
@@ -219,10 +216,6 @@ def test_on_predict_start(tmp_path):
     COMPUTATIONAL = Mock()
     maps = Maps(tmp_path)
     maps.read()
-    maps.prediction.create_group("Z")
-    maps.prediction.groups["Z"].results.create_split(0)
-    maps.prediction.groups["Z"].results.splits[0].create_model("best-loss")
-    maps.prediction.groups["Z"].results.splits[0].create_model("final")
 
     saver = ConfigSaverCallback()
     saver.on_predict_start(

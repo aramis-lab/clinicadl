@@ -24,6 +24,19 @@ def test_args():
         TransformsHandler(image_transforms=["ZNormalization"])
 
 
+def test_check_transforms():
+    transforms = TransformsHandler(
+        image_transforms=[ZNormalizationConfig()],
+        sample_transforms=[tio.Resize((16, 16, 16))],
+        augmentations=[tio.RandomAffine()],
+    )
+    assert [type(t) for t in transforms.image_transforms] == [
+        tio.ZNormalization,
+        tio.Resize,
+    ]
+    assert transforms.sample_transforms.transforms == []
+
+
 def test_apply_transforms():
     affine = np.diag([3, 2, 1, 1])
     image = tio.ScalarImage(tensor=torch.randn(1, 14, 14, 14), affine=affine)

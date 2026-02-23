@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from clinicadl.data.datasets import Dataset
     from clinicadl.data.datasets.base import BaseDataset
     from clinicadl.io import Maps
-    from clinicadl.io.maps.utils import ModelDir
     from clinicadl.losses.types import LossType
     from clinicadl.models import Model
     from clinicadl.split import Split
@@ -74,12 +73,14 @@ class ChecksCallback(Callback):
         self._check_batch.on_validate_start(**kwargs)
 
     def on_test_start(self, **kwargs) -> None:
+        self._check_inputs.on_test_start(**kwargs)
         self._check_dataframes.on_test_start(**kwargs)
         self._check_data_leakage.on_test_start(**kwargs)
         self._check_data_consistency.on_test_start(**kwargs)
         self._check_batch.on_test_start(**kwargs)
 
     def on_predict_start(self, **kwargs) -> None:
+        self._check_inputs.on_predict_start(**kwargs)
         self._check_dataframes.on_predict_start(**kwargs)
         self._check_data_consistency.on_predict_start(**kwargs)
         self._check_batch.on_predict_start(**kwargs)
@@ -94,11 +95,62 @@ class _CheckInputs:
         """
         Checks the split index and that dataloaders have been instantiated in the splits.
         """
-        split.train_loader
-        split.val_loader
+        if split.train_loader is None:
+            raise RuntimeError(
+                "The split has no training dataloder defined. Please run 'build_train_loader'"
+            )
+        if split.val_loader is None:
+            raise RuntimeError(
+                "The split has no validation dataloder defined. Please run 'build_val_loader'"
+            )
 
     def on_resume(self, *, split: Split, **kwargs) -> None:
         self.on_train_start(split=split)
+
+    def on_test_start(
+        self,
+        *,
+        maps: Maps,
+        group_name: str,
+        model_checkpoint: str,
+        **kwargs,
+    ) -> None:
+        """
+        Checks if the checkpoint has already been tested on this group.
+        """
+        self._check_checkpoint(model_checkpoint, group_name, maps=maps, test=True)
+
+    def on_predict_start(
+        self,
+        *,
+        maps: Maps,
+        group_name: str,
+        model_checkpoint: str,
+        **kwargs,
+    ) -> None:
+        """
+        Checks if the group has already been predicted with this checkpoint.
+        """
+        self._check_checkpoint(model_checkpoint, group_name, maps=maps, test=False)
+
+    @staticmethod
+    def _check_checkpoint(
+        model_checkpoint: str, group_name: str, maps: Maps, test: bool
+    ):
+        split_idx, chkpt = maps.training.read_checkpoint_name(model_checkpoint)
+        if test:
+            dir_ = maps.test
+        else:
+            dir_ = maps.prediction
+
+        if (
+            split_idx in dir_.groups[group_name].results.splits_list
+            and chkpt in dir_.groups[group_name].results.splits[split_idx].models_list
+        ):
+            raise FileExistsError(
+                f"There are already some results for checkpoint '{chkpt}' in {dir_.groups[group_name].results.splits[split_idx].models[chkpt].path}. "
+                f"If you want to continue, please first delete the folder."
+            )
 
 
 class _CheckLosses:
@@ -269,9 +321,6 @@ class _CheckDataConsistency:
         Raises warnings if these objects differ or cannot be compared.
         """
         for split_idx in maps.training.splits_list:
-            if split_idx == split.index:
-                continue
-
             self._compare(
                 split.train_dataset,
                 maps.training.data.train.splits[split_idx].dataset_json,
@@ -391,24 +440,23 @@ class _CheckDataConsistency:
         - error if the (participant, session) couples in the dataset are not the same as the group couples;
         - warning if the dataset doesn't match with the original test dataset (or cannot be compared).
         """
-        if maps.test.groups[group_name].data_tsv.exists():
-            self._compare_participants_sessions(
-                dataloader.dataset,
-                maps.test.groups[group_name].data_tsv,
-                maps=maps,
-                stage="test",
-                group=group_name,
-            )
-        if maps.test.groups[group_name].dataset_json.exists():
-            self._compare(
-                dataloader.dataset,
-                maps.test.groups[group_name].dataset_json,
-                getter=get_dataset_from_json_safely,
-                comparator=_compare_datasets,
-                new_group=group_name,
-                old_group=group_name,
-                stage="test",
-            )
+        self._compare_participants_sessions(
+            dataloader.dataset,
+            maps.test.groups[group_name].data_tsv,
+            maps=maps,
+            stage="test",
+            group=group_name,
+        )
+
+        self._compare(
+            dataloader.dataset,
+            maps.test.groups[group_name].dataset_json,
+            getter=get_dataset_from_json_safely,
+            comparator=_compare_datasets,
+            new_group=group_name,
+            old_group=group_name,
+            stage="test",
+        )
 
     def on_predict_start(
         self,
@@ -423,24 +471,23 @@ class _CheckDataConsistency:
         - error if the (participant, session) couples in the dataset are not the same as the group couples;
         - warning if the dataset doesn't match with the original prediction dataset (or cannot be compared).
         """
-        if maps.prediction.groups[group_name].data_tsv.exists():
-            self._compare_participants_sessions(
-                dataloader.dataset,
-                maps.prediction.groups[group_name].data_tsv,
-                maps=maps,
-                stage="prediction",
-                group=group_name,
-            )
-        if maps.prediction.groups[group_name].dataset_json.exists():
-            self._compare(
-                dataloader.dataset,
-                maps.prediction.groups[group_name].dataset_json,
-                getter=get_dataset_from_json_safely,
-                comparator=_compare_datasets,
-                new_group=group_name,
-                old_group=group_name,
-                stage="prediction",
-            )
+        self._compare_participants_sessions(
+            dataloader.dataset,
+            maps.prediction.groups[group_name].data_tsv,
+            maps=maps,
+            stage="prediction",
+            group=group_name,
+        )
+
+        self._compare(
+            dataloader.dataset,
+            maps.prediction.groups[group_name].dataset_json,
+            getter=get_dataset_from_json_safely,
+            comparator=_compare_datasets,
+            new_group=group_name,
+            old_group=group_name,
+            stage="prediction",
+        )
 
     @staticmethod
     def _compare_participants_sessions(

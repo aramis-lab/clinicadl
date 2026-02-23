@@ -177,9 +177,8 @@ class TestSideMethods:
         split = Mock()
         split.index = 1
         metrics = Mock()
-        optimizers = {"opt": Mock()}
 
-        trainer._reset_train(split, metrics, optimizers)
+        trainer._reset_train(split, metrics)
 
         assert trainer.state.split_idx == 1
         assert trainer.state.num_epochs == 5
@@ -188,7 +187,6 @@ class TestSideMethods:
         split.train_dataset.train.assert_called_once()
         split.val_dataset.eval.assert_called_once()
         metrics.reset.assert_called_once_with(reset_df=True)
-        optimizers["opt"].zero_grad.assert_called_once()
 
     def test_reset_epoch(self, trainer: Trainer):
         train_loader = MagicMock()
@@ -452,22 +450,6 @@ class TestSideMethods:
         trainer._create_split(split_idx=2, resume=False)
         assert maps.training.splits[2].path.exists()
 
-    def test_create_results_dir(self, trainer: Trainer, tmp_path):
-        maps = _add_maps_to_trainer(trainer, tmp_path)
-
-        with pytest.raises(
-            FileExistsError,
-            match=f"There are already some results for checkpoint 'best-loss' in {maps.test.groups['X'].results.splits[0].models['best-loss'].path}. "
-            f"If you want to continue, please first delete the folder.",
-        ):
-            trainer._create_results_dir(
-                maps.test, group_name="X", model_checkpoint="split-0_best-loss"
-            )
-        trainer._create_results_dir(
-            maps.test, group_name="Z", model_checkpoint="split-0_best-loss"
-        )
-        assert maps.test.groups["Z"].results.splits[0].models["best-loss"].path.exists()
-
     def test_check_split_exists(self, trainer: Trainer):
         trainer._maps = Maps(MAPS_PATH)
         trainer._maps.read()
@@ -486,11 +468,7 @@ class TestSideMethods:
 
 
 class TestTrain:
-    @patch(
-        "clinicadl.train.trainer.warnings",
-        side_effect=lambda *args, **kwargs: nullcontext(),
-    )
-    def test_train(self, warnings, trainer: Trainer, tmp_path):
+    def test_train(self, trainer: Trainer, tmp_path):
         _add_maps_to_trainer(trainer, tmp_path)
 
         def _simulate_train(*args, **kwargs):
@@ -509,8 +487,6 @@ class TestTrain:
                 computational=(comp := ComputationalConfig(seed=7, deterministic=True)),
                 metrics=["loss"],
             )
-        warnings.catch_warnings.assert_called_once()
-        warnings.simplefilter.assert_called_once()
         trainer._train.assert_called_once_with(
             split=split, computational=comp, metrics=["loss"], resume=False
         )
@@ -549,9 +525,7 @@ class TestTrain:
         metrics = trainer._train_loop.call_args.kwargs["metrics"]
         assert list(metrics.metrics.keys()) == ["loss"]
 
-        trainer._reset_train.assert_called_once_with(
-            split=split, metrics=metrics, optimizers=optimizers
-        )
+        trainer._reset_train.assert_called_once_with(split=split, metrics=metrics)
         trainer._model_to.assert_called_once_with(comp)
         trainer.callbacks.callbacks[-3].on_train_start.assert_called_once_with(
             model=trainer.model,
@@ -803,7 +777,7 @@ class TestTrain:
         trainer._validation = Mock()
         trainer._optim_config = OptimizationConfig(num_epochs=1)
         trainer._model = _setup_real_model()
-        trainer._reset_train(split, metrics=Mock(), optimizers={"opt": Mock()})
+        trainer._reset_train(split, metrics=Mock())
         trainer._model_to(computational)
         trainer.state.current_epoch = 0
 
@@ -816,11 +790,7 @@ class TestTrain:
 
 
 class TestValidation:
-    @patch(
-        "clinicadl.train.trainer.warnings",
-        side_effect=lambda *args, **kwargs: nullcontext(),
-    )
-    def test_validate(self, warnings, trainer: Trainer):
+    def test_validate(self, trainer: Trainer):
         trainer._maps = Mock()
 
         def _simulate_validate(*args, **kwargs):
@@ -843,8 +813,6 @@ class TestValidation:
                 computational=(comp := Mock()),
             )
         trainer.maps.read.assert_called_once()
-        warnings.catch_warnings.assert_called_once()
-        warnings.simplefilter.assert_called_once()
         trainer._check_split_exists.assert_called_once_with(0)
         trainer._validate.assert_called_once_with(
             split_idx=0,
@@ -971,11 +939,7 @@ class TestValidation:
 
 
 class TestTest:
-    @patch(
-        "clinicadl.train.trainer.warnings",
-        side_effect=lambda *args, **kwargs: nullcontext(),
-    )
-    def test_test(self, warnings, trainer: Trainer):
+    def test_test(self, trainer: Trainer):
         def _simulate_test(*args, **kwargs):
             assert torch.initial_seed() == 1
             assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
@@ -999,8 +963,6 @@ class TestTest:
             computational=comp,
         )
         trainer.callbacks.callbacks[-3].on_exception.assert_called()
-        warnings.catch_warnings.assert_called_once()
-        warnings.simplefilter.assert_called_once()
         assert torch.initial_seed() != 7
         assert not os.environ.get("CLINICADL_DETERMINISTIC")
 
@@ -1013,7 +975,6 @@ class TestTest:
         trainer._evaluation_loop = Mock()
         trainer._get_dataloader = Mock()
         trainer._get_dataloader.return_value = (loader := Mock())
-        trainer._create_results_dir = Mock()
         trainer._reset_test = Mock()
         trainer._load_model_checkpoint = Mock()
         trainer._model_to = Mock()
@@ -1030,9 +991,6 @@ class TestTest:
         assert list(metrics.metrics.keys()) == ["loss"]
 
         trainer._get_dataloader.assert_called_once_with(trainer.maps.test.groups["X"])
-        trainer._create_results_dir.assert_called_once_with(
-            trainer.maps.test, group_name="X", model_checkpoint="split-0_best-loss"
-        )
         trainer._reset_test.assert_called_once_with(loader, metrics)
         trainer._load_model_checkpoint.assert_called_once_with(
             trainer.maps.training.splits[0].models.best_models.metrics["loss"].model_pt

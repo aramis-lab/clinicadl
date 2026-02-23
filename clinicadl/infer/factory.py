@@ -7,7 +7,7 @@ from clinicadl.utils.factories import factory_from_dict
 from .base import Inferer
 from .patches_to_image import PatchesToImageInferer
 from .simple import SimpleInferer
-from .slices_to_image import SlicesToImageInferer
+from .slices_to_image import SliceInferer
 
 
 class ImplementedInferer(str, Enum):

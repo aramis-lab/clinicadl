@@ -110,7 +110,7 @@ class Split(HasConfig[SplitConfig]):
         """To access the training :py:class:`torch.utils.data.DataLoader`."""
         if not self.config.train_loader_config:
             raise RuntimeError(
-                "The split has no training dataloader defined. Please run 'build_train_loader'"
+                "Call 'build_train_loader' before accessing the 'train_loader'."
             )
         return self.config.train_loader_config.get_object(
             dataset=self.train_dataset,
@@ -123,7 +123,7 @@ class Split(HasConfig[SplitConfig]):
         """To access the validation :py:class:`torch.utils.data.DataLoader`."""
         if not self.config.val_loader_config:
             raise RuntimeError(
-                "The split has no validation dataloader defined. Please run 'build_val_loader'"
+                "Call 'build_val_loader' before accessing the 'val_loader'."
             )
         return self.config.val_loader_config.get_object(
             dataset=self.val_dataset,
