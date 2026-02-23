@@ -74,7 +74,7 @@ jobs:
         run: make functional-tests
 
   gpu-functional-test:
-    name: Functional tests
+    name: GPU functional tests
     runs-on:
       - self-hosted
       - functional-tests
