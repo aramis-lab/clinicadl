@@ -38,22 +38,22 @@ jobs:
       - name: Run unit tests
         run: make unit-tests
 
-  # gpu-unit-tests:
-  #   name: GPU unit tests (Python ${{ env.PREFERRED_PYTHON_VERSION }})
-  #   runs-on:
-  #     - self-hosted
-  #     - gpu
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: snok/install-poetry@v1
-  #       with:
-  #         version: ${{ env.POETRY_VERSION }}
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
-  #         cache: poetry
-  #     - name: Run unit tests
-  #       run: make gpu-unit-tests
+  gpu-unit-tests:
+    name: GPU unit tests (Python ${{ env.PREFERRED_PYTHON_VERSION }})
+    runs-on:
+      - self-hosted
+      - gpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          cache: poetry
+      - name: Run unit tests
+        run: make gpu-unit-tests
 
   # multi-gpu-unit-tests:
   #   name: Multi-GPUs unit tests (Python ${{ env.PREFERRED_PYTHON_VERSION }})
