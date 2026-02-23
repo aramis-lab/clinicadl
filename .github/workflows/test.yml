@@ -39,7 +39,7 @@ jobs:
         run: make unit-tests
 
   gpu-unit-tests:
-    name: GPU unit tests (Python)
+    name: GPU unit tests (Python ${{ env.PREFERRED_PYTHON_VERSION }})
     runs-on:
       - self-hosted
       - gpu
