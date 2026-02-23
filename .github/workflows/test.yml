@@ -54,6 +54,8 @@ jobs:
           cache: poetry
       - name: Run functional tests
         run: |
+          make env.conda
+          conda activate "${{ github.workspace }}"/env
           make install
           make functional-tests
 
@@ -65,15 +67,9 @@ jobs:
     needs: cpu-functional-test
     steps:
       - uses: actions/checkout@v4
-      - uses: snok/install-poetry@v1
-        with:
-          version: ${{ env.POETRY_VERSION }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
-          cache: poetry
       - name: Run unit tests
         run: |
+          conda activate "${{ github.workspace }}"/env
           make gpu-unit-tests
 
   # gpu-functional-test:
