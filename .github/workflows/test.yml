@@ -60,7 +60,7 @@ jobs:
     runs-on:
       - self-hosted
       - functional-tests
-    needs: cpu-functional-test
+    needs: gpu-unit-tests
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
