@@ -32,6 +32,7 @@ from clinicadl.optim.config import OptimizationConfig
 from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.dictionary.words import CPU
+from clinicadl.utils.enum import TrainerCall
 from clinicadl.utils.exceptions import CannotReadJsonError, CannotReadJsonFieldError
 from clinicadl.utils.seed import seed_everything_context
 
@@ -463,6 +464,8 @@ class Trainer:
                         grad_scaler=grad_scaler,
                     )
 
+                    self._clip_gradients()
+
                     self.model.optimization_step(
                         optimizers=optimizers, grad_scaler=grad_scaler
                     )
@@ -859,7 +862,10 @@ class Trainer:
         """
         with torch.no_grad():
             for batch_idx, batch in enumerate(dataloader, start=1):
-                self.state.current_val_batch = batch_idx
+                if self.state.called == TrainerCall.TEST:
+                    self.state.current_test_batch = batch_idx
+                else:
+                    self.state.current_val_batch = batch_idx
 
                 self._call_event(Events.BATCH_START, batch=batch)
 
@@ -1008,6 +1014,23 @@ class Trainer:
         self.model.to(CPU)  # load weights on cpu
         state_dict = self.maps.open_file(model_path)
         self.model.load_state_dict(state_dict)
+
+    def _clip_gradients(
+        self,
+    ) -> None:
+        """
+        To clip gradients.
+        """
+        if self.optimization.clip_grad_value is not None:
+            torch.nn.utils.clip_grad_value_(
+                self.model.parameters(), clip_value=self.optimization.clip_grad_value
+            )
+        if self.optimization.clip_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(
+                self.model.parameters(),
+                max_norm=self.optimization.clip_grad_norm,
+                norm_type=self.optimization.grad_norm_type,
+            )
 
     def _call_event(self, event: Events, **kwargs):
         """

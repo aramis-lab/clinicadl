@@ -330,6 +330,38 @@ class TestSideMethods:
             next(iter(trainer._model.parameters())),
         )
 
+    @patch("torch.nn.utils.clip_grad_norm_", Mock())
+    @patch("torch.nn.utils.clip_grad_value_", Mock())
+    def test_clip_gradients(self, trainer: Trainer):
+        trainer.model.parameters = Mock(return_value="parameters")
+        trainer.optimization.clip_grad_norm = 1.7
+        trainer.optimization.grad_norm_type = -1.5
+        trainer.optimization.clip_grad_value = None
+
+        trainer._clip_gradients()
+
+        torch.nn.utils.clip_grad_norm_.assert_called_once_with(
+            "parameters", max_norm=1.7, norm_type=-1.5
+        )
+        torch.nn.utils.clip_grad_value_.assert_not_called()
+        torch.nn.utils.clip_grad_norm_.reset_mock()
+        trainer.optimization.clip_grad_norm = None
+        trainer.optimization.clip_grad_value = 0.7
+
+        trainer._clip_gradients()
+
+        torch.nn.utils.clip_grad_norm_.assert_not_called()
+        torch.nn.utils.clip_grad_value_.assert_called_once_with(
+            "parameters", clip_value=0.7
+        )
+        torch.nn.utils.clip_grad_value_.reset_mock()
+        trainer.optimization.clip_grad_norm = 1.7
+
+        trainer._clip_gradients()
+
+        torch.nn.utils.clip_grad_norm_.assert_called_once()
+        torch.nn.utils.clip_grad_norm_.assert_called_once()
+
     def test_call_event(self, trainer: Trainer):
         e = ValueError()
         trainer._call_event(
@@ -634,6 +666,7 @@ class TestTrain:
 
         trainer.model.forward_step.return_value = "loss"
         reset_epoch = trainer._reset_epoch
+        trainer._clip_gradients = Mock()
         trainer._reset_epoch = Mock()
         trainer._reset_epoch.side_effect = reset_epoch
         trainer._batch_to = Mock()
@@ -721,6 +754,7 @@ class TestTrain:
             * 4
         )
         # optimization
+        assert trainer._clip_gradients.call_count == 4
         trainer.callbacks.callbacks[-3].on_optimization_step_start.assert_has_calls(
             [
                 call(
@@ -770,6 +804,7 @@ class TestTrain:
         trainer.optimization.evaluation_interval = 1
 
         reset_epoch = trainer._reset_epoch
+        trainer._clip_gradients = Mock()
         trainer._reset_epoch = Mock()
         trainer._reset_epoch.side_effect = reset_epoch
         trainer._batch_to = Mock()
@@ -1165,12 +1200,14 @@ class TestEvaluationLoop:
 
         # with epoch
         metrics.reset_mock()
+        trainer.state.called = "test"
         trainer._evaluation_loop(
             dataloader=loader,
             metrics=metrics,
             computational=(comp := ComputationalConfig(amp=True)),
             epoch=None,
         )
+        trainer.state.current_test_batch == 3
         metrics.assert_has_calls([call("out", epoch=None)] * len(batches))
         metrics.aggregate.assert_called_once_with(epoch=None)
 
