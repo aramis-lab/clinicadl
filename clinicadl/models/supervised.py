@@ -249,7 +249,7 @@ class SupervisedModel(HasConfig[SupervisedModelConfig], Model):
         from torchinfo import summary
 
         summary_ = summary(
-            self.network, input_data=input_data.get_field(IMAGE), batch_dim=0
+            self.network, input_data=input_data.get_field(IMAGE), batch_dim=0, verbose=0
         )
 
         return str(summary_)
