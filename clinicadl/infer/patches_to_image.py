@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import torch
 from monai.inferers import SlidingWindowInferer
@@ -194,7 +194,7 @@ class PatchesToImageInferer(
         )
 
     def _forward_pass(
-        self, tensor: torch.Tensor, network: torch.nn.Module, **kwargs
+        self, tensor: torch.Tensor, network: Callable[..., torch.Tensor], **kwargs
     ) -> torch.Tensor:
         self._check_shape(tensor)
 
