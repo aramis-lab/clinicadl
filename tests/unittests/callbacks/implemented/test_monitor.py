@@ -44,7 +44,8 @@ def _training(
     raise_error: bool = False,
     sleep_after_training_start: bool = False,
 ):
-    maps.training.splits[STATE.split_idx].logs.computational_tsv.unlink()
+    if maps.training.splits[STATE.split_idx].logs.computational_tsv.exists():
+        maps.training.splits[STATE.split_idx].logs.computational_tsv.unlink()
 
     if not check_running:
         _assert_running = lambda *x: True  # noqa: E731
@@ -247,10 +248,7 @@ def test_monitor(tmp_path):
     # disable
     monitor = MonitorCallback(warmup_iterations=0, enabled=False)
     _training(monitor, maps)
-    df = pd.read_csv(
-        maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
-    )
-    assert len(df) == 0
+    assert not maps.training.splits[STATE.split_idx].logs.computational_tsv.exists()
 
     # measurement limit
     monitor = MonitorCallback(num_measurements=5, warmup_iterations=5)
@@ -279,7 +277,6 @@ def test_exception(caplog, tmp_path):
         )
     assert len(caplog.records) == 0
 
-    maps.training.splits[STATE.split_idx].logs.create = Mock()
     try:
         _training(
             monitor,
@@ -291,18 +288,28 @@ def test_exception(caplog, tmp_path):
             sleep_after_training_start=True,
         )
     except Exception as e:
-        with caplog.at_level("ERROR"):
+        with caplog.at_level("DEBUG"):
             monitor.on_exception(maps=maps, state=STATE, exception=e)
 
-    maps.training.splits[STATE.split_idx].logs.create.assert_called()
-    df = pd.read_csv(
-        maps.training.splits[STATE.split_idx].logs.computational_tsv, sep="\t"
-    )
-    assert len(df) == 4
-    assert (
-        f"CUDA out of memory. To debug, you can have a look at your memory usage in {maps.training.splits[STATE.split_idx].logs.computational_tsv}"
-        in caplog.text
-    )
+    assert "Computational overview:\nTraining (s)" in caplog.text
+
+    # disable
+    caplog.clear()
+    monitor = MonitorCallback(warmup_iterations=0, enabled=False)
+    try:
+        _training(
+            monitor,
+            maps,
+            raise_error=True,
+            epochs=2,
+            train_batches=2,
+            val_batches=2,
+            sleep_after_training_start=True,
+        )
+    except Exception as e:
+        with caplog.at_level("DEBUG"):
+            monitor.on_exception(maps=maps, state=STATE, exception=e)
+    assert len(caplog.records) == 0
 
 
 def test_checkpoint(tmp_path):
