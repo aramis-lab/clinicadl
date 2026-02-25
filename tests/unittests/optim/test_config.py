@@ -12,6 +12,7 @@ def test_OptimizationConfig():
         clip_grad_norm=1.1,
         grad_norm_type=-4.3,
         clip_grad_value=1.7,
+        reset_model=False,
     )
 
     assert config.accumulation_steps == 2
@@ -20,6 +21,7 @@ def test_OptimizationConfig():
     assert config.clip_grad_norm == 1.1
     assert config.grad_norm_type == -4.3
     assert config.clip_grad_value == 1.7
+    assert not config.reset_model
 
     with pytest.raises(ValidationError):
         OptimizationConfig(accumulation_steps=0)

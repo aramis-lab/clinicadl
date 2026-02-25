@@ -33,6 +33,11 @@ class OptimizationConfig(ClinicaDLConfig):
 
         .. important::
             Gradient value clipping is performed before gradient norm clipping.
+    reset_model : ResetOption, default="all"
+        Whether to reset the neural network weights before a training phase. If ``True``,
+        all the trainable parameters (i.e. with ``requires_grad=True``) will be randomly reset.
+        Otherwise, the weights are not reset, so the weights initially passed when instantiating
+        the :py:class:`~clinicadl.train.Trainer` is always used as a starting point
     """
 
     num_epochs: PositiveInt = 10
@@ -41,3 +46,4 @@ class OptimizationConfig(ClinicaDLConfig):
     clip_grad_norm: Optional[NonNegativeFloat] = None
     grad_norm_type: float = 2
     clip_grad_value: Optional[NonNegativeFloat] = None
+    reset_model: bool = True
