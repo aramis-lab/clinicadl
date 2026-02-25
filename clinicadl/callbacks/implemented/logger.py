@@ -122,7 +122,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
             )
         if self.config.save_logs and self.logger:
             self.logger.exception(
-                "The traceback and potential details remains available in %s",
+                "The traceback and potential details remain available in %s",
                 self._log_path.path,
             )
             _shutdown_logging(self.logger)

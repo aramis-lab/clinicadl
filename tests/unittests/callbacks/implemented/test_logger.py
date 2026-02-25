@@ -592,7 +592,7 @@ def test_on_exception(caplog, tmp_path):
     assert "a second warning" not in f
 
     assert (
-        f"The traceback and potential details remains available in {run_dir.path}"
+        f"The traceback and potential details remain available in {run_dir.path}"
         in caplog.text
     )
     assert "ValueError" not in caplog.text  # no traceback in console
@@ -606,7 +606,7 @@ def test_on_exception(caplog, tmp_path):
     with caplog.at_level(logging.INFO):
         logger.on_exception(state=state)
 
-    assert "The traceback and potential details remains available in" not in caplog.text
+    assert "The traceback and potential details remain available in" not in caplog.text
 
 
 def test_resume(caplog, tmp_path):
