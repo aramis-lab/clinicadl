@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pydantic import PositiveInt
+from typing import Optional
+
+from pydantic import NonNegativeFloat, PositiveInt
 
 from clinicadl.utils.config import ClinicaDLConfig
 
@@ -19,8 +21,23 @@ class OptimizationConfig(ClinicaDLConfig):
     evaluation_interval : PositiveInt, default=1
         Perform evaluation on the validation every x epochs. For example, if ``evaluation_interval=2``, evaluation
         will be performed after epochs 2, 4, 6, 8, etc.
+    clip_grad_norm : Optional[NonNegativeFloat], default=None
+        To clip gradient norm. Give here the maximum norm accepted (a non-negative float).
+        The norm is computed over the norms of the individual gradients of all parameters (see
+        :py:class:`torch.nn.utils.clip_grad_norm_`).
+    grad_norm_type : float, default=2
+        Type of the used p-norm for gradient norm clipping. Can be any float.
+    clip_grad_value : Optional[NonNegativeFloat]
+        For individual gradients clipping (see :py:class:`torch.nn.utils.clip_grad_value_`). Give here the maximum absolute value accepted (a non-negative float).
+        Contrary to norm clipping, value clipping is performed on each gradient individually.
+
+        .. important::
+            Gradient value clipping is performed before gradient norm clipping.
     """
 
     num_epochs: PositiveInt = 10
     accumulation_steps: PositiveInt = 1
     evaluation_interval: PositiveInt = 1
+    clip_grad_norm: Optional[NonNegativeFloat] = None
+    grad_norm_type: float = 2
+    clip_grad_value: Optional[NonNegativeFloat] = None
