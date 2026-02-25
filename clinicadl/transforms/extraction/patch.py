@@ -133,7 +133,11 @@ class Patch(Extraction[ObjectConfig]):
         if self.config.pad_mode and any(pad_size):
             image_tensor = torch.nn.functional.pad(
                 image_tensor,
-                pad_size,
+                pad_size[-2:]
+                + pad_size[2:4]
+                + pad_size[
+                    :2
+                ],  # torch.nn.functional.pad starts with the last dimension
                 mode=self.config.pad_mode,
                 value=self.config.pad_value,
             )
