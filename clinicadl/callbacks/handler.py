@@ -7,7 +7,7 @@ from pydantic import Field, field_validator
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
-from .base import Callback, Events
+from .base import Callback, Event
 from .factory import get_callback_from_dict
 from .implemented import (
     ChecksCallback,
@@ -22,8 +22,8 @@ from .implemented import (
 
 T = TypeVar("T")
 
+FIRST_LAST = [LoggerCallback]
 FIRST = [
-    LoggerCallback,
     ChecksCallback,
     ConfigSaverCallback,
     MonitorCallback,
@@ -125,7 +125,8 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         .. important:: Order matters!
             The order of your callbacks in ``callbacks`` may determine the order in which callbacks will be called.
             Note, however, that some callbacks have an immutable rank in this order. For example, no matter where you place
-            :py:class:`~clinicadl.callbacks.LoggerCallback`, it will be called first to initialize logging.
+            :py:class:`~clinicadl.callbacks.LoggerCallback`, it will be called first to initialize logging and last to
+            shutdown logging.
     """
 
     _config_type = CallbacksHandlerConfig
@@ -135,8 +136,9 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         callbacks: Sequence[Callback],
     ):
         self.config = self._config_type(callbacks=callbacks)
-        self._with_defaults = None
-        self._all_callbacks = None
+        self._with_defaults = None  # inputs + defaults
+        self._ordered = None  # inputs + defaults + mandatory, except the ones in self._first_and_last, ordered
+        self._first_and_last = None  # callbacks that are always called first and last
         self._complete_callbacks()
 
     @property
@@ -154,7 +156,7 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         self.config.add_callbacks(callbacks)
         self._complete_callbacks()
 
-    def call_event(self, event: str | Events, **kwargs) -> None:
+    def call_event(self, event: str | Event, **kwargs) -> None:
         """
         Call a specific event method on all callbacks
         (see :py:class:`~clinicadl.callbacks.Callback` to get
@@ -162,19 +164,35 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
 
         Parameters
         ----------
-        event : str | Events
+        event : str | Event
             Name of the event to call (e.g. ``"on_train_start"``).
         kwargs : Any
             Keyword arguments that will be passed to the methods
             associated to this event.
         """
-        for callback in self._all_callbacks:
-            getattr(callback, Events(event).value)(**kwargs)
+        event = Event(event).value
+
+        is_start_event = (
+            event.endswith("start") or event.endswith("init") or event == Event.RESUME
+        )
+        is_end_event = event.endswith("end") or event == Event.EXCEPTION
+        assert is_start_event or is_end_event
+
+        if is_start_event:
+            for callback in self._first_and_last:
+                getattr(callback, event)(**kwargs)
+
+        for callback in self._ordered:
+            getattr(callback, event)(**kwargs)
+
+        if is_end_event:
+            for callback in self._first_and_last[::-1]:
+                getattr(callback, event)(**kwargs)
 
     def _complete_callbacks(self) -> None:
         """
         Completes the callbacks passed by the user with the mandatory
-        and default callbacks.
+        and default callbacks, and orders the callbacks.
         """
         callbacks = copy(self.config.callbacks)
         self._add_defaults(callbacks)
@@ -182,7 +200,12 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         self._with_defaults = copy(callbacks)
         self._add_mandatory(callbacks)
         self._reorder(callbacks)
-        self._all_callbacks = callbacks
+        self._ordered = [
+            callback for callback in callbacks if type(callback) not in FIRST_LAST
+        ]
+        self._first_and_last = [
+            callback for callback in callbacks if type(callback) in FIRST_LAST
+        ]
 
     @staticmethod
     def _add_mandatory(callbacks: list[Callback]) -> None:
@@ -206,4 +229,5 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         Reorders the callbacks.
         """
         _reorder(callbacks, FIRST, unordered_at_the_end=True)
+        _reorder(callbacks, FIRST_LAST, unordered_at_the_end=True)
         _reorder(callbacks, LAST, unordered_at_the_end=False)

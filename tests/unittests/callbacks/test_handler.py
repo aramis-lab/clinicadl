@@ -1,11 +1,9 @@
 import shutil
-from copy import copy
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
-import clinicadl.callbacks.handler
 from clinicadl.callbacks import (
     Callback,
     CallbacksHandler,
@@ -50,20 +48,21 @@ def test_inputs():
             custom := CustomCallback(),
         ]
     )
-    assert cb_handler._all_callbacks[0] is log
-    assert isinstance(cb_handler._all_callbacks[1], ChecksCallback)
-    assert isinstance(cb_handler._all_callbacks[2], ConfigSaverCallback)
-    assert isinstance(cb_handler._all_callbacks[3], MonitorCallback)
-    assert cb_handler._all_callbacks[3].config.num_measurements == 100
-    assert cb_handler._all_callbacks[4] is es_1
-    assert cb_handler._all_callbacks[5] is es_2
-    assert cb_handler._all_callbacks[6] is custom
-    assert isinstance(cb_handler._all_callbacks[7], ModelCheckpointCallback)
-    assert cb_handler._all_callbacks[7].config.save_last
-    assert isinstance(cb_handler._all_callbacks[8], TrainingLossCallback)
-    assert isinstance(cb_handler._all_callbacks[9], MetricsSaverCallback)
-    assert cb_handler._all_callbacks[10] is chkpt
-    assert len(cb_handler._all_callbacks) == 11
+    assert cb_handler._first_and_last[0] is log
+
+    assert isinstance(cb_handler._ordered[0], ChecksCallback)
+    assert isinstance(cb_handler._ordered[1], ConfigSaverCallback)
+    assert isinstance(cb_handler._ordered[2], MonitorCallback)
+    assert cb_handler._ordered[2].config.num_measurements == 100
+    assert cb_handler._ordered[3] is es_1
+    assert cb_handler._ordered[4] is es_2
+    assert cb_handler._ordered[5] is custom
+    assert isinstance(cb_handler._ordered[6], ModelCheckpointCallback)
+    assert cb_handler._ordered[6].config.save_last
+    assert isinstance(cb_handler._ordered[7], TrainingLossCallback)
+    assert isinstance(cb_handler._ordered[8], MetricsSaverCallback)
+    assert cb_handler._ordered[9] is chkpt
+    assert len(cb_handler._ordered) == 10
 
     assert cb_handler.callbacks[0] is log
     assert isinstance(cb_handler.callbacks[1], MonitorCallback)
@@ -74,46 +73,77 @@ def test_inputs():
     assert cb_handler.callbacks[6] is chkpt
     assert len(cb_handler.callbacks) == 7
 
-    cb_handler.add_callbacks(
-        [
-            model_ckpt := ModelCheckpointCallback(epochs=[5]),
-            es_3 := EarlyStoppingCallback(metric="mae"),
-            monitor := MonitorCallback(num_measurements=5),
-        ]
-    )
-    assert len(cb_handler._all_callbacks) == 12
-    assert cb_handler._all_callbacks[3] is monitor
-    assert cb_handler._all_callbacks[7] is model_ckpt
-    assert cb_handler._all_callbacks[8] is es_3
-    assert len(cb_handler.callbacks) == 8
-    assert cb_handler.callbacks[1] is monitor
-    assert cb_handler.callbacks[5] is model_ckpt
-    assert cb_handler.callbacks[6] is es_3
-
     for cb in [LoggerCallback(), MonitorCallback(), TrainingCheckpointCallback()]:
         with pytest.raises(
             ValueError, match=f"You cannot pass more than one {type(cb)}"
         ):
             CallbacksHandler([cb, cb])
 
+    cb_handler = CallbacksHandler([])
+    assert len(cb_handler._first_and_last) == 1
+    assert isinstance(cb_handler._first_and_last[0], LoggerCallback)
+    cb_handler.add_callbacks(
+        [
+            log := LoggerCallback(debug=False),
+        ]
+    )
+    assert cb_handler._first_and_last[0] is log
+    assert cb_handler.callbacks[0] is log
 
-MANDATORY = copy(clinicadl.callbacks.handler.MANDATORY)
-MANDATORY[-1] = Mock()
 
-
-@patch("clinicadl.callbacks.handler.MANDATORY", MANDATORY)
+@patch("clinicadl.callbacks.handler.MANDATORY", MANDATORY := [Mock()])
+@patch("clinicadl.callbacks.handler.DEFAULT", [])
 def test_call_event():
     log = LoggerCallback()
     log.on_trainer_init = Mock()
+    log.on_forward_step_start = Mock()
+    log.on_resume = Mock()
+    log.on_train_end = Mock()
+    log.on_exception = Mock()
+    monitor = MonitorCallback()
+    monitor.on_trainer_init = Mock()
+    monitor.on_forward_step_start = Mock()
+    monitor.on_resume = Mock()
+    monitor.on_train_end = Mock()
+    monitor.on_exception = Mock()
     cb = Mock()
     cb.__class__ = Callback
-    cb_handler = CallbacksHandler([log, Callback(), cb])
+
+    on_trainer_init = Mock()
+    on_trainer_init.attach_mock(log.on_trainer_init, "log")
+    on_trainer_init.attach_mock(monitor.on_trainer_init, "monitor")
+    on_trainer_init.attach_mock(cb.on_trainer_init, "cb")
+    on_trainer_init.attach_mock(MANDATORY[-1].on_trainer_init, "mandatory")
+    on_forward_step_start = Mock()
+    on_forward_step_start.attach_mock(log.on_forward_step_start, "log")
+    on_forward_step_start.attach_mock(monitor.on_forward_step_start, "monitor")
+    on_forward_step_start.attach_mock(cb.on_forward_step_start, "cb")
+    on_forward_step_start.attach_mock(MANDATORY[-1].on_forward_step_start, "mandatory")
+    on_resume = Mock()
+    on_resume.attach_mock(log.on_resume, "log")
+    on_resume.attach_mock(monitor.on_resume, "monitor")
+    on_resume.attach_mock(cb.on_resume, "cb")
+    on_resume.attach_mock(MANDATORY[-1].on_resume, "mandatory")
+    on_train_end = Mock()
+    on_train_end.attach_mock(log.on_train_end, "log")
+    on_train_end.attach_mock(monitor.on_train_end, "monitor")
+    on_train_end.attach_mock(cb.on_train_end, "cb")
+    on_train_end.attach_mock(MANDATORY[-1].on_train_end, "mandatory")
+    on_exception = Mock()
+    on_exception.attach_mock(log.on_exception, "log")
+    on_exception.attach_mock(monitor.on_exception, "monitor")
+    on_exception.attach_mock(cb.on_exception, "cb")
+    on_exception.attach_mock(MANDATORY[-1].on_exception, "mandatory")
+
+    cb_handler = CallbacksHandler([log, Callback(), monitor, cb])
+
     with pytest.raises(TypeError, match="missing 5 required keyword-only argument"):
         cb_handler.call_event(
             "on_trainer_init",
             model=Mock(),
         )
 
+    on_trainer_init.reset_mock()
     log.on_trainer_init.reset_mock()
     cb_handler.call_event(
         "on_trainer_init",
@@ -124,10 +154,64 @@ def test_call_event():
         optimization=Mock(),
         callbacks=Mock(),
     )
-    assert cb_handler.callbacks[0] is log
-    log.on_trainer_init.assert_called_once()
-    cb.on_trainer_init.assert_called_once()
-    MANDATORY[-1].on_trainer_init.assert_called_once()
+    cb_handler.call_event(
+        "on_forward_step_start",
+        model=Mock(),
+        maps=Mock(),
+        state=Mock(),
+        batch=Mock(),
+    )
+    cb_handler.call_event(
+        "on_resume",
+        model=Mock(),
+        maps=Mock(),
+        state=Mock(),
+        split=Mock(),
+        optimizers=Mock(),
+        grad_scaler=Mock(),
+        optimization=Mock(),
+        metrics=Mock(),
+        callbacks=Mock(),
+        computational=Mock(),
+    )
+    cb_handler.call_event(
+        "on_train_end",
+        model=Mock(),
+        maps=Mock(),
+        state=Mock(),
+    )
+    cb_handler.call_event(
+        "on_exception",
+        model=Mock(),
+        maps=Mock(),
+        state=Mock(),
+        exception=Mock(),
+    )
+    assert [c[0] for c in on_trainer_init.mock_calls] == [
+        "log",
+        "monitor",
+        "cb",
+        "mandatory",
+    ]
+    assert [c[0] for c in on_forward_step_start.mock_calls] == [
+        "log",
+        "monitor",
+        "cb",
+        "mandatory",
+    ]
+    assert [c[0] for c in on_resume.mock_calls] == ["log", "monitor", "cb", "mandatory"]
+    assert [c[0] for c in on_train_end.mock_calls] == [
+        "monitor",
+        "cb",
+        "mandatory",
+        "log",
+    ]
+    assert [c[0] for c in on_exception.mock_calls] == [
+        "monitor",
+        "cb",
+        "mandatory",
+        "log",
+    ]
 
 
 def test_checkpoints(tmp_path):
@@ -161,15 +245,16 @@ def test_checkpoints(tmp_path):
         callbacks=cb_handler,
         optimization=Mock(),
     )
-    cb_handler._all_callbacks[0].logger = Mock()
-    cb_handler._all_callbacks[0]._train_progress_bar = Mock()
-    cb_handler._all_callbacks[3].monitor_epoch = Mock()
-    cb_handler._all_callbacks[3].monitor_epoch.state_dict.return_value = {}
-    cb_handler._all_callbacks[3].monitor_epoch.name = "epoch"
-    cb_handler._all_callbacks[-1]._optimizers = opt
-    cb_handler._all_callbacks[-1]._scaler = scaler
-    cb_handler._all_callbacks[-1]._metrics = Mock()
+    cb_handler._first_and_last[0].logger = Mock()
+    cb_handler._first_and_last[0]._train_progress_bar = Mock()
+    cb_handler._ordered[2].monitor_epoch = Mock()
+    cb_handler._ordered[2].monitor_epoch.state_dict.return_value = {}
+    cb_handler._ordered[2].monitor_epoch.name = "epoch"
+    cb_handler._ordered[-1]._optimizers = opt
+    cb_handler._ordered[-1]._scaler = scaler
+    cb_handler._ordered[-1]._metrics = Mock()
     #
+
     cb_handler.call_event("on_epoch_end", state=state, model=model, maps=maps)
     assert maps.callbacks_json.is_file()
     assert maps.open_file(
