@@ -1,3 +1,23 @@
+"""
+A multi-class, multi-label classification task trained on 2 splits (KFold splitting) with:
+- a CapsDataset with data augmentation and custom transforms
+  involving individual and common masks;
+- a DataLoader with weighted sampling;
+- a SupervisedModel;
+- metrics with postprocessing (computed on CPU);
+- accumulation steps and evaluation interval more than 1;
+- amp and channels last memory format (and without);
+- LR scheduling;
+- early stopping;
+- model checkpointing;
+- logging (without debug and progress bar);
+- validation on new metrics;
+- test (two times on the same group).
+
+The data location (i.e. the device) across the workflow is tested.
+Model resetting (or no resetting) is tested.
+"""
+
 from __future__ import annotations
 
 import time
@@ -26,32 +46,57 @@ from clinicadl.transforms.config import (
     ActivationsConfig,
     AsDiscreteConfig,
 )
+from clinicadl.utils.seed import seed_everything_context
 
-from .utils import build_dataset
+from .utils import TestDevice, TestModelReset, build_dataset
 
 if TYPE_CHECKING:
     from clinicadl.data.datasets import Dataset
 
 
-def _setup(caps_dir: Path, maps_path: Path) -> None:
+def _setup(caps_dir: Path, maps_path: Path, reset_model: bool, gpu: bool) -> None:
     # dataset
     dataset = build_dataset(caps_dir)
 
     # model
-    model = SupervisedModel(
-        network=CNNConfig(
-            in_shape=(1, 16, 20, 17),
-            num_outputs=6,
-            conv_args={"channels": [1, 1]},
-        ),
-        loss=BCEWithLogitsLossConfig(),
-        optimizer=AdamConfig(),
-    )
+    with seed_everything_context(seed=0):
+        model = SupervisedModel(
+            network=CNNConfig(
+                in_shape=(1, 16, 20, 17),
+                num_outputs=6,
+                conv_args={"channels": [4, 8]},
+            ),
+            loss=BCEWithLogitsLossConfig(),
+            optimizer=AdamConfig(),
+        )
 
     # trainer
     optim_config = OptimizationConfig(
-        num_epochs=100, evaluation_interval=5, accumulation_steps=2
+        num_epochs=100,
+        evaluation_interval=5,
+        accumulation_steps=2,
+        reset_model=reset_model,
     )
+    callbacks = [
+        LRSchedulerCallback(
+            OneCycleLRConfig(
+                max_lr=1e-3, epochs=optim_config.num_epochs, steps_per_epoch=2
+            )
+        ),
+        EarlyStoppingCallback(metric="loss", patience=3, min_delta=0.1),
+        ModelCheckpointCallback(metric="f1"),
+        LoggerCallback(progress_bar=False, debug=False),
+    ]
+    if reset_model:
+        callbacks.append(TestModelReset(assert_equal=False))
+    else:
+        callbacks.append(TestModelReset(assert_equal=True))
+    if gpu:
+        callbacks.append(
+            TestDevice(
+                model_on_gpu=True, metrics_on_gpu=False, post_processing_on_gpu=True
+            )
+        )  # no postprocessing so it should stay on GPU
 
     trainer = Trainer(
         maps=maps_path,
@@ -66,16 +111,7 @@ def _setup(caps_dir: Path, maps_path: Path) -> None:
                 ],
             ),
         },
-        callbacks=[
-            LRSchedulerCallback(
-                OneCycleLRConfig(
-                    max_lr=1e-3, epochs=optim_config.num_epochs, steps_per_epoch=2
-                )
-            ),
-            EarlyStoppingCallback(metric="loss", patience=3, min_delta=0.1),
-            ModelCheckpointCallback(metric="f1"),
-            LoggerCallback(progress_bar=False, debug=False),
-        ],
+        callbacks=callbacks,
         optimization=optim_config,
         overwrite=True,
     )
@@ -93,7 +129,11 @@ def _train(kfold_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool) -> No
         trainer.train(
             split,
             computational=ComputationalConfig(
-                gpu=gpu, amp=True, channels_last=True, seed=0, deterministic=True
+                gpu=gpu,
+                amp=True,
+                channels_last=True,
+                seed=split.index,
+                deterministic=True,
             ),
         )
 
@@ -151,20 +191,22 @@ def _test_train(
 
     maps_path = tmp_path / "maps"
 
-    dataset, trainer = _setup(caps_dir, maps_path)
+    dataset, trainer = _setup(
+        caps_dir, maps_path, reset_model=gpu, gpu=gpu
+    )  # test with and without model resetting
     _train(kfold_dir, dataset, trainer, gpu=gpu)
     _validate(kfold_dir, dataset, trainer, gpu=gpu)
     _test(split_dir, dataset, trainer, gpu=gpu)
 
-    compare_maps_dir(maps_path, ref)
+    compare_maps_dir(maps_path, ref, except_=[Path("callbacks.json")])
 
 
 def test_train(tmp_path, ref_data, caps_dir, split_dir, kfold_dir):
-    ref_maps = ref_data / "maps_test_basics"
+    ref_maps = ref_data / "maps_test_classification"
     _test_train(tmp_path, ref_maps, caps_dir, split_dir, kfold_dir, gpu=False)
 
 
 @pytest.mark.gpu
 def test_train_gpu(tmp_path, ref_data, caps_dir, split_dir, kfold_dir):
-    ref_maps = ref_data / "maps_test_basics_gpu"
+    ref_maps = ref_data / "maps_test_classification_gpu"
     _test_train(tmp_path, ref_maps, caps_dir, split_dir, kfold_dir, gpu=True)

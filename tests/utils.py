@@ -2,7 +2,7 @@ import os
 import re
 from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -58,17 +58,35 @@ def ddp_test(func: callable, world_size: int) -> None:
     mp.spawn(func, args=(world_size, port), nprocs=world_size, join=True)
 
 
-def compare_maps_dir(out_dir: Path, ref_dir: Path) -> None:
+def compare_maps_dir(
+    out_dir: Path, ref_dir: Path, except_: Optional[list[Path]] = None
+) -> None:
     """
     To compare any directory of two MAPS.
     """
     import os
+
+    if except_ is None:
+        except_ = []
+
+    assert len(list(Path(out_dir).iterdir())) > 0
+    assert len(list(Path(ref_dir).iterdir())) > 0
 
     for (root, dirs, files), (ref_root, ref_dirs, ref_files) in zip(
         os.walk(out_dir), os.walk(ref_dir)
     ):
         dirs.sort()  # will affect next iteration
         ref_dirs.sort()
+
+        ref_root = Path(ref_root)
+        for dir_ in dirs:
+            if (ref_root / dir_).relative_to(ref_dir) in except_:
+                dirs.remove(dir_)
+                ref_dirs.remove(dir_)
+        for f in files:
+            if (ref_root / f).relative_to(ref_dir) in except_:
+                files.remove(f)
+                ref_files.remove(f)
 
         for file, ref_file in zip(sorted(files), sorted(ref_files)):
             assert file == ref_file, f"Comparing {file} and {ref_file}"
@@ -170,8 +188,6 @@ def _normalize_file(text: str) -> str:
             line = THROUGHPUT_PATTERN.sub(r"\1<throughput>", line.rstrip("\n"))
         elif DATE_PATTERN.match(line):
             line = DATE_PATTERN.sub(r"\1<date>", line.rstrip("\n"))
-        # elif PATH_PATTERN.match(line):
-        #     line = PATH_PATTERN.sub(r'\1<path>', line.rstrip("\n"))
         else:
             line = NUMBER_PATTERN.sub(
                 lambda m: _replace_with_same_length(m, "x"), line.rstrip("\n")

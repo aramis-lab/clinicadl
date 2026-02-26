@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Sequence
 from contextlib import contextmanager, nullcontext
+from copy import deepcopy
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -188,7 +189,7 @@ class Trainer:
 
         self._initial_state_dict = None
         if not optimization.reset_model:
-            self._initial_state_dict = self._model.state_dict()
+            self._initial_state_dict = deepcopy(self._model.state_dict())
 
         if isinstance(metrics, MetricsHandler):
             self._metrics = metrics
