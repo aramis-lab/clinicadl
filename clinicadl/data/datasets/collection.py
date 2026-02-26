@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Iterable, Sequence, Union
+from typing import Any, Generic, Iterable, Sequence, TypeVar, Union
 
 import pandas as pd
 from pydantic import Field, field_validator
@@ -58,16 +58,19 @@ class CollectionDatasetConfig(ObjectConfig["CollectionDataset"]):
         return datasets
 
 
-class CollectionDataset(HasConfig[CollectionDatasetConfig], Dataset):
+D = TypeVar("D", bound=MultiSamplesDataset)
+
+
+class CollectionDataset(HasConfig[CollectionDatasetConfig], Dataset, Generic[D]):
     """
     Abstract class defining some common logic for the :py:class:`~clinicadl.data.datasets.Dataset`
     that are a collections of :py:class:`~clinicadl.data.datasets.MultiSamplesDataset`.
     """
 
-    datasets: tuple[MultiSamplesDataset, ...]
+    datasets: tuple[D, ...]
     _df: pd.DataFrame
 
-    def __init__(self, datasets: Iterable[MultiSamplesDataset], **kwargs):
+    def __init__(self, datasets: Iterable[D], **kwargs):
         self.config = self._config_type(datasets=datasets, **kwargs)
         self._df = self._merge_dfs(self.config.datasets)
         self.datasets = self.config.datasets
@@ -106,7 +109,7 @@ class CollectionDataset(HasConfig[CollectionDatasetConfig], Dataset):
 
     @staticmethod
     @abstractmethod
-    def _merge_dfs(datasets: Sequence[MultiSamplesDataset]) -> pd.DataFrame:
+    def _merge_dfs(datasets: Sequence[D]) -> pd.DataFrame:
         """
         Merges the dataframes from all the datasets.
         """

@@ -20,7 +20,7 @@ from clinicadl.data.dataloader import (
     DataLoaderConfig,
     MergeBatchesCollate,
 )
-from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.datasets import CapsDataset, UnpairedDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.io import Maps
 from clinicadl.transforms import TransformsHandler
@@ -780,6 +780,31 @@ class TestCompareDatasets:
             _compare_datasets(dataset, self.DATASET, except_fields=[]),
             re.DOTALL,
         )
+
+    def test_collection_dataset(self):
+        self.DATASET.read_tensor_conversion()
+        dataset = deepcopy(self.DATASET)
+        dataset.config.label = "age"
+        error_msg = _compare_datasets(
+            UnpairedDataset([self.DATASET, self.DATASET]),
+            UnpairedDataset([self.DATASET, self.DATASET]),
+            except_fields=[],
+        )
+        assert error_msg is None
+        error_msg = _compare_datasets(
+            UnpairedDataset([dataset, dataset]),
+            UnpairedDataset([self.DATASET, self.DATASET]),
+            except_fields=[],
+        )
+        assert (
+            error_msg == "the two datasets don't have the same label. Got age and None"
+        )
+        error_msg = _compare_datasets(
+            UnpairedDataset([dataset, dataset]),
+            UnpairedDataset([self.DATASET, self.DATASET]),
+            except_fields=["label"],
+        )
+        assert error_msg is None
 
 
 @pytest.mark.parametrize(

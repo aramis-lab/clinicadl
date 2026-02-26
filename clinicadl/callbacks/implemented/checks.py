@@ -10,6 +10,7 @@ import torch
 
 from clinicadl.data.dataloader import Batch, BatchType, DataLoaderConfig
 from clinicadl.data.dataloader.config import get_dataloader_from_json_safely
+from clinicadl.data.datasets.collection import CollectionDataset
 from clinicadl.data.datasets.factory import get_dataset_from_json_safely
 from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
 from clinicadl.utils.exceptions import (
@@ -25,7 +26,6 @@ if TYPE_CHECKING:
     from clinicadl.data.datasets import Dataset
     from clinicadl.data.datasets.base import BaseDataset
     from clinicadl.io import Maps
-    from clinicadl.io.maps.utils import ModelDir
     from clinicadl.losses.types import LossType
     from clinicadl.models import Model
     from clinicadl.split import Split
@@ -557,7 +557,9 @@ def _compare_dataloaders(
 
 
 def _compare_datasets(
-    new: Dataset, old: BaseDataset, except_fields: list[str]
+    new: Dataset,
+    old: Union[BaseDataset, CollectionDataset[BaseDataset]],
+    except_fields: list[str],
 ) -> Optional[str]:
     """
     To compare two datasets. Returns potential differences in a message.
@@ -566,30 +568,38 @@ def _compare_datasets(
         return (
             f"the two datasets are not the same type. Got {type(new)} and {type(old)}"
         )
-    if (
-        "directory" not in except_fields
-        and new.config.directory != old.config.directory
-    ):
-        return f"the two datasets don't come from the same directory: {str(new.config.directory)} and {str(old.config.directory)}"
-    if "datatype" not in except_fields and new.config.datatype != old.config.datatype:
-        return f"the two datasets don't have the same datatypes, which differ in their pattern or key. Got {new.config.datatype} and {old.config.datatype}"
-    if "label" not in except_fields and new.config.label != old.config.label:
-        return f"the two datasets don't have the same label. Got {new.config.label} and {old.config.label}"
-    if (
-        "transforms" not in except_fields
-        and new.config.transforms != old.config.transforms
-    ):
-        return f"the two datasets don't have the same transforms. Got {new.config.transforms}\nand\n\n{old.config.transforms}"
-    if "masks" not in except_fields and (masks_1 := set(new.config.masks)) != (
-        masks_2 := set(old.config.masks)
-    ):
-        return (
-            f"the two datasets don't have the same masks. Got {masks_1} and {masks_2}"
-        )
-    if "columns" not in except_fields and (columns_1 := set(new.config.columns)) != (
-        columns_2 := set(old.config.columns)
-    ):
-        return f"the two datasets don't have the same columns or column processing. Got {columns_1} and {columns_2}"
+    if isinstance(old, CollectionDataset):
+        for new_dataset, old_dataset in zip(new.datasets, old.datasets):
+            if error_msg := _compare_datasets(
+                new_dataset, old_dataset, except_fields=except_fields
+            ):
+                return error_msg
+    else:
+        if (
+            "directory" not in except_fields
+            and new.config.directory != old.config.directory
+        ):
+            return f"the two datasets don't come from the same directory: {str(new.config.directory)} and {str(old.config.directory)}"
+        if (
+            "datatype" not in except_fields
+            and new.config.datatype != old.config.datatype
+        ):
+            return f"the two datasets don't have the same datatypes, which differ in their pattern or key. Got {new.config.datatype} and {old.config.datatype}"
+        if "label" not in except_fields and new.config.label != old.config.label:
+            return f"the two datasets don't have the same label. Got {new.config.label} and {old.config.label}"
+        if (
+            "transforms" not in except_fields
+            and new.config.transforms != old.config.transforms
+        ):
+            return f"the two datasets don't have the same transforms. Got {new.config.transforms}\nand\n\n{old.config.transforms}"
+        if "masks" not in except_fields and (masks_1 := set(new.config.masks)) != (
+            masks_2 := set(old.config.masks)
+        ):
+            return f"the two datasets don't have the same masks. Got {masks_1} and {masks_2}"
+        if "columns" not in except_fields and (
+            columns_1 := set(new.config.columns)
+        ) != (columns_2 := set(old.config.columns)):
+            return f"the two datasets don't have the same columns or column processing. Got {columns_1} and {columns_2}"
 
 
 class _CheckBatch:
