@@ -168,7 +168,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
 
         last_epoch = sorted(maps.training.splits[split.index].tmp.epochs_list)[-1]
         self.logger.info(
-            "Resuming training on split %s from epoch %d", split.index, last_epoch + 1
+            "Resuming training on split %s from epoch %d", split.index, last_epoch
         )
         self.logger.info("Computational configuration: %s", computational)
 
@@ -394,9 +394,13 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         self, *, model: Model, maps: Maps, batch: BatchType, **kwargs
     ) -> None:  # not in on_batch_start because not the right device
         if not maps.nn_summary_txt.is_file():
-            with torch.no_grad():
-                nn_summary = model.get_summary(batch)
-            maps.save_file(nn_summary, maps.nn_summary_txt)
+            try:
+                with torch.no_grad():
+                    nn_summary = model.get_summary(batch)
+            except NotImplementedError:
+                pass
+            else:
+                maps.save_file(nn_summary, maps.nn_summary_txt)
 
     def on_batch_end(
         self,

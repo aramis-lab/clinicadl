@@ -625,7 +625,7 @@ def test_resume(caplog, tmp_path):
     comp = ComputationalConfig(gpu=False)
     with caplog.at_level(logging.INFO):
         logger.on_resume(maps=maps, split=SPLIT, state=state, computational=comp)
-    assert f"Resuming training on split {state.split_idx} from epoch 4" in caplog.text
+    assert f"Resuming training on split {state.split_idx} from epoch 3" in caplog.text
     assert "Computational configuration: gpu=False" in caplog.text
 
     state.current_epoch = 4
