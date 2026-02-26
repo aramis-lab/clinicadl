@@ -106,5 +106,5 @@ class TestDevice(Callback):
     def _check(batch: Batch, gpu: Optional[bool]) -> None:
         if gpu is not None:
             assert batch.device == (
-                torch.device("cuda:0") if gpu else torch.device("cpu")
+                torch.device("cuda") if gpu else torch.device("cpu")
             )
