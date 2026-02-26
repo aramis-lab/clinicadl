@@ -179,10 +179,17 @@ def test_DataPoint():
         session="ses-M00",
     )
     assert (data_point.label == [[0, 1], [0, 1]]).all()
+    data_point = DataPoint(
+        image,
+        label=torch.tensor([0, 1, 2]),
+        participant="sub-000",
+        session="ses-M00",
+    )
+    assert (data_point.label == torch.tensor([0, 1, 2])).all()
     with pytest.raises(ValidationError):
         data_point = DataPoint(
             image,
-            label=torch.tensor([0, 1, 2]),
+            label={"sex": 1, "age": 42},
             participant="sub-000",
             session="ses-M00",
         )
