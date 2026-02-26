@@ -81,7 +81,8 @@ def trainer(tmp_path) -> Trainer:
         optimization=optim,
         callbacks=(list_callbacks := [Callback(), Mock(spec=Callback)]),
     )
-    trainer._callbacks._all_callbacks = list_callbacks  # not to call all the callbacks
+    trainer._callbacks._first_and_last = []  # not to call all the callbacks
+    trainer._callbacks._ordered = list_callbacks  # not to call all the callbacks
 
     return trainer
 
@@ -103,7 +104,9 @@ def custom_metric() -> MetricConfig:
 class TestSideMethods:
     def test_init(self, tmp_path, custom_metric):
         model = Mock()
+        model.state_dict = Mock(return_value="state_dict")
         optimization = Mock()
+        optimization.reset_model = True
         cb = Callback()
         cb.on_trainer_init = Mock()
 
@@ -128,20 +131,23 @@ class TestSideMethods:
             callbacks=trainer.callbacks,
         )
         assert trainer.state.split_idx is None
+        assert trainer._initial_state_dict is None
 
         metrics = MetricsHandler(my_metric=custom_metric)
         callbacks = CallbacksHandler([cb])
+        optimization.reset_model = False
         trainer = Trainer(
             maps=Maps(tmp_path / "maps"),
             model=model,
             metrics=metrics,
             callbacks=callbacks,
+            optimization=optimization,
             overwrite=True,
         )
         assert trainer.maps.path == tmp_path / "maps"
         assert trainer.callbacks is callbacks
         assert trainer.metrics is metrics
-        assert trainer.optimization.num_epochs == 10
+        assert trainer._initial_state_dict == "state_dict"
 
         with pytest.raises(FileExistsError):
             Trainer(tmp_path / "maps", model=model)
@@ -151,6 +157,7 @@ class TestSideMethods:
         model.get_loss_functions.return_value = {"loss": loss}
         trainer = Trainer(tmp_path / "maps", model=model, overwrite=True)
         model.get_loss_functions.assert_called_once()
+        assert trainer.optimization.num_epochs == 10
         assert len(trainer.callbacks.config.callbacks) == 0
         assert list(trainer.metrics.metrics.keys()) == ["loss"]
 
@@ -178,17 +185,30 @@ class TestSideMethods:
         split.index = 1
         metrics = Mock()
         optimizers = {"opt": Mock()}
+        trainer._reset_model = Mock()
 
         trainer._reset_train(split, metrics, optimizers)
 
         assert trainer.state.split_idx == 1
         assert trainer.state.num_epochs == 5
         assert trainer.state.called == "train"
-        trainer.model.reset.assert_called_once()
+        trainer._reset_model.assert_called_once()
         split.train_dataset.train.assert_called_once()
         split.val_dataset.eval.assert_called_once()
         metrics.reset.assert_called_once_with(reset_df=True)
         optimizers["opt"].zero_grad.assert_called_once()
+
+    def test_reset_model(self, trainer: Trainer):
+        trainer.optimization.reset_model = True
+        trainer._reset_model()
+        trainer.model.reset.assert_called_once()
+        trainer.model.reset.reset_mock()
+        trainer.optimization.reset_model = False
+        trainer._reset_model()
+        trainer.model.load_state_dict.assert_called_once_with(
+            trainer._initial_state_dict
+        )
+        trainer.model.reset.assert_not_called()
 
     def test_reset_epoch(self, trainer: Trainer):
         train_loader = MagicMock()

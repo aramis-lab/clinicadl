@@ -21,7 +21,7 @@ from torch.amp.autocast_mode import autocast
 from typing_extensions import Self
 
 from clinicadl.callbacks import CallbacksHandler
-from clinicadl.callbacks.base import Events
+from clinicadl.callbacks.base import Event
 from clinicadl.data.dataloader import Batch, DataLoaderConfig
 from clinicadl.data.datasets.factory import get_dataset_from_json
 from clinicadl.io.maps.maps import Maps
@@ -186,6 +186,10 @@ class Trainer:
         self._maps = maps
         self._model = model
 
+        self._initial_state_dict = None
+        if not optimization.reset_model:
+            self._initial_state_dict = self._model.state_dict()
+
         if isinstance(metrics, MetricsHandler):
             self._metrics = metrics
         else:
@@ -202,7 +206,7 @@ class Trainer:
         self._state = TrainerState()
 
         self._call_event(
-            Events.INIT,
+            Event.INIT,
             metrics=self.metrics,
             optimization=self.optimization,
             callbacks=self.callbacks,
@@ -377,12 +381,16 @@ class Trainer:
         optimizers = self.model.build_optimizers()
         grad_scaler = computational.get_scaler()
 
-        self._reset_train(split=split, metrics=metrics_handler, optimizers=optimizers)
+        self._reset_train(
+            split=split,
+            metrics=metrics_handler,
+            optimizers=optimizers,
+        )
         self._model_to(computational)
 
         if resume:
             self._call_event(
-                Events.RESUME,
+                Event.RESUME,
                 split=split,
                 optimizers=optimizers,
                 grad_scaler=grad_scaler,
@@ -393,7 +401,7 @@ class Trainer:
             )
         else:
             self._call_event(
-                Events.TRAIN_START,
+                Event.TRAIN_START,
                 split=split,
                 optimizers=optimizers,
                 optimization=self.optimization,
@@ -410,7 +418,7 @@ class Trainer:
             computational=computational,
         )
 
-        self._call_event(Events.TRAIN_END)
+        self._call_event(Event.TRAIN_END)
 
     def _train_loop(
         self,
@@ -432,16 +440,16 @@ class Trainer:
 
             self._reset_epoch(epoch, train_loader=split.train_loader)
 
-            self._call_event(Events.EPOCH_START)
+            self._call_event(Event.EPOCH_START)
 
             for batch_idx, batch in enumerate(split.train_loader, start=1):
                 self.state.current_train_batch = batch_idx
 
-                self._call_event(Events.BATCH_START, batch=batch)
+                self._call_event(Event.BATCH_START, batch=batch)
 
                 self._batch_to(batch, computational=computational)
 
-                self._call_event(Events.FORWARD_START, batch=batch)
+                self._call_event(Event.FORWARD_START, batch=batch)
 
                 with autocast(
                     device_type=computational.device.type,
@@ -450,16 +458,16 @@ class Trainer:
                     loss = self.model.forward_step(batch)
 
                 self._call_event(
-                    Events.BACKWARD_START, loss=loss, grad_scaler=grad_scaler
+                    Event.BACKWARD_START, loss=loss, grad_scaler=grad_scaler
                 )
 
                 self.model.backward_step(loss, grad_scaler=grad_scaler)
 
-                self._call_event(Events.BACKWARD_END)
+                self._call_event(Event.BACKWARD_END)
 
                 if batch_idx % self.optimization.accumulation_steps == 0:
                     self._call_event(
-                        Events.OPTIM_STEP_START,
+                        Event.OPTIM_STEP_START,
                         optimizers=optimizers,
                         grad_scaler=grad_scaler,
                     )
@@ -476,12 +484,12 @@ class Trainer:
                         optimizer.zero_grad(set_to_none=True)
 
                     self._call_event(
-                        Events.OPTIM_STEP_END,
+                        Event.OPTIM_STEP_END,
                         optimizers=optimizers,
                         grad_scaler=grad_scaler,
                     )
 
-                self._call_event(Events.BATCH_END)
+                self._call_event(Event.BATCH_END)
 
             if (
                 self.state.current_epoch
@@ -494,7 +502,7 @@ class Trainer:
                     computational=computational,
                 )
 
-            self._call_event(Events.EPOCH_END)
+            self._call_event(Event.EPOCH_END)
 
     def validate(
         self,
@@ -629,7 +637,7 @@ class Trainer:
             self._model_to(computational)
 
             self._call_event(
-                Events.VALIDATE_START,
+                Event.VALIDATE_START,
                 dataloader=dataloader,
                 model_checkpoint=chkpt_name,
                 metrics=metrics_handler,
@@ -644,7 +652,7 @@ class Trainer:
             )
 
             self._call_event(
-                Events.VALIDATE_END,
+                Event.VALIDATE_END,
                 metrics=metrics_handler,
             )
 
@@ -785,7 +793,7 @@ class Trainer:
         self._model_to(computational)
 
         self._call_event(
-            Events.TEST_START,
+            Event.TEST_START,
             dataloader=dataloader,
             model_checkpoint=model_checkpoint,
             metrics=metrics_handler,
@@ -799,7 +807,7 @@ class Trainer:
         )
 
         self._call_event(
-            Events.TEST_END,
+            Event.TEST_END,
             metrics=metrics_handler,
         )
 
@@ -832,7 +840,7 @@ class Trainer:
         self._reset_validation(dataloader, metrics)
 
         self._call_event(
-            Events.VAL_START,
+            Event.VAL_START,
             dataloader=dataloader,
             metrics=metrics,
         )
@@ -845,7 +853,7 @@ class Trainer:
         )
 
         self._call_event(
-            Events.VAL_END,
+            Event.VAL_END,
             metrics=metrics,
         )
 
@@ -867,11 +875,11 @@ class Trainer:
                 else:
                     self.state.current_val_batch = batch_idx
 
-                self._call_event(Events.BATCH_START, batch=batch)
+                self._call_event(Event.BATCH_START, batch=batch)
 
                 self._batch_to(batch, computational=computational)
 
-                self._call_event(Events.EVAL_START, batch=batch)
+                self._call_event(Event.EVAL_START, batch=batch)
 
                 with autocast(
                     device_type=computational.device.type,
@@ -880,7 +888,7 @@ class Trainer:
                     output_batch = self.model.evaluation_step(batch)
 
                 self._call_event(
-                    Events.METRIC_START,
+                    Event.METRIC_START,
                     output=output_batch,
                     metrics=metrics,
                 )
@@ -888,11 +896,11 @@ class Trainer:
                 metrics_df = metrics(output_batch, epoch=epoch)
 
                 self._call_event(
-                    Events.METRIC_END,
+                    Event.METRIC_END,
                     detailed_metrics_df=metrics_df,
                 )
 
-                self._call_event(Events.BATCH_END)
+                self._call_event(Event.BATCH_END)
 
         metrics.aggregate(epoch=epoch)
 
@@ -905,12 +913,21 @@ class Trainer:
         self.state.reset_training(
             split_idx=split.index, num_epochs=self._optim_config.num_epochs
         )
-        self.model.reset()
+        self._reset_model()
         split.train_dataset.train()
         split.val_dataset.eval()
         metrics.reset(reset_df=True)
         for optimizer in optimizers.values():
             optimizer.zero_grad()
+
+    def _reset_model(self):
+        """
+        Resets the model according to the resetting strategy.
+        """
+        if self.optimization.reset_model:
+            self.model.reset()
+        else:
+            self.model.load_state_dict(self._initial_state_dict)
 
     def _reset_epoch(self, epoch: int, train_loader: DataLoader) -> None:
         """
@@ -974,7 +991,7 @@ class Trainer:
         try:
             yield
         except Exception as e:
-            self._call_event(Events.EXCEPTION, exception=e)
+            self._call_event(Event.EXCEPTION, exception=e)
             raise
 
     def _model_to(self, comp_config: ComputationalConfig) -> None:
@@ -1032,7 +1049,7 @@ class Trainer:
                 norm_type=self.optimization.grad_norm_type,
             )
 
-    def _call_event(self, event: Events, **kwargs):
+    def _call_event(self, event: Event, **kwargs):
         """
         Calls a callback event.
         """
