@@ -20,8 +20,8 @@ if TYPE_CHECKING:
     from .handler import CallbacksHandler
 
 
-class Events(str, Enum):
-    """Events that can trigger an action from a :py:class:`clinicadl.callbacks.Callback`."""
+class Event(str, Enum):
+    """Event that can trigger an action from a :py:class:`clinicadl.callbacks.Callback`."""
 
     EXCEPTION = "on_exception"
     INIT = "on_trainer_init"
