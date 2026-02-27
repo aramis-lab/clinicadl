@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 from copy import deepcopy
-from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -11,22 +10,7 @@ import torch
 import torchio as tio
 
 from clinicadl.callbacks import Callback
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatypes import T1Linear
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms import TransformsHandler
-from clinicadl.transforms.config import (
-    OneOfConfig,
-    RandomAffineConfig,
-    RandomBiasFieldConfig,
-    RandomBlurConfig,
-    RandomElasticDeformationConfig,
-    RandomGammaConfig,
-    RandomGhostingConfig,
-    RandomMotionConfig,
-    RandomNoiseConfig,
-    RandomSpikeConfig,
-)
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
@@ -78,37 +62,6 @@ class RandomMasking(tio.IntensityTransform):
         datapoint["label"] = label
 
         return datapoint
-
-
-def build_dataset(dir_: Path) -> CapsDataset:
-    dataset = CapsDataset(
-        directory=dir_,
-        datatype=T1Linear(use_uncropped_image=False),
-        data=dir_ / "metadata.tsv",
-        masks=["leftHemisphere.nii.gz", "head"],
-        columns=["age"],
-        transforms=TransformsHandler(
-            sample_transforms=[ResampleMask(), RandomMasking()],
-            augmentations=[
-                OneOfConfig(
-                    transforms=[
-                        RandomAffineConfig(),
-                        RandomElasticDeformationConfig(),
-                        RandomMotionConfig(),
-                        RandomGhostingConfig(),
-                        RandomGammaConfig(),
-                        RandomSpikeConfig(),
-                        RandomBiasFieldConfig(),
-                        RandomBlurConfig(),
-                        RandomNoiseConfig(),
-                    ]
-                ),
-            ],
-        ),
-    )
-    dataset.read_tensor_conversion()
-
-    return dataset
 
 
 class TestModelReset(Callback):

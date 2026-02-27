@@ -7,9 +7,9 @@ A multi-class, multi-label classification task trained on 2 splits (KFold splitt
 - metrics with postprocessing (computed on CPU);
 - accumulation steps and evaluation interval more than 1;
 - amp and channels last memory format (and without);
-- LR scheduling;
+- lr scheduling;
 - early stopping;
-- model checkpointing;
+- model checkpointing (with metric tracking);
 - logging (without debug and progress bar);
 - validation on new metrics;
 - test (two times on the same group).
@@ -33,6 +33,8 @@ from clinicadl.callbacks import (
     ModelCheckpointCallback,
 )
 from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.datatypes import T1Linear
 from clinicadl.losses.config import BCEWithLogitsLossConfig
 from clinicadl.metrics.config import ConfusionMatrixMetricConfig, LossMetricConfig
 from clinicadl.models import SupervisedModel
@@ -42,21 +44,59 @@ from clinicadl.optim.lr_schedulers.config import OneCycleLRConfig
 from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split import KFold
 from clinicadl.train import ComputationalConfig, Trainer
+from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import (
     ActivationsConfig,
     AsDiscreteConfig,
+    OneOfConfig,
+    RandomAffineConfig,
+    RandomBiasFieldConfig,
+    RandomBlurConfig,
+    RandomElasticDeformationConfig,
+    RandomGammaConfig,
+    RandomGhostingConfig,
+    RandomMotionConfig,
+    RandomNoiseConfig,
+    RandomSpikeConfig,
 )
 from clinicadl.utils.seed import seed_everything_context
 
-from .utils import TestDevice, TestModelReset, build_dataset
+from .utils import RandomMasking, ResampleMask, TestDevice, TestModelReset
 
 if TYPE_CHECKING:
     from clinicadl.data.datasets import Dataset
 
 
-def _setup(caps_dir: Path, maps_path: Path, reset_model: bool, gpu: bool) -> None:
+def _setup(
+    caps_dir: Path, metadata: Path, maps_path: Path, reset_model: bool, gpu: bool
+) -> None:
     # dataset
-    dataset = build_dataset(caps_dir)
+    dataset = CapsDataset(
+        directory=caps_dir,
+        datatype=T1Linear(use_uncropped_image=False),
+        data=metadata,
+        masks=["leftHemisphere.nii.gz", "head"],
+        columns=["age"],
+        transforms=TransformsHandler(
+            sample_transforms=[ResampleMask(), RandomMasking()],
+            augmentations=[
+                OneOfConfig(
+                    transforms=[
+                        RandomAffineConfig(),
+                        RandomElasticDeformationConfig(),
+                        RandomMotionConfig(),
+                        RandomGhostingConfig(),
+                        RandomGammaConfig(),
+                        RandomSpikeConfig(),
+                        RandomBiasFieldConfig(),
+                        RandomBlurConfig(),
+                        RandomNoiseConfig(),
+                    ]
+                ),
+            ],
+        ),
+    )
+    dataset.read_tensor_conversion()
 
     # model
     with seed_everything_context(seed=0):
@@ -179,10 +219,11 @@ def _test(split_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool):
     )
 
 
-def _test_train(
+def _test_trainer(
     tmp_path: Path,
     ref: Path,
     caps_dir: Path,
+    metadata_tsv: Path,
     split_dir: Path,
     kfold_dir: Path,
     gpu: bool,
@@ -192,7 +233,7 @@ def _test_train(
     maps_path = tmp_path / "maps"
 
     dataset, trainer = _setup(
-        caps_dir, maps_path, reset_model=gpu, gpu=gpu
+        caps_dir, metadata_tsv, maps_path, reset_model=gpu, gpu=gpu
     )  # test with and without model resetting
     _train(kfold_dir, dataset, trainer, gpu=gpu)
     _validate(kfold_dir, dataset, trainer, gpu=gpu)
@@ -201,12 +242,16 @@ def _test_train(
     compare_maps_dir(maps_path, ref, except_=[Path("callbacks.json")])
 
 
-def test_train(tmp_path, ref_data, caps_dir, split_dir, kfold_dir):
+def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir, kfold_dir):
     ref_maps = ref_data / "maps_test_classification"
-    _test_train(tmp_path, ref_maps, caps_dir, split_dir, kfold_dir, gpu=False)
+    _test_trainer(
+        tmp_path, ref_maps, caps_dir, metadata_tsv, split_dir, kfold_dir, gpu=False
+    )
 
 
 @pytest.mark.gpu
-def test_train_gpu(tmp_path, ref_data, caps_dir, split_dir, kfold_dir):
+def test_train_gpu(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir, kfold_dir):
     ref_maps = ref_data / "maps_test_classification_gpu"
-    _test_train(tmp_path, ref_maps, caps_dir, split_dir, kfold_dir, gpu=True)
+    _test_trainer(
+        tmp_path, ref_maps, caps_dir, metadata_tsv, split_dir, kfold_dir, gpu=True
+    )
