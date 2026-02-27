@@ -3,7 +3,7 @@ A segmentation on 2D slices trained on 2 splits (KFold splitting) with:
 - a training dataset with slice extraction and data augmentation;
 - an evaluation dataset with whole image;
 - a Supervised Model with a custom neural network, a custom loss,
-  and slices to images inferer with postprocessing (on GPU);
+  and slices to images inferer with postprocessing (on CPU);
 - model checkpointing (with a list of epochs);
 - metrics with another key than the default 'output';
 - gradient norm clipping;
@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 import pytest
 from monai.losses import DiceLoss
 
-from clinicadl.callbacks import ModelCheckpointCallback
+from clinicadl.callbacks import Callback, ModelCheckpointCallback
 from clinicadl.data.dataloader import DataLoaderConfig
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import T1Linear
@@ -54,7 +54,6 @@ from clinicadl.transforms.config import (
     RandomSpikeConfig,
 )
 from clinicadl.transforms.extraction import Slice
-from clinicadl.callbacks import Callback
 
 from .utils import TestDevice
 
@@ -62,11 +61,13 @@ if TYPE_CHECKING:
     from clinicadl.data.datasets import Dataset
     from clinicadl.models import Model
 
+
 class ValidationTimeSleep(Callback):
     """To simulate a validation longer than a second."""
-    
+
     def on_validate_end(self, **kwargs):
         time.sleep(1)
+
 
 def _buid_model() -> Model:
     return SupervisedModel(
@@ -82,17 +83,20 @@ def _buid_model() -> Model:
                 ActivationsConfig(sigmoid=True, include=["seg"]),
                 AsDiscreteConfig(threshold=0.5, include=["seg"]),
             ],
-            postprocessing_on_cpu=False,
+            postprocessing_on_cpu=True,
         ),
     )
 
 
 def _build_callbacks(gpu: bool) -> list[Callback]:
-    callbacks = [ModelCheckpointCallback(epochs=[4, 8], save_last=True), ValidationTimeSleep()]
+    callbacks = [
+        ModelCheckpointCallback(epochs=[4, 8], save_last=True),
+        ValidationTimeSleep(),
+    ]
     if gpu:
         callbacks.append(
             TestDevice(
-                model_on_gpu=True, post_processing_on_gpu=True, metrics_on_gpu=False
+                model_on_gpu=True, post_processing_on_gpu=False, metrics_on_gpu=False
             )
         )
 

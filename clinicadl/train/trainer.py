@@ -925,6 +925,9 @@ class Trainer:
         """
         Resets the model according to the resetting strategy.
         """
+        self.model.to(
+            memory_format=torch.contiguous_format
+        )  # otherwise seeding will not be consistent across memory formats!
         if self.optimization.reset_model:
             self.model.reset()
         else:

@@ -134,7 +134,9 @@ def _setup(
     if gpu:
         callbacks.append(
             TestDevice(
-                model_on_gpu=True, metrics_on_gpu=False, post_processing_on_gpu=True
+                model_on_gpu=True,
+                post_processing_on_gpu=True,
+                metrics_on_gpu=False,
             )
         )  # no postprocessing so it should stay on GPU
 
