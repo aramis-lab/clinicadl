@@ -7,7 +7,7 @@ A segmentation on 2D slices trained on 2 splits (KFold splitting) with:
 - model checkpointing (with a list of epochs);
 - metrics with another key than the default 'output';
 - gradient norm clipping;
-- validation on new metrics;
+- validation on new metrics (with multiple checkpoints);
 - test (two times on the same group).
 
 The data location (i.e. the device) across the workflow is tested.
@@ -54,14 +54,19 @@ from clinicadl.transforms.config import (
     RandomSpikeConfig,
 )
 from clinicadl.transforms.extraction import Slice
+from clinicadl.callbacks import Callback
 
 from .utils import TestDevice
 
 if TYPE_CHECKING:
-    from clinicadl.callbacks import Callback
     from clinicadl.data.datasets import Dataset
     from clinicadl.models import Model
 
+class ValidationTimeSleep(Callback):
+    """To simulate a validation longer than a second."""
+    
+    def on_validate_end(self, **kwargs):
+        time.sleep(1)
 
 def _buid_model() -> Model:
     return SupervisedModel(
@@ -83,7 +88,7 @@ def _buid_model() -> Model:
 
 
 def _build_callbacks(gpu: bool) -> list[Callback]:
-    callbacks = [ModelCheckpointCallback(epochs=[4, 8], save_last=True)]
+    callbacks = [ModelCheckpointCallback(epochs=[4, 8], save_last=True), ValidationTimeSleep()]
     if gpu:
         callbacks.append(
             TestDevice(
@@ -176,14 +181,11 @@ def _train(
 
 
 def _restore_trainer(maps_path: Path, gpu: bool) -> Trainer:
-    if not gpu:
-        return Trainer.from_maps(maps_path, model=_buid_model())
-    else:
-        return Trainer.from_maps(
-            maps_path,
-            model=_buid_model(),
-            callbacks=_build_callbacks(gpu),
-        )
+    return Trainer.from_maps(
+        maps_path,
+        model=_buid_model(),
+        callbacks=_build_callbacks(gpu),
+    )
 
 
 def _validate(maps_path: Path, gpu: bool) -> None:
@@ -252,7 +254,7 @@ def _test_trainer(
     _validate(maps_path, gpu=gpu)
     _test(maps_path, split_dir, eval_dataset, trainer, gpu=gpu)
 
-    compare_maps_dir(maps_path, ref)
+    compare_maps_dir(maps_path, ref, except_=["callbacks.json"])
 
 
 def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir, kfold_dir):

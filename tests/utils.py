@@ -59,7 +59,7 @@ def ddp_test(func: callable, world_size: int) -> None:
 
 
 def compare_maps_dir(
-    out_dir: Path, ref_dir: Path, except_: Optional[list[Path]] = None
+    out_dir: Path, ref_dir: Path, except_: Optional[list[str | Path]] = None
 ) -> None:
     """
     To compare any directory of two MAPS.
@@ -68,6 +68,8 @@ def compare_maps_dir(
 
     if except_ is None:
         except_ = []
+    for i, path in enumerate(except_):
+        except_[i] = Path(path)
 
     assert len(list(Path(out_dir).iterdir())) > 0
     assert len(list(Path(ref_dir).iterdir())) > 0
