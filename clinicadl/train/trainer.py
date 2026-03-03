@@ -189,7 +189,7 @@ class Trainer:
 
         self._initial_state_dict = None
         if not optimization.reset_model:
-            self._initial_state_dict = deepcopy(self._model.state_dict())
+            self._initial_state_dict = deepcopy(self._model.cpu().state_dict())
 
         if isinstance(metrics, MetricsHandler):
             self._metrics = metrics
@@ -926,8 +926,9 @@ class Trainer:
         Resets the model according to the resetting strategy.
         """
         self.model.to(
+            device=CPU,
             memory_format=torch.contiguous_format
-        )  # otherwise seeding will not be consistent across memory formats!
+        )  # otherwise seeding will not be consistent across memory formats and devices!
         if self.optimization.reset_model:
             self.model.reset()
         else:
