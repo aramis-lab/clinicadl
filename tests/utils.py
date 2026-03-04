@@ -111,10 +111,6 @@ def _compare_any_file(file: Path, ref_file: Path) -> None:
     if file.name == "environment.txt":
         return
 
-    elif file.name == "summary.log":
-        content = _normalize_file(content)
-        ref_content = _normalize_file(ref_content)
-
     elif file.name == "computational.tsv":
         _soft_compare_df(content, ref_content)
 
@@ -162,42 +158,33 @@ def _soft_compare_df(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
 
 
 PATH_PATTERN = r'(?:[A-Za-z]:\\[^ \n\r\t]*)|(?:/[^\s"\']+)'
-LOG_DATE_PATTERN = r"\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b"
-DATE_PATTERN = re.compile(r"^(\s*Date:\s*).*$")
-THROUGHPUT_PATTERN = re.compile(r"^(\s*Throughput:\s*).*$")
-NUMBER_PATTERN = re.compile(
-    r"\b\d+\.\d+(?:[eE][+-]?\d+)?\b(?:\s*±\s*\d+\.\d+(?:[eE][+-]?\d+)?)?"
-)
+DATE_PATTERN = r"^(\s*Date:\s*).*$|\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b"
+THROUGHPUT_PATTERN = r"^(\s*Throughput:\s*).*$"
+NUMBER_PATTERN = r"\b\d*\.\d+(?:[eE][+-]?\d+)?\b|\b\d+[eE][+-]?\d+\b"
+TRACE_BACK_PATTERN = r"Traceback[\s\S]*?(?=torch\.OutOfMemoryError)"
 
 
-def _normalize_str(str_: str) -> str:
-    """
-    To remove dates and paths in a string.
-    """
-    str_ = re.sub(PATH_PATTERN, "<path>", str_)
-    str_ = re.sub(LOG_DATE_PATTERN, "<date>", str_)
-
-    return str_
-
-
-def _normalize_file(text: str) -> str:
+def _normalize_str(text: str) -> str:
     """
     To remove dates and numerical values in a file.
     """
     normalized = []
     for line in text.splitlines():
-        if THROUGHPUT_PATTERN.match(line):
-            line = THROUGHPUT_PATTERN.sub(r"\1<throughput>", line.rstrip("\n"))
-        elif DATE_PATTERN.match(line):
-            line = DATE_PATTERN.sub(r"\1<date>", line.rstrip("\n"))
-        else:
-            line = NUMBER_PATTERN.sub(
-                lambda m: _replace_with_same_length(m, "x"), line.rstrip("\n")
-            )
+        line = re.sub(THROUGHPUT_PATTERN, r"\1<throughput>", line)
+        line = re.sub(DATE_PATTERN, r"\1<date>", line)
+        line = re.sub(
+            NUMBER_PATTERN,
+            lambda m: _replace_with_same_length(m, "x"),
+            line,
+        )
+        line = re.sub(PATH_PATTERN, "<path>", line)
 
         normalized.append(line)
 
-    return "\n".join(normalized)
+    file = "\n".join(normalized)
+    file = re.sub(TRACE_BACK_PATTERN, "<traceback>", file)
+
+    return file
 
 
 def _replace_with_same_length(match, char="x"):
