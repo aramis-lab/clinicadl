@@ -269,10 +269,18 @@ def test_add_metrics():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
     )
+    metrics.add_metrics(my_metric=CustomMetric())
+    metrics.init_metrics(MODEL)
+    assert list(metrics.metrics.keys()) == ["mse", "my_metric"]
+
+    metrics = MetricsHandler(
+        mse=MSEMetricConfig(),
+    )
     metrics.init_metrics(MODEL)
     metrics(BATCH_1)
     metrics.aggregate()
     metrics.add_metrics(my_metric=CustomMetric())
+    assert list(metrics.metrics.keys()) == ["mse", "my_metric"]
     metrics(BATCH_2)
     metrics.aggregate()
     expected_df = pd.DataFrame.from_dict(
@@ -294,6 +302,28 @@ def test_add_metrics():
         }
     )
     pd.testing.assert_frame_equal(metrics.detailed_df, expected_df)
+
+
+def test_remove_metrics():
+    metrics = MetricsHandler(
+        mse=MSEMetricConfig(),
+        my_metric=CustomMetric(),
+    )
+    metrics.remove_metrics("my_metric")
+    metrics.init_metrics(MODEL)
+    assert list(metrics.metrics.keys()) == ["mse"]
+
+    metrics = MetricsHandler(
+        mse=MSEMetricConfig(),
+        my_metric=CustomMetric(),
+    )
+    metrics.init_metrics(MODEL)
+    metrics(BATCH_1)
+    metrics.aggregate()
+    metrics.remove_metrics(["my_metric"])
+    assert list(metrics.metrics.keys()) == ["mse"]
+    assert "my_metric" not in metrics.df.columns
+    assert "my_metric" not in metrics.detailed_df.columns
 
 
 def test_get_metric():
