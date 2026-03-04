@@ -1,6 +1,6 @@
 """
 A segmentation on 2D slices trained on 2 splits (KFold splitting) with:
-- a training dataset with slice extraction and data augmentation;
+- a training dataset with data augmentation;
 - an evaluation dataset with whole image;
 - a Supervised Model with a custom neural network, a custom loss,
   and slices to images inferer with postprocessing (on CPU);

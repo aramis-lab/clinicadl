@@ -1,3 +1,16 @@
+"""
+A reconstruction task on 3D patches trained on 2 splits (KFold splitting) with:
+- an evaluation dataset with whole image;
+- a reconstruction model;
+- patches to image inferer with postprocessing (on GPU);
+- gradient norm clipping;
+- metrics (on CPU);
+- monitor and checkpoint callbacks disabled.
+
+Between the two splits, the Trainer is recreated.
+"""
+
+
 from __future__ import annotations
 
 from pathlib import Path
