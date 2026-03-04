@@ -4,11 +4,13 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pandas as pd
 import torch
 from pydantic import NonNegativeInt
 
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.suffixes import PT
+from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.enum import TrainerCall
 from clinicadl.utils.names import camel_to_snake
 from clinicadl.utils.objects import HasConfig
@@ -109,10 +111,16 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         for opt_name, opt in optimizers.items():
             opt.load_state_dict(opt_state_dicts[opt_name])
         grad_scaler.load_state_dict(maps.open_file(chkpt_dir.scaler_pt))
+
+        computed_metrics = pd.read_csv(
+            chkpt_dir.validation_metrics.aggregated_tsv, sep=SEP
+        ).columns
+        metrics.remove_metrics(set(metrics.metrics.keys()).difference(computed_metrics))
         metrics.load(
             chkpt_dir.validation_metrics.aggregated_tsv,
             details_path=chkpt_dir.validation_metrics.details_tsv,
         )
+
         self._load_callbacks(callbacks, chkpt_dir=chkpt_dir, maps=maps)
 
     def on_optimization_step_end(

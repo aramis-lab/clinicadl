@@ -148,12 +148,15 @@ def test_resume(caplog):
     maps.read()
     chkpt = TrainingCheckpointCallback()
 
+    metrics = Mock()
+    metrics.metrics = {"metric1": Mock(), "metric2": Mock()}
+
     with caplog.at_level("INFO"):
         chkpt.on_resume(
             state=STATE,
             model=MODEL,
             maps=maps,
-            metrics=METRICS,
+            metrics=metrics,
             callbacks=CALLBACKS,
             optimizers=OPTIMIZERS,
             grad_scaler=SCALER,
@@ -165,12 +168,13 @@ def test_resume(caplog):
     OPTIMIZERS["adam"].load_state_dict.assert_called_once_with({"last_epoch": 3})
     OPTIMIZERS["sgd"].load_state_dict.assert_called_once_with({"last_epoch": 4})
     SCALER.load_state_dict.assert_called_once_with({"scale": 1e3})
-    METRICS.load.assert_called_once_with(
+    metrics.load.assert_called_once_with(
         maps.training.splits[0].tmp.epochs[3].validation_metrics.aggregated_tsv,
         details_path=maps.training.splits[0]
         .tmp.epochs[3]
         .validation_metrics.details_tsv,
     )
+    metrics.remove_metrics.assert_called_once_with({"metric2"})
     CALLBACKS.callbacks[0].load_state_dict.assert_called_once_with({"state": 0})
     CALLBACKS.callbacks[1].load_state_dict.assert_called_once_with({"state": 1})
     CALLBACKS.callbacks[2].load_state_dict.assert_called_once_with({"state": 2})
