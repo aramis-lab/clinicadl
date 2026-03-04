@@ -28,7 +28,7 @@ class SplitConfig(ObjectConfig["Split"]):
     """Config class for ``Split``."""
 
     index: NonNegativeInt
-    split_dir: Path
+    split_dir: Optional[Path]
     train_dataset: Dataset = Field(reader=get_dataset_from_dict)
     val_dataset: Dataset = Field(reader=get_dataset_from_dict)
     train_loader_config: Optional[DataLoaderConfig] = Field(
@@ -40,11 +40,12 @@ class SplitConfig(ObjectConfig["Split"]):
 
     @field_validator("split_dir", mode="after")
     @classmethod
-    def _check_split_dir(cls, v: Path) -> Path:
+    def _check_split_dir(cls, v: Optional[Path]) -> Path:
         """
         Checks that the split dir exists.
         """
-        assert v.exists(), f"'split_dir' ({str(v)}) doesn't exist"
+        if v:
+            assert v.exists(), f"'split_dir' ({str(v)}) doesn't exist"
 
         return v
 
@@ -72,9 +73,9 @@ class Split(HasConfig[SplitConfig]):
     def __init__(
         self,
         index: int,
-        split_dir: Path,
         train_dataset: Dataset,
         val_dataset: Dataset,
+        split_dir: Optional[Path] = None,
     ):
         self.config = self._config_type(
             index=index,
@@ -91,8 +92,8 @@ class Split(HasConfig[SplitConfig]):
         return self.config.index
 
     @property
-    def split_dir(self) -> Path:
-        """Directory from which the split was built."""
+    def split_dir(self) -> Optional[Path]:
+        """A potential split directory associated to this split."""
         return self.config.split_dir
 
     @property
