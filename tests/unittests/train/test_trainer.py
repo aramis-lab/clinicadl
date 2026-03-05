@@ -101,9 +101,21 @@ def custom_metric() -> MetricConfig:
     return CustomMetricConfig()
 
 
+class CustomCollate(CollateFn):
+    def __call__(self, samples):
+        return super().__call__(samples)
+
+
+def _simulate_workflow(*args, **kwargs):
+    assert torch.initial_seed() == 7
+    assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
+    raise ValueError()
+
+
 class TestSideMethods:
     def test_init(self, tmp_path, custom_metric):
         model = Mock()
+        model.cpu.return_value = model
         model.state_dict = Mock(return_value="state_dict")
         optimization = Mock()
         optimization.reset_model = True
@@ -147,6 +159,7 @@ class TestSideMethods:
         assert trainer.maps.path == tmp_path / "maps"
         assert trainer.callbacks is callbacks
         assert trainer.metrics is metrics
+        model.cpu.assert_called_once()
         assert trainer._initial_state_dict == "state_dict"
 
         with pytest.raises(FileExistsError):
@@ -395,15 +408,91 @@ class TestSideMethods:
             exception=e,
         )
 
-    def test_get_old_reprod_config(self, trainer: Trainer, tmp_path):
+    def test_get_split(self, trainer: Trainer, tmp_path):
+        maps = _add_maps_to_trainer(trainer, tmp_path)
+
+        caps = CapsDataset(
+            directory=CAPS_PATH,
+            datatype=PETLinear(
+                tracer="18FAV45",
+                suvr_reference_region="pons2",
+                use_uncropped_image=True,
+            ),
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-000", "sub-010", "sub-010"],
+                    "session_id": ["ses-M000", "ses-M003", "ses-M003", "ses-M012"],
+                }
+            ),
+        )
+        caps.read_tensor_conversion()
+        caps.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
+        caps.to_json(
+            maps.training.data.validation.splits[0].dataset_json, overwrite=True
+        )
+        DataLoaderConfig(batch_size=3).to_json(
+            maps.training.data.train.splits[0].dataloader_json, overwrite=True
+        )
+        DataLoaderConfig(batch_size=2).to_json(
+            maps.training.data.validation.splits[0].dataloader_json, overwrite=True
+        )
+
+        split = trainer._get_split(split_idx=0)
+        assert split.split_dir is None
+        assert split.index == 0
+        assert split.train_dataset.get_participant_session_couples() == {
+            ("sub-000", "ses-M000")
+        }
+        assert split.val_dataset.get_participant_session_couples() == {
+            ("sub-010", "ses-M003")
+        }
+        assert split.train_loader.batch_size == 3
+        assert split.val_loader.batch_size == 2
+
+        # errors
+        DataLoaderConfig(collate_fn=CustomCollate()).to_json(
+            maps.training.data.validation.splits[0].dataloader_json, overwrite=True
+        )
+        with pytest.raises(
+            CannotReadJsonError,
+            match=f"ClinicaDL could not read the dataloader in {maps.training.data.validation.splits[0].dataloader_json}.\n"
+            "Please pass directly the split via 'split'.",
+        ):
+            trainer._get_split(split_idx=0)
+
+        caps = CapsDataset(
+            directory=CAPS_PATH,
+            datatype=PETLinear(
+                tracer="18FAV45",
+                suvr_reference_region="pons2",
+                use_uncropped_image=True,
+            ),
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-000"],
+                    "session_id": ["ses-M000"],
+                    "age": [0.0],
+                }
+            ),
+            columns={"age": lambda x: int(x)},
+        )
+        caps.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
+        with pytest.raises(
+            CannotReadJsonError,
+            match=f"ClinicaDL could not read the dataset in {maps.training.data.train.splits[0].dataset_json}.\n"
+            "Please pass directly the split via 'split'.",
+        ):
+            trainer._get_split(split_idx=0)
+
+    def test_get_old_computational_config(self, trainer: Trainer, tmp_path):
         maps = _add_maps_to_trainer(trainer, tmp_path)
 
         ComputationalConfig(seed=7, deterministic=True).to_json(
             maps.training.splits[0].computational_json, overwrite=True
         )
-        seed, deterministic = trainer._get_old_reprod_config(split_idx=0)
-        assert seed == 7
-        assert deterministic
+        comp = trainer._get_old_computational_config(split_idx=0)
+        assert comp.seed == 7
+        assert comp.deterministic
 
     def test_get_models_in_split(self, trainer: Trainer):
         maps = Maps(MAPS_PATH)
@@ -453,16 +542,12 @@ class TestSideMethods:
         assert isinstance(dataloader.dataset, CapsDataset)
         assert dataloader.batch_size == 2
 
-        class CustomCollate(CollateFn):
-            def __call__(self, samples):
-                return super().__call__(samples)
-
         DataLoaderConfig(collate_fn=CustomCollate()).to_json(
             maps.training.data.train.splits[0].dataloader_json, overwrite=True
         )
         with pytest.raises(
             CannotReadJsonError,
-            match=f"ClinicaDL could not read the dataloader in {maps.training.data.train.splits[0].dataloader_json}. "
+            match=f"ClinicaDL could not read the dataloader in {maps.training.data.train.splits[0].dataloader_json}.\n"
             "Please pass directly the dataloader via 'dataloader'.",
         ):
             trainer._get_dataloader(maps.training.data.train.splits[0])
@@ -486,7 +571,7 @@ class TestSideMethods:
         caps.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
         with pytest.raises(
             CannotReadJsonError,
-            match=f"ClinicaDL could not read the dataset in {maps.training.data.train.splits[0].dataset_json}. "
+            match=f"ClinicaDL could not read the dataset in {maps.training.data.train.splits[0].dataset_json}.\n"
             "Please pass directly the dataloader via 'dataloader'.",
         ):
             trainer._get_dataloader(maps.training.data.train.splits[0])
@@ -497,11 +582,8 @@ class TestSideMethods:
         with pytest.raises(
             ValueError, match="Training on split 0 has already been performed."
         ):
-            trainer._create_split(split_idx=0, resume=False)
-        trainer._create_split(split_idx=0, resume=True)
-        with pytest.raises(KeyError, match="Cannot resume training on split 2"):
-            trainer._create_split(split_idx=2, resume=True)
-        trainer._create_split(split_idx=2, resume=False)
+            trainer._create_split(split_idx=0)
+        trainer._create_split(split_idx=2)
         assert maps.training.splits[2].path.exists()
 
     def test_create_results_dir(self, trainer: Trainer, tmp_path):
@@ -545,16 +627,11 @@ class TestTrain:
     def test_train(self, warnings, trainer: Trainer, tmp_path):
         _add_maps_to_trainer(trainer, tmp_path)
 
-        def _simulate_train(*args, **kwargs):
-            assert torch.initial_seed() == 7
-            assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
-            raise ValueError()
-
         trainer._train = Mock()
         split = Mock()
         split.index = 2
 
-        trainer._train.side_effect = _simulate_train
+        trainer._train.side_effect = _simulate_workflow
         with pytest.raises(ValueError):
             trainer.train(
                 split,
@@ -570,19 +647,6 @@ class TestTrain:
         assert trainer.maps.training.splits[2].path.exists()
         assert torch.initial_seed() != 7
         assert not os.environ.get("CLINICADL_DETERMINISTIC")
-
-        # resume
-        trainer.maps.training.delete_split(2)
-        split.index = 0
-        trainer._get_old_reprod_config = Mock()
-        trainer._get_old_reprod_config.side_effect = lambda x: (3, False)
-        trainer._seed_context = Mock()
-        trainer._seed_context.return_value = nullcontext()
-        trainer._train = Mock()
-
-        trainer.train(split, resume=True)
-
-        trainer._seed_context.assert_called_once_with(3, False)
 
     def test__train(self, trainer: Trainer, custom_metric):
         trainer._metrics = MetricsHandler(loss=custom_metric, my_metric=custom_metric)
@@ -870,6 +934,59 @@ class TestTrain:
         )
 
 
+@patch(
+    "clinicadl.train.trainer.warnings",
+    side_effect=lambda *args, **kwargs: nullcontext(),
+)
+def test_resume(warnings, trainer: Trainer):
+    trainer._maps = Mock()
+
+    split_1 = Mock()
+    split_1.index = 1
+    split_2 = Mock()
+    split_2.index = 2
+
+    trainer.metrics.add_metrics(loss=MSEMetricConfig(), mse=MSEMetricConfig())
+
+    trainer._check_split_exists = Mock()
+    trainer._get_split = Mock()
+    trainer._get_split.return_value = split_1
+    trainer._get_old_computational_config = Mock()
+    trainer._get_old_computational_config.return_value = (
+        comp := ComputationalConfig(seed=7, deterministic=True)
+    )
+
+    trainer._train = Mock()
+    trainer._train.side_effect = _simulate_workflow
+    with pytest.raises(ValueError):
+        trainer.resume(split_idx=1)
+    warnings.catch_warnings.assert_called_once()
+    warnings.simplefilter.assert_called_once()
+    trainer._train.assert_called_once_with(
+        split=split_1, computational=comp, metrics=ANY, resume=True
+    )
+    assert isinstance(trainer._train.call_args[1]["metrics"], MetricsHandler)
+    assert list(trainer._train.call_args[1]["metrics"].metrics.keys()) == [
+        "loss",
+        "mse",
+    ]
+    trainer.callbacks.callbacks[-3].on_exception.assert_called()
+    assert torch.initial_seed() != 7
+    assert not os.environ.get("CLINICADL_DETERMINISTIC")
+    trainer._check_split_exists.assert_called_once_with(1)
+
+    trainer._train.reset_mock()
+    with pytest.raises(
+        AssertionError, match="split_idx does not match split.index. Got 1 and 2"
+    ):
+        trainer.resume(split_idx=1, split=split_2)
+    with pytest.raises(ValueError):
+        trainer.resume(split_idx=2, split=split_2)
+    trainer._train.assert_called_once_with(
+        split=split_2, computational=comp, metrics=ANY, resume=True
+    )
+
+
 class TestValidation:
     @patch(
         "clinicadl.train.trainer.warnings",
@@ -878,24 +995,20 @@ class TestValidation:
     def test_validate(self, warnings, trainer: Trainer):
         trainer._maps = Mock()
 
-        def _simulate_validate(*args, **kwargs):
-            assert torch.initial_seed() == 1
-            assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
-            raise ValueError()
-
         trainer._validate = Mock()
         trainer._check_split_exists = Mock()
-        trainer._get_old_reprod_config = Mock()
-        trainer._get_old_reprod_config.return_value = (1, True)
+        trainer._get_old_computational_config = Mock()
+        trainer._get_old_computational_config.return_value = (
+            comp := ComputationalConfig(seed=7, deterministic=True)
+        )
 
-        trainer._validate.side_effect = _simulate_validate
+        trainer._validate.side_effect = _simulate_workflow
         with pytest.raises(ValueError):
             trainer.validate(
                 split_idx=0,
                 metrics=["loss"],
                 dataloader=(loader := Mock()),
                 model_checkpoint="x",
-                computational=(comp := Mock()),
             )
         trainer.maps.read.assert_called_once()
         warnings.catch_warnings.assert_called_once()
@@ -1031,20 +1144,15 @@ class TestTest:
         side_effect=lambda *args, **kwargs: nullcontext(),
     )
     def test_test(self, warnings, trainer: Trainer):
-        def _simulate_test(*args, **kwargs):
-            assert torch.initial_seed() == 1
-            assert os.environ.get("CLINICADL_DETERMINISTIC") == "true"
-            raise ValueError()
-
         trainer._test = Mock()
-        trainer._test.side_effect = _simulate_test
+        trainer._test.side_effect = _simulate_workflow
         with pytest.raises(ValueError):
             trainer.test(
                 model_checkpoint="x",
                 metrics=["loss"],
                 group_name="y",
                 dataloader=(loader := Mock()),
-                computational=(comp := ComputationalConfig(deterministic=True, seed=1)),
+                computational=(comp := ComputationalConfig(deterministic=True, seed=7)),
             )
         trainer._test.assert_called_once_with(
             model_checkpoint="x",
