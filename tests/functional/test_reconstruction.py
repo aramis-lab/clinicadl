@@ -39,7 +39,9 @@ if TYPE_CHECKING:
     from clinicadl.split import Split
 
 
-def _setup(caps_dir: Path, metadata: Path, maps_path: Path) -> None:
+def _setup(
+    caps_dir: Path, metadata: Path, maps_path: Path
+) -> tuple[CapsDataset, CapsDataset, Trainer]:
     train_dataset = CapsDataset(
         directory=caps_dir,
         datatype=T1Linear(use_uncropped_image=False),

@@ -134,14 +134,17 @@ def _compare_anything(content: Any, ref_content: Any) -> None:
             except AssertionError as e:
                 e.add_note(f"Error raised when comparing '{key}'")
                 raise
+    elif isinstance(content, list) and isinstance(ref_content, list):
+        assert len(content) == len(ref_content)
+        try:
+            content = sorted(content)
+            ref_content = sorted(ref_content)
+        except TypeError:
+            pass
+        for c, ref_c in zip(content, ref_content):
+            _compare_anything(c, ref_c)
     else:
-        if isinstance(content, list) and isinstance(ref_content, list):
-            try:
-                content = sorted(content)
-                ref_content = sorted(ref_content)
-            except TypeError:
-                pass
-        elif isinstance(content, str) and isinstance(ref_content, str):
+        if isinstance(content, str) and isinstance(ref_content, str):
             content = _normalize_str(content)
             ref_content = _normalize_str(ref_content)
 
