@@ -328,7 +328,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         self._val_batch_size = split.val_loader.batch_size
 
         if computational.gpu:
-            self._gpus_used.append(torch.cuda.get_device_name(0))
+            self._gpus_used = [torch.cuda.get_device_name(0)]
 
         self.monitor_global_training = self._init_monitor(name=TRAIN, save_time=True)
         self.monitor_epoch = self._init_monitor(name=EPOCH)
