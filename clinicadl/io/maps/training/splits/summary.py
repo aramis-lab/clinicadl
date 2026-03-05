@@ -20,7 +20,7 @@ class TrainingSummary:
         Creates a new summary file.
         """
         summary = "================================================ Training ================================================\n\n"
-        summary += "Date: " + datetime.now().strftime("%Y %b %d, %H:%M:%S") + "\n\n"
+        summary += "Date: " + datetime.now().strftime("%Y %b %d, %H:%M:%S") + "\n"
         with self.file.open(mode="w") as f:
             f.write(summary)
 
@@ -35,8 +35,8 @@ class TrainingSummary:
         n_val_samples : int
             The number of validation samples.
         """
-        summary = f"Trained with {int(n_train_samples):,} samples\n"
-        summary += f"Validated on {int(n_val_samples):,} samples\n\n"
+        summary = f"\nTrained with {int(n_train_samples):,} samples\n"
+        summary += f"Validated on {int(n_val_samples):,} samples\n"
         self.add_info(summary)
 
     def add_training_end_info(self, n_epochs: int, interrupted: bool) -> None:
@@ -51,7 +51,7 @@ class TrainingSummary:
             Whether the training was interrupted.
         """
         self.add_info(
-            f"Training {'interrupted' if interrupted else 'completed'} after {int(n_epochs):,} epochs\n\n"
+            f"\nTraining {'interrupted' if interrupted else 'completed'} after {int(n_epochs):,} epochs\n"
         )
 
     def add_info(self, info: str) -> None:

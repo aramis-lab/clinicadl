@@ -89,7 +89,7 @@ def test_training_summary(tmp_path):
     summary.create()
     summary.add_data_info(n_train_samples=1e6, n_val_samples=1e5)
     summary.add_training_end_info(n_epochs=1e3, interrupted=False)
-    summary.add_info("abc\n")
+    summary.add_info("\nabc")
 
     actual_lines = normalize_file(path)
     expected_lines = [
@@ -102,7 +102,7 @@ def test_training_summary(tmp_path):
         "\n",
         "Training completed after 1,000 epochs\n",
         "\n",
-        "abc\n",
+        "abc",
     ]
     assert actual_lines == expected_lines
 
