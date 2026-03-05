@@ -192,9 +192,6 @@ def _validate(kfold_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool) ->
         dataloader=split.val_loader,
         metrics=["recall"],
         model_checkpoint="best-f1",
-        computational=ComputationalConfig(
-            gpu=gpu, amp=True, channels_last=False, seed=0, deterministic=True
-        ),
     )
 
 

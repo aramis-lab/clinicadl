@@ -335,7 +335,7 @@ def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
 
 
 @pytest.mark.gpu
-def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
+def test_train_gpu(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
     ref_interrupted = ref_data / "maps_test_regression_gpu"
     ref_uninterrupted = ref_data / "maps_test_regression_uninterrupted_gpu"
     maps_classif = Maps(ref_data / "maps_test_classification")

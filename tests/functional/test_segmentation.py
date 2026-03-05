@@ -200,11 +200,6 @@ def _validate(maps_path: Path, gpu: bool) -> None:
     trainer.validate(
         split_idx=0,
         metrics=["hd"],
-        computational=ComputationalConfig(
-            gpu=gpu,
-            seed=0,
-            deterministic=True,
-        ),
     )
 
 
