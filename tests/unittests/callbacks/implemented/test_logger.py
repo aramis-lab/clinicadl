@@ -553,6 +553,7 @@ def test_on_exception(caplog, tmp_path):
         split_idx=2,
         called="train",
         stage="training",
+        current_epoch=1,
     )
     maps.training.create_split(state.split_idx)
     SPLIT.index = state.split_idx
@@ -567,6 +568,7 @@ def test_on_exception(caplog, tmp_path):
 
     # train
     logger.on_train_start(maps=maps, split=SPLIT, state=state, computational=comp)
+    logger.on_epoch_start(state=state)
 
     log = logging.getLogger("clinicadl.logger_test")
     log.warning("a warning")
@@ -578,6 +580,8 @@ def test_on_exception(caplog, tmp_path):
         except ValueError:
             logger.on_exception(state=state)
     log.warning("a second warning")
+
+    assert logger._train_progress_bar.disable
 
     with open(maps.training.splits[state.split_idx].summary_log, "r") as f:
         assert "Training interrupted" in f.read()

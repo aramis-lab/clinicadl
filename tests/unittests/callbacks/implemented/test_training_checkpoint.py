@@ -59,7 +59,7 @@ def test_disabled(caplog, tmp_path):
 
     chkpt = TrainingCheckpointCallback(every_n_epochs=1, enabled=False)
     with caplog.at_level("DEBUG"):
-        chkpt.on_trainer_init(callbacks=CALLBACKS, metrics=METRICS)
+        chkpt.on_train_start(callbacks=CALLBACKS, metrics=METRICS)
         chkpt.on_optimization_step_end(optimizers=OPTIMIZERS, grad_scaler=SCALER)
         chkpt.on_exception(maps=maps, state=state)
         chkpt.on_epoch_end(state=state, model=MODEL, maps=maps)
@@ -78,7 +78,7 @@ def test_saving(caplog, tmp_path):
     tmp_dir = maps.training.splits[0].tmp
     tmp_dir.clear()
 
-    chkpt.on_trainer_init(callbacks=CALLBACKS, metrics=METRICS)
+    chkpt.on_train_start(callbacks=CALLBACKS, metrics=METRICS)
 
     with caplog.at_level("INFO"):
         chkpt.on_exception(maps=maps, state=STATE)

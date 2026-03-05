@@ -68,7 +68,7 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         self._scaler = None
         self._metrics = None
 
-    def on_trainer_init(
+    def on_train_start(
         self,
         *,
         metrics: MetricsHandler,

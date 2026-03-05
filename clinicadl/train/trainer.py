@@ -409,8 +409,8 @@ class Trainer:
             self._train(
                 split=split,
                 computational=computational,
-                metrics=deepcopy(self.metrics),
-                resume=True,  # metrics filtering is done when loading the checkpoint
+                metrics=None,  # metrics filtering is done when loading the checkpoint
+                resume=True,
             )
 
     def _train(

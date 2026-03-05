@@ -946,8 +946,6 @@ def test_resume(warnings, trainer: Trainer):
     split_2 = Mock()
     split_2.index = 2
 
-    trainer.metrics.add_metrics(loss=MSEMetricConfig(), mse=MSEMetricConfig())
-
     trainer._check_split_exists = Mock()
     trainer._get_split = Mock()
     trainer._get_split.return_value = split_1
@@ -963,13 +961,8 @@ def test_resume(warnings, trainer: Trainer):
     warnings.catch_warnings.assert_called_once()
     warnings.simplefilter.assert_called_once()
     trainer._train.assert_called_once_with(
-        split=split_1, computational=comp, metrics=ANY, resume=True
+        split=split_1, computational=comp, metrics=None, resume=True
     )
-    assert isinstance(trainer._train.call_args[1]["metrics"], MetricsHandler)
-    assert list(trainer._train.call_args[1]["metrics"].metrics.keys()) == [
-        "loss",
-        "mse",
-    ]
     trainer.callbacks.callbacks[-3].on_exception.assert_called()
     assert torch.initial_seed() != 7
     assert not os.environ.get("CLINICADL_DETERMINISTIC")
@@ -983,7 +976,7 @@ def test_resume(warnings, trainer: Trainer):
     with pytest.raises(ValueError):
         trainer.resume(split_idx=2, split=split_2)
     trainer._train.assert_called_once_with(
-        split=split_2, computational=comp, metrics=ANY, resume=True
+        split=split_2, computational=comp, metrics=None, resume=True
     )
 
 

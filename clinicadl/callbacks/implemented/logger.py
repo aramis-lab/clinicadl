@@ -116,6 +116,15 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         state: TrainerState,
         **kwargs,
     ) -> None:
+        for pbar in [
+            self._train_progress_bar,
+            self._val_progress_bar,
+            self._test_progress_bar,
+            self._predict_progress_bar,
+        ]:
+            if pbar is not None:
+                pbar.close()
+
         if state.called == TrainerCall.TRAIN and self._train_summary:
             self._train_summary.add_training_end_info(
                 n_epochs=state.current_epoch, interrupted=True
@@ -349,7 +358,6 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
 
     def on_epoch_start(self, *, state: TrainerState, **kwargs) -> None:
         self.logger.info("Beginning of epoch %d", state.current_epoch)
-
         self._train_progress_bar = tqdm(
             total=state.num_train_batches,
             unit="batch",
