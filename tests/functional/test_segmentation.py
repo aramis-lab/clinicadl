@@ -55,7 +55,7 @@ from clinicadl.transforms.config import (
 )
 from clinicadl.transforms.extraction import Slice
 
-from .utils import TestDevice
+from .utils import TestDeviceCallback
 
 if TYPE_CHECKING:
     from clinicadl.data.datasets import Dataset
@@ -95,7 +95,7 @@ def _build_callbacks(gpu: bool) -> list[Callback]:
     ]
     if gpu:
         callbacks.append(
-            TestDevice(
+            TestDeviceCallback(
                 model_on_gpu=True, post_processing_on_gpu=False, metrics_on_gpu=False
             )
         )

@@ -80,7 +80,18 @@ class TestModelReset(Callback):
                     torch.testing.assert_close(self.nn_state_dict, model.state_dict())
 
 
-class TestDevice(Callback):
+class ErrorCallback(Callback):
+    def __init__(self, error_epoch: int):
+        self.error_epoch = error_epoch
+        self.error_raised = False
+
+    def on_backward_step_start(self, *, state, **kwargs):
+        if state.current_epoch == self.error_epoch and not self.error_raised:
+            self.error_raised = True
+            raise torch.cuda.OutOfMemoryError()
+
+
+class TestDeviceCallback(Callback):
     def __init__(
         self,
         model_on_gpu: Optional[bool] = None,
