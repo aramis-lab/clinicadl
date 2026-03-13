@@ -16,6 +16,8 @@ A multi-class, multi-label classification task trained on 2 splits (KFold splitt
 
 The data location (i.e. the device) across the workflow is tested.
 Model resetting (or no resetting) is tested.
+
+An error is raised to interrupt the training. Training is then resumed.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+import torch
 
 from clinicadl.callbacks import (
     EarlyStoppingCallback,
@@ -61,7 +64,13 @@ from clinicadl.transforms.config import (
 )
 from clinicadl.utils.seed import seed_everything_context
 
-from .utils import RandomMasking, ResampleMask, TestDevice, TestModelReset
+from .utils import (
+    ErrorCallback,
+    RandomMasking,
+    ResampleMask,
+    TestDeviceCallback,
+    TestModelReset,
+)
 
 if TYPE_CHECKING:
     from clinicadl.data.datasets import Dataset
@@ -124,7 +133,6 @@ def _setup(
             )
         ),
         EarlyStoppingCallback(metric="loss", patience=3, min_delta=0.1),
-        ModelCheckpointCallback(metric="f1"),
         LoggerCallback(progress_bar=False, debug=False),
     ]
     if reset_model:
@@ -133,7 +141,7 @@ def _setup(
         callbacks.append(TestModelReset(assert_equal=True))
     if gpu:
         callbacks.append(
-            TestDevice(
+            TestDeviceCallback(
                 model_on_gpu=True,
                 post_processing_on_gpu=True,
                 metrics_on_gpu=False,
@@ -168,27 +176,39 @@ def _train(kfold_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool) -> No
         split.build_train_loader(sampling_weights="age", batch_size=2, drop_last=True)
         split.build_val_loader()
 
-        trainer.train(
-            split,
-            computational=ComputationalConfig(
-                gpu=gpu,
-                amp=True,
-                channels_last=True,
-                seed=split.index,
-                deterministic=True,
-            ),
-        )
+        if split.index == 1:
+            trainer.add_callbacks(
+                [
+                    ModelCheckpointCallback(metric="f1", epochs=[30]),
+                    ErrorCallback(error_epoch=30),
+                ]
+            )
+
+        try:
+            trainer.train(
+                split,
+                computational=ComputationalConfig(
+                    gpu=gpu,
+                    amp=True,
+                    channels_last=True,
+                    seed=split.index,
+                    deterministic=True,
+                ),
+            )
+        except torch.cuda.OutOfMemoryError:
+            time.sleep(1)
+            trainer.resume(split_idx=split.index, split=split)
 
 
-def _validate(kfold_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool) -> None:
+def _validate(kfold_dir: Path, dataset: Dataset, trainer: Trainer) -> None:
     kfold = KFold(kfold_dir)
-    split = next(iter(kfold.get_splits(dataset, splits=[0])))
+    split = next(iter(kfold.get_splits(dataset, splits=[1])))
     split.build_val_loader()
 
     trainer.add_metrics(recall=ConfusionMatrixMetricConfig(metric_name="recall"))
 
     trainer.validate(
-        split_idx=0,
+        split_idx=1,
         dataloader=split.val_loader,
         metrics=["recall"],
         model_checkpoint="best-f1",
@@ -200,7 +220,7 @@ def _test(split_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool):
     test_loader = DataLoaderConfig().get_object(test_dataset)
 
     trainer.test(
-        model_checkpoint="split-0_best-f1",
+        model_checkpoint="split-1_best-f1",
         dataloader=test_loader,
         group_name="oasis",
         computational=ComputationalConfig(
@@ -209,7 +229,7 @@ def _test(split_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool):
     )
     time.sleep(1)  # so that the exec files don't have the same name
     trainer.test(
-        model_checkpoint="split-0_final",
+        model_checkpoint="split-1_final",
         dataloader=test_loader,
         group_name="oasis",
         computational=ComputationalConfig(
@@ -235,7 +255,7 @@ def _test_trainer(
         caps_dir, metadata_tsv, maps_path, reset_model=gpu, gpu=gpu
     )  # test with and without model resetting
     _train(kfold_dir, dataset, trainer, gpu=gpu)
-    _validate(kfold_dir, dataset, trainer, gpu=gpu)
+    _validate(kfold_dir, dataset, trainer)
     _test(split_dir, dataset, trainer, gpu=gpu)
 
     compare_maps_dir(maps_path, ref, except_=[Path("callbacks.json")])
