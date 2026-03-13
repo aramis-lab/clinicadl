@@ -1,6 +1,24 @@
+"""
+A hybrid task with both regression and classification, trained on a single split:
+- an PairedDataset;
+- a custom model;
+- two optimizers;
+- two parameter groups in one optimizer;
+- two losses;
+- lr scheduling on both optimizers;
+- postprocessing (on GPU);
+- metrics (on GPU);
+- monitor and checkpoint callbacks disabled.
+
+The data location (i.e. the device) across the workflow is tested.
+
+An error is raised to interrupt the training. The Trainer is then recreated from the saved maps and training is resumed.
+
+This test also checks that we obtain the same results when training is interrupted or not.
+"""
+
 from __future__ import annotations
 
-import argparse
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -33,13 +51,11 @@ from clinicadl.train import ComputationalConfig, Trainer
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import FormatConfig, ZNormalizationConfig
 
-if TYPE_CHECKING:
-    import pandas as pd
+from .utils import ErrorCallback, TestDeviceCallback
 
+if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
     from clinicadl.data.datasets import Dataset
-    from clinicadl.models import Model
-    from clinicadl.split import Split
 
 
 class _TwoHeadMLP(torch.nn.Module):
@@ -162,17 +178,6 @@ class TwoHeadsRegressionModel(Model):
         ) / 2  # the same image. Just for the test
 
 
-class ErrorCallback(Callback):
-    def __init__(self, error_epoch: int):
-        self.error_epoch = error_epoch
-        self.error_raised = False
-
-    def on_backward_step_start(self, *, state, **kwargs):
-        if state.current_epoch == self.error_epoch and not self.error_raised:
-            self.error_raised = True
-            raise torch.cuda.OutOfMemoryError()
-
-
 def _encode_sex(gender: pd.Series) -> pd.Series:
     def _encode(gender: str) -> int:
         if gender == "M":
@@ -183,7 +188,7 @@ def _encode_sex(gender: pd.Series) -> pd.Series:
 
 
 def _setup(
-    caps_dir: Path, metadata: Path, maps_path: Path, base_model_dir: Path
+    caps_dir: Path, metadata: Path, maps_path: Path, base_model_dir: Path, gpu: bool
 ) -> tuple[Dataset, Trainer, Model, MetricsHandler, list[Callback]]:
     data = pd.read_csv(metadata, sep="\t")
     data["sex"] = _encode_sex(data["sex"])
@@ -233,6 +238,12 @@ def _setup(
             optimizer_name="optimizer_head",
         ),
     ]
+    if gpu:
+        callbacks.append(
+            TestDeviceCallback(
+                model_on_gpu=True, post_processing_on_gpu=True, metrics_on_gpu=True
+            )
+        )
 
     trainer = Trainer(
         maps=maps_path,
@@ -299,7 +310,7 @@ def _test_trainer(
     maps_path = tmp_path / "maps"
 
     dataset, trainer, model, metrics, callbacks = _setup(
-        caps_dir, metadata_tsv, maps_path, base_model
+        caps_dir, metadata_tsv, maps_path, base_model, gpu=gpu
     )
     _train(split_dir, dataset, trainer, model, metrics, callbacks, gpu=gpu)
 
