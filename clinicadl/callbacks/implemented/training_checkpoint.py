@@ -66,7 +66,6 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         self._callbacks = None
         self._optimizers = None
         self._scaler = None
-        self._metrics = None
 
     def on_train_start(
         self,

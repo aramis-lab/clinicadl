@@ -38,19 +38,6 @@ ONLY_ONE = [
     TrainingCheckpointCallback,
 ]
 
-MANDATORY = [
-    ChecksCallback(),
-    ConfigSaverCallback(),
-    TrainingLossCallback(),
-    MetricsSaverCallback(),
-]
-DEFAULT = [
-    LoggerCallback(),
-    MonitorCallback(),
-    ModelCheckpointCallback(save_last=True),
-    TrainingCheckpointCallback(),
-]
-
 
 class CallbacksHandlerConfig(ObjectConfig["CallbacksHandler"]):
     """
@@ -207,19 +194,19 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
             callback for callback in callbacks if type(callback) in FIRST_LAST
         ]
 
-    @staticmethod
-    def _add_mandatory(callbacks: list[Callback]) -> None:
+    @classmethod
+    def _add_mandatory(cls, callbacks: list[Callback]) -> None:
         """
         Adds the mandatory callbacks.
         """
-        callbacks.extend(MANDATORY)
+        callbacks.extend(cls._get_mandatory())
 
-    @staticmethod
-    def _add_defaults(callbacks: list[Callback]) -> None:
+    @classmethod
+    def _add_defaults(cls, callbacks: list[Callback]) -> None:
         """
         Adds the default callbacks.
         """
-        for callback in DEFAULT:
+        for callback in cls._get_default():
             if not any(type(x) is type(callback) for x in callbacks):
                 callbacks.append(callback)
 
@@ -231,3 +218,21 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         _reorder(callbacks, FIRST, unordered_at_the_end=True)
         _reorder(callbacks, FIRST_LAST, unordered_at_the_end=True)
         _reorder(callbacks, LAST, unordered_at_the_end=False)
+
+    @staticmethod
+    def _get_default() -> list[Callback]:
+        return [
+            LoggerCallback(),
+            MonitorCallback(),
+            ModelCheckpointCallback(save_last=True),
+            TrainingCheckpointCallback(),
+        ]
+
+    @staticmethod
+    def _get_mandatory() -> list[Callback]:
+        return [
+            ChecksCallback(),
+            ConfigSaverCallback(),
+            TrainingLossCallback(),
+            MetricsSaverCallback(),
+        ]

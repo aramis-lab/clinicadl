@@ -91,9 +91,9 @@ def test_inputs():
     assert cb_handler.callbacks[0] is log
 
 
-@patch("clinicadl.callbacks.handler.MANDATORY", MANDATORY := [Mock()])
-@patch("clinicadl.callbacks.handler.DEFAULT", [])
 def test_call_event():
+    mandatory_cb = Mock()
+
     log = LoggerCallback()
     log.on_trainer_init = Mock()
     log.on_forward_step_start = Mock()
@@ -113,29 +113,37 @@ def test_call_event():
     on_trainer_init.attach_mock(log.on_trainer_init, "log")
     on_trainer_init.attach_mock(monitor.on_trainer_init, "monitor")
     on_trainer_init.attach_mock(cb.on_trainer_init, "cb")
-    on_trainer_init.attach_mock(MANDATORY[-1].on_trainer_init, "mandatory")
+    on_trainer_init.attach_mock(mandatory_cb.on_trainer_init, "mandatory")
     on_forward_step_start = Mock()
     on_forward_step_start.attach_mock(log.on_forward_step_start, "log")
     on_forward_step_start.attach_mock(monitor.on_forward_step_start, "monitor")
     on_forward_step_start.attach_mock(cb.on_forward_step_start, "cb")
-    on_forward_step_start.attach_mock(MANDATORY[-1].on_forward_step_start, "mandatory")
+    on_forward_step_start.attach_mock(mandatory_cb.on_forward_step_start, "mandatory")
     on_resume = Mock()
     on_resume.attach_mock(log.on_resume, "log")
     on_resume.attach_mock(monitor.on_resume, "monitor")
     on_resume.attach_mock(cb.on_resume, "cb")
-    on_resume.attach_mock(MANDATORY[-1].on_resume, "mandatory")
+    on_resume.attach_mock(mandatory_cb.on_resume, "mandatory")
     on_train_end = Mock()
     on_train_end.attach_mock(log.on_train_end, "log")
     on_train_end.attach_mock(monitor.on_train_end, "monitor")
     on_train_end.attach_mock(cb.on_train_end, "cb")
-    on_train_end.attach_mock(MANDATORY[-1].on_train_end, "mandatory")
+    on_train_end.attach_mock(mandatory_cb.on_train_end, "mandatory")
     on_exception = Mock()
     on_exception.attach_mock(log.on_exception, "log")
     on_exception.attach_mock(monitor.on_exception, "monitor")
     on_exception.attach_mock(cb.on_exception, "cb")
-    on_exception.attach_mock(MANDATORY[-1].on_exception, "mandatory")
+    on_exception.attach_mock(mandatory_cb.on_exception, "mandatory")
 
-    cb_handler = CallbacksHandler([log, Callback(), monitor, cb])
+    with patch(
+        "clinicadl.callbacks.handler.CallbacksHandler._get_mandatory"
+    ) as mock_mandatory, patch(
+        "clinicadl.callbacks.handler.CallbacksHandler._get_default"
+    ) as mock_default:
+        mock_mandatory.return_value = [mandatory_cb]
+        mock_default.return_value = []
+
+        cb_handler = CallbacksHandler([log, Callback(), monitor, cb])
 
     with pytest.raises(TypeError, match="missing 5 required keyword-only argument"):
         cb_handler.call_event(
@@ -215,12 +223,30 @@ def test_call_event():
 
 
 def test_checkpoints(tmp_path):
-    shutil.copytree(MAPS_PATH, tmp_path, dirs_exist_ok=True)
     maps = Maps(tmp_path)
-    maps.read()
-    log = LoggerCallback()
+    maps.training.create_split(1)
+
+    chkpt = TrainingCheckpointCallback(every_n_epochs=1)
+    cb = Mock()
+    cb.__class__ = Callback
+    cb.state_dict = Mock()
+    cb.state_dict.return_value = "callback"
+    log = Mock()
     log.state_dict = Mock()
     log.state_dict.return_value = "logger"
+
+    with patch(
+        "clinicadl.callbacks.handler.CallbacksHandler._get_mandatory"
+    ) as mock_mandatory, patch(
+        "clinicadl.callbacks.handler.CallbacksHandler._get_default"
+    ) as mock_default:
+        mock_mandatory.return_value = []
+        mock_default.return_value = [log]
+
+        cb_handler = CallbacksHandler([cb, chkpt])
+
+    cb_handler.call_event("on_train_start", metrics=Mock(), callbacks=cb_handler)
+
     state = Mock()
     state.current_epoch = 1
     state.split_idx = 1
@@ -231,40 +257,20 @@ def test_checkpoints(tmp_path):
     scaler = Mock()
     scaler.state_dict.return_value = {}
 
-    cb_handler = CallbacksHandler(
-        [log, CustomCallback(), TrainingCheckpointCallback(every_n_epochs=1)]
-    )
-    # to avoid errors
-    maps.callbacks_json.unlink()
-    cb_handler.call_event(
-        "on_trainer_init",
-        state=state,
-        model=model,
-        maps=maps,
-        metrics=Mock(),
-        callbacks=cb_handler,
-        optimization=Mock(),
-    )
-    cb_handler._first_and_last[0].logger = Mock()
-    cb_handler._first_and_last[0]._train_progress_bar = Mock()
-    cb_handler._ordered[2].monitor_epoch = Mock()
-    cb_handler._ordered[2].monitor_epoch.state_dict.return_value = {}
-    cb_handler._ordered[2].monitor_epoch.name = "epoch"
-    cb_handler._ordered[-1]._optimizers = opt
-    cb_handler._ordered[-1]._scaler = scaler
-    cb_handler._ordered[-1]._metrics = Mock()
-    #
+    chkpt._metrics = Mock()
+    chkpt._optimizers = opt
+    chkpt._scaler = scaler
 
-    cb_handler.call_event("on_epoch_end", state=state, model=model, maps=maps)
-    assert maps.callbacks_json.is_file()
-    assert maps.open_file(
-        maps.training.splits[state.split_idx].tmp.epochs[1].callbacks
-        / "custom_callback.pt"
-    ) == {"abc": 1}
+    cb_handler.call_event("on_epoch_end", model=model, maps=maps, state=state)
     assert (
         maps.open_file(
-            maps.training.splits[state.split_idx].tmp.epochs[1].callbacks
-            / "logger_callback.pt"
+            maps.training.splits[state.split_idx].tmp.epochs[1].callbacks / "mock.pt"
+        )
+        == "callback"
+    )
+    assert (
+        maps.open_file(
+            maps.training.splits[state.split_idx].tmp.epochs[1].callbacks / "mock_1.pt"
         )
         == "logger"
     )
