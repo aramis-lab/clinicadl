@@ -123,6 +123,7 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         callbacks: Sequence[Callback],
     ):
         self.config = self._config_type(callbacks=callbacks)
+        self._all = None  # inputs + defaults + mandatory
         self._with_defaults = None  # inputs + defaults
         self._ordered = None  # inputs + defaults + mandatory, except the ones in self._first_and_last, ordered
         self._first_and_last = None  # callbacks that are always called first and last
@@ -130,8 +131,16 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
 
     @property
     def callbacks(self) -> list[Callback]:
-        """The callbacks currently in the CallbacksHandler."""
+        """The public callbacks currently in the CallbacksHandler."""
         return self._with_defaults
+
+    @property
+    def all_callbacks(self) -> list[Callback]:
+        """
+        The callbacks currently in the CallbacksHandler, including private callbacks
+        (non-customizable callbacks that are always used by ``ClinicaDL``).
+        """
+        return self._all
 
     def add_callbacks(
         self,
@@ -186,6 +195,7 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
         self._reorder(callbacks)
         self._with_defaults = copy(callbacks)
         self._add_mandatory(callbacks)
+        self._all = copy(callbacks)
         self._reorder(callbacks)
         self._ordered = [
             callback for callback in callbacks if type(callback) not in FIRST_LAST

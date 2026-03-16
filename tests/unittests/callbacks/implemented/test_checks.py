@@ -118,6 +118,10 @@ class TestCheckLosses:
         self.MODEL.get_loss_functions.return_value = {"my_loss": LOSS}
         self.checker.on_train_start(model=self.MODEL, split=SPLIT, maps=MAPS)
 
+    def test_resume(self):
+        self.checker.on_resume(model=self.MODEL, maps=MAPS, split=SPLIT)
+        assert self.checker._check_losses._checked
+
     def test_on_backward_step_start(self):
         self.MODEL.get_loss_functions.return_value = {
             "my_loss": LOSS,

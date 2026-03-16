@@ -179,8 +179,8 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         Saves the callback checkpoints.
         """
         for callback, file_name in zip(
-            self._callbacks.callbacks,
-            self._get_callback_file_names(self._callbacks.callbacks),
+            self._callbacks.all_callbacks,
+            self._get_callback_file_names(list(self._callbacks.all_callbacks)),
         ):
             maps.save_file(callback.state_dict(), chkpt_dir.callbacks / file_name)
 
@@ -192,7 +192,8 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         Loads the callback checkpoints.
         """
         for callback, file_name in zip(
-            callbacks.callbacks, cls._get_callback_file_names(callbacks.callbacks)
+            callbacks.all_callbacks,
+            cls._get_callback_file_names(list(callbacks.all_callbacks)),
         ):
             callback.load_state_dict(maps.open_file(chkpt_dir.callbacks / file_name))
 

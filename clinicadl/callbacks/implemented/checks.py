@@ -58,6 +58,7 @@ class ChecksCallback(Callback):
 
     def on_resume(self, **kwargs) -> None:
         self._check_inputs.on_resume(**kwargs)
+        self._check_losses.on_resume(**kwargs)
         self._check_dataframes.on_resume(**kwargs)
         self._check_data_consistency.on_resume(**kwargs)
         self._check_batch.on_resume(**kwargs)
@@ -124,6 +125,12 @@ class _CheckLosses:
 
         self._losses = sorted(list(losses.keys()))
 
+    def on_resume(self, **kwargs) -> None:
+        """
+        Skip checks when resuming.
+        """
+        self._checked = True
+
     def on_backward_step_start(
         self,
         *,
@@ -159,6 +166,7 @@ class _CheckLosses:
         raise ValueError(
             f"clinicadl.models.Model.forward_step should return a Tensor, or a dict of Tensors. Got: {loss}"
         )
+        print(self._checked)
 
 
 class _CheckDataFrames:

@@ -73,6 +73,13 @@ def test_inputs():
     assert cb_handler.callbacks[6] is chkpt
     assert len(cb_handler.callbacks) == 7
 
+    assert len(cb_handler.all_callbacks) == 11
+    assert cb_handler.all_callbacks[:7] == cb_handler.callbacks
+    assert isinstance(cb_handler.all_callbacks[7], ChecksCallback)
+    assert isinstance(cb_handler.all_callbacks[8], ConfigSaverCallback)
+    assert isinstance(cb_handler.all_callbacks[9], TrainingLossCallback)
+    assert isinstance(cb_handler.all_callbacks[10], MetricsSaverCallback)
+
     for cb in [LoggerCallback(), MonitorCallback(), TrainingCheckpointCallback()]:
         with pytest.raises(
             ValueError, match=f"You cannot pass more than one {type(cb)}"
@@ -234,13 +241,16 @@ def test_checkpoints(tmp_path):
     log = Mock()
     log.state_dict = Mock()
     log.state_dict.return_value = "logger"
+    loss = Mock()
+    loss.state_dict = Mock()
+    loss.state_dict.return_value = "loss"
 
     with patch(
         "clinicadl.callbacks.handler.CallbacksHandler._get_mandatory"
     ) as mock_mandatory, patch(
         "clinicadl.callbacks.handler.CallbacksHandler._get_default"
     ) as mock_default:
-        mock_mandatory.return_value = []
+        mock_mandatory.return_value = [loss]
         mock_default.return_value = [log]
 
         cb_handler = CallbacksHandler([cb, chkpt])
@@ -273,6 +283,12 @@ def test_checkpoints(tmp_path):
             maps.training.splits[state.split_idx].tmp.epochs[1].callbacks / "mock_1.pt"
         )
         == "logger"
+    )
+    assert (
+        maps.open_file(
+            maps.training.splits[state.split_idx].tmp.epochs[1].callbacks / "mock_2.pt"
+        )
+        == "loss"
     )
 
 

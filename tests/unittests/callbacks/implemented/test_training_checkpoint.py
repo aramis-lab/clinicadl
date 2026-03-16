@@ -29,10 +29,10 @@ STATE.called = "train"
 STATE.split_idx = 0
 
 CALLBACKS = Mock()
-CALLBACKS.callbacks = [Mock(), Mock(), MagicMock()]
-for c in CALLBACKS.callbacks[:2]:
+CALLBACKS.all_callbacks = [Mock(), Mock(), MagicMock()]
+for c in CALLBACKS.all_callbacks[:2]:
     c.state_dict.return_value = type(c).__name__
-CALLBACKS.callbacks[2].state_dict.return_value = None
+CALLBACKS.all_callbacks[2].state_dict.return_value = None
 
 METRICS = Mock()
 METRICS.save.side_effect = _save_files
@@ -175,9 +175,9 @@ def test_resume(caplog):
         .validation_metrics.details_tsv,
     )
     metrics.remove_metrics.assert_called_once_with({"metric2"})
-    CALLBACKS.callbacks[0].load_state_dict.assert_called_once_with({"state": 0})
-    CALLBACKS.callbacks[1].load_state_dict.assert_called_once_with({"state": 1})
-    CALLBACKS.callbacks[2].load_state_dict.assert_called_once_with({"state": 2})
+    CALLBACKS.all_callbacks[0].load_state_dict.assert_called_once_with({"state": 0})
+    CALLBACKS.all_callbacks[1].load_state_dict.assert_called_once_with({"state": 1})
+    CALLBACKS.all_callbacks[2].load_state_dict.assert_called_once_with({"state": 2})
 
 
 def test_from_to_dict():
