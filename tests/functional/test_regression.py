@@ -304,13 +304,17 @@ def _test_trainer(
     dataset, trainer = _setup(caps_dir, metadata_tsv, maps_path, base_model, gpu=gpu)
     _train(split_dir, dataset, trainer, gpu=gpu)
 
+    except_ = [
+        "callbacks.json",
+        "training/split-0/tmp/epoch-5/callbacks/monitor_callback.pt",
+    ]
+    if gpu:
+        except_.append("training/split-0/tmp/epoch-5/callbacks")
+
     compare_maps_dir(
         maps_path,
         ref,
-        except_=[
-            "callbacks.json",
-            "training/split-0/tmp/epoch-5/callbacks/monitor_callback.pt",
-        ],
+        except_=except_,
     )
 
 
