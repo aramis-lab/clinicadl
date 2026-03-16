@@ -1,7 +1,7 @@
 import json
 import shutil
 from pathlib import Path
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pandas as pd
 
@@ -59,8 +59,12 @@ def test_disabled(caplog, tmp_path):
 
     chkpt = TrainingCheckpointCallback(every_n_epochs=1, enabled=False)
     with caplog.at_level("DEBUG"):
-        chkpt.on_train_start(callbacks=CALLBACKS, metrics=METRICS)
-        chkpt.on_optimization_step_end(optimizers=OPTIMIZERS, grad_scaler=SCALER)
+        chkpt.on_train_start(
+            callbacks=CALLBACKS,
+            metrics=METRICS,
+            optimizers=OPTIMIZERS,
+            grad_scaler=SCALER,
+        )
         chkpt.on_exception(maps=maps, state=state)
         chkpt.on_epoch_end(state=state, model=MODEL, maps=maps)
         assert not (maps.training.splits[state.split_idx].tmp.path).exists()
@@ -78,7 +82,9 @@ def test_saving(caplog, tmp_path):
     tmp_dir = maps.training.splits[0].tmp
     tmp_dir.clear()
 
-    chkpt.on_train_start(callbacks=CALLBACKS, metrics=METRICS)
+    chkpt.on_train_start(
+        callbacks=CALLBACKS, metrics=METRICS, optimizers=OPTIMIZERS, grad_scaler=SCALER
+    )
 
     with caplog.at_level("INFO"):
         chkpt.on_exception(maps=maps, state=STATE)
@@ -86,7 +92,6 @@ def test_saving(caplog, tmp_path):
 
     for epoch in range(1, 6):
         STATE.current_epoch = epoch
-        chkpt.on_optimization_step_end(optimizers=OPTIMIZERS, grad_scaler=SCALER)
         if epoch == 5:
             with caplog.at_level("INFO"):
                 chkpt.on_exception(maps=maps, state=STATE)
@@ -151,7 +156,9 @@ def test_resume(caplog):
     metrics = Mock()
     metrics.metrics = {"metric1": Mock(), "metric2": Mock()}
 
-    with caplog.at_level("INFO"):
+    with caplog.at_level("INFO"), patch.object(
+        TrainingCheckpointCallback, "on_train_start"
+    ) as on_train_start:
         chkpt.on_resume(
             state=STATE,
             model=MODEL,
@@ -162,6 +169,9 @@ def test_resume(caplog):
             grad_scaler=SCALER,
         )
     assert "Loading checkpoints from epoch 3" in caplog.text
+    on_train_start.assert_called_once_with(
+        callbacks=CALLBACKS, metrics=metrics, optimizers=OPTIMIZERS, grad_scaler=SCALER
+    )
 
     STATE.load_state_dict.assert_called_once_with({"current_epoch": 3})
     MODEL.load_state_dict.assert_called_once_with({"linear.0": 1.0})

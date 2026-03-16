@@ -72,10 +72,14 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         *,
         metrics: MetricsHandler,
         callbacks: CallbacksHandler,
+        optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler,
         **kwargs,
     ) -> None:
         self._metrics = metrics
         self._callbacks = callbacks
+        self._optimizers = optimizers
+        self._scaler = grad_scaler
 
     def on_exception(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
         if not state.called == TrainerCall.TRAIN or not self.config.enabled:
@@ -99,6 +103,13 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         grad_scaler: torch.amp.GradScaler,
         **kwargs,
     ) -> None:
+        self.on_train_start(
+            metrics=metrics,
+            callbacks=callbacks,
+            optimizers=optimizers,
+            grad_scaler=grad_scaler,
+        )
+
         tmp_dir = maps.training.splits[state.split_idx].tmp
         last_saved_epoch = self._get_last_saved_epoch(maps, split_idx=state.split_idx)
         logger.info("Loading checkpoints from epoch %d", last_saved_epoch)
@@ -121,16 +132,6 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         )
 
         self._load_callbacks(callbacks, chkpt_dir=chkpt_dir, maps=maps)
-
-    def on_optimization_step_end(
-        self,
-        *,
-        optimizers: dict[str, torch.optim.Optimizer],
-        grad_scaler: torch.amp.GradScaler,
-        **kwargs,
-    ) -> None:
-        self._optimizers = optimizers
-        self._scaler = grad_scaler
 
     def on_epoch_end(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
         if (

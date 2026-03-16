@@ -255,7 +255,13 @@ def test_checkpoints(tmp_path):
 
         cb_handler = CallbacksHandler([cb, chkpt])
 
-    cb_handler.call_event("on_train_start", metrics=Mock(), callbacks=cb_handler)
+    cb_handler.call_event(
+        "on_train_start",
+        metrics=Mock(),
+        callbacks=cb_handler,
+        optimizers=Mock(),
+        grad_scaler=Mock(),
+    )
 
     state = Mock()
     state.current_epoch = 1

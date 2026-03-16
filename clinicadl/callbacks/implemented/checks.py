@@ -166,7 +166,6 @@ class _CheckLosses:
         raise ValueError(
             f"clinicadl.models.Model.forward_step should return a Tensor, or a dict of Tensors. Got: {loss}"
         )
-        print(self._checked)
 
 
 class _CheckDataFrames:

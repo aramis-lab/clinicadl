@@ -456,6 +456,7 @@ class Trainer:
                 Event.TRAIN_START,
                 split=split,
                 optimizers=optimizers,
+                grad_scaler=grad_scaler,
                 optimization=self.optimization,
                 metrics=metrics_handler,
                 callbacks=self.callbacks,
