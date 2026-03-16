@@ -96,7 +96,7 @@ class TwoHeadsRegressionModel(Model):
             postprocessing=[
                 PostProcessTransform(),
             ],
-            postprocessing_on_cpu=True,
+            postprocessing_on_cpu=False,
         )
 
     def _build_model(self, base_model: Path):

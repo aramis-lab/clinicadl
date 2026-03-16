@@ -10,10 +10,11 @@ import torch
 import torchio as tio
 
 from clinicadl.callbacks import Callback
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 
 if TYPE_CHECKING:
-    from clinicadl.data.dataloader import Batch
+    from clinicadl.data.dataloader import BatchType
 
 
 class ResampleMask(tio.SpatialTransform):
@@ -114,7 +115,9 @@ class TestDeviceCallback(Callback):
         self._check(self.batch, self.metrics_on_gpu)
 
     @staticmethod
-    def _check(batch: Batch, gpu: Optional[bool]) -> None:
+    def _check(batch: BatchType, gpu: Optional[bool]) -> None:
+        if not isinstance(batch, Batch):
+            batch = batch[0]
         if gpu is not None:
             assert batch.device == (
                 torch.device("cuda") if gpu else torch.device("cpu")
