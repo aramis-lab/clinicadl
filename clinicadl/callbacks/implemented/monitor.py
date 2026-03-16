@@ -173,7 +173,10 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
             return
 
         df = self._build_df()
-        logger.debug("Computational overview:\n%s", df.to_string(index=False))
+        logger.debug(
+            "Computational overview:\n%s",
+            df.to_string(index=False, float_format=lambda x: f"{x:.5e}"),
+        )
 
     def on_train_start(
         self,
@@ -329,6 +332,8 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
 
         if computational.gpu:
             self._gpus_used = [torch.cuda.get_device_name(0)]
+        else:
+            self._gpus_used = []
 
         self.monitor_global_training = self._init_monitor(name=TRAIN, save_time=True)
         self.monitor_epoch = self._init_monitor(name=EPOCH)
