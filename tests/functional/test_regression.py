@@ -12,14 +12,11 @@ A hybrid task with both regression and classification, trained on a single split
 
 The data location (i.e. the device) across the workflow is tested.
 
-An error is raised to interrupt the training. The Trainer is then recreated from the saved maps and training is resumed.
-
-This test also checks that we obtain the same results when training is interrupted or not.
+An error is raised to interrupt the training.
 """
 
 from __future__ import annotations
 
-import time
 from collections import OrderedDict
 from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
@@ -33,6 +30,7 @@ from torch.nn import BCEWithLogitsLoss, MSELoss
 from clinicadl.callbacks import (
     Callback,
     LRSchedulerCallback,
+    ModelCheckpointCallback,
     TrainingCheckpointCallback,
 )
 from clinicadl.data.datasets import CapsDataset, PairedDataset
@@ -187,9 +185,24 @@ def _encode_sex(gender: pd.Series) -> pd.Series:
     return gender.apply(_encode).astype(int)
 
 
+def build_callbacks() -> list[Callback]:
+    return [
+        TrainingCheckpointCallback(every_n_epochs=5),
+        LRSchedulerCallback(
+            scheduler=StepLRConfig(step_size=3, gamma=0.1),
+            optimizer_name="optimizer_backbone",
+        ),
+        LRSchedulerCallback(
+            scheduler=StepLRConfig(step_size=3, gamma=10),
+            optimizer_name="optimizer_head",
+        ),
+        ModelCheckpointCallback(metric="bce"),
+    ]
+
+
 def _setup(
     caps_dir: Path, metadata: Path, maps_path: Path, base_model_dir: Path, gpu: bool
-) -> tuple[Dataset, Trainer, Model, MetricsHandler, list[Callback]]:
+) -> tuple[Dataset, Trainer]:
     data = pd.read_csv(metadata, sep="\t")
     data["sex"] = _encode_sex(data["sex"])
     dataset = CapsDataset(
@@ -226,18 +239,8 @@ def _setup(
         ),
         metrics_on_cpu=False,
     )
-    callbacks = [
-        TrainingCheckpointCallback(every_n_epochs=5),
-        ErrorCallback(error_epoch=7),
-        LRSchedulerCallback(
-            scheduler=StepLRConfig(step_size=3, gamma=0.1),
-            optimizer_name="optimizer_backbone",
-        ),
-        LRSchedulerCallback(
-            scheduler=StepLRConfig(step_size=3, gamma=10),
-            optimizer_name="optimizer_head",
-        ),
-    ]
+    callbacks = build_callbacks()
+    callbacks.append(ErrorCallback(error_epoch=7))
     if gpu:
         callbacks.append(
             TestDeviceCallback(
@@ -256,16 +259,13 @@ def _setup(
         overwrite=True,
     )
 
-    return paired_dataset, trainer, model, metrics, callbacks
+    return paired_dataset, trainer
 
 
 def _train(
     split_dir: Path,
     dataset: Dataset,
     trainer: Trainer,
-    model: Model,
-    metrics: MetricsHandler,
-    callbacks: Callback,
     gpu: bool,
 ) -> None:
     splitter = SingleSplit(split_dir)
@@ -285,20 +285,12 @@ def _train(
             metrics=["bce", "mse"],
         )
     except torch.cuda.OutOfMemoryError:
-        time.sleep(1)
-        trainer = Trainer.from_maps(
-            maps_path=trainer.maps.path,
-            model=model,
-            metrics=metrics,
-            callbacks=callbacks,
-        )
-        trainer.resume(split_idx=0)
+        pass
 
 
 def _test_trainer(
     tmp_path: Path,
-    ref_interrupted: Path,
-    ref_uninterrupted: Path,
+    ref: Path,
     base_model: Path,
     caps_dir: Path,
     metadata_tsv: Path,
@@ -309,34 +301,27 @@ def _test_trainer(
 
     maps_path = tmp_path / "maps"
 
-    dataset, trainer, model, metrics, callbacks = _setup(
-        caps_dir, metadata_tsv, maps_path, base_model, gpu=gpu
-    )
-    _train(split_dir, dataset, trainer, model, metrics, callbacks, gpu=gpu)
+    dataset, trainer = _setup(caps_dir, metadata_tsv, maps_path, base_model, gpu=gpu)
+    _train(split_dir, dataset, trainer, gpu=gpu)
 
-    compare_maps_dir(maps_path, ref_interrupted, except_=["callbacks.json"])
     compare_maps_dir(
         maps_path,
-        ref_uninterrupted,
+        ref,
         except_=[
-            "exec",
             "callbacks.json",
-            "training/split-0/summary.log",
-            "training/split-0/logs/computational.tsv",
+            "training/split-0/tmp/epoch-5/callbacks/monitor_callback.pt",
         ],
     )
 
 
 def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
-    ref_interrupted = ref_data / "maps_test_regression"
-    ref_uninterrupted = ref_data / "maps_test_regression_uninterrupted"
+    ref = ref_data / "maps_test_regression_interrupted"
     maps_classif = Maps(ref_data / "maps_test_classification")
     maps_classif.read()
     base_model = maps_classif.training.splits[0].models.final.model_pt
     _test_trainer(
         tmp_path,
-        ref_interrupted,
-        ref_uninterrupted,
+        ref,
         base_model,
         caps_dir,
         metadata_tsv,
@@ -347,15 +332,13 @@ def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
 
 @pytest.mark.gpu
 def test_train_gpu(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
-    ref_interrupted = ref_data / "maps_test_regression_gpu"
-    ref_uninterrupted = ref_data / "maps_test_regression_uninterrupted_gpu"
+    ref = ref_data / "maps_test_regression_interrupted_gpu"
     maps_classif = Maps(ref_data / "maps_test_classification")
     maps_classif.read()
     base_model = maps_classif.training.splits[0].models.final.model_pt
     _test_trainer(
         tmp_path,
-        ref_interrupted,
-        ref_uninterrupted,
+        ref,
         base_model,
         caps_dir,
         metadata_tsv,

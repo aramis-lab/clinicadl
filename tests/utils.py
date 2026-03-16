@@ -116,8 +116,6 @@ def _compare_any_file(file: Path, ref_file: Path) -> None:
 
     elif file.suffix == TSV:
         pd.testing.assert_frame_equal(content, ref_content)
-    elif file.suffix == PT:
-        torch.testing.assert_close(content, ref_content)
     else:
         _compare_anything(content, ref_content)
 
@@ -143,6 +141,8 @@ def _compare_anything(content: Any, ref_content: Any) -> None:
             pass
         for c, ref_c in zip(content, ref_content):
             _compare_anything(c, ref_c)
+    elif isinstance(content, torch.Tensor) and isinstance(ref_content, torch.Tensor):
+        torch.testing.assert_close(content, ref_content)
     else:
         if isinstance(content, str) and isinstance(ref_content, str):
             content = _normalize_str(content)
