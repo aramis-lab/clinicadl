@@ -225,6 +225,7 @@ def test_metrics_subset():
     metrics = MetricsHandler(
         mse=MSEMetricConfig(),
         my_metric=(my_metric := CustomMetric()),
+        metrics_on_cpu=False,
     )
 
     with pytest.raises(
@@ -242,6 +243,7 @@ def test_metrics_subset():
         new_metrics.config.metrics.values["my_metric"].value, CustomMetric
     )
     assert new_metrics.config.metrics.values["my_metric"].value is not my_metric
+    assert not new_metrics.config.metrics_on_cpu
 
 
 def test_epochs():

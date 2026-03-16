@@ -563,7 +563,9 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             if name in metrics
         }
 
-        new_metrics = MetricsHandler(**deepcopy(subset))
+        new_metrics = MetricsHandler(
+            **deepcopy(subset), metrics_on_cpu=self.config.metrics_on_cpu
+        )
         if self.metrics:
             new_metrics.init_metrics(model=self._model)
 
