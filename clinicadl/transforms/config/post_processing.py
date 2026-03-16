@@ -113,10 +113,13 @@ class ActivationsConfig(MonaiTransformConfig, _DimConfig):
         return self
 
 
-def _read_dtype(dtype_str: str) -> torch.dtype:
+def _read_dtype(dtype_str: Optional[str]) -> Optional[torch.dtype]:
     """
     To read a serialized torch.dtype.
     """
+    if dtype_str is None:
+        return None
+
     import torch
 
     return getattr(torch, dtype_str.split(".", 1)[1])

@@ -59,6 +59,7 @@ MANDATORY_ARGS = {
         LabelFilterConfig,
         FillHolesConfig,
         SobelGradientsConfig,
+        FormatConfig,
     ],
 )
 def test_get_transform_from_dict(config, tmp_path):

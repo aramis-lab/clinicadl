@@ -47,6 +47,8 @@ class ImplementedTransform(str, BaseEnum):
     FILL_HOLES = "FillHoles"
     SOBEL = "SobelGradients"
 
+    FORMAT = "Format"
+
     @classmethod
     def _missing_(cls, value):
         raise ValueError(
