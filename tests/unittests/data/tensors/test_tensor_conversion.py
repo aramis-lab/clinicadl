@@ -54,7 +54,7 @@ class CustomTransformBis(tio.Transform):
         return datapoint
 
 
-class TensorDataset:
+class BidsLikeTensorDataset:
     def __init__(self):
         self.config = Mock()
         self.config.directory = None
@@ -103,7 +103,7 @@ T1_DATATYPE = T1Linear(use_uncropped_image=True)
 def test_convert_and_read(tmp_path):
     shutil.copytree(DATASET_DIR, tmp_path, dirs_exist_ok=True)
 
-    dataset = TensorDataset()
+    dataset = BidsLikeTensorDataset()
     dataset.config.directory = tmp_path
     dataset.sub_ses = [
         ("sub-100", "ses-M000"),
@@ -122,7 +122,7 @@ def test_convert_and_read(tmp_path):
 
 
 def test_read_tensor_conversion():
-    dataset = TensorDataset()
+    dataset = BidsLikeTensorDataset()
     dataset.config.directory = DATASET_DIR
     sub_ses = [
         ("sub-000", "ses-M000"),
@@ -355,7 +355,7 @@ def test_read_tensor_conversion():
 def test_to_tensors(tmp_path):
     shutil.copytree(DATASET_DIR, tmp_path, dirs_exist_ok=True)
 
-    dataset = TensorDataset()
+    dataset = BidsLikeTensorDataset()
     dataset.config.directory = tmp_path
 
     dataset.sub_ses = [
@@ -684,7 +684,7 @@ def test_to_tensors(tmp_path):
 def test_overwrite(tmp_path):
     shutil.copytree(DATASET_DIR, tmp_path, dirs_exist_ok=True)
 
-    dataset = TensorDataset()
+    dataset = BidsLikeTensorDataset()
     dataset.config.directory = tmp_path
 
     dataset.sub_ses = [
@@ -740,7 +740,7 @@ def test_overwrite(tmp_path):
 
 def test_merge_conversions(tmp_path):
     shutil.copytree(DATASET_DIR, tmp_path, dirs_exist_ok=True)
-    dataset = TensorDataset()
+    dataset = BidsLikeTensorDataset()
     dataset.config.directory = tmp_path
 
     dataset.sub_ses = [

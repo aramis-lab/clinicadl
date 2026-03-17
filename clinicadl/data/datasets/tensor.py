@@ -22,7 +22,7 @@ from clinicadl.utils.dictionary.words import (
 
 from ..structures.label import Mask
 from ..tensors.tensor_conversion import TensorConversion, TensorConversionInfo
-from .base import BaseDataset, BaseDatasetConfig
+from .base_bids import BidsLikeDataset, BidsLikeDatasetConfig
 
 
 def _read_tensor_conversion(
@@ -36,7 +36,7 @@ def _read_tensor_conversion(
     return serialized
 
 
-class TensorDatasetConfig(BaseDatasetConfig):
+class BidsLikeTensorDatasetConfig(BidsLikeDatasetConfig):
     """Config class to check store info on tensor conversion."""
 
     tensor_conversion: Optional[TensorConversionInfo] = Field(
@@ -44,12 +44,12 @@ class TensorDatasetConfig(BaseDatasetConfig):
     )
 
 
-class TensorDataset(BaseDataset):
+class BidsLikeTensorDataset(BidsLikeDataset):
     """
-    Abstract class for :py:class:`~clinicadl.data.datasets.base.BaseDataset` that works with tensors.
+    Abstract class for :py:class:`~clinicadl.data.datasets.base.BidsLikeDataset` that works with tensors.
     """
 
-    config: TensorDatasetConfig
+    config: BidsLikeTensorDatasetConfig
 
     def __init__(
         self,
@@ -317,13 +317,13 @@ class TensorDataset(BaseDataset):
         applied before conversion match the image transforms of the current dataset,
         unless ``check_transforms=False``.
 
-        See :py:meth:`~TensorDataset.to_tensors` for more information on
+        See :py:meth:`~BidsLikeTensorDataset.to_tensors` for more information on
         conversion to tensors.
 
         Parameters
         ----------
         conversion_name : Optional[str], default=None
-            The name of the tensor conversion to read. This is what you passed to :py:meth:`~TensorDataset.to_tensors`
+            The name of the tensor conversion to read. This is what you passed to :py:meth:`~BidsLikeTensorDataset.to_tensors`
             during conversion. If you passed ``None``, leave ``conversion_name`` to ``None``.
         check_transforms : bool, default=True
             Whether to check if the image transforms potentially applied before tensor conversion
@@ -331,7 +331,7 @@ class TensorDataset(BaseDataset):
             not in ``ClinicaDL``), which cannot be read by ``ClinicaDL`` and thus cannot be checked.
 
             .. note::
-                If :py:meth:`~TensorDataset.to_tensors` was run with ``save_transforms=False``, no check will
+                If :py:meth:`~BidsLikeTensorDataset.to_tensors` was run with ``save_transforms=False``, no check will
                 be performed as the tensors saved have not been transformed.
 
             .. warning::
@@ -410,7 +410,7 @@ class TensorDataset(BaseDataset):
 
         See Also
         --------
-        :py:meth:`~TensorDataset.to_tensors`
+        :py:meth:`~BidsLikeTensorDataset.to_tensors`
         """
         if load_also:
             for name in load_also:
@@ -514,7 +514,7 @@ class TensorDataset(BaseDataset):
         """
 
     @classmethod
-    def _from_config(cls, config: TensorDatasetConfig) -> Self:
+    def _from_config(cls, config: BidsLikeTensorDatasetConfig) -> Self:
         dataset = cls(**config.to_raw_dict(exclude=[DF, TENSOR_CONVERSION]))
         dataset._df = config.df
         dataset._tensor_conversion = config.tensor_conversion

@@ -46,7 +46,7 @@ from ..structures import DataPoint, Mask
 from .utils import path_to_tensors
 
 if TYPE_CHECKING:
-    from ..datasets.tensor import TensorDataset
+    from ..datasets.tensor import BidsLikeTensorDataset
 
 logger = getLogger(__name__)
 
@@ -122,11 +122,11 @@ class TensorConversion:
 
     Parameters
     ----------
-    dataset : TensorDataset
-        The :py:class:`clinicadl.data.datasets.tensor_dataset.TensorDataset` on which conversion will be performed.
+    dataset : BidsLikeTensorDataset
+        The :py:class:`clinicadl.data.datasets.tensor_dataset.BidsLikeTensorDataset` on which conversion will be performed.
     """
 
-    def __init__(self, dataset: TensorDataset):
+    def __init__(self, dataset: BidsLikeTensorDataset):
         self.dataset = dataset
 
         self.completed = False
@@ -229,7 +229,7 @@ class TensorConversion:
         """
         Performs conversion.
 
-        See :py:meth:`clinicadl.data.datasets.tensor_dataset.TensorDataset.to_tensors`.
+        See :py:meth:`clinicadl.data.datasets.tensor_dataset.BidsLikeTensorDataset.to_tensors`.
         """
         self._check_conversion_name(conversion_name, save_transforms)
         self._reset()
@@ -291,7 +291,7 @@ class TensorConversion:
         To read an old tensor conversion json and updates the states of the
         current TensorConversion object.
 
-        See :py:meth:`clinicadl.data.datasets.tensor_dataset.TensorDataset.read_tensor_conversion`.
+        See :py:meth:`clinicadl.data.datasets.tensor_dataset.BidsLikeTensorDataset.read_tensor_conversion`.
         """
         self._reset()
         self.conversion_name = conversion_name

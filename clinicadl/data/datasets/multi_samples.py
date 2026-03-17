@@ -13,7 +13,7 @@ from clinicadl.utils.dictionary.words import (
 from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType
 
-from .abstract import Dataset
+from .base import Dataset
 
 
 class MultiSamplesDataset(Dataset):

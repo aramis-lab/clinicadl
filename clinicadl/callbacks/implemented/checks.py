@@ -24,7 +24,7 @@ from ..base import Callback
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import DataLoader
     from clinicadl.data.datasets import Dataset
-    from clinicadl.data.datasets.base import BaseDataset
+    from clinicadl.data.datasets.base_bids import BidsLikeDataset
     from clinicadl.io import Maps
     from clinicadl.losses.types import LossType
     from clinicadl.models import Model
@@ -565,7 +565,7 @@ def _compare_dataloaders(
 
 def _compare_datasets(
     new: Dataset,
-    old: Union[BaseDataset, CollectionDataset[BaseDataset]],
+    old: Union[BidsLikeDataset, CollectionDataset[BidsLikeDataset]],
     except_fields: list[str],
 ) -> Optional[str]:
     """

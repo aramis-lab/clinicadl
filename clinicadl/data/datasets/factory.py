@@ -8,7 +8,7 @@ from clinicadl.utils.factories import (
 )
 from clinicadl.utils.typing import PathType
 
-from .abstract import Dataset
+from .base import Dataset
 
 # pylint: disable=unused-import
 from .caps import CapsDataset

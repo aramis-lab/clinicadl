@@ -16,10 +16,10 @@ from clinicadl.utils.typing import DataFrameType, PathType
 
 from ..datatypes import DataType
 from ..readers.caps_reader import CapsReader
-from .tensor import TensorDataset, TensorDatasetConfig
+from .tensor import BidsLikeTensorDataset, BidsLikeTensorDatasetConfig
 
 
-class CapsDatasetConfig(TensorDatasetConfig):
+class CapsDatasetConfig(BidsLikeTensorDatasetConfig):
     """Config class of ``CapsDataset``."""
 
     @classmethod
@@ -28,7 +28,7 @@ class CapsDatasetConfig(TensorDatasetConfig):
         return CapsDataset
 
 
-class CapsDataset(TensorDataset):
+class CapsDataset(BidsLikeTensorDataset):
     """
     ``CapsDataset`` is a custom :py:class:`PyTorch Dataset <torch.utils.data.Dataset>` class for working with
     neuroimaging data in :term:`CAPS` format.

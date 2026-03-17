@@ -1,7 +1,7 @@
 """To build a :py:class:`PyTorch Dataset <torch.utils.data.Dataset>`
 with your neuroimaging data."""
 
-from .abstract import Dataset
+from .base import Dataset
 from .caps import CapsDataset
 from .concat import ConcatDataset
 from .multi_samples import MultiSamplesDataset

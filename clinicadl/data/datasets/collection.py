@@ -10,9 +10,9 @@ from clinicadl.utils.exceptions import TensorConversionError
 from clinicadl.utils.objects import HasConfig
 from clinicadl.utils.typing import DataFrameType
 
-from .abstract import Dataset
+from .base import Dataset
 from .multi_samples import MultiSamplesDataset
-from .tensor import TensorDataset
+from .tensor import BidsLikeTensorDataset
 
 
 def _get_dataset_from_dict(data: dict[str, Any]) -> Dataset:
@@ -42,7 +42,7 @@ class CollectionDatasetConfig(ObjectConfig["CollectionDataset"]):
         Checks that tensor conversion has been performed before joining the dataset.
         """
         for dataset in datasets:
-            if isinstance(dataset, TensorDataset):
+            if isinstance(dataset, BidsLikeTensorDataset):
                 if not dataset.converted:
                     raise TensorConversionError(
                         "Tensor conversion must be performed BEFORE joining the datasets. Please call "
