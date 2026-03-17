@@ -98,8 +98,8 @@ multi-gpu-unit-tests: install
 
 .PHONY: functional-tests
 functional-tests: install
-	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" --ref /localdrive10TB/users/ci-clinicadl/clinicadl_data_ci/data_ci tests/functional
+	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" --ref /localdrive10TB/users/clinicadl.ci/clinicadl_data_ci tests/functional
 
 .PHONY: gpu-functional-tests
 gpu-functional-tests: install
-	@$(POETRY) run python -m pytest -v -m "gpu" --ref /localdrive10TB/users/ci-clinicadl/clinicadl_data_ci/data_ci tests/functional
+	@$(POETRY) run python -m pytest -v -m "gpu" --ref /localdrive10TB/users/clinicadl.ci/clinicadl_data_ci tests/functional
