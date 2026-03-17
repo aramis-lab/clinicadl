@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 import torch
 from monai.inferers import SliceInferer
@@ -123,7 +123,7 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
         )
 
     def _forward_pass(
-        self, tensor: torch.Tensor, network: torch.nn.Module, **kwargs
+        self, tensor: torch.Tensor, network: Callable[..., torch.Tensor], **kwargs
     ) -> torch.Tensor:
         shape_2d = list(tensor.shape[2:])
         shape_2d.pop(self.config.slice_direction)

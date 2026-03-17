@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
 
 import pandas as pd
 from pydantic import Field, ValidationError, ValidationInfo, field_validator
@@ -87,6 +87,16 @@ class MetricsHandlerConfig(ObjectConfig["MetricsHandler"]):
             if name in self.metric_names:
                 raise ValueError(f"A metric named '{name}' already exists!")
         self.metrics = self.metrics.values | metrics
+
+    def remove_metrics(
+        self,
+        metrics: Sequence[str],
+    ) -> None:
+        """
+        Removes metrics.
+        """
+        for metric in metrics:
+            self.metrics.values.pop(metric)
 
     @staticmethod
     def _read_field_reading_error(error: CannotReadFieldError) -> Optional[list[str]]:
@@ -228,6 +238,29 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             columns=new_columns,
             fill_value=pd.NA,
         )
+
+    def remove_metrics(
+        self,
+        metrics: Union[str, Sequence[str]],
+    ) -> None:
+        """
+        Removes metrics from the MetricsHandler instance.
+
+        Parameters
+        ----------
+        metrics : Union[str, Sequence[str]]
+            The name of the metric(s) to remove.
+        """
+        if isinstance(metrics, str):
+            metrics = [metrics]
+
+        self.config.remove_metrics(metrics)
+        if self.metrics is not None:
+            for metric in metrics:
+                self._metrics.pop(metric)
+
+        self._df.drop(columns=metrics, inplace=True)
+        self._detailed_df.drop(columns=metrics, inplace=True)
 
     def reset(self, reset_df: bool = False) -> None:
         """
@@ -530,7 +563,9 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             if name in metrics
         }
 
-        new_metrics = MetricsHandler(**deepcopy(subset))
+        new_metrics = MetricsHandler(
+            **deepcopy(subset), metrics_on_cpu=self.config.metrics_on_cpu
+        )
         if self.metrics:
             new_metrics.init_metrics(model=self._model)
 

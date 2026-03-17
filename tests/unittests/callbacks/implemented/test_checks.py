@@ -20,7 +20,7 @@ from clinicadl.data.dataloader import (
     DataLoaderConfig,
     MergeBatchesCollate,
 )
-from clinicadl.data.datasets import CapsDataset
+from clinicadl.data.datasets import CapsDataset, UnpairedDataset
 from clinicadl.data.datatypes import PETLinear, T1Linear
 from clinicadl.io import Maps
 from clinicadl.transforms import TransformsHandler
@@ -117,6 +117,10 @@ class TestCheckLosses:
             self.checker.on_train_start(model=self.MODEL, split=SPLIT, maps=MAPS)
         self.MODEL.get_loss_functions.return_value = {"my_loss": LOSS}
         self.checker.on_train_start(model=self.MODEL, split=SPLIT, maps=MAPS)
+
+    def test_resume(self):
+        self.checker.on_resume(model=self.MODEL, maps=MAPS, split=SPLIT)
+        assert self.checker._check_losses._checked
 
     def test_on_backward_step_start(self):
         self.MODEL.get_loss_functions.return_value = {
@@ -780,6 +784,31 @@ class TestCompareDatasets:
             _compare_datasets(dataset, self.DATASET, except_fields=[]),
             re.DOTALL,
         )
+
+    def test_collection_dataset(self):
+        self.DATASET.read_tensor_conversion()
+        dataset = deepcopy(self.DATASET)
+        dataset.config.label = "age"
+        error_msg = _compare_datasets(
+            UnpairedDataset([self.DATASET, self.DATASET]),
+            UnpairedDataset([self.DATASET, self.DATASET]),
+            except_fields=[],
+        )
+        assert error_msg is None
+        error_msg = _compare_datasets(
+            UnpairedDataset([dataset, dataset]),
+            UnpairedDataset([self.DATASET, self.DATASET]),
+            except_fields=[],
+        )
+        assert (
+            error_msg == "the two datasets don't have the same label. Got age and None"
+        )
+        error_msg = _compare_datasets(
+            UnpairedDataset([dataset, dataset]),
+            UnpairedDataset([self.DATASET, self.DATASET]),
+            except_fields=["label"],
+        )
+        assert error_msg is None
 
 
 @pytest.mark.parametrize(

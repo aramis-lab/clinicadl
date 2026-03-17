@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from enum import Enum
 from logging import getLogger
-from typing import Any, Optional, Sequence, TypeVar, Union, overload
+from typing import Any, Callable, Optional, Sequence, TypeVar, Union, overload
 
 import torch
 import torch.nn as nn
@@ -82,7 +82,7 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
     def __call__(
         self,
         x: Union[DataPoint, Batch],
-        network: nn.Module,
+        network: Callable[..., torch.Tensor],
         input_dtype: Optional[torch.dtype] = None,
         **kwargs: Any,
     ) -> Union[DataPoint, Batch]:
@@ -99,7 +99,7 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
 
     @abstractmethod
     def _forward_pass(
-        self, tensor: torch.Tensor, network: nn.Module, **kwargs
+        self, tensor: torch.Tensor, network: Callable[..., torch.Tensor], **kwargs
     ) -> torch.Tensor:
         """
         Defines how a whole image is passed in the neural network.

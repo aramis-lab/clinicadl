@@ -2,13 +2,19 @@ import pytest
 import torch
 
 from clinicadl.models import Model
-from clinicadl.networks.nn import MLP
+from clinicadl.networks.nn import CNN
 
 
 class MyModel(Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.network = MLP(num_inputs=1, num_outputs=1, norm="batch", hidden_dims=[1])
+        self.network = CNN(
+            in_shape=(1, 10, 10, 10),
+            num_outputs=1,
+            conv_args={"channels": [1, 1, 1], "norm": "batch"},
+        )
+        for x in self.network.convolutions.layer0.parameters():
+            x.requires_grad = False
 
     def forward(self, x):
         return self.network(x)
@@ -46,13 +52,30 @@ class MyModel(Model):
 def test_reset():
     model = MyModel()
     model.train()
-    init_param = next(iter(model.network.hidden0.linear.parameters())).clone()
-    model(torch.ones(2, 1))
-    assert not torch.equal(model.network.hidden0.adn.N.running_mean, torch.zeros(1))
+    ref_param_0 = next(
+        iter(model.network.convolutions.layer0.conv.parameters())
+    ).clone()
+    ref_param_1 = next(
+        iter(model.network.convolutions.layer1.conv.parameters())
+    ).clone()
+    model(torch.ones(1, 1, 10, 10, 10))
+    assert not torch.equal(
+        model.network.convolutions.layer0.adn.N.running_mean, torch.zeros(1)
+    )
+    assert not torch.equal(
+        model.network.convolutions.layer1.adn.N.running_mean, torch.zeros(1)
+    )
 
     model.reset()
 
-    new_param = next(iter(model.network.hidden0.linear.parameters()))
+    new_param_0 = next(iter(model.network.convolutions.layer0.conv.parameters()))
+    new_param_1 = next(iter(model.network.convolutions.layer1.conv.parameters()))
+    torch.testing.assert_close(ref_param_0, new_param_0)
     with pytest.raises(AssertionError):
-        torch.testing.assert_close(init_param, new_param)
-    assert torch.equal(model.network.hidden0.adn.N.running_mean, torch.zeros(1))
+        torch.testing.assert_close(ref_param_1, new_param_1)
+    assert not torch.equal(
+        model.network.convolutions.layer0.adn.N.running_mean, torch.zeros(1)
+    )
+    assert torch.equal(
+        model.network.convolutions.layer1.adn.N.running_mean, torch.zeros(1)
+    )

@@ -20,8 +20,8 @@ if TYPE_CHECKING:
     from .handler import CallbacksHandler
 
 
-class Events(str, Enum):
-    """Events that can trigger an action from a :py:class:`clinicadl.callbacks.Callback`."""
+class Event(str, Enum):
+    """Event that can trigger an action from a :py:class:`clinicadl.callbacks.Callback`."""
 
     EXCEPTION = "on_exception"
     INIT = "on_trainer_init"
@@ -816,6 +816,7 @@ class Callback:
         state: TrainerState,
         split: Split,
         optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler,
         optimization: OptimizationConfig,
         metrics: MetricsHandler,
         callbacks: CallbacksHandler,
@@ -839,6 +840,8 @@ class Callback:
         optimizers : dict[str, torch.optim.Optimizer]
             The :py:class`Optimizer <torch.optim.Optimizer>` returned
             by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`.
+        grad_scaler : torch.amp.GradScaler
+            The :py:class:`torch.amp.GradScaler` used to scale gradients.
         optimization : OptimizationConfig
             The optimization specifications of the training phase.``validation metrics`.
         callbacks : CallbacksHandler

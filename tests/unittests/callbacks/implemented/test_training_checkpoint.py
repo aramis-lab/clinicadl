@@ -1,7 +1,7 @@
 import json
 import shutil
 from pathlib import Path
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pandas as pd
 
@@ -29,10 +29,10 @@ STATE.called = "train"
 STATE.split_idx = 0
 
 CALLBACKS = Mock()
-CALLBACKS.callbacks = [Mock(), Mock(), MagicMock()]
-for c in CALLBACKS.callbacks[:2]:
+CALLBACKS.all_callbacks = [Mock(), Mock(), MagicMock()]
+for c in CALLBACKS.all_callbacks[:2]:
     c.state_dict.return_value = type(c).__name__
-CALLBACKS.callbacks[2].state_dict.return_value = None
+CALLBACKS.all_callbacks[2].state_dict.return_value = None
 
 METRICS = Mock()
 METRICS.save.side_effect = _save_files
@@ -59,8 +59,12 @@ def test_disabled(caplog, tmp_path):
 
     chkpt = TrainingCheckpointCallback(every_n_epochs=1, enabled=False)
     with caplog.at_level("DEBUG"):
-        chkpt.on_trainer_init(callbacks=CALLBACKS, metrics=METRICS)
-        chkpt.on_optimization_step_end(optimizers=OPTIMIZERS, grad_scaler=SCALER)
+        chkpt.on_train_start(
+            callbacks=CALLBACKS,
+            metrics=METRICS,
+            optimizers=OPTIMIZERS,
+            grad_scaler=SCALER,
+        )
         chkpt.on_exception(maps=maps, state=state)
         chkpt.on_epoch_end(state=state, model=MODEL, maps=maps)
         assert not (maps.training.splits[state.split_idx].tmp.path).exists()
@@ -78,7 +82,9 @@ def test_saving(caplog, tmp_path):
     tmp_dir = maps.training.splits[0].tmp
     tmp_dir.clear()
 
-    chkpt.on_trainer_init(callbacks=CALLBACKS, metrics=METRICS)
+    chkpt.on_train_start(
+        callbacks=CALLBACKS, metrics=METRICS, optimizers=OPTIMIZERS, grad_scaler=SCALER
+    )
 
     with caplog.at_level("INFO"):
         chkpt.on_exception(maps=maps, state=STATE)
@@ -86,7 +92,6 @@ def test_saving(caplog, tmp_path):
 
     for epoch in range(1, 6):
         STATE.current_epoch = epoch
-        chkpt.on_optimization_step_end(optimizers=OPTIMIZERS, grad_scaler=SCALER)
         if epoch == 5:
             with caplog.at_level("INFO"):
                 chkpt.on_exception(maps=maps, state=STATE)
@@ -148,32 +153,41 @@ def test_resume(caplog):
     maps.read()
     chkpt = TrainingCheckpointCallback()
 
-    with caplog.at_level("INFO"):
+    metrics = Mock()
+    metrics.metrics = {"metric1": Mock(), "metric2": Mock()}
+
+    with caplog.at_level("INFO"), patch.object(
+        TrainingCheckpointCallback, "on_train_start"
+    ) as on_train_start:
         chkpt.on_resume(
             state=STATE,
             model=MODEL,
             maps=maps,
-            metrics=METRICS,
+            metrics=metrics,
             callbacks=CALLBACKS,
             optimizers=OPTIMIZERS,
             grad_scaler=SCALER,
         )
     assert "Loading checkpoints from epoch 3" in caplog.text
+    on_train_start.assert_called_once_with(
+        callbacks=CALLBACKS, metrics=metrics, optimizers=OPTIMIZERS, grad_scaler=SCALER
+    )
 
     STATE.load_state_dict.assert_called_once_with({"current_epoch": 3})
     MODEL.load_state_dict.assert_called_once_with({"linear.0": 1.0})
     OPTIMIZERS["adam"].load_state_dict.assert_called_once_with({"last_epoch": 3})
     OPTIMIZERS["sgd"].load_state_dict.assert_called_once_with({"last_epoch": 4})
     SCALER.load_state_dict.assert_called_once_with({"scale": 1e3})
-    METRICS.load.assert_called_once_with(
+    metrics.load.assert_called_once_with(
         maps.training.splits[0].tmp.epochs[3].validation_metrics.aggregated_tsv,
         details_path=maps.training.splits[0]
         .tmp.epochs[3]
         .validation_metrics.details_tsv,
     )
-    CALLBACKS.callbacks[0].load_state_dict.assert_called_once_with({"state": 0})
-    CALLBACKS.callbacks[1].load_state_dict.assert_called_once_with({"state": 1})
-    CALLBACKS.callbacks[2].load_state_dict.assert_called_once_with({"state": 2})
+    metrics.remove_metrics.assert_called_once_with({"metric2"})
+    CALLBACKS.all_callbacks[0].load_state_dict.assert_called_once_with({"state": 0})
+    CALLBACKS.all_callbacks[1].load_state_dict.assert_called_once_with({"state": 1})
+    CALLBACKS.all_callbacks[2].load_state_dict.assert_called_once_with({"state": 2})
 
 
 def test_from_to_dict():

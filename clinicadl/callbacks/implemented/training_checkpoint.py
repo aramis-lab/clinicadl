@@ -4,11 +4,13 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pandas as pd
 import torch
 from pydantic import NonNegativeInt
 
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.suffixes import PT
+from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.enum import TrainerCall
 from clinicadl.utils.names import camel_to_snake
 from clinicadl.utils.objects import HasConfig
@@ -64,17 +66,20 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         self._callbacks = None
         self._optimizers = None
         self._scaler = None
-        self._metrics = None
 
-    def on_trainer_init(
+    def on_train_start(
         self,
         *,
         metrics: MetricsHandler,
         callbacks: CallbacksHandler,
+        optimizers: dict[str, torch.optim.Optimizer],
+        grad_scaler: torch.amp.GradScaler,
         **kwargs,
     ) -> None:
         self._metrics = metrics
         self._callbacks = callbacks
+        self._optimizers = optimizers
+        self._scaler = grad_scaler
 
     def on_exception(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
         if not state.called == TrainerCall.TRAIN or not self.config.enabled:
@@ -98,6 +103,13 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         grad_scaler: torch.amp.GradScaler,
         **kwargs,
     ) -> None:
+        self.on_train_start(
+            metrics=metrics,
+            callbacks=callbacks,
+            optimizers=optimizers,
+            grad_scaler=grad_scaler,
+        )
+
         tmp_dir = maps.training.splits[state.split_idx].tmp
         last_saved_epoch = self._get_last_saved_epoch(maps, split_idx=state.split_idx)
         logger.info("Loading checkpoints from epoch %d", last_saved_epoch)
@@ -109,21 +121,17 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         for opt_name, opt in optimizers.items():
             opt.load_state_dict(opt_state_dicts[opt_name])
         grad_scaler.load_state_dict(maps.open_file(chkpt_dir.scaler_pt))
+
+        computed_metrics = pd.read_csv(
+            chkpt_dir.validation_metrics.aggregated_tsv, sep=SEP
+        ).columns
+        metrics.remove_metrics(set(metrics.metrics.keys()).difference(computed_metrics))
         metrics.load(
             chkpt_dir.validation_metrics.aggregated_tsv,
             details_path=chkpt_dir.validation_metrics.details_tsv,
         )
-        self._load_callbacks(callbacks, chkpt_dir=chkpt_dir, maps=maps)
 
-    def on_optimization_step_end(
-        self,
-        *,
-        optimizers: dict[str, torch.optim.Optimizer],
-        grad_scaler: torch.amp.GradScaler,
-        **kwargs,
-    ) -> None:
-        self._optimizers = optimizers
-        self._scaler = grad_scaler
+        self._load_callbacks(callbacks, chkpt_dir=chkpt_dir, maps=maps)
 
     def on_epoch_end(self, *, model: Model, maps: Maps, state: TrainerState) -> None:
         if (
@@ -172,8 +180,8 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         Saves the callback checkpoints.
         """
         for callback, file_name in zip(
-            self._callbacks.callbacks,
-            self._get_callback_file_names(self._callbacks.callbacks),
+            self._callbacks.all_callbacks,
+            self._get_callback_file_names(list(self._callbacks.all_callbacks)),
         ):
             maps.save_file(callback.state_dict(), chkpt_dir.callbacks / file_name)
 
@@ -185,7 +193,8 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         Loads the callback checkpoints.
         """
         for callback, file_name in zip(
-            callbacks.callbacks, cls._get_callback_file_names(callbacks.callbacks)
+            callbacks.all_callbacks,
+            cls._get_callback_file_names(list(callbacks.all_callbacks)),
         ):
             callback.load_state_dict(maps.open_file(chkpt_dir.callbacks / file_name))
 

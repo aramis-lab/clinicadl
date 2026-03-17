@@ -467,7 +467,9 @@ class BaseDataset(HasConfig[BaseDatasetConfig], SamplerDataset):
         if isinstance(self.label, Mask):
             output[LABEL] = output.pop(self.label.name)
         elif isinstance(self.label, list):
-            output[LABEL] = [output.pop(lab) for lab in self.label]
+            output[LABEL] = deepcopy(
+                [output[lab] for lab in self.label]
+            )  # leave the individual labels for clarity
         elif self.label is not None:
             output[LABEL] = output.pop(self.label)
 

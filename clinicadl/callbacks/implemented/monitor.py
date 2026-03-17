@@ -165,20 +165,18 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         exception: Exception,
         **kwargs,
     ) -> None:
-        if not self.monitor_global_training:
+        if (
+            not state.called == TrainerCall.TRAIN
+            or not self.monitor_global_training
+            or not self.config.enabled
+        ):
             return
 
         df = self._build_df()
-        maps.training.splits[state.split_idx].logs.create(exist_ok=True)
-        tsv_path = maps.training.splits[state.split_idx].logs.computational_tsv
-        maps.save_file(df, tsv_path)
-
-        if isinstance(exception, torch.cuda.OutOfMemoryError) or OOM in str(exception):
-            logger.error(
-                "%s. To debug, you can have a look at your memory usage in %s",
-                OOM,
-                tsv_path,
-            )
+        logger.debug(
+            "Computational overview:\n%s",
+            df.to_string(index=False, float_format=lambda x: f"{x:.5e}"),
+        )
 
     def on_train_start(
         self,
@@ -269,11 +267,14 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
     def on_train_end(self, *, maps: Maps, state: TrainerState, **kwargs) -> None:
         self.monitor_global_training.stop()
 
-        df = self._build_df()
-        maps.training.splits[state.split_idx].logs.create(exist_ok=True)
-        maps.save_file(df, maps.training.splits[state.split_idx].logs.computational_tsv)
-        summary = TrainingSummary(maps.training.splits[state.split_idx].summary_log)
-        summary.add_info(self._write_summary(df))
+        if self.config.enabled:
+            df = self._build_df()
+            maps.training.splits[state.split_idx].logs.create(exist_ok=True)
+            maps.save_file(
+                df, maps.training.splits[state.split_idx].logs.computational_tsv
+            )
+            summary = TrainingSummary(maps.training.splits[state.split_idx].summary_log)
+            summary.add_info(self._write_summary(df))
 
     def state_dict(self) -> Mapping[str, Any]:
         state_dict = {
@@ -330,7 +331,9 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
         self._val_batch_size = split.val_loader.batch_size
 
         if computational.gpu:
-            self._gpus_used.append(torch.cuda.get_device_name(0))
+            self._gpus_used = [torch.cuda.get_device_name(0)]
+        else:
+            self._gpus_used = []
 
         self.monitor_global_training = self._init_monitor(name=TRAIN, save_time=True)
         self.monitor_epoch = self._init_monitor(name=EPOCH)

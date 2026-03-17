@@ -19,6 +19,7 @@ LabelType = Union[
     ArrayLikeInt,
     float,
     ArrayLikeFloat,
+    torch.Tensor,
     tio.LabelMap,
 ]
 

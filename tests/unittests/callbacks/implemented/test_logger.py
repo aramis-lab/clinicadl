@@ -553,6 +553,7 @@ def test_on_exception(caplog, tmp_path):
         split_idx=2,
         called="train",
         stage="training",
+        current_epoch=1,
     )
     maps.training.create_split(state.split_idx)
     SPLIT.index = state.split_idx
@@ -567,6 +568,7 @@ def test_on_exception(caplog, tmp_path):
 
     # train
     logger.on_train_start(maps=maps, split=SPLIT, state=state, computational=comp)
+    logger.on_epoch_start(state=state)
 
     log = logging.getLogger("clinicadl.logger_test")
     log.warning("a warning")
@@ -578,6 +580,8 @@ def test_on_exception(caplog, tmp_path):
         except ValueError:
             logger.on_exception(state=state)
     log.warning("a second warning")
+
+    assert logger._train_progress_bar.disable
 
     with open(maps.training.splits[state.split_idx].summary_log, "r") as f:
         assert "Training interrupted" in f.read()
@@ -592,7 +596,7 @@ def test_on_exception(caplog, tmp_path):
     assert "a second warning" not in f
 
     assert (
-        f"The traceback and potential details remains available in {run_dir.path}"
+        f"The traceback and potential details remain available in {run_dir.path}"
         in caplog.text
     )
     assert "ValueError" not in caplog.text  # no traceback in console
@@ -606,7 +610,7 @@ def test_on_exception(caplog, tmp_path):
     with caplog.at_level(logging.INFO):
         logger.on_exception(state=state)
 
-    assert "The traceback and potential details remains available in" not in caplog.text
+    assert "The traceback and potential details remain available in" not in caplog.text
 
 
 def test_resume(caplog, tmp_path):
@@ -625,7 +629,7 @@ def test_resume(caplog, tmp_path):
     comp = ComputationalConfig(gpu=False)
     with caplog.at_level(logging.INFO):
         logger.on_resume(maps=maps, split=SPLIT, state=state, computational=comp)
-    assert f"Resuming training on split {state.split_idx} from epoch 4" in caplog.text
+    assert f"Resuming training on split {state.split_idx} from epoch 3" in caplog.text
     assert "Computational configuration: gpu=False" in caplog.text
 
     state.current_epoch = 4

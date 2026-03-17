@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -159,6 +159,16 @@ def test_on_train_start(tmp_path):
     )
     chkpt.on_train_start(maps=maps, state=state, metrics=METRICS_HANDLER)
     assert chkpt.metric_monitoring.best == -np.inf
+
+
+def test_on_resume():
+    with patch.object(ModelCheckpointCallback, "on_train_start") as on_train_start:
+        chkpt = ModelCheckpointCallback()
+        chkpt.on_resume(
+            maps=(maps := Mock()), state=(state := Mock()), metrics=(metrics := Mock())
+        )
+
+    on_train_start.assert_called_once_with(maps=maps, state=state, metrics=metrics)
 
 
 def test_metric(tmp_path):

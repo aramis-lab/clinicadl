@@ -2,7 +2,7 @@ import os
 import re
 from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,8 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from clinicadl.io import Maps
-from clinicadl.utils.dictionary.suffixes import PT, TSV
+from clinicadl.utils.dictionary.suffixes import TSV
+from clinicadl.utils.exceptions import add_note
 
 
 def setup_ddp(rank: int, world_size: int, port: int) -> None:
@@ -58,17 +59,37 @@ def ddp_test(func: callable, world_size: int) -> None:
     mp.spawn(func, args=(world_size, port), nprocs=world_size, join=True)
 
 
-def compare_maps_dir(out_dir: Path, ref_dir: Path) -> None:
+def compare_maps_dir(
+    out_dir: Path, ref_dir: Path, except_: Optional[list[str | Path]] = None
+) -> None:
     """
     To compare any directory of two MAPS.
     """
     import os
+
+    if except_ is None:
+        except_ = []
+    for i, path in enumerate(except_):
+        except_[i] = Path(path)
+
+    assert len(list(Path(out_dir).iterdir())) > 0
+    assert len(list(Path(ref_dir).iterdir())) > 0
 
     for (root, dirs, files), (ref_root, ref_dirs, ref_files) in zip(
         os.walk(out_dir), os.walk(ref_dir)
     ):
         dirs.sort()  # will affect next iteration
         ref_dirs.sort()
+
+        ref_root = Path(ref_root)
+        for dir_ in dirs:
+            if (ref_root / dir_).relative_to(ref_dir) in except_:
+                dirs.remove(dir_)
+                ref_dirs.remove(dir_)
+        for f in files:
+            if (ref_root / f).relative_to(ref_dir) in except_:
+                files.remove(f)
+                ref_files.remove(f)
 
         for file, ref_file in zip(sorted(files), sorted(ref_files)):
             assert file == ref_file, f"Comparing {file} and {ref_file}"
@@ -77,7 +98,7 @@ def compare_maps_dir(out_dir: Path, ref_dir: Path) -> None:
                     file := Path(root) / file, ref_file := Path(ref_root) / ref_file
                 )
             except AssertionError as e:
-                e.add_note(f"Error raised when comparing {file} and {ref_file}")
+                add_note(e, f"Error raised when comparing {file} and {ref_file}")
                 raise
 
 
@@ -91,17 +112,11 @@ def _compare_any_file(file: Path, ref_file: Path) -> None:
     if file.name == "environment.txt":
         return
 
-    elif file.name == "summary.log":
-        content = _normalize_file(content)
-        ref_content = _normalize_file(ref_content)
-
     elif file.name == "computational.tsv":
         _soft_compare_df(content, ref_content)
 
     elif file.suffix == TSV:
         pd.testing.assert_frame_equal(content, ref_content)
-    elif file.suffix == PT:
-        torch.testing.assert_close(content, ref_content)
     else:
         _compare_anything(content, ref_content)
 
@@ -116,16 +131,21 @@ def _compare_anything(content: Any, ref_content: Any) -> None:
             try:
                 _compare_anything(content[key], ref_content[key])
             except AssertionError as e:
-                e.add_note(f"Error raised when comparing '{key}'")
+                add_note(e, f"Error raised when comparing '{key}'")
                 raise
+    elif isinstance(content, list) and isinstance(ref_content, list):
+        assert len(content) == len(ref_content)
+        try:
+            content = sorted(content)
+            ref_content = sorted(ref_content)
+        except TypeError:
+            pass
+        for c, ref_c in zip(content, ref_content):
+            _compare_anything(c, ref_c)
+    elif isinstance(content, torch.Tensor) and isinstance(ref_content, torch.Tensor):
+        torch.testing.assert_close(content, ref_content)
     else:
-        if isinstance(content, list) and isinstance(ref_content, list):
-            try:
-                content = sorted(content)
-                ref_content = sorted(ref_content)
-            except TypeError:
-                pass
-        elif isinstance(content, str) and isinstance(ref_content, str):
+        if isinstance(content, str) and isinstance(ref_content, str):
             content = _normalize_str(content)
             ref_content = _normalize_str(ref_content)
 
@@ -142,44 +162,33 @@ def _soft_compare_df(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
 
 
 PATH_PATTERN = r'(?:[A-Za-z]:\\[^ \n\r\t]*)|(?:/[^\s"\']+)'
-LOG_DATE_PATTERN = r"\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b"
-DATE_PATTERN = re.compile(r"^(\s*Date:\s*).*$")
-THROUGHPUT_PATTERN = re.compile(r"^(\s*Throughput:\s*).*$")
-NUMBER_PATTERN = re.compile(
-    r"\b\d+\.\d+(?:[eE][+-]?\d+)?\b(?:\s*±\s*\d+\.\d+(?:[eE][+-]?\d+)?)?"
-)
+DATE_PATTERN = r"^(\s*Date:\s*).*$|\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b"
+THROUGHPUT_PATTERN = r"^(\s*Throughput:\s*).*$"
+NUMBER_PATTERN = r"\b\d*\.\d+(?:[eE][+-]?\d+)?\b|\b\d+[eE][+-]?\d+\b"
+TRACE_BACK_PATTERN = r"Traceback[\s\S]*?(?=torch\.OutOfMemoryError)"
 
 
-def _normalize_str(str_: str) -> str:
-    """
-    To remove dates and paths in a string.
-    """
-    str_ = re.sub(PATH_PATTERN, "<path>", str_)
-    str_ = re.sub(LOG_DATE_PATTERN, "<date>", str_)
-
-    return str_
-
-
-def _normalize_file(text: str) -> str:
+def _normalize_str(text: str) -> str:
     """
     To remove dates and numerical values in a file.
     """
     normalized = []
     for line in text.splitlines():
-        if THROUGHPUT_PATTERN.match(line):
-            line = THROUGHPUT_PATTERN.sub(r"\1<throughput>", line.rstrip("\n"))
-        elif DATE_PATTERN.match(line):
-            line = DATE_PATTERN.sub(r"\1<date>", line.rstrip("\n"))
-        # elif PATH_PATTERN.match(line):
-        #     line = PATH_PATTERN.sub(r'\1<path>', line.rstrip("\n"))
-        else:
-            line = NUMBER_PATTERN.sub(
-                lambda m: _replace_with_same_length(m, "x"), line.rstrip("\n")
-            )
+        line = re.sub(THROUGHPUT_PATTERN, r"\1<throughput>", line)
+        line = re.sub(DATE_PATTERN, r"\1<date>", line)
+        line = re.sub(
+            NUMBER_PATTERN,
+            lambda m: _replace_with_same_length(m, "x"),
+            line,
+        )
+        line = re.sub(PATH_PATTERN, "<path>", line)
 
         normalized.append(line)
 
-    return "\n".join(normalized)
+    file = "\n".join(normalized)
+    file = re.sub(TRACE_BACK_PATTERN, "<traceback>", file)
+
+    return file
 
 
 def _replace_with_same_length(match, char="x"):

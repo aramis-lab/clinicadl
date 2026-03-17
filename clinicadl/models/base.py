@@ -231,13 +231,14 @@ class Model(JsonReaderWriter, ABC, nn.Module):
 
     def reset(self) -> None:
         """
-        Resets the neural network(s) weights.
+        Resets the neural network's weights.
+
+        Only the trainable (i.e. with ``requires_grad=True``) weights will be reset.
         """
-        _reset_recursively(self)
+        for module in self.modules():
+            has_trainable_params = any(
+                (p.requires_grad for p in module.parameters(recurse=False))
+            )
 
-
-def _reset_recursively(module: nn.Module) -> None:
-    for layer in module.children():
-        if hasattr(layer, "reset_parameters"):
-            layer.reset_parameters()
-        _reset_recursively(layer)
+            if has_trainable_params and hasattr(module, "reset_parameters"):
+                module.reset_parameters()

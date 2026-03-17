@@ -146,7 +146,7 @@ def test_to_json_from_json(tmp_path):
 
     split = Split(
         index=0,
-        split_dir=CAPS_DIR / "splits" / "split",
+        split_dir=None,
         train_dataset=TRAIN_DATASET,
         val_dataset=VAL_DATASET,
     )

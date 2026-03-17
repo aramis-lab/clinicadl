@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Sequence
 from contextlib import contextmanager, nullcontext
+from copy import deepcopy
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -21,7 +22,7 @@ from torch.amp.autocast_mode import autocast
 from typing_extensions import Self
 
 from clinicadl.callbacks import CallbacksHandler
-from clinicadl.callbacks.base import Events
+from clinicadl.callbacks.base import Event
 from clinicadl.data.dataloader import Batch, DataLoaderConfig
 from clinicadl.data.datasets.factory import get_dataset_from_json
 from clinicadl.io.maps.maps import Maps
@@ -29,10 +30,16 @@ from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import LossMetricConfig
 from clinicadl.models.factory import get_model_from_json
 from clinicadl.optim.config import OptimizationConfig
+from clinicadl.split.split import Split
 from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.dictionary.words import CPU
-from clinicadl.utils.exceptions import CannotReadJsonError, CannotReadJsonFieldError
+from clinicadl.utils.enum import TrainerCall
+from clinicadl.utils.exceptions import (
+    CannotReadJsonError,
+    CannotReadJsonFieldError,
+    add_note,
+)
 from clinicadl.utils.seed import seed_everything_context
 
 if TYPE_CHECKING:
@@ -41,11 +48,11 @@ if TYPE_CHECKING:
 
     from clinicadl.callbacks import Callback
     from clinicadl.data.dataloader import BatchType, DataLoader
+    from clinicadl.data.datasets import Dataset
     from clinicadl.io.maps.inference import InferenceDirType
     from clinicadl.io.maps.utils import DataDir
     from clinicadl.metrics.types import MetricOrConfig
     from clinicadl.models import Model
-    from clinicadl.split.split import Split
     from clinicadl.utils.typing import PathType
 
 
@@ -70,6 +77,7 @@ class Trainer:
 
     Main methods:
     - :py:meth:`train`: to train your model;
+    - :py:meth:`resume`: to resume an interrupted training;
     - :py:meth:`validate`: to compute new metrics on your validation data;
     - :py:meth:`test`: to evaluate your model on test data.
 
@@ -185,6 +193,10 @@ class Trainer:
         self._maps = maps
         self._model = model
 
+        self._initial_state_dict = None
+        if not optimization.reset_model:
+            self._initial_state_dict = deepcopy(self._model.cpu().state_dict())
+
         if isinstance(metrics, MetricsHandler):
             self._metrics = metrics
         else:
@@ -201,7 +213,7 @@ class Trainer:
         self._state = TrainerState()
 
         self._call_event(
-            Events.INIT,
+            Event.INIT,
             metrics=self.metrics,
             optimization=self.optimization,
             callbacks=self.callbacks,
@@ -310,24 +322,27 @@ class Trainer:
     def train(
         self,
         split: Split,
-        computational: ComputationalConfig = ComputationalConfig(),
+        computational: Optional[ComputationalConfig] = None,
         metrics: Optional[Sequence[str]] = None,
-        resume: bool = False,
     ) -> None:
         """
         To train a model.
-
-        This method also allows to resume an interrupted training.
 
         Parameters
         ----------
         split : Split
             The :py:class:`clinicadl.split.Split` containing the training and validation data.
 
-        computational : ComputationalConfig, default=ComputationalConfig()
+        computational : Optional[ComputationalConfig], default=None
             Computational configuration, passed via a :py:class:`clinicadl.train.ComputationalConfig`.
             This is where you can setup high-performance computing features or a seed to make
-            your training reproducible.
+            your training reproducible.\n
+
+            - If ``resume=True``, the user **cannot pass a computational configuration**, because the previous
+              one will be used.
+
+            - If ``resume=False`` and ``computational=None``, the default parameters defined in
+              :py:class:`~clinicadl.train.ComputationalConfig` will be used.
 
         metrics : Optional[Sequence[str]], default=None
             The names of the metric to compute on the validation data. The metrics mentioned
@@ -335,25 +350,71 @@ class Trainer:
             :py:meth:`add_metrics`.\n
             By default, all the defined metrics will be computed.
 
-        resume : bool, default=False
-            To resume an interrupted training. If ``True``, ``Trainer`` will look for the last
-            checkpoint saved with :py:class:`clinicadl.callbacks.TrainingCheckpointCallback`, and restart
-            training from there.
+        See Also
+        --------
+        - :py:meth:`resume`
+            To resume an interrupted training.
         """
         self.maps.read()
-        self._create_split(split.index, resume)
-
-        if resume:
-            seed, deterministic = self._get_old_reprod_config(split.index)
-        else:
-            seed, deterministic = computational.seed, computational.deterministic
+        self._create_split(split.index)
 
         with self._seed_context(
-            seed, deterministic
+            computational.seed, computational.deterministic
         ), self._exception_context(), warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self._train(
-                split=split, computational=computational, metrics=metrics, resume=resume
+                split=split, computational=computational, metrics=metrics, resume=False
+            )
+
+    def resume(self, split_idx: int, split: Optional[Split] = None) -> None:
+        """
+        To resume an interrupted training launched with :py:meth:`train`.
+
+        ``Trainer`` will look for the last checkpoint saved with :py:class:`clinicadl.callbacks.TrainingCheckpointCallback`,
+        and restart training from there.
+
+        ``Trainer`` will attempt to load your training and validation data from the :term:`MAPS`
+        directory, so typically providing the split index is sufficient. However, it it fails, you can
+        manually supply the split.
+
+        .. important::
+            Here, the computational setup will be the same as the one used when training
+            the model before the interruption. So, if the model was first trained on a GPU,
+            make sure a GPU is available when calling ``validate``.
+
+        Parameters
+        ----------
+        split_idx : int
+            The index of the split to resume training on.
+
+        dataloader : Optional[Split], default=None
+            The :py:class:`clinicadl.split.Split` containing the training and validation data.\n
+
+            If you pass a split here, it will be used; otherwise, ``Trainer``
+            will attempt to load the  split from the :term:`MAPS`.
+
+        """
+        self.maps.read()
+        self._check_split_exists(split_idx)
+
+        if not split:
+            split = self._get_split(split_idx)
+        else:
+            assert (
+                split_idx == split.index
+            ), f"split_idx does not match split.index. Got {split_idx} and {split.index}"
+
+        computational = self._get_old_computational_config(split_idx)
+
+        with self._seed_context(
+            computational.seed, computational.deterministic
+        ), self._exception_context(), warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._train(
+                split=split,
+                computational=computational,
+                metrics=None,  # metrics filtering is done when loading the checkpoint
+                resume=True,
             )
 
     def _train(
@@ -376,12 +437,16 @@ class Trainer:
         optimizers = self.model.build_optimizers()
         grad_scaler = computational.get_scaler()
 
-        self._reset_train(split=split, metrics=metrics_handler, optimizers=optimizers)
+        self._reset_train(
+            split=split,
+            metrics=metrics_handler,
+            optimizers=optimizers,
+        )
         self._model_to(computational)
 
         if resume:
             self._call_event(
-                Events.RESUME,
+                Event.RESUME,
                 split=split,
                 optimizers=optimizers,
                 grad_scaler=grad_scaler,
@@ -392,9 +457,10 @@ class Trainer:
             )
         else:
             self._call_event(
-                Events.TRAIN_START,
+                Event.TRAIN_START,
                 split=split,
                 optimizers=optimizers,
+                grad_scaler=grad_scaler,
                 optimization=self.optimization,
                 metrics=metrics_handler,
                 callbacks=self.callbacks,
@@ -409,7 +475,7 @@ class Trainer:
             computational=computational,
         )
 
-        self._call_event(Events.TRAIN_END)
+        self._call_event(Event.TRAIN_END)
 
     def _train_loop(
         self,
@@ -431,16 +497,16 @@ class Trainer:
 
             self._reset_epoch(epoch, train_loader=split.train_loader)
 
-            self._call_event(Events.EPOCH_START)
+            self._call_event(Event.EPOCH_START)
 
             for batch_idx, batch in enumerate(split.train_loader, start=1):
                 self.state.current_train_batch = batch_idx
 
-                self._call_event(Events.BATCH_START, batch=batch)
+                self._call_event(Event.BATCH_START, batch=batch)
 
                 self._batch_to(batch, computational=computational)
 
-                self._call_event(Events.FORWARD_START, batch=batch)
+                self._call_event(Event.FORWARD_START, batch=batch)
 
                 with autocast(
                     device_type=computational.device.type,
@@ -449,19 +515,21 @@ class Trainer:
                     loss = self.model.forward_step(batch)
 
                 self._call_event(
-                    Events.BACKWARD_START, loss=loss, grad_scaler=grad_scaler
+                    Event.BACKWARD_START, loss=loss, grad_scaler=grad_scaler
                 )
 
                 self.model.backward_step(loss, grad_scaler=grad_scaler)
 
-                self._call_event(Events.BACKWARD_END)
+                self._call_event(Event.BACKWARD_END)
 
                 if batch_idx % self.optimization.accumulation_steps == 0:
                     self._call_event(
-                        Events.OPTIM_STEP_START,
+                        Event.OPTIM_STEP_START,
                         optimizers=optimizers,
                         grad_scaler=grad_scaler,
                     )
+
+                    self._clip_gradients()
 
                     self.model.optimization_step(
                         optimizers=optimizers, grad_scaler=grad_scaler
@@ -473,12 +541,12 @@ class Trainer:
                         optimizer.zero_grad(set_to_none=True)
 
                     self._call_event(
-                        Events.OPTIM_STEP_END,
+                        Event.OPTIM_STEP_END,
                         optimizers=optimizers,
                         grad_scaler=grad_scaler,
                     )
 
-                self._call_event(Events.BATCH_END)
+                self._call_event(Event.BATCH_END)
 
             if (
                 self.state.current_epoch
@@ -491,7 +559,7 @@ class Trainer:
                     computational=computational,
                 )
 
-            self._call_event(Events.EPOCH_END)
+            self._call_event(Event.EPOCH_END)
 
     def validate(
         self,
@@ -499,7 +567,6 @@ class Trainer:
         metrics: Sequence[str],
         dataloader: Optional[DataLoader] = None,
         model_checkpoint: Optional[str] = None,
-        computational: ComputationalConfig = ComputationalConfig(),
     ) -> None:
         """
         To evaluate your model on your validation data with new metrics.
@@ -510,6 +577,11 @@ class Trainer:
         ``Trainer`` attempts to load your validation data from the :term:`MAPS`
         directory, so typically providing the split index is sufficient. However, it it fails, you can
         manually supply the validation dataloader.
+
+        .. important::
+            Here, the computational setup will be the same as the one used when training
+            the model. So, if the model was trained on a GPU, make sure a GPU is available when
+            calling ``validate``.
 
         Parameters
         ----------
@@ -539,10 +611,6 @@ class Trainer:
             - ``"epoch-<epoch-idx>"``: the checkpoint of the model trained on split ``split_idx``
               at epoch ``<epoch-idx>``;
             - ``"final"``: the model at the end of training on split ``split_idx``.
-
-        computational : ComputationalConfig, default=ComputationalConfig()
-            Computational configuration, passed via a :py:class:`clinicadl.train.ComputationalConfig`.
-            This is where you can setup high-performance computing features.
 
         Examples
         --------
@@ -586,10 +654,10 @@ class Trainer:
         self.maps.read()
         self._check_split_exists(split_idx)
 
-        seed, deterministic = self._get_old_reprod_config(split_idx)
+        computational = self._get_old_computational_config(split_idx)
 
         with self._seed_context(
-            seed, deterministic
+            computational.seed, computational.deterministic
         ), self._exception_context(), warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self._validate(
@@ -626,7 +694,7 @@ class Trainer:
             self._model_to(computational)
 
             self._call_event(
-                Events.VALIDATE_START,
+                Event.VALIDATE_START,
                 dataloader=dataloader,
                 model_checkpoint=chkpt_name,
                 metrics=metrics_handler,
@@ -641,7 +709,7 @@ class Trainer:
             )
 
             self._call_event(
-                Events.VALIDATE_END,
+                Event.VALIDATE_END,
                 metrics=metrics_handler,
             )
 
@@ -782,7 +850,7 @@ class Trainer:
         self._model_to(computational)
 
         self._call_event(
-            Events.TEST_START,
+            Event.TEST_START,
             dataloader=dataloader,
             model_checkpoint=model_checkpoint,
             metrics=metrics_handler,
@@ -796,7 +864,7 @@ class Trainer:
         )
 
         self._call_event(
-            Events.TEST_END,
+            Event.TEST_END,
             metrics=metrics_handler,
         )
 
@@ -829,7 +897,7 @@ class Trainer:
         self._reset_validation(dataloader, metrics)
 
         self._call_event(
-            Events.VAL_START,
+            Event.VAL_START,
             dataloader=dataloader,
             metrics=metrics,
         )
@@ -842,7 +910,7 @@ class Trainer:
         )
 
         self._call_event(
-            Events.VAL_END,
+            Event.VAL_END,
             metrics=metrics,
         )
 
@@ -859,13 +927,16 @@ class Trainer:
         """
         with torch.no_grad():
             for batch_idx, batch in enumerate(dataloader, start=1):
-                self.state.current_val_batch = batch_idx
+                if self.state.called == TrainerCall.TEST:
+                    self.state.current_test_batch = batch_idx
+                else:
+                    self.state.current_val_batch = batch_idx
 
-                self._call_event(Events.BATCH_START, batch=batch)
+                self._call_event(Event.BATCH_START, batch=batch)
 
                 self._batch_to(batch, computational=computational)
 
-                self._call_event(Events.EVAL_START, batch=batch)
+                self._call_event(Event.EVAL_START, batch=batch)
 
                 with autocast(
                     device_type=computational.device.type,
@@ -874,7 +945,7 @@ class Trainer:
                     output_batch = self.model.evaluation_step(batch)
 
                 self._call_event(
-                    Events.METRIC_START,
+                    Event.METRIC_START,
                     output=output_batch,
                     metrics=metrics,
                 )
@@ -882,11 +953,11 @@ class Trainer:
                 metrics_df = metrics(output_batch, epoch=epoch)
 
                 self._call_event(
-                    Events.METRIC_END,
+                    Event.METRIC_END,
                     detailed_metrics_df=metrics_df,
                 )
 
-                self._call_event(Events.BATCH_END)
+                self._call_event(Event.BATCH_END)
 
         metrics.aggregate(epoch=epoch)
 
@@ -899,12 +970,24 @@ class Trainer:
         self.state.reset_training(
             split_idx=split.index, num_epochs=self._optim_config.num_epochs
         )
-        self.model.reset()
+        self._reset_model()
         split.train_dataset.train()
         split.val_dataset.eval()
         metrics.reset(reset_df=True)
         for optimizer in optimizers.values():
             optimizer.zero_grad()
+
+    def _reset_model(self):
+        """
+        Resets the model according to the resetting strategy.
+        """
+        self.model.to(
+            device=CPU, memory_format=torch.contiguous_format
+        )  # otherwise seeding will not be consistent across memory formats and devices!
+        if self.optimization.reset_model:
+            self.model.reset()
+        else:
+            self.model.load_state_dict(self._initial_state_dict)
 
     def _reset_epoch(self, epoch: int, train_loader: DataLoader) -> None:
         """
@@ -968,7 +1051,7 @@ class Trainer:
         try:
             yield
         except Exception as e:
-            self._call_event(Events.EXCEPTION, exception=e)
+            self._call_event(Event.EXCEPTION, exception=e)
             raise
 
     def _model_to(self, comp_config: ComputationalConfig) -> None:
@@ -1009,7 +1092,24 @@ class Trainer:
         state_dict = self.maps.open_file(model_path)
         self.model.load_state_dict(state_dict)
 
-    def _call_event(self, event: Events, **kwargs):
+    def _clip_gradients(
+        self,
+    ) -> None:
+        """
+        To clip gradients.
+        """
+        if self.optimization.clip_grad_value is not None:
+            torch.nn.utils.clip_grad_value_(
+                self.model.parameters(), clip_value=self.optimization.clip_grad_value
+            )
+        if self.optimization.clip_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(
+                self.model.parameters(),
+                max_norm=self.optimization.clip_grad_norm,
+                norm_type=self.optimization.grad_norm_type,
+            )
+
+    def _call_event(self, event: Event, **kwargs):
         """
         Calls a callback event.
         """
@@ -1017,14 +1117,38 @@ class Trainer:
             event, model=self.model, maps=self.maps, state=self.state, **kwargs
         )
 
-    def _get_old_reprod_config(self, split_idx) -> tuple[Optional[int], bool]:
+    def _get_split(self, split_idx: int) -> Split:
         """
-        Gets the seed and the deterministic setting from an old experiment.
+        To load a old split.
         """
-        comp = ComputationalConfig.from_json(
-            self.maps.training.splits[split_idx].computational_json
+        try:
+            train_dataset, train_dataloader_config = _get_data(
+                self.maps.training.data.train.splits[split_idx]
+            )
+            val_dataset, val_dataloader_config = _get_data(
+                self.maps.training.data.validation.splits[split_idx]
+            )
+        except CannotReadJsonError as e:
+            add_note(e, "Please pass directly the split via 'split'.")
+            raise
+
+        train_data = self.maps.open_file(
+            self.maps.training.data.train.splits[split_idx].data_tsv
         )
-        return comp.seed, comp.deterministic
+        val_data = self.maps.open_file(
+            self.maps.training.data.validation.splits[split_idx].data_tsv
+        )
+
+        train_dataset = train_dataset.subset(train_data)
+        val_dataset = val_dataset.subset(val_data)
+
+        split = Split(
+            index=split_idx, train_dataset=train_dataset, val_dataset=val_dataset
+        )
+        split.build_train_loader(train_dataloader_config)
+        split.build_val_loader(val_dataloader_config)
+
+        return split
 
     def _get_models_in_split(
         self, split_idx: int, model_checkpoint: Optional[str]
@@ -1051,40 +1175,27 @@ class Trainer:
         To load old dataset and dataloader config and build a dataloader
         with them.
         """
-
-        def _error_msg(obj: str, path: Path) -> str:
-            return (
-                f"ClinicaDL could not read the {obj} in {path}. Please pass directly the dataloader "
-                "via 'dataloader'."
-            )
-
         try:
-            dataset = get_dataset_from_json(data_dir.dataset_json)
-        except Exception as e:
-            raise CannotReadJsonError(
-                _error_msg("dataset", data_dir.dataset_json)
-            ) from e
-
-        try:
-            dataloader_config = DataLoaderConfig.from_json(data_dir.dataloader_json)
-        except Exception as e:
-            raise CannotReadJsonError(
-                _error_msg("dataloader", data_dir.dataloader_json)
-            ) from e
+            dataset, dataloader_config = _get_data(data_dir)
+        except CannotReadJsonError as e:
+            add_note(e, "Please pass directly the dataloader via 'dataloader'.")
+            raise
 
         return dataloader_config.get_object(dataset)
 
-    def _create_split(self, split_idx: int, resume: bool) -> None:
+    def _get_old_computational_config(self, split_idx) -> ComputationalConfig:
         """
-        If resume, checks if the split directory exists.
-        If not resume, checks that the split directory doesn't exist and creates it.
+        Gets the computational setting from an old training.
         """
-        if resume and split_idx not in self.maps.training.splits_list:
-            raise KeyError(
-                f"Cannot resume training on split {split_idx} because no training found "
-                "for this split."
-            )
-        elif not resume and split_idx in self.maps.training.splits_list:
+        return ComputationalConfig.from_json(
+            self.maps.training.splits[split_idx].computational_json
+        )
+
+    def _create_split(self, split_idx: int) -> None:
+        """
+        Checks that the split directory doesn't exist and creates it.
+        """
+        if split_idx in self.maps.training.splits_list:
             raise ValueError(
                 f"Training on split {split_idx} has already been performed. To relaunch a training on this split, "
                 "first delete it properly with clinicadl.io.Maps.delete_split; to resume a training on this split, "
@@ -1127,3 +1238,26 @@ class Trainer:
             raise KeyError(
                 f"The group you passed ('{group}') does not exist yet, so you must pass a dataloader."
             )
+
+
+def _get_data(data_dir: DataDir) -> tuple[Dataset, DataLoaderConfig]:
+    """
+    To load an old dataset and dataloader.
+    """
+
+    def _error_msg(obj: str, path: Path) -> str:
+        return f"ClinicaDL could not read the {obj} in {path}."
+
+    try:
+        dataset = get_dataset_from_json(data_dir.dataset_json)
+    except Exception as e:
+        raise CannotReadJsonError(_error_msg("dataset", data_dir.dataset_json)) from e
+
+    try:
+        dataloader_config = DataLoaderConfig.from_json(data_dir.dataloader_json)
+    except Exception as e:
+        raise CannotReadJsonError(
+            _error_msg("dataloader", data_dir.dataloader_json)
+        ) from e
+
+    return dataset, dataloader_config

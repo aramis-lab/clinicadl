@@ -18,6 +18,11 @@ def caps_dir(ref_data) -> Path:
 
 
 @pytest.fixture
+def metadata_tsv(caps_dir) -> Path:
+    return caps_dir / "metadata.tsv"
+
+
+@pytest.fixture
 def split_dir(caps_dir) -> Path:
     return caps_dir / "splits" / "split"
 

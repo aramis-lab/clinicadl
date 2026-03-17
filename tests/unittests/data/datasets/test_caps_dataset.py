@@ -635,6 +635,7 @@ def test__getitem__(tmp_path):
     assert (out_sample.affine == tensors["affine"]).all()
     assert out_sample.spatial_shape == (1, 2, 2)
     assert out_sample.label.shape == (1, 1, 2, 2)
+    assert "seg" not in out_sample
 
     compose = tio.Compose(
         [
@@ -690,6 +691,7 @@ def test__getitem__(tmp_path):
     assert out_sample.label == 1.0
     out_sample = caps_dataset[1]
     assert out_sample.label == 2.0
+    assert "age" not in out_sample
     with pytest.raises(IndexError, match="Index out of range*"):
         caps_dataset[2]
 
@@ -705,6 +707,8 @@ def test__getitem__(tmp_path):
     caps_dataset.read_tensor_conversion()
     out_sample = caps_dataset[0]
     out_sample.label == [1.0, 0.0]
+    assert out_sample["age"] == 1.0
+    assert out_sample["diagnosis"] == 0
 
     # additional info
     shutil.copytree(CAPS_DIR, tmp_path, dirs_exist_ok=True)

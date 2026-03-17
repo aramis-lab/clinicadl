@@ -116,13 +116,22 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         state: TrainerState,
         **kwargs,
     ) -> None:
+        for pbar in [
+            self._train_progress_bar,
+            self._val_progress_bar,
+            self._test_progress_bar,
+            self._predict_progress_bar,
+        ]:
+            if pbar is not None:
+                pbar.close()
+
         if state.called == TrainerCall.TRAIN and self._train_summary:
             self._train_summary.add_training_end_info(
                 n_epochs=state.current_epoch, interrupted=True
             )
         if self.config.save_logs and self.logger:
             self.logger.exception(
-                "The traceback and potential details remains available in %s",
+                "The traceback and potential details remain available in %s",
                 self._log_path.path,
             )
             _shutdown_logging(self.logger)
@@ -168,7 +177,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
 
         last_epoch = sorted(maps.training.splits[split.index].tmp.epochs_list)[-1]
         self.logger.info(
-            "Resuming training on split %s from epoch %d", split.index, last_epoch + 1
+            "Resuming training on split %s from epoch %d", split.index, last_epoch
         )
         self.logger.info("Computational configuration: %s", computational)
 
@@ -349,7 +358,6 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
 
     def on_epoch_start(self, *, state: TrainerState, **kwargs) -> None:
         self.logger.info("Beginning of epoch %d", state.current_epoch)
-
         self._train_progress_bar = tqdm(
             total=state.num_train_batches,
             unit="batch",
@@ -394,9 +402,13 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         self, *, model: Model, maps: Maps, batch: BatchType, **kwargs
     ) -> None:  # not in on_batch_start because not the right device
         if not maps.nn_summary_txt.is_file():
-            with torch.no_grad():
-                nn_summary = model.get_summary(batch)
-            maps.save_file(nn_summary, maps.nn_summary_txt)
+            try:
+                with torch.no_grad():
+                    nn_summary = model.get_summary(batch)
+            except NotImplementedError:
+                pass
+            else:
+                maps.save_file(nn_summary, maps.nn_summary_txt)
 
     def on_batch_end(
         self,

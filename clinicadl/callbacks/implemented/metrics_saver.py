@@ -32,14 +32,15 @@ class MetricsSaverCallback(Callback):
         **kwargs,
     ) -> None:
         maps.training.splits[state.split_idx].validation_metrics.create()
-        self._training_metrics.save(
-            path=maps.training.splits[
-                state.split_idx
-            ].validation_metrics.aggregated_tsv,
-            details_path=maps.training.splits[
-                state.split_idx
-            ].validation_metrics.details_tsv,
-        )
+        if self._training_metrics:
+            self._training_metrics.save(
+                path=maps.training.splits[
+                    state.split_idx
+                ].validation_metrics.aggregated_tsv,
+                details_path=maps.training.splits[
+                    state.split_idx
+                ].validation_metrics.details_tsv,
+            )
 
     def on_validate_start(
         self,

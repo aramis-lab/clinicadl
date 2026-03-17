@@ -110,6 +110,11 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
                 metric=self.config.metric, exist_ok=True
             )
 
+    def on_resume(
+        self, *, maps: Maps, state: TrainerState, metrics: MetricsHandler, **kwargs
+    ) -> None:
+        self.on_train_start(maps=maps, state=state, metrics=metrics)
+
     def on_validation_end(
         self,
         *,

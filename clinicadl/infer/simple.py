@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 import torch
 
@@ -139,6 +139,6 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
         )
 
     def _forward_pass(
-        self, tensor: torch.Tensor, network: torch.nn.Module, **kwargs
+        self, tensor: torch.Tensor, network: Callable[..., torch.Tensor], **kwargs
     ) -> torch.Tensor:
         return network(tensor, **kwargs)

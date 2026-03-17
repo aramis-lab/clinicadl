@@ -4,14 +4,13 @@ from copy import deepcopy
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from monai.metrics import LossMetric
-
 from clinicadl.losses.types import Loss
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.factories import get_defaults_from
 
 from ..base import Metric
 from ..enum import Optimum
+from ..loss import LossMetric
 from ..monai_wrapper import MonaiMetricWrapper
 from .base import MetricConfig, _GetNotNansConfig
 
@@ -62,9 +61,7 @@ class LossMetricConfig(MetricConfig, _GetNotNansConfig):
 
         loss, reduction = self._check_reduction(loss)
 
-        monai_metric = LossMetric(
-            loss_fn=loss, reduction=reduction, get_not_nans=self.get_not_nans
-        )
+        monai_metric = LossMetric(loss_fn=loss, reduction=reduction)
         metric = MonaiMetricWrapper(
             monai_metric,
             pred_key=self.pred_key,

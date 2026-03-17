@@ -1,25 +1,20 @@
+from __future__ import annotations
+
 import random
-from pathlib import Path
+from copy import deepcopy
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+import pytest
+import torch
 import torchio as tio
 
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatypes import T1Linear
+from clinicadl.callbacks import Callback
+from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
-from clinicadl.transforms import TransformsHandler
-from clinicadl.transforms.config import (
-    OneOfConfig,
-    RandomAffineConfig,
-    RandomBiasFieldConfig,
-    RandomBlurConfig,
-    RandomElasticDeformationConfig,
-    RandomGammaConfig,
-    RandomGhostingConfig,
-    RandomMotionConfig,
-    RandomNoiseConfig,
-    RandomSpikeConfig,
-)
+
+if TYPE_CHECKING:
+    from clinicadl.data.dataloader import BatchType
 
 
 class ResampleMask(tio.SpatialTransform):
@@ -70,32 +65,60 @@ class RandomMasking(tio.IntensityTransform):
         return datapoint
 
 
-def build_dataset(dir_: Path) -> CapsDataset:
-    dataset = CapsDataset(
-        directory=dir_,
-        datatype=T1Linear(use_uncropped_image=False),
-        data=dir_ / "metadata.tsv",
-        masks=["leftHemisphere.nii.gz", "head"],
-        columns=["age"],
-        transforms=TransformsHandler(
-            sample_transforms=[ResampleMask(), RandomMasking()],
-            augmentations=[
-                OneOfConfig(
-                    transforms=[
-                        RandomAffineConfig(),
-                        RandomElasticDeformationConfig(),
-                        RandomMotionConfig(),
-                        RandomGhostingConfig(),
-                        RandomGammaConfig(),
-                        RandomSpikeConfig(),
-                        RandomBiasFieldConfig(),
-                        RandomBlurConfig(),
-                        RandomNoiseConfig(),
-                    ]
-                ),
-            ],
-        ),
-    )
-    dataset.read_tensor_conversion()
+class TestModelReset(Callback):
+    def __init__(self, assert_equal: bool):
+        self.nn_state_dict = None
+        self.assert_equal = assert_equal
 
-    return dataset
+    def on_train_start(self, *, model: torch.nn.Module, **kwargs):
+        if self.nn_state_dict is None:
+            self.nn_state_dict = deepcopy(model.state_dict())
+        else:
+            if self.assert_equal:
+                torch.testing.assert_close(self.nn_state_dict, model.state_dict())
+            else:
+                with pytest.raises(AssertionError):
+                    torch.testing.assert_close(self.nn_state_dict, model.state_dict())
+
+
+class ErrorCallback(Callback):
+    def __init__(self, error_epoch: int):
+        self.error_epoch = error_epoch
+        self.error_raised = False
+
+    def on_backward_step_start(self, *, state, **kwargs):
+        if state.current_epoch == self.error_epoch and not self.error_raised:
+            self.error_raised = True
+            raise torch.cuda.OutOfMemoryError()
+
+
+class TestDeviceCallback(Callback):
+    def __init__(
+        self,
+        model_on_gpu: Optional[bool] = None,
+        post_processing_on_gpu: Optional[bool] = None,
+        metrics_on_gpu: Optional[bool] = None,
+    ):
+        self.model_on_gpu = model_on_gpu
+        self.post_processing_on_gpu = post_processing_on_gpu
+        self.metrics_on_gpu = metrics_on_gpu
+        self.batch = None
+
+    def on_evaluation_step_start(self, *, batch, **kwargs):
+        self._check(batch, self.model_on_gpu)
+
+    def on_metrics_computation_start(self, *, output, **kwargs):
+        self.batch = output
+        self._check(output, self.post_processing_on_gpu)
+
+    def on_metrics_computation_end(self, **kwargs):
+        self._check(self.batch, self.metrics_on_gpu)
+
+    @staticmethod
+    def _check(batch: BatchType, gpu: Optional[bool]) -> None:
+        if not isinstance(batch, Batch):
+            batch = batch[0]
+        if gpu is not None:
+            assert batch.device == (
+                torch.device("cuda") if gpu else torch.device("cpu")
+            )
