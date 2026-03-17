@@ -4,6 +4,19 @@ from typing import Optional, Sequence
 from pydantic import ValidationError
 
 
+def add_note(exc: Exception, note: str) -> Exception:
+    """
+    Adds a note to an exception.
+
+    From Python 3.11, there is exception the method Exception.add_note.
+    So, this method is only relevant for Python 3.10.
+    """
+    if not hasattr(exc, "__notes__"):
+        exc.__notes__ = []
+    exc.__notes__.append(note)
+    return exc
+
+
 class DownloadError(Exception):
     """Base class for download errors exceptions."""
 

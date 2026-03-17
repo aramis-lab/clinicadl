@@ -35,7 +35,11 @@ from clinicadl.train.computational import ComputationalConfig
 from clinicadl.train.trainer_state import TrainerState
 from clinicadl.utils.dictionary.words import CPU
 from clinicadl.utils.enum import TrainerCall
-from clinicadl.utils.exceptions import CannotReadJsonError, CannotReadJsonFieldError
+from clinicadl.utils.exceptions import (
+    CannotReadJsonError,
+    CannotReadJsonFieldError,
+    add_note,
+)
 from clinicadl.utils.seed import seed_everything_context
 
 if TYPE_CHECKING:
@@ -1125,7 +1129,7 @@ class Trainer:
                 self.maps.training.data.validation.splits[split_idx]
             )
         except CannotReadJsonError as e:
-            e.add_note("Please pass directly the split via 'split'.")
+            add_note(e, "Please pass directly the split via 'split'.")
             raise
 
         train_data = self.maps.open_file(
@@ -1174,7 +1178,7 @@ class Trainer:
         try:
             dataset, dataloader_config = _get_data(data_dir)
         except CannotReadJsonError as e:
-            e.add_note("Please pass directly the dataloader via 'dataloader'.")
+            add_note(e, "Please pass directly the dataloader via 'dataloader'.")
             raise
 
         return dataloader_config.get_object(dataset)

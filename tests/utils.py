@@ -11,7 +11,8 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from clinicadl.io import Maps
-from clinicadl.utils.dictionary.suffixes import PT, TSV
+from clinicadl.utils.dictionary.suffixes import TSV
+from clinicadl.utils.exceptions import add_note
 
 
 def setup_ddp(rank: int, world_size: int, port: int) -> None:
@@ -97,7 +98,7 @@ def compare_maps_dir(
                     file := Path(root) / file, ref_file := Path(ref_root) / ref_file
                 )
             except AssertionError as e:
-                e.add_note(f"Error raised when comparing {file} and {ref_file}")
+                add_note(e, f"Error raised when comparing {file} and {ref_file}")
                 raise
 
 
@@ -130,7 +131,7 @@ def _compare_anything(content: Any, ref_content: Any) -> None:
             try:
                 _compare_anything(content[key], ref_content[key])
             except AssertionError as e:
-                e.add_note(f"Error raised when comparing '{key}'")
+                add_note(e, f"Error raised when comparing '{key}'")
                 raise
     elif isinstance(content, list) and isinstance(ref_content, list):
         assert len(content) == len(ref_content)

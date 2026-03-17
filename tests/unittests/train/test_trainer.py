@@ -675,6 +675,7 @@ class TestTrain:
             state=trainer.state,
             split=split,
             optimizers=optimizers,
+            grad_scaler=scaler,
             optimization=trainer.optimization,
             metrics=metrics,
             callbacks=trainer.callbacks,
