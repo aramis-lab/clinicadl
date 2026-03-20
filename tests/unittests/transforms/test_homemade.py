@@ -16,6 +16,7 @@ def datapoint():
         image=tio.ScalarImage(tensor=torch.randn(1, 1, 1, 1)),
         participant="sub-000",
         session="ses-000",
+        float=1,
         array_1=np.array([1, 2]),
         array_2=np.array([[[1], [0]]]),
         tensor_1=torch.tensor([3, 4]),
@@ -47,6 +48,7 @@ class TestFormat:
                 "tensor_1",
                 "mask_1",
                 "mask_2",
+                "float",
             ],
             copy=True,
         )
@@ -71,6 +73,11 @@ class TestFormat:
         transform = Format(unsqueeze=1, include=["array_1"])
         out = transform(datapoint)
         np.testing.assert_allclose(out["array_1"], np.array([[1], [2]], dtype=np.int64))
+
+    def test_5(self, datapoint):
+        transform = Format(unsqueeze=0, include=["float"], dtype="float64")
+        out = transform(datapoint)
+        torch.testing.assert_close(out["float"], torch.tensor([1], dtype=torch.float64))
 
 
 @patch("clinicadl.transforms.homemade.merge_numerics", wraps=merge_numerics)

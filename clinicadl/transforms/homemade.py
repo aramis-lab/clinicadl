@@ -8,6 +8,7 @@ import torchio as tio
 from monai.utils.type_conversion import (
     convert_data_type,
     convert_to_dst_type,
+    convert_to_tensor,
 )
 
 from clinicadl.utils.dtype import DtypeLike
@@ -68,19 +69,21 @@ class Format(tio.Transform):
 
     def _format(
         self,
-        img: Union[np.ndarray, torch.Tensor],
+        value: Union[np.ndarray, torch.Tensor],
     ) -> Union[np.ndarray, torch.Tensor]:
-        img_t, *_ = convert_data_type(img, output_type=torch.Tensor)
+        if not isinstance(value, (np.ndarray, torch.Tensor)):
+            value = torch.tensor(value)
+        value_t, *_ = convert_data_type(value, output_type=torch.Tensor)
 
         if self.squeeze is True:
-            img_t.squeeze_()
+            value_t.squeeze_()
         elif self.squeeze is not False:
-            img_t.squeeze_(self.squeeze)
+            value_t.squeeze_(self.squeeze)
 
         if self.unsqueeze is not None:
-            img_t.unsqueeze_(self.unsqueeze)
+            value_t.unsqueeze_(self.unsqueeze)
 
-        out, *_ = convert_to_dst_type(img_t, img, dtype=self.dtype)
+        out, *_ = convert_to_dst_type(value_t, value, dtype=self.dtype)
 
         return out
 
