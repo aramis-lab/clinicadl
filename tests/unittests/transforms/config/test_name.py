@@ -12,6 +12,8 @@ MANDATORY_ARGS = {
     "threshold": 0.5,
     "softmax": True,
     "transforms": [PadConfig(padding=0)],
+    "keys": ["a", "b"],
+    "output_key": "c",
 }
 
 

@@ -19,6 +19,8 @@ MANDATORY_ARGS = {
     "applied_labels": [0],
     "threshold": 0.5,
     "softmax": True,
+    "keys": ["a", "b"],
+    "output_key": "c",
 }
 
 
@@ -60,6 +62,7 @@ MANDATORY_ARGS = {
         FillHolesConfig,
         SobelGradientsConfig,
         FormatConfig,
+        MergeFieldsConfig,
     ],
 )
 def test_get_transform_from_dict(config, tmp_path):
