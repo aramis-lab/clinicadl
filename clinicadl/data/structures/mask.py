@@ -1,4 +1,3 @@
-from collections import UserString
 from pathlib import Path
 from typing import Optional, Union
 
@@ -8,19 +7,6 @@ import torchio as tio
 from clinicadl.utils.dictionary.suffixes import PT
 from clinicadl.utils.dictionary.words import AFFINE, MASK
 from clinicadl.utils.typing import PathType
-
-
-class Column(UserString):
-    """
-    Dummy class to store label when it represents a column of a dataframe.
-    """
-
-    def __init__(self, name: str):
-        self._name = name
-        super().__init__(name)
-
-    def __str__(self):
-        return f"Column('{self._name}')"
 
 
 class Mask:

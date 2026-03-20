@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 import torch
 import torchio as tio
-from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
 
@@ -20,7 +19,6 @@ def test_DataPoint():
     affine = np.diag([1.3, 1.2, 1.1, 1])
     image = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=affine)
     mask = tio.LabelMap(tensor=torch.ones(1, 3, 3, 4), affine=np.diag(np.ones(4)))
-    label = tio.LabelMap(tensor=torch.ones(1, 3, 3, 3), affine=affine)
     image_path = (
         caps_dir
         / "subjects"
@@ -29,20 +27,11 @@ def test_DataPoint():
         / "t1_linear"
         / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz"
     )
-    label_path = (
-        caps_dir
-        / "subjects"
-        / "sub-000"
-        / "ses-M000"
-        / "t1_linear"
-        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_brain.nii.gz"
-    )
     mask_path = caps_dir / "masks" / "leftHippocampus.nii.gz"
 
     # first basic test
     data_point = DataPoint(
         image_path,
-        label=label,
         participant="sub-000",
         session="ses-M000",
         mask_1=mask,
@@ -59,9 +48,6 @@ def test_DataPoint():
     assert (
         data_point.image.tensor == torch.from_numpy(nib.load(image_path).get_fdata())
     ).all()
-
-    assert isinstance(data_point.label, tio.LabelMap)
-    assert (data_point.label.tensor == label.tensor).all()
 
     assert isinstance(data_point["image_2"], tio.ScalarImage)
     assert isinstance(data_point["image_3"], tio.ScalarImage)
@@ -104,95 +90,59 @@ def test_DataPoint():
         "image_3",
         "image_4",
     }
-    assert len(data_point.get_images(intensity_only=False)) == 9
+    assert len(data_point.get_images(intensity_only=False)) == 8
     assert len(data_point.get_images(intensity_only=False, include=["image"])) == 1
-    assert len(data_point.get_images(intensity_only=False, exclude=["image"])) == 8
+    assert len(data_point.get_images(intensity_only=False, exclude=["image"])) == 7
 
     assert data_point.get_image_tensor("image").shape == (1, 3, 3, 3)
+
+    # get_keys
+    assert sorted(data_point.get_keys()) == sorted(list(data_point.keys()))
+    assert sorted(data_point.get_keys(include=["participant", "image"])) == [
+        "image",
+        "participant",
+    ]
+    assert sorted(data_point.get_keys(exclude=["participant", "image"])) == sorted(
+        [key for key in data_point.keys() if key not in ["participant", "image"]]
+    )
+    assert sorted(
+        data_point.get_keys(include=["participant", "image"], exclude=["participant"])
+    ) == ["image"]
 
     # test copy
     data_point = SubDataPoint(**data_point)
     c = copy(data_point)
     assert isinstance(c, SubDataPoint)
     assert isinstance(c.image, tio.ScalarImage)
-    assert isinstance(c.label, tio.LabelMap)
     assert c.participant == "sub-000"
     assert c.session == "ses-M000"
     assert isinstance(c["mask_3"], tio.LabelMap)
 
-    # other tests
+    # other attributes
     data_point = DataPoint(
         image=image,
         participant="sub-000",
         session="ses-M000",
+        age=1,
     )
+    data_point["x"] = np.array([1])
     assert (data_point.image.tensor == image.tensor).all()
-    assert data_point.label is None
+    assert data_point.age == 1
+    np.testing.assert_allclose(data_point.x, np.array([1]))
+    data_point["x"] = "x"
+    assert data_point["x"] == "x"
 
-    data_point = DataPoint(
-        image=image,
-        label=1,
-        participant="sub-000",
-        session="ses-M000",
-    )
-    assert data_point.label == 1
-
+    # spacing, shape
     data_point = DataPoint(
         image,
-        label=label_path,
         participant="sub-000",
         session="ses-M00",
     )
-    assert (
-        data_point.label.tensor == torch.from_numpy(nib.load(label_path).get_fdata())
-    ).all()
+    data_point.add_mask(mask_path, "mask")
     assert data_point.spacing == (1.3, 1.2, 1.1)
     assert (data_point.affine == np.diag([1.3, 1.2, 1.1, 1])).all()
     assert data_point.spatial_shape == (3, 3, 3)
     assert data_point.shape == (1, 3, 3, 3)
-
-    data_point = DataPoint(
-        image=image,
-        label=1.0,
-        participant="sub-000",
-        session="ses-M000",
-    )
-    assert isinstance(data_point.label, float)
-    data_point = DataPoint(
-        image,
-        label=[0, 1, 2],
-        participant="sub-000",
-        session="ses-M00",
-    )
-    assert data_point.label == [0, 1, 2]
-    data_point = DataPoint(
-        image,
-        label=[0.0, 1, 2],
-        participant="sub-000",
-        session="ses-M00",
-    )
-    assert data_point.label == [0.0, 1.0, 2.0]
-    data_point = DataPoint(
-        image,
-        label=np.array([[0, 1], [0, 1]]),
-        participant="sub-000",
-        session="ses-M00",
-    )
-    assert (data_point.label == [[0, 1], [0, 1]]).all()
-    data_point = DataPoint(
-        image,
-        label=torch.tensor([0, 1, 2]),
-        participant="sub-000",
-        session="ses-M00",
-    )
-    assert (data_point.label == torch.tensor([0, 1, 2])).all()
-    with pytest.raises(ValidationError):
-        data_point = DataPoint(
-            image,
-            label={"sex": 1, "age": 42},
-            participant="sub-000",
-            session="ses-M00",
-        )
 
     # transforms history
     transform = tio.Clamp(out_min=0, out_max=1)

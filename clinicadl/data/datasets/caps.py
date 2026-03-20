@@ -273,7 +273,6 @@ class CapsDataset(BidsLikeTensorDataset):
         directory: PathType,
         datatype: DataType,
         data: Optional[DataFrameType] = None,
-        label: Optional[Union[str, Sequence[str]]] = None,
         transforms: TransformsHandler = TransformsHandler(),
         columns: Optional[
             Union[Sequence[str], dict[str, Optional[Callable[[pd.Series], pd.Series]]]]
@@ -285,7 +284,6 @@ class CapsDataset(BidsLikeTensorDataset):
             directory=directory,
             datatype=datatype,
             data=data,
-            label=label,
             transforms=transforms,
             columns=columns,
             masks=masks,

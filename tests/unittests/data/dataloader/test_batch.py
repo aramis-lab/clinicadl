@@ -38,7 +38,7 @@ def test_get_field():
     list_samples = [
         DataPoint(
             image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-            label=tio.LabelMap(tensor=torch.ones(1, 3, 4, 5)),
+            mask=tio.LabelMap(tensor=torch.ones(1, 3, 4, 5)),
             participant=f"sub-{i}",
             session=f"ses-{i}",
         )
@@ -47,72 +47,71 @@ def test_get_field():
     batch = Batch(list_samples)
     images = batch.get_field("image")
     assert images.size() == (2, 1, 3, 4, 5)
-    labels = batch.get_field("label")
-    assert labels.size() == (2, 1, 3, 4, 5)
+    masks = batch.get_field("mask")
+    assert masks.size() == (2, 1, 3, 4, 5)
 
     # tensors and different shapes
     batch[1] = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 6)),
-        label=tio.LabelMap(tensor=torch.ones(1, 3, 4, 6)),
+        mask=tio.LabelMap(tensor=torch.ones(1, 3, 4, 6)),
         participant="sub-1",
         session="ses-1",
     )
-    labels = batch.get_field("label")
+    masks = batch.get_field("mask")
     images = batch.get_field("image")
     assert isinstance(images, list)
     assert images[0].size() == torch.Size((1, 3, 4, 5))
     assert images[1].size() == torch.Size((1, 3, 4, 6))
-    assert isinstance(labels, list)
-    assert labels[0].size() == torch.Size((1, 3, 4, 5))
+    assert isinstance(masks, list)
+    assert masks[0].size() == torch.Size((1, 3, 4, 5))
 
     # numpy and list
-    batch[0]["label"] = np.ones((1, 3, 4, 5)).tolist()
-    batch[1]["label"] = np.ones((1, 3, 4, 5))
-    labels = batch.get_field("label")
-    assert labels.size() == (2, 1, 3, 4, 5)
+    batch[0]["x"] = np.ones((1, 3, 4, 5)).tolist()
+    batch[1]["x"] = np.ones((1, 3, 4, 5))
+    assert batch.get_field("x").size() == (2, 1, 3, 4, 5)
 
     # None
-    batch[1]["label"] = None
-    labels = batch.get_field("label")
-    assert isinstance(labels, list)
-    assert labels[0].size() == torch.Size((1, 3, 4, 5))
-    assert labels[1] is None
+    batch[1]["x"] = None
+    x = batch.get_field("x")
+    assert isinstance(x, list)
+    assert x[0].size() == torch.Size((1, 3, 4, 5))
+    assert x[1] is None
 
     # inhomogeneous numerics
-    batch[0]["label"] = [0, 1, 2]
-    batch[1]["label"] = [0, 1]
-    labels = batch.get_field("label")
-    assert isinstance(labels, list)
-    assert labels[0].size() == torch.Size((3,))
-    assert labels[1].size() == torch.Size((2,))
+    batch[0]["x"] = [0, 1, 2]
+    batch[1]["x"] = [0, 1]
+    x = batch.get_field("x")
+    assert isinstance(x, list)
+    assert x[0].size() == torch.Size((3,))
+    assert x[1].size() == torch.Size((2,))
 
     # homogeneous numerics
-    batch[0]["label"] = 0
-    batch[1]["label"] = 1
-    labels = batch.get_field("label")
-    torch.testing.assert_close(labels, torch.tensor([0, 1], dtype=torch.int64))
+    batch[0]["x"] = 0
+    batch[1]["x"] = 1
+    x = batch.get_field("x")
+    torch.testing.assert_close(x, torch.tensor([0, 1], dtype=torch.int64))
 
-    batch[0]["label"] = 0.0
-    batch[1]["label"] = 1.0
-    labels = batch.get_field("label")
-    torch.testing.assert_close(labels, torch.tensor([0.0, 1.0], dtype=torch.float32))
+    batch[0]["x"] = 0.0
+    batch[1]["x"] = 1.0
+    x = batch.get_field("x")
+    torch.testing.assert_close(x, torch.tensor([0.0, 1.0], dtype=torch.float32))
 
     # dtype
-    labels = batch.get_field("label", dtype=torch.int64)
-    torch.testing.assert_close(labels, torch.tensor([0.0, 1.0], dtype=torch.int64))
+    x = batch.get_field("x", dtype=torch.int64)
+    torch.testing.assert_close(x, torch.tensor([0.0, 1.0], dtype=torch.int64))
 
     # channels
-    batch[0]["label"] = 0
-    batch[1]["label"] = 1
-    labels = batch.get_field("label", ensure_channel_dim=True)
-    torch.testing.assert_close(labels, torch.tensor([[0], [1]]))
+    batch[0]["x"] = 0
+    batch[1]["x"] = 1
+    x = batch.get_field("x", ensure_channel_dim=True)
+    torch.testing.assert_close(x, torch.tensor([[0], [1]]))
 
     # slices
     batch = Batch(
         [
             Sample2D(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 5)),
-                label=tio.LabelMap(tensor=torch.ones(1, 3, 1, 5)),
+                mask=tio.LabelMap(tensor=torch.ones(1, 3, 1, 5)),
                 participant=f"sub-{i}",
                 session=f"ses-{i}",
                 image_path="abc.nii.gz",
@@ -130,8 +129,8 @@ def test_get_field():
     batch[0].squeeze = batch[1].squeeze = True
     images = batch.get_field("image")
     assert images.size() == (2, 1, 3, 5)
-    labels = batch.get_field("label")
-    assert labels.size() == (2, 1, 3, 5)
+    masks = batch.get_field("mask")
+    assert masks.size() == (2, 1, 3, 5)
     assert batch[0].image.tensor.shape == (1, 3, 1, 5)
 
     # errors
@@ -149,7 +148,7 @@ def test_to():
         [
             DataPoint(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-                label=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3)),
+                mask=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3)),
                 output=1,
                 abc=torch.randn(1, 3, 3, device=torch.device("cuda:0")),
                 participant=f"sub-{i}",
@@ -162,10 +161,10 @@ def test_to():
     assert not batch._non_blocking
     assert batch.device is None
     assert not batch.channels_last
-    assert batch[0].label.tensor.device == torch.device("cpu")
+    assert batch[0].mask.tensor.device == torch.device("cpu")
     assert batch[0]["abc"].device == torch.device("cuda:0")
     assert batch.get_field("output").device == torch.device("cpu")
-    assert batch.get_field("label").stride() == (27, 27, 9, 3, 1)
+    assert batch.get_field("mask").stride() == (27, 27, 9, 3, 1)
     assert batch.get_field("abc").stride() == (9, 9, 3, 1)
 
     with pytest.raises(
@@ -181,10 +180,10 @@ def test_to():
     assert batch._non_blocking
     assert batch.device == torch.device("cuda:0")
     assert batch.channels_last
-    assert batch[0].label.tensor.device == torch.device("cpu")
+    assert batch[0].mask.tensor.device == torch.device("cpu")
     assert batch[0]["abc"].device == torch.device("cuda:0")
     assert batch.get_field("output").device == torch.device("cuda:0")
-    assert batch.get_field("label").stride() == (27, 1, 9, 3, 1)
+    assert batch.get_field("mask").stride() == (27, 1, 9, 3, 1)
     assert batch.get_field("abc").stride() == (9, 1, 3, 1)
 
     batch.to("cpu")
@@ -193,12 +192,12 @@ def test_to():
     assert batch.device == torch.device("cpu")
     assert batch.channels_last
     assert batch.get_field("output").device == torch.device("cpu")
-    assert batch.get_field("label").stride() == (27, 1, 9, 3, 1)
+    assert batch.get_field("mask").stride() == (27, 1, 9, 3, 1)
     assert batch.get_field("abc").stride() == (9, 1, 3, 1)
 
     batch.to(channels_last=False)
     assert not batch.channels_last
-    assert batch.get_field("label").stride() == (27, 27, 9, 3, 1)
+    assert batch.get_field("mask").stride() == (27, 27, 9, 3, 1)
 
 
 def test_add_field():
@@ -206,7 +205,6 @@ def test_add_field():
         [
             DataPoint(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-                label=None,
                 participant=f"sub-{i}",
                 session=f"ses-{i}",
             )

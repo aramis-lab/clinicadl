@@ -85,6 +85,7 @@ def _buid_model() -> Model:
             ],
             postprocessing_on_cpu=True,
         ),
+        label_key="head",
     )
 
 
@@ -108,7 +109,6 @@ def _setup(caps_dir: Path, metadata: Path, maps_path: Path, gpu: bool) -> None:
         directory=caps_dir,
         datatype=T1Linear(use_uncropped_image=False),
         data=metadata,
-        label="head",
         masks=["head"],
         transforms=TransformsHandler(
             extraction=Slice(slice_direction=0, squeeze=True),
@@ -134,7 +134,6 @@ def _setup(caps_dir: Path, metadata: Path, maps_path: Path, gpu: bool) -> None:
         directory=caps_dir,
         datatype=T1Linear(use_uncropped_image=False),
         data=metadata,
-        label="head",
         masks=["head"],
         transforms=TransformsHandler(
             sample_transforms=[CropOrPadConfig(target_shape=16)],
@@ -148,6 +147,7 @@ def _setup(caps_dir: Path, metadata: Path, maps_path: Path, gpu: bool) -> None:
         metrics={
             "IoU": MeanIoUConfig(
                 pred_key="seg",
+                label_key="head",
             ),
         },
         optimization=OptimizationConfig(
@@ -195,7 +195,9 @@ def _restore_trainer(maps_path: Path, gpu: bool) -> Trainer:
 def _validate(maps_path: Path, gpu: bool) -> None:
     trainer = _restore_trainer(maps_path, gpu)
 
-    trainer.add_metrics(hd=HausdorffDistanceMetricConfig(pred_key="seg"))
+    trainer.add_metrics(
+        hd=HausdorffDistanceMetricConfig(pred_key="seg", label_key="head")
+    )
 
     trainer.validate(
         split_idx=0,

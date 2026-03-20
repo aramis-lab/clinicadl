@@ -24,7 +24,6 @@ from clinicadl.utils.dictionary.words import (
     AFFINE,
     DF,
     IMAGE,
-    LABEL,
     PARTICIPANT,
     PARTICIPANT_ID,
     SESSION,
@@ -36,7 +35,7 @@ from clinicadl.utils.typing import DataFrameType, PathType
 
 from ..datatypes import DataType
 from ..datatypes.factory import get_datatype_from_dict
-from ..structures import Column, DataPoint, Mask, Sample
+from ..structures import DataPoint, Mask
 from .sampler import SamplerDataset
 
 logger = getLogger(__name__)
@@ -59,7 +58,6 @@ class BidsLikeDatasetConfig(ObjectConfig["BidsLikeDataset"]):
     directory: Path
     datatype: DataType = Field(reader=get_datatype_from_dict)
     data: Optional[DataFrameType] = Field(reader=_dataframe_from_dict)
-    label: Optional[Union[str, list[str]]]
     transforms: TransformsHandler = Field(reader=TransformsHandler.from_dict)
     columns: dict[str, Optional[Callable[[pd.Series], pd.Series]]]
     masks: list[PathType]
@@ -90,14 +88,6 @@ class BidsLikeDatasetConfig(ObjectConfig["BidsLikeDataset"]):
             return path.resolve()
         return path
 
-    @field_validator("label", mode="after")
-    @classmethod
-    def _sort_labels(cls, labels: T) -> T:
-        """Sort the labels if list."""
-        if isinstance(labels, list):
-            return sorted(labels)
-        return labels
-
     @field_validator("columns", mode="before")
     @classmethod
     def _uniformize_columns(
@@ -127,9 +117,9 @@ class BidsLikeDatasetConfig(ObjectConfig["BidsLikeDataset"]):
         Checks column names.
         """
         for col in columns:
-            if col in {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION}:
+            if col in {IMAGE, AFFINE, PARTICIPANT, SESSION}:
                 raise ValueError(
-                    f"A column cannot be named '{col}'. {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION} "
+                    f"A column cannot be named '{col}'. {IMAGE, AFFINE, PARTICIPANT, SESSION} "
                     "are protected names."
                 )
 
@@ -150,13 +140,12 @@ class BidsLikeDatasetConfig(ObjectConfig["BidsLikeDataset"]):
         for mask in masks:
             if mask in {
                 IMAGE,
-                LABEL,
                 AFFINE,
                 PARTICIPANT,
                 SESSION,
             }:
                 raise ValueError(
-                    f"Mask cannot be named '{mask}'. {IMAGE, LABEL, AFFINE, PARTICIPANT, SESSION} "
+                    f"Mask cannot be named '{mask}'. {IMAGE, AFFINE, PARTICIPANT, SESSION} "
                     "are protected names."
                 )
 
@@ -176,7 +165,6 @@ class BidsLikeDatasetConfig(ObjectConfig["BidsLikeDataset"]):
         df = deepcopy(read_data(self.data)) if self.data is not None else None
         self._validate_columns(df)
         self._validate_masks()
-        self._validate_label(df)
 
         return self
 
@@ -219,55 +207,6 @@ class BidsLikeDatasetConfig(ObjectConfig["BidsLikeDataset"]):
         self.__dict__["_individual_masks"] = individual_masks
         self.__dict__["_common_masks"] = common_masks
 
-    def _validate_label(self, df: Optional[pd.DataFrame]) -> None:
-        """
-        Checks if 'label' is a valid column name (or column names), a valid mask suffix or None.
-        """
-        label = self.label
-        if isinstance(label, str):
-            if label in self._common_mask_names:
-                raise ValueError(
-                    f"A segmentation mask must be specific to each image, but you passed label={label}, which is "
-                    "a non image-specific mask."
-                )
-            elif label in self._individual_mask_names:
-                return
-            elif label in self.columns:
-                label = [label]
-            else:
-                raise ValueError(
-                    f"Got '{label}' for 'label', but there is no such column or mask."
-                )
-
-        if isinstance(label, list):
-            self._validate_column_labels(label, df)
-
-    def _validate_column_labels(
-        self, labels: list[str], df: Optional[pd.DataFrame]
-    ) -> None:
-        """
-        Validates labels that are columns.
-        """
-        for col in labels:
-            if col in self.columns:
-                df: pd.DataFrame  # df is not None if there are columns.
-                if self.columns[col]:
-                    try:
-                        df[col] = self.columns[col](df[col])
-                    except Exception as e:
-                        raise ValueError(
-                            f"Unable to process the column '{col}' with the function you passed. "
-                            "Make sure that this function takes as input a Pandas Series, and returns a Pandas Series."
-                        ) from e
-                if not pd.api.types.is_numeric_dtype(df[col]):
-                    raise ValueError(
-                        f"'{col}' was passed in 'label', but this column is not numeric!"
-                    )
-            else:
-                raise ValueError(
-                    f"You passed a list in 'label', and this list can only contain columns passed in 'columns'. But got: '{col}'"
-                )
-
 
 @equal_if_config_equal
 class BidsLikeDataset(HasConfig[BidsLikeDatasetConfig], SamplerDataset):
@@ -281,7 +220,6 @@ class BidsLikeDataset(HasConfig[BidsLikeDatasetConfig], SamplerDataset):
         directory: PathType,
         datatype: DataType,
         data: Optional[DataFrameType] = None,
-        label: Optional[Union[str, Sequence[str]]] = None,
         transforms: TransformsHandler = TransformsHandler(),
         columns: Optional[
             Union[Sequence[str], dict[str, Optional[Callable[[pd.Series], pd.Series]]]]
@@ -292,7 +230,6 @@ class BidsLikeDataset(HasConfig[BidsLikeDatasetConfig], SamplerDataset):
             directory=directory,
             datatype=datatype,
             data=data,
-            label=label,
             transforms=transforms,
             columns=columns,
             masks=masks,
@@ -314,8 +251,6 @@ class BidsLikeDataset(HasConfig[BidsLikeDatasetConfig], SamplerDataset):
         self.common_masks: list[Mask] = list(
             map(self._read_mask, self.config._common_masks)
         )
-
-        self.label = self._read_label(label)
 
         self._check_datatype()
 
@@ -360,7 +295,7 @@ class BidsLikeDataset(HasConfig[BidsLikeDatasetConfig], SamplerDataset):
     @staticmethod
     def _process_columns(
         df: pd.DataFrame,
-        columns: dict[Column, Optional[Callable[[pd.Series], pd.Series]]],
+        columns: dict[str, Optional[Callable[[pd.Series], pd.Series]]],
     ) -> pd.DataFrame:
         """
         Processes the DataFrame with encoding functions passed by the user.
@@ -392,23 +327,6 @@ class BidsLikeDataset(HasConfig[BidsLikeDatasetConfig], SamplerDataset):
         """
         Gets the full path to the wanted mask.
         """
-
-    def _read_label(
-        self, label: Optional[Union[str, Sequence[str]]]
-    ) -> Optional[Union[Column, list[Column], Mask]]:
-        """
-        Reads the label and determines its type (scalar, mask, or None).
-        """
-        if isinstance(label, str):
-            if label in self.config._individual_mask_names:
-                return Mask(label)
-
-            return Column(label)
-
-        if isinstance(label, list):
-            return [Column(lab) for lab in label]
-
-        return None
 
     def _check_datatype(self) -> None:
         """
@@ -462,18 +380,6 @@ class BidsLikeDataset(HasConfig[BidsLikeDatasetConfig], SamplerDataset):
         Loads the image and any additional data (e.g. masks).
         Also returns the path to the image.
         """
-
-    def _format_output(self, output: DataPoint) -> Sample:
-        if isinstance(self.label, Mask):
-            output[LABEL] = output.pop(self.label.name)
-        elif isinstance(self.label, list):
-            output[LABEL] = deepcopy(
-                [output[lab] for lab in self.label]
-            )  # leave the individual labels for clarity
-        elif self.label is not None:
-            output[LABEL] = output.pop(self.label)
-
-        return super()._format_output(output)
 
     @classmethod
     def _from_config(cls, config: BidsLikeDatasetConfig) -> Self:

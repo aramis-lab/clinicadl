@@ -1,26 +1,11 @@
-from enum import Enum
 from typing import Optional, Union
 
 import torch
-import torchio as tio
 
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint
 
-from .base import BaseInferer, BaseInfererConfig, OutputType
-
-
-class ImageOutputType(str, Enum):
-    """Possible types of output."""
-
-    IMAGE = "image"
-    MASK = "mask"
-
-
-class Batched3DTo3DInfererConfig(BaseInfererConfig):
-    """Base config class for the inferers implemented in ``ClinicaDL``."""
-
-    output_type: Optional[ImageOutputType]
+from .base import BaseInferer
 
 
 class Batched3DTo3DInferer(BaseInferer):
@@ -53,10 +38,3 @@ class Batched3DTo3DInferer(BaseInferer):
             output = output.squeeze(0)  # remove batch dimension
 
         super()._add_output(x, output)
-
-    def _add_output_in_datapoint(self, output: torch.Tensor, x: DataPoint) -> None:
-        super()._add_output_in_datapoint(output, x)
-        if isinstance(x[self.config.output_name], torch.Tensor):
-            x.add_image(
-                output, self.config.output_name
-            )  # default format is ScalarImage here

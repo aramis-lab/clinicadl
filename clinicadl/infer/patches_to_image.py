@@ -12,10 +12,11 @@ from pydantic import (
 )
 
 from clinicadl.transforms.types import TransformOrConfig
-from clinicadl.utils.dictionary.words import IMAGE, OUTPUT
+from clinicadl.utils.dictionary.words import OUTPUT
 from clinicadl.utils.objects import HasConfig
 
-from .utils import Batched3DTo3DInferer, Batched3DTo3DInfererConfig, ImageOutputType
+from .base import BaseInfererConfig, OutputType
+from .utils import Batched3DTo3DInferer
 
 
 class AveragingMode(str, Enum):
@@ -25,7 +26,7 @@ class AveragingMode(str, Enum):
     GAUSSIAN = "gaussian"
 
 
-class PatchesToImageInfererConfig(Batched3DTo3DInfererConfig):
+class PatchesToImageInfererConfig(BaseInfererConfig):
     """Config class for ``PatchesToImageInferer``."""
 
     patch_size: tuple[PositiveInt, PositiveInt, PositiveInt]
@@ -119,12 +120,12 @@ class PatchesToImageInferer(
             do not forget to specify ``include=["<output_name>"]`` to apply the postprocessing to
             the output of the neural network.
 
-    output_type : Optional[OutputType], default="image"
+    output_type : OutputType, default="tensor"
         Determines the data type of the output:
 
         - if ``"image"``, the output will be converted to a :py:class:`torchio.ScalarImage`;
         - if ``"mask"``, the output will be converted to a :py:class:`torchio.LabeMap`;
-        - if ``None``, the output type will be inferred from the label.
+        - if ``"tensor"``, the output will remain a :py:class:`torch.Tensor`.
 
     Examples
     --------
@@ -168,7 +169,7 @@ class PatchesToImageInferer(
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
         output_name: str = OUTPUT,
-        output_type: Optional[ImageOutputType] = IMAGE,
+        output_type: OutputType = OutputType.TENSOR,
     ):
         super().__init__(
             patch_size=patch_size,

@@ -5,13 +5,7 @@ import numpy as np
 import pytest
 import torch
 
-from clinicadl.data.structures import Column, Mask
-
-
-def test_Column():
-    c = Column("age")
-    assert c == "age"
-    assert str(c) == "Column('age')"
+from clinicadl.data.structures import Mask
 
 
 def test_Mask():

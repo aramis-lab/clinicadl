@@ -18,14 +18,7 @@ IMAGE = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=AFFINE)
 ISO_IMAGE = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=np.eye(4))
 DOUBLE_IMAGE = tio.ScalarImage(tensor=torch.randn(2, 3, 3, 3), affine=AFFINE)
 AGE = 1
-LABEL = (
-    CAPS_DIR
-    / "subjects"
-    / "sub-000"
-    / "ses-M000"
-    / "t1_linear"
-    / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_brain.nii.gz"
-)
+MASK = tio.LabelMap(tensor=torch.randn(2, 3, 3, 3), affine=AFFINE)
 DATATYPE = DataType.from_folder_and_suffix(folder="abc", suffix="abc")
 PATH = Path("abc")
 PARTICIPANT = "sub-000"
@@ -37,15 +30,17 @@ def test_sample():
         image=IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        label=LABEL,
         datatype=DATATYPE,
         image_path=PATH,
+        age=AGE,
+        mask=MASK,
     )
     assert sample.image is IMAGE
     assert sample["image"] is IMAGE
     assert sample.participant is PARTICIPANT
     assert sample.session is SESSION
-    assert isinstance(sample.label, tio.LabelMap)
+    assert sample["age"] == AGE
+    assert sample["mask"] is MASK
     assert sample.datatype[0] is DATATYPE
     assert str(sample.image_path[0]) == str(PATH)
     assert sample.sample_type == "image"
@@ -55,7 +50,6 @@ def test_sample():
         image=IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        label=LABEL,
         datatype=DATATYPE,
         image_path=PATH,
         sample_type="patch",
@@ -68,7 +62,6 @@ def test_sample():
         image=DOUBLE_IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        label=LABEL,
         datatype=DATATYPE,
         image_path=PATH,
     )
@@ -79,7 +72,6 @@ def test_sample():
         image=DOUBLE_IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        label=LABEL,
         datatype=(DATATYPE, DATATYPE),
         image_path=(PATH, PATH),
     )
@@ -92,7 +84,6 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            label=LABEL,
             datatype=(DATATYPE, DATATYPE),
             image_path=(PATH,),
         )
@@ -105,7 +96,6 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            label=LABEL,
             datatype=(DATATYPE,),
             image_path=(PATH, PATH),
         )
@@ -115,7 +105,6 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            label=LABEL,
             datatype=DATATYPE,
             image_path=PATH,
             sample_type="patch",
@@ -127,7 +116,6 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            label=LABEL,
             datatype=DATATYPE,
             image_path=PATH,
             sample_type="slice",
@@ -139,7 +127,6 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            label=LABEL,
             datatype=DATATYPE,
             image_path=PATH,
             sample_type="image",
@@ -151,7 +138,6 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            label=LABEL,
             datatype=DATATYPE,
             image_path=PATH,
             other_image=ISO_IMAGE,
@@ -161,7 +147,6 @@ def test_sample():
         image=IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        label=LABEL,
         datatype=DATATYPE,
         image_path=PATH,
         other_image=ISO_IMAGE,
@@ -176,7 +161,7 @@ def test_sample_2d():
             image=tio.ScalarImage(tensor=torch.randn(1, 1, 3, 3), affine=AFFINE),
             participant=PARTICIPANT,
             session=SESSION,
-            label=LABEL,
+            iso_image=ISO_IMAGE,
             datatype=DATATYPE,
             image_path=PATH,
             sample_position=1,
@@ -191,7 +176,6 @@ def test_sample_2d():
             image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 3), affine=AFFINE),
             participant=PARTICIPANT,
             session=SESSION,
-            label=LABEL,
             datatype=DATATYPE,
             image_path=PATH,
             sample_position=2,
@@ -204,7 +188,7 @@ def test_sample_2d():
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 3), affine=AFFINE),
         participant=PARTICIPANT,
         session=SESSION,
-        label=LABEL,
+        mask=tio.LabelMap(tensor=torch.randn(2, 3, 1, 3), affine=AFFINE),
         datatype=DATATYPE,
         image_path=PATH,
         sample_position=1,
@@ -219,8 +203,10 @@ def test_sample_2d():
     assert sample.sample_type == "slice"
 
     assert sample.get_image_tensor("image").shape == (1, 3, 1, 3)
+    assert sample.get_image_tensor("mask").shape == (2, 3, 1, 3)
     sample["squeeze"] = True
     assert sample.get_image_tensor("image").shape == (1, 3, 3)
+    assert sample.get_image_tensor("mask").shape == (2, 3, 3)
 
     # add images
     sample.add_image(sample.get_image_tensor("image"), "image_1")

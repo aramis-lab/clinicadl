@@ -124,9 +124,6 @@ class Sample(DataPoint, ABC):
         - If ``sample_type="slice"``: the index of the slice in the original image is expected.
         - If ``sample_type="patch"``: the position of the patch (i.e. the position of its upper left voxel) in the
           original image is expected.
-
-    label : Optional[Union[int, float, torchio.LabelMap]], default = None
-        The label. Either ``None``, a scalar, a dict of scalars, or a mask, as a :py:class:`torchio.LabelMap`.
     """
 
     datatype: tuple[DataType, ...]
@@ -143,9 +140,6 @@ class Sample(DataPoint, ABC):
         image_path: Union[Path, tuple[Path, ...]],
         sample_type: SampleType = SampleType.IMAGE,
         sample_position: Optional[Union[int, tuple[int, int, int]]] = None,
-        label: Optional[
-            Union[float, int, dict[str, float], tio.LabelMap, PathType]
-        ] = None,
         check_consistency: bool = True,
         **kwargs: Any,
     ):
@@ -153,7 +147,6 @@ class Sample(DataPoint, ABC):
             image=image,
             participant=participant,
             session=session,
-            label=label,
             datatype=datatype,
             image_path=image_path,
             sample_type=sample_type,
@@ -166,7 +159,7 @@ class Sample(DataPoint, ABC):
             _ = self.spacing
 
 
-class SliceSampleConfig(SampleConfig):
+class Sample2DConfig(SampleConfig):
     """To check ``SliceSample`` inputs."""
 
     sample_type: SampleType = SampleType.SLICE
@@ -215,17 +208,13 @@ class Sample2D(Sample):
         sample_position: int,
         slice_direction: int,
         squeeze: bool,
-        label: Optional[
-            Union[float, int, dict[str, float], tio.LabelMap, PathType]
-        ] = None,
         check_consistency: bool = True,
         **kwargs: Any,
     ):
-        config = SliceSampleConfig(
+        config = Sample2DConfig(
             image=image,
             participant=participant,
             session=session,
-            label=label,
             datatype=datatype,
             image_path=image_path,
             sample_position=sample_position,

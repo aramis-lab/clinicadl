@@ -47,7 +47,11 @@ from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split import SingleSplit
 from clinicadl.train import ComputationalConfig, Trainer
 from clinicadl.transforms import TransformsHandler
-from clinicadl.transforms.config import FormatConfig, ZNormalizationConfig
+from clinicadl.transforms.config import (
+    FormatConfig,
+    MergeFieldsConfig,
+    ZNormalizationConfig,
+)
 
 from .utils import ErrorCallback, TestDeviceCallback
 
@@ -209,10 +213,12 @@ def _setup(
         directory=caps_dir,
         datatype=T1Linear(use_uncropped_image=False),
         data=data,
-        label=["age", "sex"],
         columns=["age", "sex"],
         transforms=TransformsHandler(
-            image_transforms=[ZNormalizationConfig()],
+            image_transforms=[
+                MergeFieldsConfig(keys=["age", "sex"], output_key="label"),
+                ZNormalizationConfig(),
+            ],
         ),
     )
     dataset.read_tensor_conversion()

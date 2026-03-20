@@ -61,7 +61,6 @@ CAPS = CapsDataset(
     datatype=PETLinear(
         use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
     ),
-    label="age",
     columns=["age"],
     data=DATA,
 )
@@ -130,8 +129,7 @@ def test_get_object():
     assert isinstance(batch, (list, tuple))  # depends on the OS?
     assert batch[0][0].participant == "sub-100"
     assert batch[0][0].session == "ses-M000"
-    assert batch[0].get_field("label") == torch.tensor([5.0])
-    assert batch[1].get_field("label") == [None]
+    assert batch[0].get_field("age") == torch.tensor([5.0])
 
     dataloader_config = DataLoaderConfig(shuffle=False, collate_fn=ToBatchCollate())
     dataloader = dataloader_config.get_object(ConcatDataset([CAPS, CAPS_WITHOUT_LABEL]))
@@ -186,8 +184,7 @@ def test_get_object():
     batch = next(iter(dataloader))
     assert isinstance(batch, (list, tuple))
     assert len(batch[0]) == 2
-    assert (batch[0].get_field("label") == torch.tensor([1.0, 10.0])).all()
-    assert batch[1].get_field("label") == [None, None]
+    assert (batch[0].get_field("age") == torch.tensor([1.0, 10.0])).all()
 
     dataloader = DataLoaderConfig(
         batch_size=5, shuffle=True, collate_fn=MergeBatchesCollate()
@@ -236,7 +233,6 @@ def test_ddp():
         datatype=PETLinear(
             use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
         ),
-        label="age",
         data=DATA,
         columns=["age"],
     )
@@ -375,10 +371,9 @@ def test_ddp():
     caps = CapsDataset(
         CAPS_DIR,
         datatype=T1Linear(use_uncropped_image=True),
-        label="seg",
         data=sub_data,
         transforms=TransformsHandler(extraction=Slice(slices=[0, 1])),
-        masks=["brain", "seg"],
+        masks=["brain"],
     )
     caps.read_tensor_conversion("t1_masks")
 

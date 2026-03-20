@@ -27,7 +27,6 @@ from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.dictionary.words import (
     AFFINE,
     IMAGE,
-    LABEL,
     MASK,
     PARTICIPANT,
     SESSION,
@@ -507,11 +506,10 @@ class TensorConversion:
         images_dict = {}
         del images[PARTICIPANT]
         del images[SESSION]
-        del images[LABEL]
         for name, value in images.items():
             if isinstance(value, tio.ScalarImage):
                 images_dict[name] = value.tensor.float()
-            elif isinstance(value, tio.LabelMap) and name != LABEL:
+            elif isinstance(value, tio.LabelMap):
                 images_dict[name] = value.tensor.int()
             else:
                 images_dict[name] = value
@@ -910,7 +908,7 @@ class TensorConversion:
         """
         also = (
             set(images.keys())
-            .difference([IMAGE, AFFINE, PARTICIPANT, SESSION, LABEL])
+            .difference([IMAGE, AFFINE, PARTICIPANT, SESSION])
             .difference(self.get_info().individual_masks)
         )
         also_types = {}

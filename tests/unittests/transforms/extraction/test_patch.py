@@ -49,7 +49,6 @@ def test_num_samples_per_image():
 
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=img),
-        label=1,
         participant="sub-000",
         session="ses-000",
     )
@@ -87,7 +86,6 @@ def test_extract_sample():
 
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(1, 5, 7, 3)
-    mask_1 = torch.randint(0, 2, (1, 5, 7, 3))
     label = torch.randint(0, 2, (3, 5, 7, 3))
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor, affine=affine),
@@ -95,7 +93,6 @@ def test_extract_sample():
         participant="sub-000",
         session="ses-M000",
         image_path="abc.nii.gz",
-        mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
 
     extracted_data_point = patch(data_point, sample_index=5)
@@ -109,12 +106,6 @@ def test_extract_sample():
     assert (
         extracted_data_point.label.tensor
         == label[:, slice(0, 2), slice(2, 5), slice(1, 3)]
-    ).all()
-
-    assert isinstance(extracted_data_point["mask_1"], tio.LabelMap)
-    assert (
-        extracted_data_point["mask_1"].tensor
-        == mask_1[:, slice(0, 2), slice(2, 5), slice(1, 3)]
     ).all()
 
     assert np.isclose(extracted_data_point.image.affine, affine).all()

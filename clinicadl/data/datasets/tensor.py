@@ -20,7 +20,7 @@ from clinicadl.utils.dictionary.words import (
     TENSOR_CONVERSION,
 )
 
-from ..structures.label import Mask
+from ..structures.mask import Mask
 from ..tensors.tensor_conversion import TensorConversion, TensorConversionInfo
 from .base_bids import BidsLikeDataset, BidsLikeDatasetConfig
 

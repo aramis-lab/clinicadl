@@ -5,7 +5,6 @@ from typing import Any, Callable, Optional, Sequence, TypeVar, Union, overload
 
 import torch
 import torch.nn as nn
-import torchio as tio
 from pydantic import Field
 
 from clinicadl.data.dataloader import Batch
@@ -40,7 +39,7 @@ class BaseInfererConfig(ObjectConfig["BaseInferer"]):
     )
     postprocessing_on_cpu: bool
     output_name: str
-    output_type: Optional[OutputType]
+    output_type: OutputType
 
 
 class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
@@ -119,13 +118,9 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
         """
         Adds the output with the right format in the input DataPoint.
         """
-        if self.config.output_type == OutputType.IMAGE or (
-            self.config.output_type is None and x.label is None
-        ):
+        if self.config.output_type == OutputType.IMAGE:
             x.add_image(output, self.config.output_name)
-        elif self.config.output_type == OutputType.MASK or (
-            self.config.output_type is None and isinstance(x.label, tio.LabelMap)
-        ):
+        elif self.config.output_type == OutputType.MASK:
             x.add_mask(output, self.config.output_name)
         else:
             x[self.config.output_name] = output

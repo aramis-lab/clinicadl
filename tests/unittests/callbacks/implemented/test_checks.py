@@ -48,6 +48,7 @@ CAPS = CapsDataset(
         tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
     ),
     data=CAPS_PATH / "tsv" / "labels.tsv",
+    columns=["age"],
 )
 MAPS.read()
 MODEL = Mock()
@@ -300,7 +301,6 @@ class TestDataConsistency:
         ),
         data=CAPS_PATH / "tsv" / "labels.tsv",
         transforms=TransformsHandler(image_transforms=[tio.ZNormalization()]),
-        label="age",
         columns=["age"],
     )
     BAD_DATALOADER = DataLoaderConfig(batch_size=2, collate_fn=CustomCollate())
@@ -337,26 +337,19 @@ class TestDataConsistency:
             "and thus could not compare with the dataset of split-2. Beware that differences between datasets could lead to inconsistent results across splits."
         )
         assert caplog.records[1].message == (
-            "The training datasets of split-0 and the one of split-2 are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results across splits."
-        )
-        assert caplog.records[2].message == (
             f"Could not read the arguments ['transforms'] of the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
             "and thus could not compare with the dataset of split-2. Beware that differences between datasets could lead to inconsistent results across splits."
         )
-        assert caplog.records[3].message == (
-            "The validation datasets of split-0 and the one of split-2 are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results across splits."
-        )
-        assert caplog.records[4].message == (
+        assert caplog.records[2].message == (
             f"Could not read the arguments ['collate_fn'] of the training dataloader of split-0 (in {MAPS.training.data.train.splits[0].dataloader_json}), "
             "and thus could not compare with the dataloader of split-2. Beware that differences between dataloaders could lead to inconsistent results across splits."
         )
-        assert caplog.records[5].message == (
+        assert caplog.records[3].message == (
             "The training dataloaders of split-0 and the one of split-2 are different: the two dataloaders have different batch sizes. Got 1 and 2\n"
             "This may lead to inconsistent results across splits."
         )
-        assert len(caplog.records) == 6
+        print(caplog.records)
+        assert len(caplog.records) == 4
 
         write_json(
             MAPS.training.data.train.splits[0].dataset_json, {"abc": 0}, overwrite=True
@@ -438,28 +431,20 @@ class TestDataConsistency:
         )
         with caplog.at_level("WARNING"):
             self.checker.on_resume(maps=MAPS, split=self.SPLIT)
-        assert len(caplog.records) == 6
+        assert len(caplog.records) == 4
         assert caplog.records[0].message == (
             f"Could not read the arguments ['transforms'] of the training dataset of split-0 (in {MAPS.training.data.train.splits[0].dataset_json}), "
             "and thus could not compare with the dataset passed for resuming training. Beware that differences between datasets could lead to inconsistent results."
         )
         assert caplog.records[1].message == (
-            "The training datasets of split-0 and the one passed for resuming training are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results."
-        )
-        assert caplog.records[2].message == (
             f"Could not read the arguments ['transforms'] of the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
             "and thus could not compare with the dataset passed for resuming training. Beware that differences between datasets could lead to inconsistent results."
         )
-        assert caplog.records[3].message == (
-            "The validation datasets of split-0 and the one passed for resuming training are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results."
-        )
-        assert caplog.records[4].message == (
+        assert caplog.records[2].message == (
             f"Could not read the arguments ['collate_fn'] of the training dataloader of split-0 (in {MAPS.training.data.train.splits[0].dataloader_json}), "
             "and thus could not compare with the dataloader passed for resuming training. Beware that differences between dataloaders could lead to inconsistent results."
         )
-        assert caplog.records[5].message == (
+        assert caplog.records[3].message == (
             "The training dataloaders of split-0 and the one passed for resuming training are different: the two dataloaders have different batch sizes. Got 1 and 2\n"
             "This may lead to inconsistent results."
         )
@@ -533,11 +518,7 @@ class TestDataConsistency:
             f"Could not read the arguments ['transforms'] of the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.validate. Beware that differences between datasets could lead to inconsistent results in validation metrics."
         )
-        assert caplog.records[1].message == (
-            "The validation datasets of split-0 and the one passed to Trainer.validate are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results in validation metrics."
-        )
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 1
 
         write_json(
             MAPS.training.data.validation.splits[0].dataset_json,
@@ -597,11 +578,7 @@ class TestDataConsistency:
             f"Could not read the arguments ['transforms'] of the test dataset of group-X (in {MAPS.test.groups[GROUP].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.test. Beware that differences between datasets could lead to inconsistent results in test metrics."
         )
-        assert caplog.records[1].message == (
-            "The test datasets of group-X and the one passed to Trainer.test are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results in test metrics."
-        )
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 1
 
         write_json(
             MAPS.test.groups[GROUP].dataset_json,
@@ -668,11 +645,7 @@ class TestDataConsistency:
             f"Could not read the arguments ['transforms'] of the prediction dataset of group-X (in {MAPS.prediction.groups[GROUP].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.predict. Beware that differences between datasets could lead to inconsistent results in predictions."
         )
-        assert caplog.records[1].message == (
-            "The prediction datasets of group-X and the one passed to Trainer.predict are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results in predictions."
-        )
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 1
 
         write_json(
             MAPS.prediction.groups[GROUP].dataset_json,
@@ -754,11 +727,6 @@ class TestCompareDatasets:
                 "the two datasets don't have the same datatypes, which differ in their pattern or key. Got .*pet_linear.* and .*t1_linear.*",
             ),
             (
-                "label",
-                "age",
-                "the two datasets don't have the same label. Got age and None",
-            ),
-            (
                 "transforms",
                 TransformsHandler(extraction=Slice()),
                 "the two datasets don't have the same transforms. Got TransformsHandler configuration for slice extraction.*TransformsHandler configuration for image extraction.*",
@@ -788,7 +756,7 @@ class TestCompareDatasets:
     def test_collection_dataset(self):
         self.DATASET.read_tensor_conversion()
         dataset = deepcopy(self.DATASET)
-        dataset.config.label = "age"
+        dataset.config.masks = ["brain"]
         error_msg = _compare_datasets(
             UnpairedDataset([self.DATASET, self.DATASET]),
             UnpairedDataset([self.DATASET, self.DATASET]),
@@ -801,12 +769,13 @@ class TestCompareDatasets:
             except_fields=[],
         )
         assert (
-            error_msg == "the two datasets don't have the same label. Got age and None"
+            error_msg
+            == "the two datasets don't have the same masks. Got {'brain'} and set()"
         )
         error_msg = _compare_datasets(
             UnpairedDataset([dataset, dataset]),
             UnpairedDataset([self.DATASET, self.DATASET]),
-            except_fields=["label"],
+            except_fields=["masks"],
         )
         assert error_msg is None
 

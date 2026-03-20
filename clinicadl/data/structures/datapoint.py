@@ -1,10 +1,8 @@
 from pathlib import Path
 from typing import Any, Optional, Sequence, Union
 
-import numpy as np
 import torch
 import torchio as tio
-from numpy.typing import NDArray
 from pydantic import field_validator
 from torch import Tensor
 
@@ -12,23 +10,11 @@ from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.typing import PathType
 from clinicadl.utils.variables import SPACING_RTOL
 
-ArrayLikeInt = Union[Sequence[int], NDArray[np.integer]]
-ArrayLikeFloat = Union[Sequence[float], NDArray[np.floating]]
-LabelType = Union[
-    int,
-    ArrayLikeInt,
-    float,
-    ArrayLikeFloat,
-    torch.Tensor,
-    tio.LabelMap,
-]
-
 
 class DataPointConfig(ClinicaDLConfig):
     """To check ``DataPoint`` inputs."""
 
     image: tio.ScalarImage
-    label: Optional[LabelType]
     participant: str
     session: str
 
@@ -40,25 +26,16 @@ class DataPointConfig(ClinicaDLConfig):
             return tio.ScalarImage(path=value)
         return value
 
-    @field_validator("label", mode="before")
-    @classmethod
-    def _validate_label(cls, value: Any) -> Any:
-        """Loads the label if it is a path."""
-        if isinstance(value, (Path, str)):
-            return tio.LabelMap(path=value)
-        return value
-
 
 class DataPoint(tio.Subject):
     """
-    Data structure that gathers an image, the associated label, and any other relevant information
+    Data structure that gathers an image and any other relevant information
     associated to the image.
 
     It inherits from :py:class:`torchio.Subject`, which inherits itself from Python's ``dict``.
 
     A DataPoint has the following attributes:
         - ``image``: the image, as a :py:class:`torchio.ScalarImage`;
-        - ``label``: the label. Either ``None``, a scalar, a sequence of scalars, or a mask (as a :py:class:`torchio.LabelMap`);
         - ``participant``: the id of the participant, as a ``str``;
         - ``session``: the id of the session, as a ``str``.
 
@@ -67,23 +44,22 @@ class DataPoint(tio.Subject):
     .. code-block:: python
 
         >>> import torchio as tio
-        >>> from clinicadl.data.structures import DataPoint
-        >>> data = tio.datasets.Colin27()
+        >>> import torch
+        >>> import numpy as np
         >>> datapoint = DataPoint(
-            image=data.t1, label=data.brain, participant="sub-colin", session="ses-M000"
-        )
+                image=tio.ScalarImage(tensor=torch.randn(1, 10, 10, 10), affine=np.eye(4)),
+                participant="sub-colin",
+                session="ses-M000",
+            )
         >>> datapoint.session
         'ses-M000'
 
-    However, **use the attribute notation only to access an attribute**.
-    To modify, add, or delete a field, use the standard dictionary syntax:
+    To add, modify, or delete any other field, you can use the standard dictionary syntax:
 
     .. code-block:: python
 
         >>> datapoint["age"] = 55
         >>> datapoint["age"]
-        55
-        >>> datapoint.age
         55
 
     To add an image or a mask to the ``DataPoint``, prefer :py:func:`~add_image`
@@ -101,7 +77,7 @@ class DataPoint(tio.Subject):
     As ``DataPoint`` is a subclass of :py:class:`torchio.Subject`, you can also used all the other methods it inherits from.
 
     .. note::
-        Any transform used in ClinicaDL must work with DataPoint.
+        Any transform used in ``ClinicaDL`` must work with DataPoint.
 
     Parameters
     ----------
@@ -111,22 +87,11 @@ class DataPoint(tio.Subject):
         The participant concerned.
     session : str
         The session concerned.
-    label : Optional[Union[int, float, ArrayLikeInt, ArrayLikeFloat, tio.LabelMap, PathType]], default=None
-        The label associated to the image. Can be:
-
-        - an ``int`` (classification, including multi-class classification);
-        - a ``sequence`` or (:numpy:`ndarray`) of ``int`` (multi-label classification);
-        - a ``float`` (regression);
-        - a ``sequence`` or (:numpy:`ndarray`) of ``float`` (multi-output regression);
-        - a mask, passed as a :py:class:`torchio.LabelMap` or a ``path`` to a file, (segmentation);
-        - or ``None``, if no label (reconstruction).
-
     kwargs : Any
-        Any other information to store in the DataPoint.
+        Any other information to store in the ``DataPoint``.
     """
 
     image: tio.ScalarImage
-    label: LabelType
     participant: str
     session: str
 
@@ -135,12 +100,10 @@ class DataPoint(tio.Subject):
         image: Union[tio.ScalarImage, PathType],
         participant: str,
         session: str,
-        label: Optional[Union[LabelType, PathType]] = None,
         **kwargs: Any,
     ) -> None:
         config = DataPointConfig(
             image=image,
-            label=label,
             participant=participant,
             session=session,
         )
@@ -321,6 +284,47 @@ class DataPoint(tio.Subject):
 
         return field_value.tensor.clone()
 
+    def get_keys(
+        self,
+        include: Sequence[str] | None = None,
+        exclude: Sequence[str] | None = None,
+    ) -> list[str]:
+        """
+        To get the list of all the keys in a ``DataPoint``.
+
+        Parameters
+        ----------
+        include : Optional[Sequence[str]], default=None
+            Keys to include. If ``None``, will return all the keys not in ``exclude``.
+        exclude : Optional[Sequence[str]], default=None
+            Names of the keys to exclude.
+
+        Returns
+        -------
+        list[str]
+            The keys.
+
+        Examples
+        --------
+        >>> from clinicadl.data.structures.examples import ColinDataPoint
+        >>> datapoint = ColinDataPoint()
+        >>> datapoint.get_keys()
+        {'image': ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)}
+        >>> datapoint.get_keys()
+        ['image', 'head', 'participant', 'session']
+        >>> datapoint.get_keys(exclude=["image"])
+        ['head', 'participant', 'session']
+        >>> datapoint.get_keys(include=["image"])
+        ['image']
+        """
+        keys = set(self.keys())
+        if include is not None:
+            keys = keys.intersection(include)
+        if exclude is not None:
+            keys -= set(exclude)
+
+        return list(keys)
+
     def add_image(
         self,
         image: Union[tio.ScalarImage, PathType, torch.Tensor],
@@ -343,10 +347,10 @@ class DataPoint(tio.Subject):
         >>> from clinicadl.data.structures.examples import ColinDataPoint
         >>> datapoint = ColinDataPoint()
         >>> datapoint
-        ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+        ColinDataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
         >>> datapoint.add_image(datapoint.image, "image_duplicate")
         >>> datapoint
-        ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head', 'image_duplicate'); images: 4)
+        ColinDataPoint(Keys: ('head', 'image', 'participant', 'session', 'image_duplicate'); images: 3)
         >>> datapoint["image_duplicate"]
         ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)
 
@@ -381,10 +385,10 @@ class DataPoint(tio.Subject):
         >>> from clinicadl.data.structures.examples import ColinDataPoint
         >>> datapoint = ColinDataPoint()
         >>> datapoint
-        ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+        ColinDataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
         >>> datapoint.add_mask(datapoint["head"], "head_duplicate")
         >>> datapoint
-        ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head', 'head_duplicate'); images: 4)
+        ColinDataPoint(Keys: ('head', 'image', 'participant', 'session', 'head_duplicate'); images: 3)
         >>> datapoint["head_duplicate"]
         LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)
 

@@ -4,16 +4,19 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
 from .base import Model
-from .supervised import SupervisedModel, SupervisedModelConfig
+from .vanilla import VanillaModel, VanillaModelConfig
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch
 
 
-class ReconstructionModelConfig(SupervisedModelConfig):
+class ReconstructionModelConfig(
+    VanillaModelConfig, ObjectConfig["ReconstructionModel"]
+):
     """
     Config class for ReconstructionModel.
     """
@@ -24,7 +27,7 @@ class ReconstructionModelConfig(SupervisedModelConfig):
         return ReconstructionModel
 
 
-class ReconstructionModel(SupervisedModel, HasConfig[ReconstructionModelConfig]):
+class ReconstructionModel(VanillaModel, HasConfig[ReconstructionModelConfig]):
     """
     A vanilla reconstruction model, to work with simple AutoEncoders like
     :py:class:`~clinicadl.networks.nn.AutoEncoder`.
@@ -53,6 +56,7 @@ class ReconstructionModel(SupervisedModel, HasConfig[ReconstructionModelConfig])
         For supervised training.
     """
 
+    config: ReconstructionModelConfig
     _config_type = ReconstructionModelConfig
 
     def forward_step(self, batch: Batch) -> torch.Tensor:

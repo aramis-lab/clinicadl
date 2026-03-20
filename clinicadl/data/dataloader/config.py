@@ -228,7 +228,6 @@ class DataLoaderConfig(ClinicaDLConfig):
                     tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
                 ),
                 data="mycaps/data.tsv",
-                label="age",
                 columns=["age"],
             )
             caps_dataset.read_tensor_conversion()
@@ -240,9 +239,9 @@ class DataLoaderConfig(ClinicaDLConfig):
 
             >>> batch = next(iter(dataloader))
             >>> batch
-            [Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
-             Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
-             Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1)]
+            [Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+             Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+             Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)]
 
         Now, let's see what happens with a :py:class:`~clinicadl.data.datasets.PairedDataset`:
 
@@ -256,12 +255,12 @@ class DataLoaderConfig(ClinicaDLConfig):
 
             >>> batch = next(iter(dataloader))
             >>> batch
-            ([Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
-              Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
-              Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1)],
-             [Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
-              Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1),
-              Sample(Keys: ('datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 1)])
+            ([Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+              Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+              Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)],
+             [Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+              Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+              Sample(Keys: ('age', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)])
 
         Because, the default behavior is to use :py:class:`~clinicadl.data.dataloader.ToBatchesCollate` to collate batches,
         we obtain here a tuple of :math:`n` batches, where :math:`n` is the number of datasets that we paired.

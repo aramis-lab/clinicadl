@@ -592,8 +592,6 @@ def _compare_datasets(
             and new.config.datatype != old.config.datatype
         ):
             return f"the two datasets don't have the same datatypes, which differ in their pattern or key. Got {new.config.datatype} and {old.config.datatype}"
-        if "label" not in except_fields and new.config.label != old.config.label:
-            return f"the two datasets don't have the same label. Got {new.config.label} and {old.config.label}"
         if (
             "transforms" not in except_fields
             and new.config.transforms != old.config.transforms
