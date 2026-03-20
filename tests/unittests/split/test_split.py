@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader import DataLoaderConfig, MergeBatchesCollate
 from clinicadl.data.datasets import CapsDataset
 from clinicadl.data.datatypes import PETLinear
 from clinicadl.split.split import Split
@@ -72,23 +72,27 @@ def test_build_loaders():
         shuffle=False,
         pin_memory=False,
         drop_last=True,
+        collate_fn=(collate := MergeBatchesCollate()),
     )
     assert split.train_loader.batch_size == 2
     assert not split.train_loader.pin_memory
     assert split.train_loader.drop_last
     assert isinstance(split.train_loader.sampler, WeightedRandomSampler)
+    assert split.train_loader.collate_fn is collate
 
     split.build_val_loader(
         batch_size=2,
         shuffle=False,
         pin_memory=False,
         drop_last=True,
+        collate_fn=(collate := MergeBatchesCollate()),
     )
     assert split.val_loader.batch_size == 2
     assert not split.val_loader.pin_memory
     assert split.val_loader.drop_last
     assert isinstance(split.val_loader.sampler, DistributedSampler)
     assert split.val_loader.sampler.num_replicas == 2
+    assert split.val_loader.collate_fn is collate
 
     # error
     with pytest.raises(ValueError):
