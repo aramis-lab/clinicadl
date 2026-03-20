@@ -77,7 +77,7 @@ class TestFormat:
     def test_5(self, datapoint):
         transform = Format(unsqueeze=0, include=["float"], dtype="float64")
         out = transform(datapoint)
-        torch.testing.assert_close(out["float"], torch.tensor([1], dtype=torch.float64))
+        np.testing.assert_allclose(out["float"], np.array([1], dtype=np.float64))
 
 
 @patch("clinicadl.transforms.homemade.merge_numerics", wraps=merge_numerics)

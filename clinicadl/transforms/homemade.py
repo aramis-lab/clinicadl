@@ -46,6 +46,24 @@ class Format(tio.Transform):
 
     **kwargs: Any
         Any keyword argument accepted by :py:class:`torchio.Transform`.
+
+    Example
+    -------
+    .. code-block::
+
+        from clinicadl.transforms import Format
+        from clinicadl.data.structures.examples import ColinDataPoint
+        import numpy as np
+
+        data = ColinDataPoint(age=55.0, array=np.array([1, 2]))
+
+    .. code-block::
+
+        >>> Format(dtype="int64", include=["age"])(data).age
+        55
+        >>> Format(unsqueeze=1, include=["array"])(data).array
+        [[1]
+         [2]]
     """
 
     def __init__(
@@ -72,7 +90,7 @@ class Format(tio.Transform):
         value: Union[np.ndarray, torch.Tensor],
     ) -> Union[np.ndarray, torch.Tensor]:
         if not isinstance(value, (np.ndarray, torch.Tensor)):
-            value = torch.tensor(value)
+            value = np.array(value)
         value_t, *_ = convert_data_type(value, output_type=torch.Tensor)
 
         if self.squeeze is True:
@@ -114,6 +132,24 @@ class MergeFields(tio.Transform):
         to the output of the merger.
     **kwargs: Any
         Any keyword argument accepted by :py:class:`torchio.Transform`.
+
+    Example
+    -------
+    .. code-block::
+
+        from clinicadl.transforms import MergeFields
+        from clinicadl.data.structures.examples import ColinDataPoint
+        import numpy as np
+
+        data = ColinDataPoint(age=55, sex="M", array_1=np.zeros(2), array_2=np.ones(2))
+
+    .. code-block::
+
+        >>> MergeFields("age", "sex", output_key="label")(data).label
+        [55, 'M']
+        >>> MergeFields("array_1", "array_2", output_key="label")(data)
+        [[0. 0.]
+         [1. 1.]]
     """
 
     def __init__(self, *keys: str, output_key: str, **kwargs):

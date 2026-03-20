@@ -200,19 +200,13 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
         """
         Tries to merge any field.
         """
-        values = merge_numerics(values)
+        values = merge_numerics(values, merge_lists=False)
 
         if isinstance(values, (torch.Tensor, np.ndarray, tio.Image)):
             return values
 
-        try:
-            values = set(values)
-        except TypeError:
-            pass
-        else:
-            values = list(values)
-
-        if len(values) == 1:
-            return values.pop()
+        first = values[0]
+        if all(value == first for value in values):
+            return first
         else:
             return tuple(values)

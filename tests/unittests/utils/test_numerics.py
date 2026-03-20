@@ -65,6 +65,11 @@ def test_merge_numerics(spy, inputs, expected_output):
         assert output == expected_output
 
 
+def test_merge_numerics_but_not_lists():
+    assert merge_numerics([(1, 2), (1, 2)], merge_lists=False) == [(1, 2), (1, 2)]
+    assert merge_numerics([(1, 2), (1, 2)], merge_lists=True) == [1, 2, 1, 2]
+
+
 @pytest.mark.parametrize(
     "inputs,expected_output",
     [

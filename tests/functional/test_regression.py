@@ -33,6 +33,7 @@ from clinicadl.callbacks import (
     ModelCheckpointCallback,
     TrainingCheckpointCallback,
 )
+from clinicadl.data.dataloader import MergeBatchesCollate
 from clinicadl.data.datasets import CapsDataset, PairedDataset
 from clinicadl.data.datatypes import T1Linear
 from clinicadl.infer import SimpleInferer
@@ -130,14 +131,13 @@ class TwoHeadsRegressionModel(Model):
     def get_loss_functions(self):
         return {"loss_age": self.loss_age, "loss_sex": self.loss_sex}
 
-    def forward_step(self, batch: Sequence[Batch]):
-        image = self._merge_images(batch)
-        labels = batch[0].get_field(
-            "label", ensure_channel_dim=True, dtype=torch.float32
-        )
+    def forward_step(self, batch: Batch):
+        self._merge_images(batch)
+        images = batch.get_field("image", dtype=torch.float32)
+        labels = batch.get_field("label", ensure_channel_dim=True, dtype=torch.float32)
         age, sex = labels[:, 0], labels[:, 1]
 
-        out = self.network(image)
+        out = self.network(images)
         pred_age, pred_sex = out[:, 0], out[:, 1]
 
         return {
@@ -145,8 +145,9 @@ class TwoHeadsRegressionModel(Model):
             "loss_sex": self.loss_sex(pred_sex, sex),
         }
 
-    def evaluation_step(self, batch: Sequence[Batch]):
-        out = self.inferer(batch[0], self.network, input_dtype=torch.float32)
+    def evaluation_step(self, batch: Batch):
+        self._merge_images(batch)
+        out = self.inferer(batch, self.network, input_dtype=torch.float32)
 
         out.add_field(out.get_field("output")[:, 0], "output_age")
         out.add_field(out.get_field("output")[:, 1], "output_sex")
@@ -173,11 +174,11 @@ class TwoHeadsRegressionModel(Model):
         return self.evaluation_step(batch)
 
     @staticmethod
-    def _merge_images(batch: tuple[Batch, Batch]) -> torch.Tensor:
-        return (
-            batch[0].get_field("image", dtype=torch.float32)
-            + batch[1].get_field("image", dtype=torch.float32)
-        ) / 2  # the same image. Just for the test
+    def _merge_images(batch: Batch) -> None:
+        for data in batch:
+            data["image"].set_data(
+                torch.mean(data["image"].tensor, dim=0, keepdim=True)
+            )
 
 
 def _encode_sex(gender: pd.Series) -> pd.Series:
@@ -276,8 +277,8 @@ def _train(
 ) -> None:
     splitter = SingleSplit(split_dir)
     split = splitter.get_split(dataset)
-    split.build_train_loader(batch_size=2)
-    split.build_val_loader()
+    split.build_train_loader(batch_size=2, collate_fn=MergeBatchesCollate())
+    split.build_val_loader(collate_fn=MergeBatchesCollate())
 
     try:
         trainer.train(

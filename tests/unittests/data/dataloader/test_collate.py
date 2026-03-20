@@ -28,8 +28,8 @@ SAMPLE_1 = Sample(
     np_field=np.array([1, 2]),
     torch_field=torch.tensor([1, 2]),
     other_field=True,
-    same_field=0,
-    diff_field=0,
+    same_field=[1, 0],
+    diff_field=[1, 0],
 )
 SAMPLE_1_BIS = Sample(
     image=tio.ScalarImage(tensor=torch.randn(2, 3, 3, 3), affine=np.eye(4)),
@@ -40,8 +40,8 @@ SAMPLE_1_BIS = Sample(
     image_path=Path("bcd"),
     np_field=np.array([2, 3]),
     torch_field=torch.tensor([2, 3]),
-    same_field=0,
-    diff_field=1,
+    same_field=[1, 0],
+    diff_field=[1, 1],
 )
 SAMPLE_2 = copy(SAMPLE_1)
 SAMPLE_2["participant"] = str(2)
@@ -98,8 +98,8 @@ def test_merge_batches(merge_numerics_mock):
     np.testing.assert_allclose(batch[0].np_field, np.array([[1, 2], [2, 3]]))
     torch.testing.assert_close(batch[0].torch_field, torch.tensor([[1, 2], [2, 3]]))
     assert batch[0].other_field
-    assert batch[0].same_field == 0
-    assert batch[0].diff_field == (0, 1)
+    assert batch[0].same_field == [1, 0]
+    assert batch[0].diff_field == ([1, 0], [1, 1])
 
     assert merge_numerics_mock.call_count == 18
 

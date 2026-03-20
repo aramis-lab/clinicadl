@@ -12,28 +12,30 @@ NumericT = TypeVar("NumericT", tio.Image, torch.Tensor, np.ndarray)
 
 
 @overload
-def merge_numerics(values: Sequence[NumericT]) -> NumericT:
+def merge_numerics(values: Sequence[NumericT], merge_lists: bool) -> NumericT:
     ...
 
 
 @overload
-def merge_numerics(values: Sequence[T]) -> list[T]:
+def merge_numerics(values: Sequence[T], merge_lists: bool) -> list[T]:
     ...
 
 
-def merge_numerics(values: Sequence[Any]) -> Any:
+def merge_numerics(values: Sequence[Any], merge_lists: bool = True) -> Any:
     """
     Tries to merge elements of a sequence depending on their types:
 
     - :py:class:`torch.Tensor` and :py:class:`np.ndarray` are stacked along a new dimension;
     - :py:class:`torchio.Image` are concatenated along the channel dimension;
-    - ``lists`` and ``tuples`` are concatenated;
+    - ``lists`` and ``tuples`` are concatenated if ``merge_lists=True``;
     - otherwise, the sequence is returned as a list.
 
     Parameters
     ----------
     values : Sequence[Any]
         The values to merge.
+    merge_lists: bool, default=True
+        Whether to concatenate ``lists`` and ``tuples``.
 
     Returns
     -------
@@ -63,7 +65,7 @@ def merge_numerics(values: Sequence[Any]) -> Any:
     elif all(isinstance(value, tio.Image) for value in values):
         return concat_images(values)
 
-    elif all(isinstance(value, (tuple, list)) for value in values):
+    elif all(isinstance(value, (tuple, list)) for value in values) and merge_lists:
         return list(itertools.chain(*values))
 
     else:
