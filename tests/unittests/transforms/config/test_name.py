@@ -21,4 +21,4 @@ def test_name():
     for name in ImplementedTransform:
         config = globals()[f"{name.value}Config"]
         c = config(**MANDATORY_ARGS)
-        assert c.name == name.value
+        assert c.name_ == name.value

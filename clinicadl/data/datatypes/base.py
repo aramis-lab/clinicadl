@@ -29,7 +29,7 @@ class DataType(ConfigWithName, ABC):
         Anything that can be compiled with :py:class:`re.compile`.
         ``ClinicaDL`` will look for the files like:
         ``*/sub-*/ses-*/{pattern}``.
-    key : str
+    name : str
         A name to give to your datatype (e.g. ``T1w``). It must be a **single**
         word (no space). ``ClinicaDL`` will use it to refer to your data.
     description : Union[str], default=None
@@ -43,7 +43,7 @@ class DataType(ConfigWithName, ABC):
         from clinicadl.data.datatypes import DataType
 
         datatype = DataType(
-            pattern="t1/sub-.*_ses-.*_T1w.nii", key="T1", description="T1 weighted MRIs"    # '.*' means 'anything'
+            pattern="t1/sub-.*_ses-.*_T1w.nii", name="T1", description="T1 weighted MRIs"    # '.*' means 'anything'
         )
         # ClinicaDL will look for all the files like */sub-*/ses-*/t1/sub-.*_ses-.*_T1w.nii
 
@@ -53,19 +53,10 @@ class DataType(ConfigWithName, ABC):
         <re.Match object; span=(0, 27), match='t1/sub-001_ses-M000_T1w.nii'>
         >>> re.match(datatype.pattern, "t1/sub-001_ses-M000_pet.nii")
         None
-
-    .. code-block::
-
-        >>> datatype = DataType.from_folder_and_suffix(folder="t1", suffix="T1w", description="T1 weighted MRIs")
-        >>> datatype.pattern
-        re.compile(r't1/sub-.*_ses-.*_T1w.nii.*', re.UNICODE)
-        >>> datatype.key
-        'T1w'
-
     """
 
     pattern: Pattern
-    key: str
+    name: str
     description: Optional[str] = None
 
     @classmethod
@@ -86,7 +77,7 @@ class DataType(ConfigWithName, ABC):
             for the data.
         suffix : str
             The suffix of the ``NIfTI`` files to consider. The suffix will also
-            be used for the ``key``.
+            be used for the ``name``.
         description : Optional[str], default=None
             A potential description of the data.
 
@@ -94,24 +85,34 @@ class DataType(ConfigWithName, ABC):
         -------
         DataType
             The ``DataType``.
+
+        Examples
+        --------
+        .. code-block::
+
+            >>> datatype = DataType.from_folder_and_suffix(folder="t1", suffix="T1w", description="T1 weighted MRIs")
+            >>> datatype.pattern
+            re.compile(r't1/sub-.*_ses-.*_T1w.nii.*', re.UNICODE)
+            >>> datatype.name
+            'T1w'
         """
         pattern = os.path.join(folder, f"sub-.*_ses-.*_{suffix}.nii.*")
         pattern = re.compile(pattern)
 
-        return cls(pattern=pattern, key=suffix, description=description)
+        return cls(pattern=pattern, name=suffix, description=description)
 
     @computed_field
     @property
-    def name(self) -> str:
+    def name_(self) -> str:
         """Gets the name of the current class."""
         return type(self).__name__
 
     def __eq__(self, other: DataType) -> bool:
         if not isinstance(other, DataType):
             return False
-        return self.pattern == other.pattern and self.key == other.key
+        return self.pattern == other.pattern and self.name == other.name
 
-    @field_validator("key", mode="before")
+    @field_validator("name", mode="before")
     @classmethod
     def _validate_name(cls, value: Any) -> Any:
         """Converts strings to regex."""
@@ -144,4 +145,4 @@ class DataType(ConfigWithName, ABC):
 
     @property
     def _filename(self) -> str:
-        return self.key
+        return self.name

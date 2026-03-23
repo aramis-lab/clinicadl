@@ -380,7 +380,7 @@ def test_to_tensors(tmp_path):
     with open(tmp_path / "tensor_conversion" / "new_conversion.json", "r") as f:
         conversion_info = json.load(f)
     assert conversion_info["datatype"] == {
-        "name": "T1Linear",
+        "name_": "T1Linear",
         "pattern": "t1_linear/sub-.*_ses-.*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.*",
         "key": "t1-linear",
         "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline",
@@ -390,7 +390,7 @@ def test_to_tensors(tmp_path):
     assert conversion_info["common_masks"] == ["leftHippocampus.nii.gz"]
     assert conversion_info["transforms"] == [
         {
-            "name": "Crop",
+            "name_": "Crop",
             "exclude": None,
             "include": None,
             "copy": False,

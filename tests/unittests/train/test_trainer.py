@@ -179,7 +179,7 @@ class TestSideMethods:
         trainer.add_metrics(my_metric=custom_metric)
         assert "my_metric" in trainer.metrics.metrics
         f = maps.open_file(maps.metrics_json)
-        assert f["metrics"]["my_metric"]["name"] == "CustomMetric"
+        assert f["metrics"]["my_metric"]["name_"] == "CustomMetric"
 
     def test_add_callbacks(self, trainer: Trainer, tmp_path):
         class CustomCallback(Callback):

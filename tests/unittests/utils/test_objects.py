@@ -88,10 +88,10 @@ def test_json(tmp_path):
     with open(json_path, "r") as f:
         d = json.load(f)
     assert d == {
-        "name": "ReaderWriter",
+        "name_": "ReaderWriter",
         "a": 0,
-        "obj": {"a": 1, "name": "ObjectTest"},
-        "seq": [{"a": 2, "name": "ObjectTest"}],
+        "obj": {"a": 1, "name_": "ObjectTest"},
+        "seq": [{"a": 2, "name_": "ObjectTest"}],
     }
 
     with pytest.raises(NotImplementedError):
@@ -118,11 +118,11 @@ def test_dict():
     raw = ObjectTest(a=3)
     obj = ReaderWriter(a=0, obj=raw, seq=[ObjectTestConfig(a=2), raw])
     d = obj.to_dict()
-    assert set(d.keys()) == {"name", "a", "obj", "seq"}
-    assert d["name"] == "ReaderWriter"
+    assert set(d.keys()) == {"name_", "a", "obj", "seq"}
+    assert d["name_"] == "ReaderWriter"
     assert d["a"] == 0
     assert d["obj"] is raw
-    assert d["seq"][0] == {"a": 2, "name": "ObjectTest"}
+    assert d["seq"][0] == {"a": 2, "name_": "ObjectTest"}
     assert d["seq"][1] is raw
 
     with pytest.raises(NotImplementedError):

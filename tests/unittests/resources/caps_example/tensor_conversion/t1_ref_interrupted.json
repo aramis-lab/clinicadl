@@ -1,7 +1,7 @@
 {
     "conversion_name": "t1_ref_interrupted",
     "datatype": {
-        "name": "T1Linear",
+        "name_": "T1Linear",
         "pattern": "t1_linear/sub-.*_ses-.*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.*",
         "key": "t1-linear",
         "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline",

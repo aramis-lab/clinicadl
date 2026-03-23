@@ -35,11 +35,11 @@ def test_factory_from_dict():
         """A doc."""
 
     assert get_obj_from_dict.__doc__ == """A doc."""
-    obj = get_obj_from_dict(data={"name": "ObjA", "a": 0, "b": 1})
+    obj = get_obj_from_dict(data={"name_": "ObjA", "a": 0, "b": 1})
     assert obj.a == 0
     assert obj.b == 1
     assert isinstance(obj, ObjA)
-    obj = get_obj_from_dict(data={"name": "ObjA", "a": 0, "b": 1}, b=2)
+    obj = get_obj_from_dict(data={"name_": "ObjA", "a": 0, "b": 1}, b=2)
     assert obj.b == 2
 
     @factory_from_dict(
@@ -48,7 +48,7 @@ def test_factory_from_dict():
     def get_config_from_dict(data: dict[str, Any], **kwargs) -> ObjConfig:
         pass
 
-    obj = get_config_from_dict(data={"name": "ObjB", "a": 0, "b": 1})
+    obj = get_config_from_dict(data={"name_": "ObjB", "a": 0, "b": 1})
     assert obj.a == 0
     assert obj.b == 1
     assert isinstance(obj, ObjBConfig)
@@ -62,7 +62,7 @@ def test_factory_from_dict():
     def get_config_from_dict(data: dict[str, Any], **kwargs) -> NamedConfig:
         pass
 
-    obj = get_config_from_dict(data={"name": "ConfigC", "a": 0, "b": 1})
+    obj = get_config_from_dict(data={"name_": "ConfigC", "a": 0, "b": 1})
     assert obj.a == 0
     assert obj.b == 1
     assert isinstance(obj, ConfigC)
@@ -70,7 +70,7 @@ def test_factory_from_dict():
 
 def test_factory_from_json(tmp_path):
     with open(tmp_path / "data.json", "w") as f:
-        json.dump({"name": "ObjA", "a": 0, "b": 1}, f)
+        json.dump({"name_": "ObjA", "a": 0, "b": 1}, f)
 
     @factory_from_json(
         object_type=Obj, enum=ImplementedObj, context=globals(), config=False
@@ -93,7 +93,7 @@ def test_factory_from_json(tmp_path):
         pass
 
     with open(tmp_path / "data.json", "w") as f:
-        json.dump({"name": "ObjB", "a": 0, "b": 1}, f)
+        json.dump({"name_": "ObjB", "a": 0, "b": 1}, f)
 
     obj = get_config_from_json(data=tmp_path / "data.json")
     assert obj.a == 0
@@ -110,7 +110,7 @@ def test_factory_from_json(tmp_path):
         pass
 
     with open(tmp_path / "data.json", "w") as f:
-        json.dump({"name": "ConfigC", "a": 0, "b": 1}, f)
+        json.dump({"name_": "ConfigC", "a": 0, "b": 1}, f)
 
     obj = get_config_from_json(data=tmp_path / "data.json")
     assert obj.a == 0
@@ -120,7 +120,7 @@ def test_factory_from_json(tmp_path):
 
 def test_safe_factory_from_json(tmp_path):
     with open(tmp_path / "data.json", "w") as f:
-        json.dump({"name": "ObjA", "a": 0, "b": "x"}, f)
+        json.dump({"name_": "ObjA", "a": 0, "b": "x"}, f)
 
     @factory_from_json(
         object_type=Obj, enum=ImplementedObj, context=globals(), config=False
@@ -146,7 +146,7 @@ def test_safe_factory_from_json(tmp_path):
 
     ###
     with open(tmp_path / "data.json", "w") as f:
-        json.dump({"name": "ObjA", "a": "x", "b": "x"}, f)
+        json.dump({"name_": "ObjA", "a": "x", "b": "x"}, f)
 
     out, fields = get_obj_from_json_safe(
         data=tmp_path / "data.json", default=ObjA(a=1, b=1)
@@ -157,7 +157,7 @@ def test_safe_factory_from_json(tmp_path):
 
     ###
     with open(tmp_path / "data.json", "w") as f:
-        json.dump({"name": "ObjX", "a": 1, "b": 1}, f)
+        json.dump({"name_": "ObjX", "a": 1, "b": 1}, f)
 
     assert get_obj_from_json_safe(data=tmp_path / "data.json") == (None, [])
 

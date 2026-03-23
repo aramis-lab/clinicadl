@@ -13,6 +13,7 @@ from torchio import Compose, transforms
 from torchio import Transform as TorchioTransform
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
+from clinicadl.utils.dictionary.words import NAME_
 
 from .enum import AnatomicalLabel
 
@@ -35,7 +36,7 @@ class TransformConfig(ObjectConfig["Transform"]):
     def get_object(self, **kwargs: Any) -> Transform:
         associated_class = self._get_class()
         return associated_class(
-            **self.to_dict(exclude=["name"])
+            **self.to_dict(exclude=[NAME_])
         )  # to_dict to have the alias here
 
     @model_validator(mode="after")

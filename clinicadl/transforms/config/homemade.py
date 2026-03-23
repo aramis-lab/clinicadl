@@ -2,6 +2,7 @@ from typing import Optional, Sequence, Union
 
 from pydantic import Field, NonNegativeInt
 
+from clinicadl.utils.dictionary.words import NAME_
 from clinicadl.utils.dtype import DtypeLike, read_dtype
 from clinicadl.utils.factories import get_defaults_from
 
@@ -47,4 +48,4 @@ class MergeFieldsConfig(TransformConfig):
         return MergeFields
 
     def get_object(self, **kwargs):
-        return MergeFields(*self.keys, **self.to_dict(exclude=["name", "keys"]))
+        return MergeFields(*self.keys, **self.to_dict(exclude=[NAME_, "keys"]))

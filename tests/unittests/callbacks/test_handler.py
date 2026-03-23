@@ -308,5 +308,5 @@ def test_serialize_deserialize(tmp_path):
     assert isinstance(cb_handler.callbacks[2], EarlyStoppingCallback)
     assert cb_handler.callbacks[2].config.stoppers[0].metric == "loss"
     assert len(config["callbacks"]) == 2
-    assert config["callbacks"][0]["name"] == "EarlyStoppingCallback"
-    assert config["callbacks"][1]["name"] == "LoggerCallback"
+    assert config["callbacks"][0]["name_"] == "EarlyStoppingCallback"
+    assert config["callbacks"][1]["name_"] == "LoggerCallback"

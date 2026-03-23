@@ -181,7 +181,7 @@ def test_get_object(config, expected_class, network):
     assert isinstance(optimizer, expected_class)
     assert len(optimizer.param_groups) == 1
 
-    if c.name == "Adagrad":
+    if c.name_ == "Adagrad":
         # test arguments
         c = AdagradConfig(
             lr=1e-5,
@@ -270,4 +270,4 @@ def test_name():
     for name in ImplementedOptimizer:
         config = globals()[f"{name.value}Config"]
         c = config()
-        assert c.name == name.value
+        assert c.name_ == name.value

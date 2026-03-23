@@ -348,14 +348,14 @@ def test_describe(tmp_path):
         ("sub-010", "ses-M012"),
     ]
     assert description["datatype"] == {
-        "name": "T1Linear",
+        "name_": "T1Linear",
         "pattern": "t1_linear/sub-.*_ses-.*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.*",
         "key": "t1-linear",
         "description": "T1w images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline",
         "use_uncropped_image": True,
     }
     assert description["extraction"] == {
-        "name": "Slice",
+        "name_": "Slice",
         "borders": None,
         "discarded_slices": None,
         "slice_direction": 0,

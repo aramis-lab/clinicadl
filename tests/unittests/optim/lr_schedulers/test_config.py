@@ -281,7 +281,7 @@ def test_get_object(args, config, expected_class, optimizer, network):
     scheduler = c.get_object(optimizer)
     assert isinstance(scheduler, expected_class)
 
-    if c.name == "OneCycleLR":
+    if c.name_ == "OneCycleLR":
         with pytest.raises(
             ValueError,
             match=r"^There are 3 parameter groups in the optimizer, but 2 groups in the OneCycleLR for parameter 'max_lr'. Make sure that the parameter groups match between your optimizer and LR scheduler!$",
@@ -316,7 +316,7 @@ def test_get_object(args, config, expected_class, optimizer, network):
                 cycle_momentum=True,
             ).get_object(optim.Adagrad(network.parameters()))
 
-    if c.name == "ReduceLROnPlateau":
+    if c.name_ == "ReduceLROnPlateau":
         # check consistency between optimizer and lr scheduler configs
         from clinicadl.optim.optimizers.config import AdamConfig
 
@@ -341,7 +341,7 @@ def test_name():
     for name in ImplementedLRScheduler:
         config = globals()[f"{name.value}Config"]
     c = config(**MANDATORY_FIELDS)
-    assert c.name == name.value
+    assert c.name_ == name.value
 
 
 @pytest.mark.parametrize(

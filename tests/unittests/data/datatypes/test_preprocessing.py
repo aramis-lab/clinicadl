@@ -14,8 +14,8 @@ from clinicadl.data.datatypes.preprocessing import (
 
 def test_flair():
     flair_data = FlairLinear(use_uncropped_image=True)
-    assert flair_data.key == "flair-linear"
-    assert flair_data.name == "FlairLinear"
+    assert flair_data.name == "flair-linear"
+    assert flair_data.name_ == "FlairLinear"
     assert flair_data.pattern == re.compile(
         os.path.join(
             "flair_linear",
@@ -31,7 +31,7 @@ def test_flair():
 
 def test_t1():
     t1w_data = T1Linear()
-    assert t1w_data.key == "t1-linear"
+    assert t1w_data.name == "t1-linear"
     assert t1w_data.pattern == re.compile(
         os.path.join(
             "t1_linear",
@@ -49,7 +49,7 @@ def test_pet():
     pet_data = PETLinear(tracer="18FFDG", suvr_reference_region="cerebellumPons2")
     assert pet_data.tracer == "18FFDG"
     assert pet_data.suvr_reference_region == "cerebellumPons2"
-    assert pet_data.key == "pet-linear"
+    assert pet_data.name == "pet-linear"
     assert pet_data.pattern == re.compile(
         os.path.join(
             "pet_linear",
@@ -84,7 +84,7 @@ def test_pet():
 
 def test_dwi():
     dwi_data = DWIDTI(measure="FA", space="normalized")
-    assert dwi_data.key == "dwi-dti"
+    assert dwi_data.name == "dwi-dti"
     assert dwi_data.measure == "FA"
     assert dwi_data.space == "normalized"
     assert dwi_data.pattern == re.compile(

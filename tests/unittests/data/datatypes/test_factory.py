@@ -12,7 +12,7 @@ from clinicadl.utils.json import read_json
         ({}, FlairLinear),
         ({"tracer": "18FFDG", "suvr_reference_region": "pons2"}, PETLinear),
         ({"measure": "AD", "space": "native"}, DWIDTI),
-        ({"pattern": ".*.nii", "key": "anything"}, DataType),
+        ({"pattern": ".*.nii", "name": "anything"}, DataType),
     ],
 )
 def test_get_datatype_from_dict(args, datatype, tmp_path):
@@ -25,4 +25,4 @@ def test_get_datatype_from_dict(args, datatype, tmp_path):
     if datatype is DataType:
         c = datatype.from_folder_and_suffix(folder="abc", suffix="bcd")
         new_c = get_datatype_from_dict(c.to_dict())
-        assert c.key == "bcd"
+        assert c.name == "bcd"

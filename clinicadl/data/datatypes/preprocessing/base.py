@@ -16,14 +16,14 @@ class Preprocessing(DataType, abc.ABC):
     """
 
     pattern: Optional[Union[str, Pattern]] = None  # None is only for initialization
-    key: Optional[str] = None
+    name: Optional[str] = None
 
     @model_validator(mode="after")
     def _init_pattern_and_description(self) -> Self:
         """Computes the field values, AFTER initialization."""
         self.__dict__["pattern"] = self._get_pattern()
         self.__dict__["description"] = self._get_description()
-        self.__dict__["key"] = self._pipeline_name
+        self.__dict__["name"] = self._pipeline_name
 
         return self
 

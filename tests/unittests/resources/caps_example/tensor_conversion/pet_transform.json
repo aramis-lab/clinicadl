@@ -1,7 +1,7 @@
 {
     "conversion_name": "pet_transform",
     "datatype": {
-        "name": "PETLinear",
+        "name_": "PETLinear",
         "pattern": "pet_linear/sub-.*_ses-.*_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.*",
         "key": "pet-linear",
         "description": "PET images with tracer '18FAV45', registered to MNI152NLin2009cSym space using Clinica's 'pet-linear' pipeline with SUVR reference region 'pons2'",
@@ -15,7 +15,7 @@
     "also": {},
     "transforms": [
         {
-            "name": "RescaleIntensity",
+            "name_": "RescaleIntensity",
             "include": null,
             "exclude": null,
             "copy": false,
@@ -31,7 +31,7 @@
             "in_min_max": null
         },
         {
-            "name": "Clamp",
+            "name_": "Clamp",
             "include": null,
             "exclude": null,
             "copy": false,

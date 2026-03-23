@@ -9,26 +9,26 @@ from clinicadl.data.datatypes import DataType
 
 def test_datatype(tmp_path):
     data_type = DataType(
-        pattern=".*/abc_.*", key="my_datatype", description="A description"
+        pattern=".*/abc_.*", name="my_datatype", description="A description"
     )
     assert data_type.pattern == re.compile(".*/abc_.*")
-    assert data_type.key == "my_datatype"
-    assert data_type.name == "DataType"
+    assert data_type.name == "my_datatype"
+    assert data_type.name_ == "DataType"
     assert data_type.description == "A description"
     assert data_type.json_filename == "default_my_datatype.json"
     assert data_type.tsv_filename == "overview_my_datatype.tsv"
 
-    data_type = DataType(pattern="abc", key="abc")
+    data_type = DataType(pattern="abc", name="abc")
     assert data_type.pattern == re.compile("abc")
 
     with pytest.raises(ValidationError):
-        DataType(pattern="abc", key="abc d")
+        DataType(pattern="abc", name="abc d")
 
     data_type = DataType.from_folder_and_suffix(
         "my_folder", suffix="example", description="A description"
     )
     assert data_type.pattern == re.compile("my_folder/sub-.*_ses-.*_example.nii.*")
-    assert data_type.key == "example"
+    assert data_type.name == "example"
     assert data_type.description == "A description"
     assert data_type.json_filename == "default_example.json"
     assert data_type.tsv_filename == "overview_example.tsv"
@@ -44,7 +44,7 @@ def test_datatype(tmp_path):
 
     # json
     data_type = DataType(
-        pattern=".*/abc_.*", key="my_datatype", description="A description"
+        pattern=".*/abc_.*", name="my_datatype", description="A description"
     )
     with open(tmp_path / "datatype.json", "w") as f:
         json.dump(data_type.to_dict(), f)
@@ -55,16 +55,16 @@ def test_datatype(tmp_path):
 
     # equality
     data_type_1 = DataType(
-        pattern=".*/abc_.*", key="my_datatype", description="A description"
+        pattern=".*/abc_.*", name="my_datatype", description="A description"
     )
 
     class DataTypeChild(DataType):
         pass
 
     data_type_2 = DataTypeChild(
-        pattern=".*/abc_.*", key="my_data", description="Another description"
+        pattern=".*/abc_.*", name="my_data", description="Another description"
     )
     assert not data_type_1 == data_type_2
-    data_type_2.key = "my_datatype"
+    data_type_2.name = "my_datatype"
     assert data_type_1 == data_type_2
     assert not data_type_1 == 0

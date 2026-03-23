@@ -65,7 +65,7 @@ def test_dataset_from_dict(dataset):
     assert isinstance(d, dataset)
 
     if dataset is CapsDataset:
-        assert d.config.datatype.key == "t1-linear"
+        assert d.config.datatype.name == "t1-linear"
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ def test_dataset_from_json(tmp_path, dataset):
     assert isinstance(d, dataset)
 
     if dataset is CapsDataset:
-        assert d.config.datatype.key == "t1-linear"
+        assert d.config.datatype.name == "t1-linear"
 
 
 def test_dataset_from_json_safely(tmp_path):
