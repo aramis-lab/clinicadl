@@ -1,0 +1,24 @@
+{
+    "source": "caps and bids",
+    "individual_masks": ["brain", "seg"],
+    "common_masks": ["leftHippocampus.nii.gz"],
+    "also": {
+        "other_image": "image",
+        "other_mask": "mask",
+        "coefficient": "other"
+    },
+    "transforms": [
+        "Reampling", "CropOrPad",
+    ],
+    "spacing": [
+        1,
+        1,
+        1
+    ],
+    "shape": [
+        1,
+        2,
+        2,
+        2
+    ]
+}

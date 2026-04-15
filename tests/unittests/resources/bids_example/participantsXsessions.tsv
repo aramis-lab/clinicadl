@@ -1,0 +1,9 @@
+participant_id	session_id	age	diagnosis	category
+sub-000	ses-M000	1	CN	A
+sub-000	ses-M003	1	AD	B
+sub-010	ses-M003	2	AD	C
+sub-010	ses-M012	2	CN	D
+sub-100	ses-M000	3	AD	E
+sub-100	ses-M012	3	CN	F
+sub-999	ses-M099	4	MCI	A
+sub-999	ses-M999	4	CN	B

@@ -1,0 +1,29 @@
+{
+    "Name": "Conversions to tensors",
+    "BIDSVersion": "1.11.0",
+    "DatasetType": "derivative",
+    "GeneratedBy": [
+        {
+            "Name": "ClinicaDL",
+            "Version": "2.0.0",
+            "CodeURL": "https://github.com/aramis-lab/clinicadl/releases/tag/v<release>"
+        }
+    ],
+    "DatasetLinks": {
+        "raw": "file:///<path>/bids_example",
+        "derivative": "file:///<path>/bids_example/derivatives/masks",
+        "derivative1": "file:///<path>/bids_example/derivatives/resampling",
+        "caps": "file:///<path>/bids_example/derivatives/caps_example"
+    },
+    "SourceDatasets": [
+        {
+            "URL": "file:///<path>/bids_example"
+        },
+        {
+            "URL": "file:///<path>/bids_example/derivatives/caps_example"
+        },
+        {
+            "URL": "file:///<path>/bids_example/derivatives/derivative_example"
+        }
+    ]
+}

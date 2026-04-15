@@ -1,0 +1,14 @@
+{
+    "source": "bids",
+    "individual_masks": [],
+    "common_masks": [],
+    "also": {},
+    "transforms": [],
+    "spacing": null,
+    "shape": [
+        1,
+        1,
+        1,
+        1
+    ]
+}
