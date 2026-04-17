@@ -89,6 +89,8 @@ extlinks = {
     "monai": ("https://docs.monai.io/en/stable/%s", None),
     "github": ("https://github.com/aramis-lab/clinicadl/%s", None),
     "wikipedia": ("https://en.wikipedia.org/wiki/%s", None),
+    "bids": ("https://bids-specification.readthedocs.io/en/stable/%s", None),
+    "clinica": ("https://aramislab.paris.inria.fr/clinica/docs/public/latest/%s", None),
 }
 language = "en"
 # pygments_style = "friendly"
