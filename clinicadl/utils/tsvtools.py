@@ -1,5 +1,7 @@
 from pathlib import Path
+from typing import Iterable
 
+import numpy as np
 import pandas as pd
 
 from clinicadl.utils.dictionary.words import (
@@ -118,3 +120,31 @@ def _check_df(
                 f"The dataframe contains duplicated (participant, session) pairs:\n"
                 f"{duplicated_pairs}"
             )
+
+
+def create_participants_sessions_df(
+    participants_sessions: Iterable[tuple[str, str]],
+) -> pd.DataFrame:
+    """
+    To create a :py:class:`pandas.Dataframe` with two columns named
+    ``"participant_id"`` and ``"session_id"`` with the input participant
+    and session ids.
+
+    Parameters
+    ----------
+    participants_sessions : Iterable[tuple[str, str]]
+        The (participant id, session id) couples.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The output DataFrame.
+    """
+    return (
+        pd.DataFrame(
+            np.array(list(participants_sessions)),
+            columns=[PARTICIPANT_ID, SESSION_ID],
+        )
+        .sort_values([PARTICIPANT_ID, SESSION_ID])
+        .reset_index(drop=True)
+    )
