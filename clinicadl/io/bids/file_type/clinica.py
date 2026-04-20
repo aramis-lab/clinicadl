@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+import os
 from enum import Enum
 from typing import Optional
 
@@ -42,14 +42,18 @@ class T1Linear(BidsFileType):
             use_uncropped_image=use_uncropped_image,
         )
 
+        without_entities = {}
         if not use_uncropped_image:
             entities["desc"] = CROP
+        else:
+            without_entities["desc"] = CROP
 
         super().__init__(
             datatype="t1_linear",
             suffix="T1w",
             with_entities=entities,
             description=description,
+            without_entities=without_entities,
         )
 
 
@@ -85,14 +89,18 @@ class FlairLinear(BidsFileType):
             use_uncropped_image=use_uncropped_image,
         )
 
+        without_entities = {}
         if not use_uncropped_image:
             entities["desc"] = CROP
+        else:
+            without_entities["desc"] = CROP
 
         super().__init__(
             datatype="flair_linear",
             suffix="FLAIR",
             with_entities=entities,
             description=description,
+            without_entities=without_entities,
         )
 
 
@@ -200,8 +208,12 @@ class PetLinear(BidsFileType):
             "suvr": suvr,
         }
 
+        without_entities = {}
         if not use_uncropped_image:
             entities["desc"] = CROP
+        else:
+            without_entities["desc"] = CROP
+
         if reconstruction:
             entities["rec"] = reconstruction
 
@@ -219,6 +231,7 @@ class PetLinear(BidsFileType):
             suffix="pet",
             with_entities=entities,
             description=description,
+            without_entities=without_entities,
         )
 
 
@@ -255,7 +268,7 @@ class DwiDti(BidsFileType):
         Either ``native`` (the data in the native space) or ``normalized`` (the data in
         MNI152Lin standard space):\n
         - with ``native``: only the files that match the pattern
-          ``dwi/dti_based_processing/native_space/sub-*_ses-*_space-*_{measure}.nii*``
+          ``dwi/dti_based_processing/native_space/sub-*_ses-*_space-{b0|T1w}_{measure}.nii*``
           will be selected.
         - with ``normalized``: only the files that match the pattern
           ``dwi/dti_based_processing/normalized_space/sub-*_ses-*_space-MNI152Lin_{measure}.nii*``
@@ -272,15 +285,15 @@ class DwiDti(BidsFileType):
 
         if space == DTISpace.NORMALIZED:
             datatype = "normalized_space"
-            space = "MNI152Lin"
+            with_entities = {"space": "MNI152Lin", "res": "1x1x1"}
         else:
             datatype = "native_space"
-            space = ".*"
+            with_entities = {"space": r"\b(b0|T1w)\b"}
 
         super().__init__(
-            datatype=datatype,
+            datatype=os.path.join("dwi", "dti_based_processing", datatype),
             suffix=measure,
-            with_entities={"space": space},
+            with_entities=with_entities,
             description=f"DTI {measure} images in {space} space, preprocessed with Clinica's 'dwi-dti' pipeline.",
         )
 

@@ -84,6 +84,9 @@ class BidsFileType(ClinicaDLConfig):
         Checks whether the input path matches the current ``BidsFileType`` for the
         specified (participant, session) pair.
 
+        The path must be relative to the participant-session folder (i.e., ``anat/sub-001_ses-M001_T1w.nii.gz``
+        and not ``bids/sub-001/ses-M001/anat/sub-001_ses-M001_T1w.nii.gz``).
+
         Parameters
         ----------
         path : str | Path
@@ -101,7 +104,7 @@ class BidsFileType(ClinicaDLConfig):
         """
         path = Path(path)
 
-        if not self.datatype.fullmatch(path.parent.name):
+        if not self.datatype.fullmatch(str(path.parent)):
             return False
 
         if self.extension is not None:
@@ -160,7 +163,7 @@ class BidsFileType(ClinicaDLConfig):
         for entity in entities:
             if "-" not in entity:
                 raise ValueError(
-                    f"An entity in a BIDS file must be of the form 'key-value'. Got {entity} in {filename}"
+                    f"An entity in a BIDS file must be of the form 'key-value'. Got '{entity}' in '{filename}'"
                 )
             key, _, value = entity.partition("-")
             entities_dict[key] = value

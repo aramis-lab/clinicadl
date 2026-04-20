@@ -1,3 +1,4 @@
+import os
 import re
 from pathlib import Path
 
@@ -12,7 +13,7 @@ class TestBidsFileType:
         "path,match",
         [
             ("anat/sub-000_ses-M000_pet.nii.gz", True),
-            (Path("ses-M000/anat/sub-000_ses-M000_trc-abc_pet.nii"), True),
+            (Path("anat/sub-000_ses-M000_trc-abc_pet.nii"), True),
             ("anato/sub-000_ses-M000_pet.nii.gz", False),
             ("anat/sub-000_ses-M000_petscan.nii.gz", False),
             ("anat/sub-000_ses-M000_pet.dicom", False),
@@ -51,22 +52,38 @@ class TestBidsFileType:
     @pytest.mark.parametrize(
         "path,match",
         [
-            ("anat/sub-000_ses-M000_trc-FDG_pet.nii.gz", True),
-            ("anat/sub-000_ses-M000_trc-FDG_space-MNI_pet.nii.gz", True),
-            ("anat/sub-000_ses-M000_res-2x2x2_run-2_trc-FDG_pet.nii.gz", True),
-            ("anat/sub-000_ses-M000_trc-FDG_res-1x2x2_pet.nii.gz", False),
-            ("anat/sub-000_ses-M000_trc-FDG_res-2x2x2_run-1_pet.nii.gz", False),
+            ("mri/anat/sub-000_ses-M000_trc-FDG_pet.nii.gz", True),
+            ("mri/anat/sub-000_ses-M000_trc-FDG_space-MNI_pet.nii.gz", True),
+            ("mri/anat/sub-000_ses-M000_res-2x2x2_run-2_trc-FDG_pet.nii.gz", True),
+            ("anat/sub-000_ses-M000_trc-FDG_pet.nii.gz", False),
+            ("mri/anat/sub-000_ses-M000_trc-FDG_res-1x2x2_pet.nii.gz", False),
+            ("mri/anat/sub-000_ses-M000_trc-FDG_res-2x2x2_run-1_pet.nii.gz", False),
         ],
     )
     def test_3(self, path, match):
         file_type = BidsFileType(
-            datatype="anat",
+            datatype="mri/anat",
             suffix="pet",
             extension=".nii.gz",
             with_entities={"trc": "FDG"},
             without_entities={"res": "1x.*", "run": "1"},
         )
         assert file_type.match(path, participant="000", session="M000") == match
+
+    def test_error(self):
+        file_type = BidsFileType(
+            datatype="pet",
+            suffix="pet",
+            extension=".nii.gz",
+            with_entities={"trc": "FDG"},
+        )
+        with pytest.raises(
+            ValueError,
+            match="An entity in a BIDS file must be of the form 'key-value'. Got 'FDG' in 'sub-000_ses-M000_FDG_pet.nii.gz'",
+        ):
+            file_type.match(
+                "pet/sub-000_ses-M000_FDG_pet.nii.gz", participant="000", session="M000"
+            )
 
     @pytest.mark.parametrize(
         "file_type",
@@ -114,16 +131,42 @@ class TestClinicaPipelines:
             "space": re.compile("MNI152NLin2009cSym"),
             "res": re.compile("1x1x1"),
         }
-        assert flair_data.without_entities is None
+        assert flair_data.without_entities == {"desc": re.compile("Crop")}
         assert flair_data.match(
             Path("flair_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_FLAIR.nii",
             participant="000",
             session="M000",
         )
+        assert not flair_data.match(
+            Path("flair_linear")
+            / "sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_FLAIR.nii",
+            participant="000",
+            session="M000",
+        )
         assert (
             flair_data.description
             == "FLAIR images registered to MNI152NLin2009cSym space using Clinica's 'flair-linear' pipeline."
+        )
+
+        flair_data = FlairLinear()
+        assert flair_data.with_entities == {
+            "space": re.compile("MNI152NLin2009cSym"),
+            "res": re.compile("1x1x1"),
+            "desc": re.compile("Crop"),
+        }
+        assert not flair_data.without_entities
+        assert flair_data.match(
+            Path("flair_linear")
+            / "sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_FLAIR.nii",
+            participant="000",
+            session="M000",
+        )
+        assert not flair_data.match(
+            Path("flair_linear")
+            / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_FLAIR.nii",
+            participant="000",
+            session="M000",
         )
 
     def test_t1(self):
@@ -136,16 +179,41 @@ class TestClinicaPipelines:
             "res": re.compile("1x1x1"),
             "desc": re.compile("Crop"),
         }
-        assert t1w_data.without_entities is None
+        assert not t1w_data.without_entities
         assert t1w_data.match(
             Path("t1_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii",
             participant="000",
             session="M000",
         )
+        assert not t1w_data.match(
+            Path("t1_linear")
+            / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii",
+            participant="000",
+            session="M000",
+        )
         assert t1w_data.description == (
             "T1 weighted images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline, "
             "and cropped (matrix size 169×208×179, 1 mm isotropic voxels)."
+        )
+
+        t1w_data = T1Linear(use_uncropped_image=True)
+        assert t1w_data.with_entities == {
+            "space": re.compile("MNI152NLin2009cSym"),
+            "res": re.compile("1x1x1"),
+        }
+        assert t1w_data.without_entities == {"desc": re.compile("Crop")}
+        assert t1w_data.match(
+            Path("t1_linear")
+            / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii",
+            participant="000",
+            session="M000",
+        )
+        assert not t1w_data.match(
+            Path("t1_linear")
+            / "sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii",
+            participant="000",
+            session="M000",
         )
 
     def test_pet(self):
@@ -160,10 +228,16 @@ class TestClinicaPipelines:
             "suvr": re.compile("cerebellumPons2"),
             "desc": re.compile("Crop"),
         }
-        assert pet_data.without_entities is None
+        assert not pet_data.without_entities
         assert pet_data.match(
             Path("pet_linear")
             / "sub-000_ses-M000_trc-18FFDG_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-cerebellumPons2_pet.nii",
+            participant="000",
+            session="M000",
+        )
+        assert not pet_data.match(
+            Path("pet_linear")
+            / "sub-000_ses-M000_trc-18FFDG_space-MNI152NLin2009cSym_res-1x1x1_suvr-cerebellumPons2_pet.nii",
             participant="000",
             session="M000",
         )
@@ -186,9 +260,16 @@ class TestClinicaPipelines:
             "suvr": re.compile("pons2"),
             "rec": re.compile("nacstat"),
         }
+        assert pet_data.without_entities == {"desc": re.compile("Crop")}
         assert pet_data.match(
             Path("pet_linear")
             / "sub-000_ses-M000_trc-18FFDG_rec-nacstat_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii",
+            participant="000",
+            session="M000",
+        )
+        assert not pet_data.match(
+            Path("pet_linear")
+            / "sub-000_ses-M000_trc-18FFDG_rec-nacstat_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.nii",
             participant="000",
             session="M000",
         )
@@ -197,38 +278,59 @@ class TestClinicaPipelines:
             "using Clinica's 'pet-linear' pipeline with SUVR reference region 'pons2'."
         )
 
-    # def test_dwi():
-    #     dwi_data = DwiDti(measure="FA", space="normalized")
-    #     assert dwi_data.datatype == re.compile("")
-    #     assert dwi_data.suffix == re.compile("FA")
-    #     assert dwi_data.extension == re.compile(".nii.*")
-    #     assert dwi_data.with_entities == {"space": re.compile(".nii.*"), "res": re.compile("1x1x1")}
-    #     assert dwi_data.without_entities is None
-    #     assert dwi_data.pattern == re.compile(
-    #         os.path.join(
-    #             "dwi",
-    #             "dti_based_processing",
-    #             "normalized_space",
-    #             "sub-.*_ses-.*_space-MNI152Lin_FA.nii.*",
-    #         )
-    #     )
-    #     assert (
-    #         dwi_data.description
-    #         == "DTI FA images in normalized space, preprocessed with Clinica's 'dwi-dti' pipeline"
-    #     )
+    def test_dwi(self):
+        dwi_data = DwiDti(measure="FA", space="normalized")
+        assert dwi_data.datatype == re.compile(
+            "dwi/dti_based_processing/normalized_space"
+        )
+        assert dwi_data.suffix == re.compile("FA")
+        assert dwi_data.extension == re.compile(".nii.*")
+        assert dwi_data.with_entities == {
+            "space": re.compile("MNI152Lin"),
+            "res": re.compile("1x1x1"),
+        }
+        assert dwi_data.without_entities is None
+        assert dwi_data.match(
+            os.path.join(
+                "dwi",
+                "dti_based_processing",
+                "normalized_space",
+                "sub-000_ses-M000_space-MNI152Lin_res-1x1x1_FA.nii",
+            ),
+            participant="000",
+            session="M000",
+        )
+        assert (
+            dwi_data.description
+            == "DTI FA images in normalized space, preprocessed with Clinica's 'dwi-dti' pipeline."
+        )
 
-    #     dwi_data.measure = "MD"
-    #     dwi_data.space = "native"
-    #     assert dwi_data.pattern == re.compile(
-    #         os.path.join(
-    #             "dwi",
-    #             "dti_based_processing",
-    #             "native_space",
-    #             "sub-.*_ses-.*_space-.*_MD.nii.*",
-    #         )
-    #     )
-    #     assert (
-    #         dwi_data.description
-    #         == "DTI MD images in native space, preprocessed with Clinica's 'dwi-dti' pipeline"
-    #     )
-    #     assert dwi_data.tsv_filename == "overview_dwi-dti_MD_native.tsv"
+        dwi_data = DwiDti(measure="MD", space="native")
+        assert dwi_data.datatype == re.compile("dwi/dti_based_processing/native_space")
+        assert dwi_data.with_entities == {
+            "space": re.compile(r"\b(b0|T1w)\b"),
+        }
+        assert dwi_data.match(
+            os.path.join(
+                "dwi",
+                "dti_based_processing",
+                "native_space",
+                "sub-000_ses-M000_space-b0_MD.nii",
+            ),
+            participant="000",
+            session="M000",
+        )
+        assert dwi_data.match(
+            os.path.join(
+                "dwi",
+                "dti_based_processing",
+                "native_space",
+                "sub-000_ses-M000_space-T1w_MD.nii",
+            ),
+            participant="000",
+            session="M000",
+        )
+        assert (
+            dwi_data.description
+            == "DTI MD images in native space, preprocessed with Clinica's 'dwi-dti' pipeline."
+        )
