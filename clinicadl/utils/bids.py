@@ -22,7 +22,6 @@ class BidsEntity(str):
             )
         self.key, _, self.value = entity.partition("-")
         assert self.key.isalnum(), f"They key of a BIDS entity must be an alphanumeric string. Got: '{self.key}'"
-        assert self.value.isalnum(), f"They value of a BIDS entity must be an alphanumeric string or an int. Got: '{self.value}'"
 
     @classmethod
     def from_key_value(cls, key: str, value: str | int) -> Self:

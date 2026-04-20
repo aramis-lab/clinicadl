@@ -16,11 +16,6 @@ def test_bids_entity():
         match="They key of a BIDS entity must be an alphanumeric string. Got: 'radio_trc'",
     ):
         BidsEntity("radio_trc-18FFDG")
-    with pytest.raises(
-        AssertionError,
-        match="They value of a BIDS entity must be an alphanumeric string or an int. Got: '18_FFDG'",
-    ):
-        BidsEntity("trc-18_FFDG")
     tracer = BidsEntity("trc-18FFDG")
     assert tracer.key == "trc"
     assert tracer.value == "18FFDG"
