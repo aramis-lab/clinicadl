@@ -28,7 +28,7 @@ class Tensor(BidsFileType):
         entities = entities or {}
         entities[CONVERSION] = conversion_name
         super().__init__(
-            datatype="tensors",
+            data_type="tensors",
             suffix="tensors",
             extension=".pt",
             with_entities=entities,

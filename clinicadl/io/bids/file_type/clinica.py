@@ -49,7 +49,7 @@ class T1Linear(BidsFileType):
             without_entities["desc"] = CROP
 
         super().__init__(
-            datatype="t1_linear",
+            data_type="t1_linear",
             suffix="T1w",
             with_entities=entities,
             description=description,
@@ -96,7 +96,7 @@ class FlairLinear(BidsFileType):
             without_entities["desc"] = CROP
 
         super().__init__(
-            datatype="flair_linear",
+            data_type="flair_linear",
             suffix="FLAIR",
             with_entities=entities,
             description=description,
@@ -227,7 +227,7 @@ class PetLinear(BidsFileType):
         )
 
         super().__init__(
-            datatype="pet_linear",
+            data_type="pet_linear",
             suffix="pet",
             with_entities=entities,
             description=description,
@@ -284,14 +284,14 @@ class DwiDti(BidsFileType):
         measure = DTIMeasure(measure).value
 
         if space == DTISpace.NORMALIZED:
-            datatype = "normalized_space"
+            data_type = "normalized_space"
             with_entities = {"space": "MNI152Lin", "res": "1x1x1"}
         else:
-            datatype = "native_space"
+            data_type = "native_space"
             with_entities = {"space": r"\b(b0|T1w)\b"}
 
         super().__init__(
-            datatype=os.path.join("dwi", "dti_based_processing", datatype),
+            data_type=os.path.join("dwi", "dti_based_processing", data_type),
             suffix=measure,
             with_entities=with_entities,
             description=f"DTI {measure} images in {space} space, preprocessed with Clinica's 'dwi-dti' pipeline.",

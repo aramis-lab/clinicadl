@@ -20,7 +20,7 @@ class BidsFileType(ClinicaDLConfig):
 
     Parameters
     ----------
-    datatype : str | Pattern
+    data_type : str | Pattern
         The :bids:`BIDS data type <common-principles.html#definitions>`, which is the folder
         where the relevant files are stored. Regular expressions are accepted.
 
@@ -52,7 +52,7 @@ class BidsFileType(ClinicaDLConfig):
     .. code-block::
 
         BidsFileType(
-            datatype="anat",
+            data_type="anat",
             suffix="T1w",
             extension=".nii.gz",
             with_entities={"space": "MNI152.*", "res": "1x1x1"},
@@ -73,7 +73,7 @@ class BidsFileType(ClinicaDLConfig):
         #   bids/sub-000/ses-M000/anat/sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz
     """
 
-    datatype: Pattern
+    data_type: Pattern
     suffix: Pattern
     extension: Pattern = re.compile(".nii.*")
     with_entities: Optional[dict[AlphanumericStr, Pattern]] = None
@@ -107,7 +107,7 @@ class BidsFileType(ClinicaDLConfig):
         sub = Subject(participant)
         ses = Session(session)
 
-        if not self.datatype.fullmatch(str(path.parent)):
+        if not self.data_type.fullmatch(str(path.parent)):
             return False
 
         if self.extension is not None:
@@ -166,7 +166,7 @@ class BidsFileType(ClinicaDLConfig):
 
         return {entity.key: entity.value for entity in entities}
 
-    @field_serializer("datatype", "suffix", "extension")
+    @field_serializer("data_type", "suffix", "extension")
     def _serialize_pattern(self, pattern: Pattern) -> str:
         """
         Serializes a pattern.
