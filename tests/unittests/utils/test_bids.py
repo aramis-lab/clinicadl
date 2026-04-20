@@ -25,6 +25,10 @@ def test_bids_entity():
     assert tracer.key == "trc"
     assert tracer.value == "18FFDG"
 
+    tracer = BidsEntity.from_key_value(key="trc", value=0)
+    assert tracer.key == "trc"
+    assert tracer.value == "0"
+
 
 def test_subject():
     with pytest.raises(
@@ -35,6 +39,10 @@ def test_subject():
     ):
         Subject("Sub-001")
     sub = Subject("sub-001")
+    assert sub.key == "sub"
+    assert sub.value == "001"
+
+    sub = Subject.from_value("001")
     assert sub.key == "sub"
     assert sub.value == "001"
 
@@ -50,3 +58,7 @@ def test_session():
     sub = Session("ses-M000")
     assert sub.key == "ses"
     assert sub.value == "M000"
+
+    ses = Session.from_value("M000")
+    assert ses.key == "ses"
+    assert ses.value == "M000"
