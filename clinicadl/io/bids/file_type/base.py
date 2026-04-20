@@ -6,6 +6,7 @@ from typing import Annotated, Optional, Pattern
 
 from pydantic import StringConstraints, field_serializer
 
+from clinicadl.utils.bids import BidsEntity, Session, Subject
 from clinicadl.utils.config import ClinicaDLConfig
 
 AlphanumericStr = Annotated[
@@ -92,9 +93,9 @@ class BidsFileType(ClinicaDLConfig):
         path : str | Path
             The path to test.
         participant : str
-            The participant id (e.g., "x", not "sub-x").
+            The participant id (e.g., "sub-xxx").
         session : str
-            The session id (e.g., "x", not "ses-x").
+            The session id (e.g., "ses-xxx").
 
         Returns
         -------
@@ -103,6 +104,8 @@ class BidsFileType(ClinicaDLConfig):
             matches the specifications defined in the current ``BidsFileType``.
         """
         path = Path(path)
+        sub = Subject(participant)
+        ses = Session(session)
 
         if not self.datatype.fullmatch(str(path.parent)):
             return False
@@ -126,9 +129,9 @@ class BidsFileType(ClinicaDLConfig):
                     return False
 
         with_entities = self.with_entities or {}
-        with_entities["sub"], with_entities["ses"] = (
-            re.compile(participant),
-            re.compile(session),
+        with_entities[sub.key], with_entities[ses.key] = (
+            re.compile(sub.value),
+            re.compile(ses.value),
         )
         for key, value in with_entities.items():
             if key not in entities:
@@ -159,16 +162,9 @@ class BidsFileType(ClinicaDLConfig):
         Gets all the (key, value) entities from a filename.
         """
         entities = filename.partition(".")[0].split("_")[:-1]
-        entities_dict = dict()
-        for entity in entities:
-            if "-" not in entity:
-                raise ValueError(
-                    f"An entity in a BIDS file must be of the form 'key-value'. Got '{entity}' in '{filename}'"
-                )
-            key, _, value = entity.partition("-")
-            entities_dict[key] = value
+        entities = [BidsEntity(entity) for entity in entities]
 
-        return entities_dict
+        return {entity.key: entity.value for entity in entities}
 
     @field_serializer("datatype", "suffix", "extension")
     def _serialize_pattern(self, pattern: Pattern) -> str:

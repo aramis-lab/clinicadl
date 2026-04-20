@@ -26,7 +26,7 @@ class TestBidsFileType:
     )
     def test_1(self, path, match):
         file_type = BidsFileType(datatype="anat", suffix="pet")
-        assert file_type.match(path, participant="000", session="M000") == match
+        assert file_type.match(path, participant="sub-000", session="ses-M000") == match
 
     @pytest.mark.parametrize(
         "path,match",
@@ -47,7 +47,7 @@ class TestBidsFileType:
             extension=".nii.gz",
             with_entities={"trc": "FDG", "res": "1x.*"},
         )
-        assert file_type.match(path, participant="000", session="M000") == match
+        assert file_type.match(path, participant="sub-000", session="ses-M000") == match
 
     @pytest.mark.parametrize(
         "path,match",
@@ -68,22 +68,7 @@ class TestBidsFileType:
             with_entities={"trc": "FDG"},
             without_entities={"res": "1x.*", "run": "1"},
         )
-        assert file_type.match(path, participant="000", session="M000") == match
-
-    def test_error(self):
-        file_type = BidsFileType(
-            datatype="pet",
-            suffix="pet",
-            extension=".nii.gz",
-            with_entities={"trc": "FDG"},
-        )
-        with pytest.raises(
-            ValueError,
-            match="An entity in a BIDS file must be of the form 'key-value'. Got 'FDG' in 'sub-000_ses-M000_FDG_pet.nii.gz'",
-        ):
-            file_type.match(
-                "pet/sub-000_ses-M000_FDG_pet.nii.gz", participant="000", session="M000"
-            )
+        assert file_type.match(path, participant="sub-000", session="ses-M000") == match
 
     @pytest.mark.parametrize(
         "file_type",
@@ -135,14 +120,14 @@ class TestClinicaPipelines:
         assert flair_data.match(
             Path("flair_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_FLAIR.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert not flair_data.match(
             Path("flair_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_FLAIR.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert (
             flair_data.description
@@ -159,14 +144,14 @@ class TestClinicaPipelines:
         assert flair_data.match(
             Path("flair_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_FLAIR.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert not flair_data.match(
             Path("flair_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_FLAIR.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
 
     def test_t1(self):
@@ -183,14 +168,14 @@ class TestClinicaPipelines:
         assert t1w_data.match(
             Path("t1_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert not t1w_data.match(
             Path("t1_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert t1w_data.description == (
             "T1 weighted images registered to MNI152NLin2009cSym space using Clinica's 't1-linear' pipeline, "
@@ -206,14 +191,14 @@ class TestClinicaPipelines:
         assert t1w_data.match(
             Path("t1_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert not t1w_data.match(
             Path("t1_linear")
             / "sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
 
     def test_pet(self):
@@ -232,14 +217,14 @@ class TestClinicaPipelines:
         assert pet_data.match(
             Path("pet_linear")
             / "sub-000_ses-M000_trc-18FFDG_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-cerebellumPons2_pet.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert not pet_data.match(
             Path("pet_linear")
             / "sub-000_ses-M000_trc-18FFDG_space-MNI152NLin2009cSym_res-1x1x1_suvr-cerebellumPons2_pet.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert pet_data.description == (
             "PET images with tracer '18FFDG' registered to MNI152NLin2009cSym space using Clinica's "
@@ -264,14 +249,14 @@ class TestClinicaPipelines:
         assert pet_data.match(
             Path("pet_linear")
             / "sub-000_ses-M000_trc-18FFDG_rec-nacstat_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert not pet_data.match(
             Path("pet_linear")
             / "sub-000_ses-M000_trc-18FFDG_rec-nacstat_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.nii",
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert pet_data.description == (
             "PET images with tracer '18FFDG' and reconstruction method 'nacstat', registered to MNI152NLin2009cSym space "
@@ -297,8 +282,8 @@ class TestClinicaPipelines:
                 "normalized_space",
                 "sub-000_ses-M000_space-MNI152Lin_res-1x1x1_FA.nii",
             ),
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert (
             dwi_data.description
@@ -317,8 +302,8 @@ class TestClinicaPipelines:
                 "native_space",
                 "sub-000_ses-M000_space-b0_MD.nii",
             ),
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert dwi_data.match(
             os.path.join(
@@ -327,8 +312,8 @@ class TestClinicaPipelines:
                 "native_space",
                 "sub-000_ses-M000_space-T1w_MD.nii",
             ),
-            participant="000",
-            session="M000",
+            participant="sub-000",
+            session="ses-M000",
         )
         assert (
             dwi_data.description
