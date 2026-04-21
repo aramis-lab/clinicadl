@@ -72,6 +72,7 @@ OPTIMIZATION = "optimization"
 OPTIMIZER = "optimizer"
 OUTPUT = "output"
 PARTICIPANT = "participant"
+PARTICIPANTS_SESSIONS = "participantsXsessions"
 PARTICIPANT_ID = PARTICIPANT + "_" + ID
 PERFORMANCE = "performance"
 POSITION = "position"

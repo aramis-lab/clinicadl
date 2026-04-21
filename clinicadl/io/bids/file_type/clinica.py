@@ -1,6 +1,6 @@
 import os
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from .base import BidsFileType
 
@@ -44,7 +44,7 @@ class T1Linear(BidsFileType):
 
         without_entities = {}
         if not use_uncropped_image:
-            entities["desc"] = CROP
+            entities = _insert_crop(entities)
         else:
             without_entities["desc"] = CROP
 
@@ -91,7 +91,7 @@ class FlairLinear(BidsFileType):
 
         without_entities = {}
         if not use_uncropped_image:
-            entities["desc"] = CROP
+            entities = _insert_crop(entities)
         else:
             without_entities["desc"] = CROP
 
@@ -202,15 +202,15 @@ class PetLinear(BidsFileType):
             reconstruction = ReconstructionMethod(reconstruction).value
 
         entities = {
+            "trc": tracer,
             "space": MNI,
             "res": ISOTROPIC_1,
-            "trc": tracer,
             "suvr": suvr,
         }
 
         without_entities = {}
         if not use_uncropped_image:
-            entities["desc"] = CROP
+            entities = _insert_crop(entities)
         else:
             without_entities["desc"] = CROP
 
@@ -271,7 +271,7 @@ class DwiDti(BidsFileType):
           ``dwi/dti_based_processing/native_space/sub-*_ses-*_space-{b0|T1w}_{measure}.nii*``
           will be selected.
         - with ``normalized``: only the files that match the pattern
-          ``dwi/dti_based_processing/normalized_space/sub-*_ses-*_space-MNI152Lin_{measure}.nii*``
+          ``dwi/dti_based_processing/normalized_space/sub-*_ses-*_space-MNI152Lin_res-1x1x1_{measure}.nii*``
           will be selected.
     """
 
@@ -331,3 +331,13 @@ def _get_decription_linear_pipeline(
         description += ", and cropped (matrix size 169×208×179, 1 mm isotropic voxels)"
 
     return description + "."
+
+
+def _insert_crop(input_dict: dict[str, Any]) -> dict[str, Any]:
+    """
+    Insert crop entity just after 'space' entity.
+    """
+    items = list(input_dict.items())
+    items.insert(list(input_dict.keys()).index("space") + 1, ("desc", CROP))
+
+    return dict(items)

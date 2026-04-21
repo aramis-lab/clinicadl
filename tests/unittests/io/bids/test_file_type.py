@@ -52,9 +52,10 @@ class TestBidsFileType:
     @pytest.mark.parametrize(
         "path,match",
         [
-            ("mri/anat/sub-000_trc-FDG_pet.nii.gz", True),
+            ("mri/anat/sub-000_trc-18FDG_pet.nii.gz", True),
             ("mri/anat/sub-000_ses-M001_trc-FDG_space-MNI_pet.nii.gz", True),
             ("mri/anat/sub-000_ses-M000_res-2x2x2_run-2_trc-FDG_pet.nii.gz", True),
+            ("mri/anat/sub-000_trc-19FDG_pet.nii.gz", False),
             ("anat/sub-000_trc-FDG_pet.nii.gz", False),
             ("mri/anat/sub-000_trc-FDG_res-1x2x2_pet.nii.gz", False),
             ("mri/anat/sub-000_trc-FDG_res-2x2x2_run-1_pet.nii.gz", False),
@@ -65,8 +66,8 @@ class TestBidsFileType:
             data_type="mri/anat",
             suffix="pet",
             extension=".nii.gz",
-            with_entities={"trc": "FDG"},
-            without_entities={"res": "1x.*", "run": "1"},
+            with_entities={"trc": ".*FDG"},
+            without_entities={"res": "1x.*", "run": "1", "trc": "19FDG"},
         )
         assert file_type.match(path, participant="sub-000") == match
 
