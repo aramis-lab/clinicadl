@@ -13,3 +13,19 @@
    :template: autosummary/maps.rst
 
     Maps
+    Bids
+
+BIDS files types
+----------------
+
+.. autosummary::
+   :nosignatures:
+   :toctree: ../generated/
+   :template: autosummary/class.rst
+
+    BidsFileType
+    T1Linear
+    FlairLinear
+    PetLinear
+    DwiDti
+    Tensor
