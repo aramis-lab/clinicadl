@@ -5,76 +5,92 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.io import BidsFileType, DwiDti, FlairLinear, PetLinear, T1Linear
+from clinicadl.io import BidsFileType, DwiDti, FlairLinear, PetLinear, T1Linear, Tensor
 
 
 class TestBidsFileType:
     @pytest.mark.parametrize(
         "path,match",
         [
-            ("anat/sub-000_ses-M000_pet.nii.gz", True),
-            (Path("anat/sub-000_ses-M000_trc-abc_pet.nii"), True),
-            ("anato/sub-000_ses-M000_pet.nii.gz", False),
-            ("anat/sub-000_ses-M000_petscan.nii.gz", False),
-            ("anat/sub-000_ses-M000_pet.dicom", False),
-            ("sub-000_ses-M000_trc-abc_pet.nii.gz", False),
-            ("anat/sub-000_pet.nii.gz", False),
-            ("anat/ses-M000_pet.nii.gz", False),
-            ("anat/sub-000_ses-M0001_pet.nii.gz", False),
-            ("anat/sub-0001_ses-M000_pet.nii.gz", False),
+            ("sub-000_ses-M000_pet.nii.gz", True),
+            (Path("sub-000_ses-M000_trc-abc_pet.nii"), True),
+            ("pet/sub-000_ses-M000_pet.nii.gz", False),
+            ("sub-000_ses-M000_petscan.nii.gz", False),
+            ("sub-000_ses-M000_pet.dicom", False),
+            ("sub-000_pet.nii.gz", False),
+            ("ses-M000_pet.nii.gz", False),
+            ("sub-000_ses-M001_pet.nii.gz", False),
+            ("sub-001_ses-M000_pet.nii.gz", False),
         ],
     )
     def test_1(self, path, match):
-        file_type = BidsFileType(datatype="anat", suffix="pet")
+        file_type = BidsFileType(suffix="pet")
         assert file_type.match(path, participant="sub-000", session="ses-M000") == match
 
     @pytest.mark.parametrize(
         "path,match",
         [
             ("xabcx/sub-000_ses-M000_trc-FDG_res-1x2x2_xabcx.nii.gz", True),
-            ("xabcx/sub-000_ses-M000_trc-FDG_res-1x2x2_space-MNI_xabcx.nii.gz", True),
-            ("xabcx/sub-000_ses-M000_trc-FDG_res-2x2x2_xabcx.nii.gz", False),
-            ("xabcx/sub-000_ses-M000_trc-FDG18_res-1x2x2_xabcx.nii.gz", False),
-            ("xabcx/sub-000_ses-M000_trc-FDG_res-1x2x2_abxc.nii.gz", False),
-            ("abxc/sub-000_ses-M000_trc-FDG_res-1x2x2_xabcx.nii.gz", False),
-            ("xabcx/sub-000_ses-M000_trc-FDG_res-1x2x2_xabcx.nii", False),
+            ("xabcx/sub-001_ses-M001_trc-FDG_res-1x2x2_space-MNI_xabcx.nii.gz", True),
+            ("abc/trc-FDG_res-1x2x2_space-MNI_abc.nii.gz", True),
+            ("xabcx/trc-FDG_res-2x2x2_xabcx.nii.gz", False),
+            ("xabcx/trc-FDG18_res-1x2x2_xabcx.nii.gz", False),
+            ("xabcx/trc-FDG_res-1x2x2_abxc.nii.gz", False),
+            ("abxc/trc-FDG_res-1x2x2_xabcx.nii.gz", False),
+            ("xabcx/trc-FDG_res-1x2x2_xabcx.nii", False),
         ],
     )
     def test_2(self, path, match):
         file_type = BidsFileType(
-            datatype=".*abc.*",
+            data_type=".*abc.*",
             suffix=".*abc.*",
             extension=".nii.gz",
             with_entities={"trc": "FDG", "res": "1x.*"},
         )
-        assert file_type.match(path, participant="sub-000", session="ses-M000") == match
+        assert file_type.match(path) == match
 
     @pytest.mark.parametrize(
         "path,match",
         [
-            ("mri/anat/sub-000_ses-M000_trc-FDG_pet.nii.gz", True),
-            ("mri/anat/sub-000_ses-M000_trc-FDG_space-MNI_pet.nii.gz", True),
+            ("mri/anat/sub-000_trc-FDG_pet.nii.gz", True),
+            ("mri/anat/sub-000_ses-M001_trc-FDG_space-MNI_pet.nii.gz", True),
             ("mri/anat/sub-000_ses-M000_res-2x2x2_run-2_trc-FDG_pet.nii.gz", True),
-            ("anat/sub-000_ses-M000_trc-FDG_pet.nii.gz", False),
-            ("mri/anat/sub-000_ses-M000_trc-FDG_res-1x2x2_pet.nii.gz", False),
-            ("mri/anat/sub-000_ses-M000_trc-FDG_res-2x2x2_run-1_pet.nii.gz", False),
+            ("anat/sub-000_trc-FDG_pet.nii.gz", False),
+            ("mri/anat/sub-000_trc-FDG_res-1x2x2_pet.nii.gz", False),
+            ("mri/anat/sub-000_trc-FDG_res-2x2x2_run-1_pet.nii.gz", False),
         ],
     )
     def test_3(self, path, match):
         file_type = BidsFileType(
-            datatype="mri/anat",
+            data_type="mri/anat",
             suffix="pet",
             extension=".nii.gz",
             with_entities={"trc": "FDG"},
             without_entities={"res": "1x.*", "run": "1"},
         )
-        assert file_type.match(path, participant="sub-000", session="ses-M000") == match
+        assert file_type.match(path, participant="sub-000") == match
+
+    @pytest.mark.parametrize(
+        "path,match",
+        [
+            ("space-MNI152NLin2009cSym_res-1x1x1_sessions.tsv", True),
+            ("sessions.tsv", False),
+            ("sub-000/space-MNI152NLin2009cSym_res-1x1x1_sessions.tsv", False),
+        ],
+    )
+    def test_4(self, path, match):
+        file_type = BidsFileType(
+            suffix="sessions",
+            extension=".tsv",
+            with_entities={"space": "MNI152.*", "res": "1x1x1"},
+        )
+        assert file_type.match(path) == match
 
     @pytest.mark.parametrize(
         "file_type",
         [
             BidsFileType(
-                datatype="anat.*",
+                data_type="anat.*",
                 suffix="pet.*",
                 extension=".nii.*",
                 with_entities={"trc": "FDG", "space": "MNI.*"},
@@ -82,7 +98,7 @@ class TestBidsFileType:
                 description="abc",
             ),
             BidsFileType(
-                datatype="anat",
+                data_type="anat",
                 suffix="pet",
                 extension=".nii",
             ),
@@ -103,13 +119,13 @@ class TestBidsFileType:
     )
     def test_bad_inputs(self, parameters):
         with pytest.raises(ValidationError):
-            BidsFileType(**parameters, datatype="anat", suffix="pet", extension=".nii")
+            BidsFileType(**parameters, data_type="anat", suffix="pet", extension=".nii")
 
 
 class TestClinicaPipelines:
     def test_flair(self):
         flair_data = FlairLinear(use_uncropped_image=True)
-        assert flair_data.datatype == re.compile("flair_linear")
+        assert flair_data.data_type == re.compile("flair_linear")
         assert flair_data.suffix == re.compile("FLAIR")
         assert flair_data.extension == re.compile(".nii.*")
         assert flair_data.with_entities == {
@@ -156,7 +172,7 @@ class TestClinicaPipelines:
 
     def test_t1(self):
         t1w_data = T1Linear()
-        assert t1w_data.datatype == re.compile("t1_linear")
+        assert t1w_data.data_type == re.compile("t1_linear")
         assert t1w_data.suffix == re.compile("T1w")
         assert t1w_data.extension == re.compile(".nii.*")
         assert t1w_data.with_entities == {
@@ -203,7 +219,7 @@ class TestClinicaPipelines:
 
     def test_pet(self):
         pet_data = PetLinear(tracer="18FFDG", suvr_reference_region="cerebellumPons2")
-        assert pet_data.datatype == re.compile("pet_linear")
+        assert pet_data.data_type == re.compile("pet_linear")
         assert pet_data.suffix == re.compile("pet")
         assert pet_data.extension == re.compile(".nii.*")
         assert pet_data.with_entities == {
@@ -265,7 +281,7 @@ class TestClinicaPipelines:
 
     def test_dwi(self):
         dwi_data = DwiDti(measure="FA", space="normalized")
-        assert dwi_data.datatype == re.compile(
+        assert dwi_data.data_type == re.compile(
             "dwi/dti_based_processing/normalized_space"
         )
         assert dwi_data.suffix == re.compile("FA")
@@ -291,7 +307,7 @@ class TestClinicaPipelines:
         )
 
         dwi_data = DwiDti(measure="MD", space="native")
-        assert dwi_data.datatype == re.compile("dwi/dti_based_processing/native_space")
+        assert dwi_data.data_type == re.compile("dwi/dti_based_processing/native_space")
         assert dwi_data.with_entities == {
             "space": re.compile(r"\b(b0|T1w)\b"),
         }
@@ -319,3 +335,76 @@ class TestClinicaPipelines:
             dwi_data.description
             == "DTI MD images in native space, preprocessed with Clinica's 'dwi-dti' pipeline."
         )
+
+
+class TestTensor:
+    def test_init(self):
+        tensor = Tensor(conversion_name="abc")
+        assert tensor.extension == re.compile(".pt")
+        assert tensor.suffix == re.compile("tensors")
+        assert tensor.data_type == re.compile("tensors")
+        assert tensor.without_entities is None
+        assert tensor.description == "Outputs of the tensor conversion 'abc'."
+        assert tensor.with_entities == {"conv": re.compile("abc")}
+
+    def test_init_with_entities(self):
+        tensor = Tensor(conversion_name="abc", entities={"trc": r"18FD.*"})
+        assert tensor.with_entities == {
+            "conv": re.compile("abc"),
+            "trc": re.compile(r"18FD.*"),
+        }
+
+    @pytest.mark.parametrize(
+        "sources,expected",
+        [
+            (
+                (
+                    BidsFileType(
+                        data_type="",
+                        suffix="",
+                        with_entities={
+                            "trc": "18FDG",
+                            "res": "1x1x1",
+                            "space": r"MNI.*",
+                        },
+                    ),
+                    BidsFileType(
+                        data_type="",
+                        suffix="",
+                        with_entities={
+                            "trc": "18FDG",
+                            "res": "2x2x2",
+                            "space": "MNI",
+                        },
+                    ),
+                ),
+                {"trc": re.compile("18FDG")},
+            ),
+            (
+                (
+                    BidsFileType(
+                        data_type="",
+                        suffix="",
+                        with_entities={
+                            "res": "1x1x1",
+                        },
+                    ),
+                    BidsFileType(
+                        data_type="",
+                        suffix="",
+                        with_entities={
+                            "res": "2x2x2",
+                        },
+                    ),
+                ),
+                {},
+            ),
+        ],
+    )
+    def test_from_source_file_types(self, sources, expected):
+        tensor = Tensor.from_source_file_types(
+            conversion_name="abc",
+            file_types=sources,
+        )
+        expected["conv"] = re.compile("abc")
+        assert tensor.with_entities == expected
