@@ -6,7 +6,7 @@ from typing import Annotated, Optional, Pattern
 
 from pydantic import StringConstraints, field_serializer
 
-from clinicadl.utils.bids import BidsEntity, Session, Subject
+from clinicadl.utils.bids import BidsFile, Session, Subject
 from clinicadl.utils.config import ClinicaDLConfig
 
 AlphanumericStr = Annotated[
@@ -153,26 +153,22 @@ class BidsFileType(ClinicaDLConfig):
             >>> file_type.match("space-MNI152NLin2009cSym_sessions.tsv")
             True
         """
-        path = Path(path)
+        file = BidsFile(path)
 
-        if self.data_type and not self.data_type.fullmatch(str(path.parent)):
+        if self.data_type and not self.data_type.fullmatch(str(file.path.parent)):
             return False
-        elif not self.data_type and path.parent != Path("."):
+        elif not self.data_type and file.path.parent != Path("."):
             return False
 
         if self.extension is not None:
-            extension = self._get_extension(path.name)
-            if not self.extension.fullmatch(extension):
+            if not self.extension.fullmatch(file.extension):
                 return False
 
-        suffix = self._get_suffix(path.name)
-        if not self.suffix.fullmatch(suffix):
+        if not self.suffix.fullmatch(file.suffix):
             return False
 
-        entities = self._get_entities(path.name)
-
         if self.without_entities is not None:
-            for key, value in entities.items():
+            for key, value in file.entities.items():
                 if key in self.without_entities and self.without_entities[
                     key
                 ].fullmatch(value):
@@ -189,37 +185,12 @@ class BidsFileType(ClinicaDLConfig):
             with_entities[ses.key] = re.compile(ses.value)
 
         for key, value in with_entities.items():
-            if key not in entities:
+            if key not in file.entities:
                 return False
-            if not value.fullmatch(entities[key]):
+            if not value.fullmatch(file.entities[key]):
                 return False
 
         return True
-
-    @staticmethod
-    def _get_extension(filename: str) -> str:
-        """
-        Gets the total extension of a file.
-        'file.nii.gz' will return '.nii.gz'.
-        """
-        return "".join(filename.partition(".")[1:])
-
-    @staticmethod
-    def _get_suffix(filename: str) -> str:
-        """
-        Gets the suffix from a filename.
-        """
-        return filename.partition(".")[0].split("_")[-1]
-
-    @staticmethod
-    def _get_entities(filename: str) -> dict[str, str]:
-        """
-        Gets all the (key, value) entities from a filename.
-        """
-        entities = filename.partition(".")[0].split("_")[:-1]
-        entities = [BidsEntity(entity) for entity in entities]
-
-        return {entity.key: entity.value for entity in entities}
 
     @field_serializer("data_type", "suffix", "extension")
     def _serialize_pattern(self, pattern: Pattern) -> str:

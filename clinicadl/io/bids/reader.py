@@ -11,7 +11,7 @@ from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.json import read_json
 from clinicadl.utils.typing import PathType
 
-from .file_type import BidsFileType
+from .files import BidsFileType
 
 NO_FILE_FOUND = "no file found"
 
@@ -237,8 +237,11 @@ class Bids:
             for file in files:
                 full_path = os.path.join(root, file)
                 rel_path = os.path.relpath(full_path, dir_)
-                if file_type.match(rel_path, participant, session):
-                    selected_files.append(full_path)
+                try:
+                    if file_type.match(rel_path, participant, session):
+                        selected_files.append(full_path)
+                except (ValueError, AssertionError):  # not a BIDS file
+                    continue
 
         error_msg = f"For ({participant} | {session}), an error occurred while trying to get {file_type}: "
         if len(selected_files) > 1:
@@ -425,8 +428,8 @@ class Bids:
         set[tuple[str, str]]
             All the (participant, session) pairs.
         """
-        participant_pattern = re.compile(Subject.from_value(".*"))
-        session_pattern = re.compile(Session.from_value(".*"))
+        participant_pattern = re.compile(Subject.pattern)
+        session_pattern = re.compile(Session.pattern)
         participants_sessions = set()
 
         for f in os.scandir(self.participants_dir):

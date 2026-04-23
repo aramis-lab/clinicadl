@@ -1,2 +1,2 @@
-from .file_type import *
+from .files import *
 from .reader import Bids

@@ -5,7 +5,15 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.io import BidsFileType, DwiDti, FlairLinear, PetLinear, T1Linear, Tensor
+from clinicadl.io import (
+    BidsFile,
+    BidsFileType,
+    DwiDti,
+    FlairLinear,
+    PetLinear,
+    T1Linear,
+    Tensor,
+)
 
 
 class TestBidsFileType:
@@ -356,10 +364,21 @@ class TestTensor:
         }
 
     @pytest.mark.parametrize(
-        "sources,expected",
+        "image,individual_masks,common_masks,transformed,expected",
         [
             (
-                (
+                BidsFileType(
+                    data_type="",
+                    suffix="pet",
+                    with_entities={
+                        "trc": "18FDG",
+                        "res": "1x1x1",
+                        "space": r"MNI.*",
+                        "desc": "Crop",
+                        "run": "1",
+                    },
+                ),
+                [
                     BidsFileType(
                         data_type="",
                         suffix="",
@@ -367,6 +386,7 @@ class TestTensor:
                             "trc": "18FDG",
                             "res": "1x1x1",
                             "space": r"MNI.*",
+                            "desc": "Crop",
                         },
                     ),
                     BidsFileType(
@@ -374,38 +394,65 @@ class TestTensor:
                         suffix="",
                         with_entities={
                             "trc": "18FDG",
-                            "res": "2x2x2",
-                            "space": "MNI",
+                            "res": "1x1x1",
+                            "space": r"MNI.*",
+                            "desc": "Crop",
+                            "run": "1",
                         },
                     ),
-                ),
-                {"trc": re.compile("18FDG")},
+                ],
+                [
+                    BidsFile(
+                        "abc/sub-000_ses-M000_trc-18FDG_res-2x2x2_space-MNI_desc-Crop_run-1_mask.nii.gz"
+                    ),
+                    BidsFile(
+                        "sub-001_ses-M001_trc-18FDG_res-1x1x1_space-MNI_run-1_mask.nii.gz"
+                    ),
+                ],
+                False,
+                {"trc": re.compile("18FDG"), "src": re.compile("pet")},
             ),
             (
-                (
-                    BidsFileType(
-                        data_type="",
-                        suffix="",
-                        with_entities={
-                            "res": "1x1x1",
-                        },
-                    ),
-                    BidsFileType(
-                        data_type="",
-                        suffix="",
-                        with_entities={
-                            "res": "2x2x2",
-                        },
-                    ),
+                BidsFileType(
+                    data_type="",
+                    suffix=r"pet*",
+                    with_entities={
+                        "trc": "18FDG",
+                        "res": "1x1x1",
+                    },
                 ),
-                {},
+                [],
+                [],
+                False,
+                {
+                    "trc": re.compile("18FDG"),
+                    "res": re.compile("1x1x1"),
+                },
+            ),
+            (
+                BidsFileType(
+                    data_type="",
+                    suffix="T1w",
+                    with_entities={
+                        "res": "1x1x1",
+                    },
+                ),
+                [],
+                [],
+                True,
+                {"src": re.compile("T1w")},
             ),
         ],
     )
-    def test_from_source_file_types(self, sources, expected):
+    def test_from_source_file_types(
+        self, image, individual_masks, common_masks, transformed, expected
+    ):
         tensor = Tensor.from_source_file_types(
             conversion_name="abc",
-            file_types=sources,
+            image=image,
+            transformed=transformed,
+            individual_masks=individual_masks,
+            common_masks=common_masks,
         )
         expected["conv"] = re.compile("abc")
         assert tensor.with_entities == expected

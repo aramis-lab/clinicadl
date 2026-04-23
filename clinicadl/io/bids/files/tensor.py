@@ -2,7 +2,7 @@ from typing import Iterable, Optional, Pattern
 
 from typing_extensions import Self
 
-from .base import AlphanumericStr, BidsFileType
+from .base import AlphanumericStr, BidsFile, BidsFileType
 
 CONVERSION = "conv"
 
@@ -37,11 +37,16 @@ class Tensor(BidsFileType):
 
     @classmethod
     def from_source_file_types(
-        cls, conversion_name: str, file_types: Iterable[BidsFileType]
+        cls,
+        conversion_name: str,
+        image: BidsFileType,
+        individual_masks: Iterable[BidsFileType],
+        common_masks: Iterable[BidsFile],
+        transformed: bool,
     ) -> Self:
         """
         To create a ``Tensor`` object from the :py:class:`BidsFileTypes <clinicadl.io.BidsFileType>`
-        corresponding to the data that are inside the tensor files.
+        and :py:class:`BidsFile <clinicadl.io.BidsFile>` corresponding to the data that are inside the tensor files.
 
         A tensor file can contain heterogeneous data (e.g., an image and a mask). Here, the entities
         in the tensor filenames are inferred from these source data.
@@ -50,28 +55,44 @@ class Tensor(BidsFileType):
         ----------
         conversion_name : str
             The name of the tensor conversion associated to these tensors.
-        entities : Iterable[BidsFileType]
-            The ``BidsFileTypes`` from which the tensor conversion has been performed.
+        image : BidsFileType
+            The ``BidsFileType`` associated to the image.
+        individual_masks : Iterable[BidsFileType]
+            The ``BidsFileTypes`` associated to the image-specific masks.
+        common_masks : Iterable[BidsFile]
+            The ``BidsFiles`` associated to the non-image-specific masks.
+        transformed : bool
+            If the data were transformed during the conversion.
         """
-        common_entities = _entities_intersection(file_types)
+        if transformed:
+            entities = {}
+        else:
+            entities = _entities_intersection(
+                [{key: value.pattern for key, value in image.with_entities.items()}]
+                + [
+                    {
+                        key: value.pattern
+                        for key, value in file_type.with_entities.items()
+                    }
+                    for file_type in individual_masks
+                ]
+                + [file.entities for file in common_masks]
+            )
+        if (suffix := image.suffix.pattern).isalnum():
+            entities["src"] = suffix
 
-        return cls(conversion_name, common_entities)
+        return cls(conversion_name, entities)
 
 
-def _entities_intersection(file_types: Iterable[BidsFileType]) -> dict[str, str]:
+def _entities_intersection(entities: Iterable[dict[str, str]]) -> dict[str, str]:
     """
-    Gets all the common entities to the input BidsFileType.
+    Gets all the common entities from a list of dict of entities.
     """
-    inter_keys = set.intersection(
-        *[set(file_type.with_entities.keys()) for file_type in file_types]
-    )
+    inter_keys = set.intersection(*[set(e.keys()) for e in entities])
     common_entities = {}
     for key in inter_keys:
-        if (
-            unique := _unique_alphanum(
-                [file_type.with_entities[key].pattern for file_type in file_types]
-            )
-        ) is not None:
+        print(entities)
+        if (unique := _unique_alphanum([e[key] for e in entities])) is not None:
             common_entities[key] = unique
 
     return common_entities
