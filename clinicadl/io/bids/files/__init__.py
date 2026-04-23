@@ -1,3 +1,3 @@
-from .base import BidsFile, BidsFileType
+from .base import BidsFileType
 from .clinica import *
 from .tensor import TensorType

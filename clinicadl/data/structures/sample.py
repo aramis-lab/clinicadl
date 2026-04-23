@@ -10,10 +10,10 @@ from pydantic import NonNegativeInt, field_validator, model_validator
 from torch import Tensor
 from typing_extensions import Self
 
+from clinicadl.io import BidsFileType
 from clinicadl.utils.enum import SliceDirection
 from clinicadl.utils.typing import PathType
 
-from ..datatypes import DataType
 from .datapoint import DataPoint, DataPointConfig
 
 
@@ -28,17 +28,17 @@ class SampleType(str, Enum):
 class SampleConfig(DataPointConfig):
     """To check ``Sample`` inputs."""
 
-    datatype: tuple[DataType, ...]
+    file_type: tuple[BidsFileType, ...]
     image_path: tuple[Path, ...]
     sample_type: SampleType
     sample_position: Optional[
         Union[NonNegativeInt, tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]]
     ]
 
-    @field_validator("datatype", mode="before")
+    @field_validator("file_type", mode="before")
     @classmethod
     def _validate_tuple(cls, value: Any) -> Self:
-        """To accept a single value for 'datatype'."""
+        """To accept a single value for 'file_type'."""
         if not isinstance(value, Sequence):
             return (value,)
         return value
@@ -56,11 +56,11 @@ class SampleConfig(DataPointConfig):
         """
         To validate the number of channels in the image.
         """
-        if len(self.datatype) == 1:
-            self.__dict__["datatype"] = self.datatype * self.image.num_channels
-        elif self.image.num_channels != len(self.datatype):
+        if len(self.file_type) == 1:
+            self.__dict__["file_type"] = self.file_type * self.image.num_channels
+        elif self.image.num_channels != len(self.file_type):
             raise ValueError(
-                f"'datatype' has {len(self.datatype)} value(s) but there are {self.image.num_channels} channel(s) in the image."
+                f"'file_type' has {len(self.file_type)} value(s) but there are {self.image.num_channels} channel(s) in the image."
             )
 
         if len(self.image_path) == 1:
@@ -108,9 +108,9 @@ class Sample(DataPoint, ABC):
         The id of the participant.
     session : str
         The id of the session.
-    datatype : tuple[DataType, ...]
-        The :py:class:`~clinicadl.data.datatypes.DataType`. If they are multiple images in ``image``
-        (i.e. multiple channels), the :py:class:`~clinicadl.data.datatypes.DataType` of each of them
+    file_type : tuple[BidsFileType, ...]
+        The :py:class:`~clinicadl.data.datatypes.BidsFileType`. If they are multiple images in ``image``
+        (i.e. multiple channels), the :py:class:`~clinicadl.data.datatypes.BidsFileType` of each of them
         is expected.
     image_path : tuple[Path, ...]
         The path to the image. If they are multiple images in ``image``
@@ -126,7 +126,7 @@ class Sample(DataPoint, ABC):
           original image is expected.
     """
 
-    datatype: tuple[DataType, ...]
+    file_type: tuple[BidsFileType, ...]
     image_path: tuple[Path, ...]
     sample_type: SampleType
     sample_position: Optional[Union[int, tuple[int, int, int]]] = None
@@ -136,7 +136,7 @@ class Sample(DataPoint, ABC):
         image: Union[tio.ScalarImage, PathType],
         participant: str,
         session: str,
-        datatype: Union[DataType, tuple[DataType, ...]],
+        file_type: Union[BidsFileType, tuple[BidsFileType, ...]],
         image_path: Union[Path, tuple[Path, ...]],
         sample_type: SampleType = SampleType.IMAGE,
         sample_position: Optional[Union[int, tuple[int, int, int]]] = None,
@@ -147,7 +147,7 @@ class Sample(DataPoint, ABC):
             image=image,
             participant=participant,
             session=session,
-            datatype=datatype,
+            file_type=file_type,
             image_path=image_path,
             sample_type=sample_type,
             sample_position=sample_position,
@@ -203,7 +203,7 @@ class Sample2D(Sample):
         image: Union[tio.ScalarImage, PathType],
         participant: str,
         session: str,
-        datatype: DataType,
+        file_type: BidsFileType,
         image_path: Path,
         sample_position: int,
         slice_direction: int,
@@ -215,7 +215,7 @@ class Sample2D(Sample):
             image=image,
             participant=participant,
             session=session,
-            datatype=datatype,
+            file_type=file_type,
             image_path=image_path,
             sample_position=sample_position,
             slice_direction=slice_direction,

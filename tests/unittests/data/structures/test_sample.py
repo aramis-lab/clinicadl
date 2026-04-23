@@ -7,8 +7,8 @@ import torch
 import torchio as tio
 from pydantic import ValidationError
 
-from clinicadl.data.datatypes import DataType
 from clinicadl.data.structures import Sample, Sample2D
+from clinicadl.io import BidsFileType
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 
@@ -19,7 +19,7 @@ ISO_IMAGE = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=np.eye(4))
 DOUBLE_IMAGE = tio.ScalarImage(tensor=torch.randn(2, 3, 3, 3), affine=AFFINE)
 AGE = 1
 MASK = tio.LabelMap(tensor=torch.randn(2, 3, 3, 3), affine=AFFINE)
-DATATYPE = DataType.from_folder_and_suffix(folder="abc", suffix="abc")
+FILE_TYPE = BidsFileType(data_type="abc", suffix="abc")
 PATH = Path("abc")
 PARTICIPANT = "sub-000"
 SESSION = "ses-000"
@@ -30,7 +30,7 @@ def test_sample():
         image=IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        datatype=DATATYPE,
+        file_type=FILE_TYPE,
         image_path=PATH,
         age=AGE,
         mask=MASK,
@@ -41,7 +41,7 @@ def test_sample():
     assert sample.session is SESSION
     assert sample["age"] == AGE
     assert sample["mask"] is MASK
-    assert sample.datatype[0] is DATATYPE
+    assert sample.file_type[0] is FILE_TYPE
     assert str(sample.image_path[0]) == str(PATH)
     assert sample.sample_type == "image"
     assert sample.sample_position is None
@@ -50,7 +50,7 @@ def test_sample():
         image=IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        datatype=DATATYPE,
+        file_type=FILE_TYPE,
         image_path=PATH,
         sample_type="patch",
         sample_position=(0, 0, 0),
@@ -62,29 +62,29 @@ def test_sample():
         image=DOUBLE_IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        datatype=DATATYPE,
+        file_type=FILE_TYPE,
         image_path=PATH,
     )
-    assert len(sample.datatype) == 2
+    assert len(sample.file_type) == 2
     assert len(sample.image_path) == 2
 
     sample = Sample(
         image=DOUBLE_IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        datatype=(DATATYPE, DATATYPE),
+        file_type=(FILE_TYPE, FILE_TYPE),
         image_path=(PATH, PATH),
     )
 
     with pytest.raises(
         ValidationError,
-        match=r"'datatype' has 2 value\(s\) but there are 1 channel\(s\) in the image.",
+        match=r"'file_type' has 2 value\(s\) but there are 1 channel\(s\) in the image.",
     ):
         Sample(
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            datatype=(DATATYPE, DATATYPE),
+            file_type=(FILE_TYPE, FILE_TYPE),
             image_path=(PATH,),
         )
 
@@ -96,7 +96,7 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            datatype=(DATATYPE,),
+            file_type=(FILE_TYPE,),
             image_path=(PATH, PATH),
         )
 
@@ -105,7 +105,7 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            datatype=DATATYPE,
+            file_type=FILE_TYPE,
             image_path=PATH,
             sample_type="patch",
             sample_position=0,
@@ -116,7 +116,7 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            datatype=DATATYPE,
+            file_type=FILE_TYPE,
             image_path=PATH,
             sample_type="slice",
             sample_position=(0, 0, 0),
@@ -127,7 +127,7 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            datatype=DATATYPE,
+            file_type=FILE_TYPE,
             image_path=PATH,
             sample_type="image",
             sample_position=0,
@@ -138,7 +138,7 @@ def test_sample():
             image=IMAGE,
             participant=PARTICIPANT,
             session=SESSION,
-            datatype=DATATYPE,
+            file_type=FILE_TYPE,
             image_path=PATH,
             other_image=ISO_IMAGE,
         )
@@ -147,7 +147,7 @@ def test_sample():
         image=IMAGE,
         participant=PARTICIPANT,
         session=SESSION,
-        datatype=DATATYPE,
+        file_type=FILE_TYPE,
         image_path=PATH,
         other_image=ISO_IMAGE,
         check_consistency=False,
@@ -162,7 +162,7 @@ def test_sample_2d():
             participant=PARTICIPANT,
             session=SESSION,
             iso_image=ISO_IMAGE,
-            datatype=DATATYPE,
+            file_type=FILE_TYPE,
             image_path=PATH,
             sample_position=1,
             squeeze=False,
@@ -176,7 +176,7 @@ def test_sample_2d():
             image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 3), affine=AFFINE),
             participant=PARTICIPANT,
             session=SESSION,
-            datatype=DATATYPE,
+            file_type=FILE_TYPE,
             image_path=PATH,
             sample_position=2,
             squeeze=False,
@@ -189,7 +189,7 @@ def test_sample_2d():
         participant=PARTICIPANT,
         session=SESSION,
         mask=tio.LabelMap(tensor=torch.randn(2, 3, 1, 3), affine=AFFINE),
-        datatype=DATATYPE,
+        file_type=FILE_TYPE,
         image_path=PATH,
         sample_position=1,
         squeeze=False,
