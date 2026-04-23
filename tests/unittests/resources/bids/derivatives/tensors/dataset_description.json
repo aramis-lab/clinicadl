@@ -10,20 +10,20 @@
         }
     ],
     "DatasetLinks": {
-        "raw": "file:///<path>/bids_example",
-        "derivative": "file:///<path>/bids_example/derivatives/masks",
-        "derivative1": "file:///<path>/bids_example/derivatives/resampling",
-        "caps": "file:///<path>/bids_example/derivatives/caps_example"
+        "raw": "file:///<path>/bids",
+        "derivative": "file:///<path>/bids/derivatives/masks",
+        "derivative1": "file:///<path>/bids/derivatives/resampling",
+        "caps": "file:///<path>/bids/derivatives/caps"
     },
     "SourceDatasets": [
         {
-            "URL": "file:///<path>/bids_example"
+            "URL": "file:///<path>/bids"
         },
         {
-            "URL": "file:///<path>/bids_example/derivatives/caps_example"
+            "URL": "file:///<path>/bids/derivatives/caps"
         },
         {
-            "URL": "file:///<path>/bids_example/derivatives/derivative_example"
+            "URL": "file:///<path>/bids/derivatives/resampling"
         }
     ]
 }
