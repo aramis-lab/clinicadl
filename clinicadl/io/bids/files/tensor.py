@@ -7,7 +7,7 @@ from .base import AlphanumericStr, BidsFile, BidsFileType
 CONVERSION = "conv"
 
 
-class Tensor(BidsFileType):
+class TensorType(BidsFileType):
     """
     A :py:class:`~clinicadl.io.BidsFileType` to represent tensor files.
 
@@ -45,7 +45,7 @@ class Tensor(BidsFileType):
         transformed: bool,
     ) -> Self:
         """
-        To create a ``Tensor`` object from the :py:class:`BidsFileTypes <clinicadl.io.BidsFileType>`
+        To create a ``TensorType`` object from the :py:class:`BidsFileTypes <clinicadl.io.BidsFileType>`
         and :py:class:`BidsFile <clinicadl.io.BidsFile>` corresponding to the data that are inside the tensor files.
 
         A tensor file can contain heterogeneous data (e.g., an image and a mask). Here, the entities

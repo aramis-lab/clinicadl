@@ -12,7 +12,7 @@ from clinicadl.io import (
     FlairLinear,
     PetLinear,
     T1Linear,
-    Tensor,
+    TensorType,
 )
 
 
@@ -348,7 +348,7 @@ class TestClinicaPipelines:
 
 class TestTensor:
     def test_init(self):
-        tensor = Tensor(conversion_name="abc")
+        tensor = TensorType(conversion_name="abc")
         assert tensor.extension == re.compile(".pt")
         assert tensor.suffix == re.compile("tensors")
         assert tensor.data_type == re.compile("tensors")
@@ -357,7 +357,7 @@ class TestTensor:
         assert tensor.with_entities == {"conv": re.compile("abc")}
 
     def test_init_with_entities(self):
-        tensor = Tensor(conversion_name="abc", entities={"trc": r"18FD.*"})
+        tensor = TensorType(conversion_name="abc", entities={"trc": r"18FD.*"})
         assert tensor.with_entities == {
             "conv": re.compile("abc"),
             "trc": re.compile(r"18FD.*"),
@@ -447,7 +447,7 @@ class TestTensor:
     def test_from_source_file_types(
         self, image, individual_masks, common_masks, transformed, expected
     ):
-        tensor = Tensor.from_source_file_types(
+        tensor = TensorType.from_source_file_types(
             conversion_name="abc",
             image=image,
             transformed=transformed,
