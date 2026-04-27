@@ -185,7 +185,7 @@ class DataPoint(tio.Subject):
 
     def get_images(
         self,
-        intensity_only=True,
+        intensity_only: bool = True,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
     ) -> list[tio.Image]:
@@ -260,8 +260,89 @@ class DataPoint(tio.Subject):
         See Also
         --------
         :py:meth:`~DataPoint.get_images`
+        :py:meth:`~DataPoint.get_masks_dict`
         """
         return super().get_images_dict(intensity_only, include, exclude)
+
+    def get_masks_dict(
+        self,
+        include: Optional[Sequence[str]] = None,
+        exclude: Optional[Sequence[str]] = None,
+    ) -> dict[str, tio.LabelMap]:
+        """
+        To get all the masks in a ``DataPoint``, and their names.
+
+        Parameters
+        ----------
+        include : Optional[Sequence[str]], default=None
+            Names of the masks to include. If ``None``, will return all the masks
+            not in ``exclude``.
+        exclude : Optional[Sequence[str]], default=None
+            Names of the masks to exclude.
+
+        Returns
+        -------
+        dict[str, torchio.LabelMap]
+            The masks and their names.
+
+        Examples
+        --------
+        >>> from clinicadl.data.structures.examples import ColinDataPoint
+        >>> datapoint = ColinDataPoint()
+        >>> datapoint.get_masks_dict()
+        {'head': LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)}
+
+        See Also
+        --------
+        :py:meth:`~DataPoint.get_images_dict`
+        """
+        images = super().get_images_dict(intensity_only=True).keys()
+
+        return {
+            name: mask
+            for name, mask in self.get_images_dict(
+                intensity_only=False, include=include, exclude=exclude
+            ).items()
+            if name not in images
+        }
+
+    def get_non_images_dict(
+        self,
+        include: Optional[Sequence[str]] = None,
+        exclude: Optional[Sequence[str]] = None,
+    ) -> dict[str, Any]:
+        """
+        To get all the values in the ``DataPoint`` that are not images or masks.
+
+        Parameters
+        ----------
+        include : Optional[Sequence[str]], default=None
+            Keys to include. If ``None``, will return all the keys
+            not in ``exclude``.
+        exclude : Optional[Sequence[str]], default=None
+            Keys to exclude.
+
+        Returns
+        -------
+        dict[str, Any]
+            The non-image values and their keys.
+
+        Examples
+        --------
+        >>> from clinicadl.data.structures.examples import ColinDataPoint
+        >>> datapoint = ColinDataPoint()
+        >>> datapoint.get_non_images_dict()
+        {'participant': 'sub-colin', 'session': 'ses-M000'}
+
+        See Also
+        --------
+        :py:meth:`~DataPoint.get_images_dict`
+        """
+        keys = set(self.get_keys()) - set(self.get_images_names()) - set(exclude or {})
+        if include is not None:
+            keys = keys.intersection(include)
+
+        return {name: value for name, value in self.items() if name in keys}
 
     def get_image_tensor(self, image_name: str) -> Tensor:
         """

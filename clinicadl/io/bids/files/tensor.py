@@ -13,26 +13,21 @@ class TensorType(BidsFileType):
 
     Parameters
     ----------
-    conversion_name : str
-        The name of the tensor conversion associated to these tensors. The name can be
-        found in the filenames associated with the key ``"conv"``.
     entities : Optional[dict[AlphanumericStr, Pattern]], default=None
         The entities that are in the filenames of the tensors.
     """
 
     def __init__(
         self,
-        conversion_name: str,
         entities: Optional[dict[AlphanumericStr, Pattern]] = None,
     ):
         entities = entities or {}
-        entities[CONVERSION] = conversion_name
         super().__init__(
             data_type="tensors",
             suffix="tensors",
             extension=".pt",
             with_entities=entities,
-            description=f"Outputs of the tensor conversion '{conversion_name}'.",
+            description="Outputs of the tensor conversion.",
         )
 
     @classmethod
@@ -81,7 +76,9 @@ class TensorType(BidsFileType):
         if (suffix := image.suffix.pattern).isalnum():
             entities["src"] = suffix
 
-        return cls(conversion_name, entities)
+        entities[CONVERSION] = conversion_name
+
+        return cls(entities)
 
 
 def _entities_intersection(entities: Iterable[dict[str, str]]) -> dict[str, str]:

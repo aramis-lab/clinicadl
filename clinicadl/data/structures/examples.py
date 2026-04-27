@@ -63,7 +63,7 @@ class ColinSample(Sample):
     """
 
     def __init__(self, **kwargs):
-        from clinicadl.data.datatypes import DataType
+        from clinicadl.io import BidsFileType
 
         tio_colin = Colin27()
         # pylint: disable=no-member
@@ -72,7 +72,7 @@ class ColinSample(Sample):
             "head": tio_colin.head,
             "participant": "sub-colin",
             "session": "ses-M000",
-            "datatype": DataType.from_folder_and_suffix(folder="t1", suffix="T1w"),
+            "file_type": BidsFileType(data_type="t1", suffix="T1w"),
             "image_path": Path("bids")
             / "sub-000"
             / "ses-M000"
@@ -106,7 +106,7 @@ class ColinSample2D(Sample2D):
     """
 
     def __init__(self, **kwargs):
-        from clinicadl.data.datatypes import DataType
+        from clinicadl.io import BidsFileType
 
         tio_colin = Colin27()
         tio_colin = tio.CropOrPad(target_shape=(181, 1, 181))(tio_colin)
@@ -116,7 +116,7 @@ class ColinSample2D(Sample2D):
             "head": tio_colin.head,
             "participant": "sub-colin",
             "session": "ses-M000",
-            "datatype": DataType.from_folder_and_suffix(folder="t1", suffix="T1w"),
+            "file_type": BidsFileType(data_type="t1", suffix="T1w"),
             "image_path": Path("bids")
             / "sub-000"
             / "ses-M000"

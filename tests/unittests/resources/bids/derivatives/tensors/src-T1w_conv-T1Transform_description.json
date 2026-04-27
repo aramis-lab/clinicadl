@@ -1,7 +1,7 @@
 {
     "source": "caps and bids",
     "individual_masks": ["seg", "brain"],
-    "common_masks": ["leftHippocampus.nii.gz", "rightHippocampus.nii.gz"],
+    "common_masks": {"left_hippo": "leftHippocampus.nii.gz", "right_hippo": "rightHippocampus.nii.gz"},
     "also": {
         "other_image": "image",
         "other_mask": "mask",
@@ -11,9 +11,9 @@
         "Reampling", "CropOrPad", "Custom with load also"
     ],
     "spacing": [
-        1,
-        1,
-        1
+        1.1,
+        1.1,
+        1.1
     ],
     "shape": [
         1,

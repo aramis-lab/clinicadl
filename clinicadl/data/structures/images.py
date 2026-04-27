@@ -1,12 +1,18 @@
-from typing import Generic, Optional, TypeVar
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Generic, Iterable, Optional, TypeVar
 
+import torch
 import torchio as tio
+from typing_extensions import Self
 
-from clinicadl.io import Bids, BidsFileType
+from clinicadl.io import Bids, BidsFileType, TensorType
 from clinicadl.utils.bids import BidsFile
 from clinicadl.utils.typing import PathType
 
-ImageT = TypeVar("T", bound=tio.Image)
+from .datapoint import DataPoint
+
+ImageT = TypeVar("ImageT")
 
 
 class _SubjectSpecificImage(Generic[ImageT]):
@@ -75,3 +81,147 @@ class CommonMask:
             self._mask = tio.LabelMap(path=self.file.path)
 
         return self._mask
+
+
+@dataclass
+class TensorContent:
+    """
+    The content of a ``.pt`` file saved by ``ClinicaDL`` during
+    tensor conversion.
+    """
+
+    images: dict[str, tio.ScalarImage]
+    masks: dict[str, tio.LabelMap]
+    additional_data: dict[str, Any]
+
+    @classmethod
+    def from_datapoint(
+        cls,
+        data_point: DataPoint,
+        include: Optional[Iterable[str]] = None,
+    ) -> Self:
+        """
+        To convert a :py:class:`~clinicadl.data.structures.DataPoint` to a ``TensorContent``.
+
+        Parameters
+        ----------
+        data_point : DataPoint
+            The input ``DataPoint``.
+        include : Optional[Iterable[str]], default=None
+            To keep only certain keys of the ``DataPoint`` in the ``.pt`` file.
+
+        Returns
+        -------
+        Self
+            A ``TensorContent``.
+        """
+        return cls(
+            images=data_point.get_images_dict(include=include),
+            masks=data_point.get_masks_dict(include=include),
+            additional_data=data_point.get_non_images_dict(
+                include=include, exclude=["participant", "session"]
+            ),
+        )
+
+    @classmethod
+    def load(cls, path: Path) -> Self:
+        """
+        To create a ``TensorContent`` from a ``.pt`` file.
+
+        Parameters
+        ----------
+        path : Path
+            The input file.
+
+        Returns
+        -------
+        Self
+            The content of the file in ``TensorContent``.
+        """
+        content = torch.load(path, weights_only=False)
+
+        images = {
+            name: tio.ScalarImage(tensor=mask[0], affine=mask[1])
+            for name, mask in content["images"].items()
+        }
+        masks = {
+            name: tio.LabelMap(tensor=mask[0], affine=mask[1])
+            for name, mask in content["masks"].items()
+        }
+
+        return cls(
+            images=images, masks=masks, additional_data=content["additional_data"]
+        )
+
+    def save(self, path: Path) -> None:
+        """
+        To save the current ``TensorContent`` in a ``.pt`` file.
+
+        Parameters
+        ----------
+        path : Path
+            The path of the file.
+        """
+        to_save = dict()
+        to_save["images"] = {
+            name: (image.tensor, image.affine) for name, image in self.images.items()
+        }
+        to_save["masks"] = {
+            name: (mask.tensor, mask.affine) for name, mask in self.masks.items()
+        }
+        to_save["additional_data"] = self.additional_data
+
+        torch.save(to_save, path)
+
+
+class Tensor(_SubjectSpecificImage[DataPoint]):
+    """
+    To handle tensor loading from a :term:`BIDS` given a :py:class:`~clinicadl.io.TensorType`.
+    The fields to keep from the tensor files may be specified.
+    """
+
+    def __init__(
+        self, bids: Bids, file_type: TensorType, to_load: Optional[Iterable[str]] = None
+    ):
+        super().__init__(bids, file_type)
+        self.to_load = to_load
+
+    def get(self, participant: str, session: str) -> DataPoint:
+        path = self.bids.get_path(
+            self.file_type, participant=participant, session=session
+        )
+
+        tensors = TensorContent.load(path)
+
+        if self.to_load is not None:
+            to_load = set(self.to_load).union({"image"})
+        else:
+            to_load = None
+
+        to_keep = (
+            _filter_dict(tensors.images, to_load)
+            | _filter_dict(tensors.masks, to_load)
+            | _filter_dict(tensors.additional_data, to_load)
+        )
+
+        return DataPoint(
+            **to_keep,
+            participant=participant,
+            session=session,
+            image_path=path,
+            file_type=self.file_type,
+        )
+
+
+T = TypeVar("T")
+
+
+def _filter_dict(
+    dict_: dict[T, Any], filter: Optional[Iterable[T]] = None
+) -> dict[T, Any]:
+    """
+    To filter a dictionary's keys.
+    """
+    if filter is None:
+        return dict_
+    return {key: value for key, value in dict_.items() if key in filter}

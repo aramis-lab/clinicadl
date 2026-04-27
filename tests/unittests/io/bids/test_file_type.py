@@ -6,7 +6,6 @@ import pytest
 from pydantic import ValidationError
 
 from clinicadl.io import (
-    BidsFile,
     BidsFileType,
     DwiDti,
     FlairLinear,
@@ -14,6 +13,7 @@ from clinicadl.io import (
     T1Linear,
     TensorType,
 )
+from clinicadl.utils.bids import BidsFile
 
 
 class TestBidsFileType:
@@ -348,20 +348,16 @@ class TestClinicaPipelines:
 
 class TestTensor:
     def test_init(self):
-        tensor = TensorType(conversion_name="abc")
-        assert tensor.extension == re.compile(".pt")
-        assert tensor.suffix == re.compile("tensors")
-        assert tensor.data_type == re.compile("tensors")
-        assert tensor.without_entities is None
-        assert tensor.description == "Outputs of the tensor conversion 'abc'."
-        assert tensor.with_entities == {"conv": re.compile("abc")}
-
-    def test_init_with_entities(self):
-        tensor = TensorType(conversion_name="abc", entities={"trc": r"18FD.*"})
+        tensor = TensorType(entities={"conv": "abc", "trc": r"18FD.*"})
         assert tensor.with_entities == {
             "conv": re.compile("abc"),
             "trc": re.compile(r"18FD.*"),
         }
+        assert tensor.extension == re.compile(".pt")
+        assert tensor.suffix == re.compile("tensors")
+        assert tensor.data_type == re.compile("tensors")
+        assert tensor.without_entities is None
+        assert tensor.description == "Outputs of the tensor conversion."
 
     @pytest.mark.parametrize(
         "image,individual_masks,common_masks,transformed,expected",

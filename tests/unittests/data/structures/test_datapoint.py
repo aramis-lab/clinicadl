@@ -35,6 +35,7 @@ def test_DataPoint():
         participant="sub-000",
         session="ses-M000",
         mask_1=mask,
+        other=0,
     )
     data_point.add_image(image_path, "image_2")
     data_point.add_image(image, "image_3")
@@ -94,7 +95,31 @@ def test_DataPoint():
     assert len(data_point.get_images(intensity_only=False, include=["image"])) == 1
     assert len(data_point.get_images(intensity_only=False, exclude=["image"])) == 7
 
+    # get masks
+    assert set(data_point.get_masks_dict(include=["mask_1", "mask_2"]).keys()) == {
+        "mask_1",
+        "mask_2",
+    }
+    assert set(data_point.get_masks_dict(exclude=["mask_1", "mask_2"]).keys()) == {
+        "mask_3",
+        "mask_4",
+    }
+
     assert data_point.get_image_tensor("image").shape == (1, 3, 3, 3)
+
+    # get other fields
+    assert data_point.get_non_images_dict() == {
+        "other": 0,
+        "participant": "sub-000",
+        "session": "ses-M000",
+    }
+    assert set(
+        data_point.get_non_images_dict(include=["participant", "session"]).keys()
+    ) == {"participant", "session"}
+    assert set(data_point.get_non_images_dict(exclude=["participant"]).keys()) == {
+        "session",
+        "other",
+    }
 
     # get_keys
     assert sorted(data_point.get_keys()) == sorted(list(data_point.keys()))
