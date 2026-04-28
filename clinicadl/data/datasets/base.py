@@ -1,21 +1,25 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Sequence, Union
+from copy import deepcopy
+from pathlib import Path
+from typing import Any, Iterable, Sequence, TypeVar, Union
 
 import pandas as pd
 import torch.utils.data
 from typing_extensions import Self
 
+from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
 from clinicadl.utils.objects import JsonReaderWriter
+from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType
 
 from ..structures import Sample
 
+SampleT = TypeVar("SampleT", Sample, Sequence[Sample], dict[Any, Sample])
 
-class Dataset(
-    JsonReaderWriter, ABC, torch.utils.data.Dataset[Union[Sample, Sequence[Sample]]]
-):
+
+class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
     """
     Abstract class for ``ClinicaDL`` datasets, which inherits from :py:class:`torch.utils.data.Dataset`,
     to work with 3D neuroimaging data.
@@ -29,8 +33,9 @@ class Dataset(
         May be easier to override than the plain ``Dataset``.
     """
 
+    _df: pd.DataFrame
+
     @property
-    @abstractmethod
     def df(self) -> pd.DataFrame:
         """
         A DataFrame containing metadata on the images present in the dataset.
@@ -49,6 +54,7 @@ class Dataset(
             sub-002         ses-M003     62.0  F     AD
             sub-003         ses-M000     67.0  F     CN
         """
+        return self._df
 
     @abstractmethod
     def eval(self) -> None:
@@ -66,9 +72,8 @@ class Dataset(
         It enables data augmentation in the transformation pipeline.
         """
 
-    @abstractmethod
     def subset(
-        self, particpants_sessions: Union[DataFrameType, Sequence[tuple[str, str]]]
+        self, particpants_sessions: Union[DataFrameType, Iterable[tuple[str, str]]]
     ) -> Self:
         """
         To get a subset of the dataset from a list of (participant, session) pairs.
@@ -88,7 +93,29 @@ class Dataset(
         Self
             A subset of the original dataset, restricted to the (participant, session) pairs mentioned in ``data``.
         """
+        if isinstance(particpants_sessions, (str, Path)):
+            new_df = read_data(particpants_sessions, check_protected_names=False)
+        else:
+            new_df = pd.DataFrame.from_records(
+                particpants_sessions, columns=[PARTICIPANT_ID, SESSION_ID]
+            ).drop_duplicates()
 
+        new_df = new_df.set_index([PARTICIPANT_ID, SESSION_ID])
+
+        df = self.df.set_index([PARTICIPANT_ID, SESSION_ID])
+        subset_df = df.loc[new_df.index.intersection(df.index)].reset_index()
+
+        if len(subset_df) == 0:
+            raise RuntimeError(
+                "No (participant, session) pairs are in the dataset. This would lead to an empty dataset!"
+            )
+
+        dataset = deepcopy(self)
+        dataset._df = subset_df
+
+        return dataset
+
+    @abstractmethod
     def get_sample_info(self, idx: int, column: str) -> Any:
         """
         Retrieves information on a given sample. The information will
@@ -109,20 +136,6 @@ class Dataset(
             The information (e.g. the age, the sex, etc.)
         """
 
-    def describe(self) -> Any:
-        """
-        Returns a description of the dataset.
-
-        Returns
-        -------
-        Any
-            The description of the dataset (e.g. a tuple with its length and the (participant, session) inside).
-        """
-        raise NotImplementedError(
-            f"'describe' not implemented in {type(self).__name__}"
-        )
-
-    @abstractmethod
     def get_participant_session_couples(self) -> set[tuple[str, str]]:
         """
         Retrieves all (participant, session) pairs in the dataset.
@@ -132,6 +145,7 @@ class Dataset(
         set[tuple[str, str]]
             The set of (participant, session).
         """
+        return set(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
 
     @abstractmethod
     def __len__(self) -> int:
@@ -146,9 +160,7 @@ class Dataset(
         """
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Union[Sample, Sequence[Sample], dict[Any, Sample]]:
+    def __getitem__(self, idx: int) -> SampleT:
         """
         Retrieves the sample at a given index.
 
