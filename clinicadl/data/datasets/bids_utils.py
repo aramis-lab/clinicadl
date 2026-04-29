@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar
+from typing import Iterable, Optional, TypeVar
 
 from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.tsvtools import create_participants_sessions_df
@@ -12,7 +12,7 @@ from ..structures import (
     Tensor,
 )
 from ..structures.images import SubjectSpecificImage
-from .utils import ColumnType, MultimodalSamplerDataset
+from .utils import ColumnType, DatasetChecker, MultimodalSamplerDataset, SpatialCheck
 
 
 class BidsTypeDataset(MultimodalSamplerDataset):
@@ -34,6 +34,37 @@ class BidsTypeDataset(MultimodalSamplerDataset):
         super().__init__(data, transforms, columns)
 
         self._look_for_images()
+
+    def sanity_check(
+        self,
+        spatial_checks: Optional[Iterable[str | SpatialCheck]] = [
+            "affine",
+            "shape",
+            "global_spacing",
+        ],
+    ) -> None:
+        """
+        Performs a sanity check on the current dataset.
+
+        It will iterate over the whole dataset to check if images are loaded correctly,
+        and potentially perform spatial checks on the loaded images.
+
+        Parameters
+        ----------
+        spatial_checks : Optional[Iterable[str  |  SpatialCheck]], default=[ "affine", "shape", "global_spacing"]
+            Spatial checks to perform on the images:
+
+            - ``"spacing"``: checks **intra-sample voxel spacing consistency**, i.e. that all the images and masks
+              in a :py:class:`~clinicadl.data.structures.Sample` have the same voxel spacing.
+            - ``"affine"``: checks **intra-sample affine matrix consistency** (so it includes ``"spacing"``).
+            - ``"shape"``: checks **intra-sample spatial shape consistency**.
+            - ``"global_spacing"``: checks **inter-sample voxel spacing consistency**, i.e. that all the ``Samples``
+              in the dataset have the same voxel spacing (so it includes ``"spacing"``).
+            - "``global_shape"``: checks **inter-sample spatial shape consistency** (so it includes ``"shape"``).
+
+            If ``None``, no spatial check.
+        """
+        DatasetChecker(spatial_checks).check(self)
 
     def _create_df(self, data: Optional[DataFrameType]) -> DataFrameType:
         """

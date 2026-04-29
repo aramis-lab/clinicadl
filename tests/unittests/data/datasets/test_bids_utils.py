@@ -248,6 +248,27 @@ class TestBidsNiftiDataset:
                 transforms=TransformsHandler(),
             )
 
+    def test_sanity_check(self):
+        dataset = BidsNiftiDataset(
+            image=Image(
+                Bids(BIDS),
+                BidsFileType(data_type="pet", suffix="pet"),
+            ),
+            transforms=TransformsHandler(),
+            columns=None,
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-999"],
+                    "session_id": ["ses-M000", "ses-M999"],
+                }
+            ),
+            masks=None,
+        )
+        with pytest.raises(
+            RuntimeError, match="Different voxel spacing found in the dataset"
+        ):
+            dataset.sanity_check(spatial_checks=["global_spacing"])
+
 
 class TestBidsTensorDataset:
     def test_getitem(self):
@@ -343,3 +364,23 @@ class TestBidsTensorDataset:
                     }
                 ),
             )
+
+    def test_sanity_check(self):
+        dataset = BidsTensorDataset(
+            tensor=Tensor(
+                Bids(TENSORS),
+                TensorType(entities={"conv": "raw", "src": "pet"}),
+            ),
+            transforms=TransformsHandler(),
+            columns=None,
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-999"],
+                    "session_id": ["ses-M000", "ses-M999"],
+                }
+            ),
+        )
+        with pytest.raises(
+            RuntimeError, match="Different voxel spacing found in the dataset"
+        ):
+            dataset.sanity_check(spatial_checks=["global_spacing"])
