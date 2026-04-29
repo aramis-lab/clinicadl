@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 
 import numpy as np
@@ -7,10 +6,14 @@ import pytest
 import torch
 import torchio as tio
 
-from clinicadl.data.datasets.bids_utils import BidsNiftiDataset, BidsTensorDataset
+from clinicadl.data.datasets.bids_utils import (
+    BidsNiftiDataset,
+    BidsTensorDataset,
+    BidsTypeDatasetConfig,
+    BidsTypeDatasetWithConfig,
+)
 from clinicadl.data.structures import (
     CommonMask,
-    DataPoint,
     Image,
     IndividualMask,
     Tensor,
@@ -21,6 +24,17 @@ from clinicadl.transforms.extraction import Slice
 
 BIDS = Path(__file__).parents[2] / "resources" / "bids"
 TENSORS = BIDS / "derivatives" / "tensors"
+
+
+class DatasetWithConfig(BidsTypeDatasetWithConfig):
+    def __init__(self, image, data, transforms, columns):
+        self.config = BidsTypeDatasetConfig(
+            data=data, transforms=transforms, columns=columns
+        )
+        super().__init__(image, data, transforms, columns)
+
+    def _get_images(self, participant, session):
+        pass
 
 
 class TestBidsNiftiDataset:
@@ -269,6 +283,31 @@ class TestBidsNiftiDataset:
         ):
             dataset.sanity_check(spatial_checks=["global_spacing"])
 
+    def test_describe(self):
+        dataset = BidsNiftiDataset(
+            image=Image(
+                Bids(BIDS),
+                BidsFileType(data_type="pet", suffix="pet"),
+            ),
+            transforms=TransformsHandler(extraction=Slice()),
+            columns=None,
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-999"],
+                    "session_id": ["ses-M000", "ses-M999"],
+                }
+            ),
+            masks=None,
+        )
+        description = dataset.describe()
+        assert description["participant_session_pairs"] == {
+            ("sub-000", "ses-M000"),
+            ("sub-999", "ses-M999"),
+        }
+        assert description["file_type"]["suffix"] == "pet"
+        assert description["extraction"]["slice_direction"] == 0
+        assert description["total_number_samples"] == 2
+
 
 class TestBidsTensorDataset:
     def test_getitem(self):
@@ -384,3 +423,79 @@ class TestBidsTensorDataset:
             RuntimeError, match="Different voxel spacing found in the dataset"
         ):
             dataset.sanity_check(spatial_checks=["global_spacing"])
+
+    def test_describe(self):
+        dataset = BidsTensorDataset(
+            tensor=Tensor(
+                Bids(TENSORS),
+                TensorType(entities={"conv": "raw", "src": "pet"}),
+            ),
+            transforms=TransformsHandler(),
+            columns=None,
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-999"],
+                    "session_id": ["ses-M000", "ses-M999"],
+                }
+            ),
+        )
+        description = dataset.describe()
+        assert description["file_type"]["suffix"] == "tensors"
+
+
+class TestBidsTypeDatasetConfig:
+    @pytest.mark.parametrize(
+        "config",
+        [
+            BidsTypeDatasetConfig(
+                data=pd.DataFrame(
+                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                ),
+                transforms=TransformsHandler(),
+                columns=None,
+            ),
+            BidsTypeDatasetConfig(
+                data=pd.DataFrame(
+                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                ),
+                transforms=TransformsHandler(Slice(slice_direction=1)),
+                columns=["abc"],
+            ),
+            BidsTypeDatasetConfig(
+                data=pd.DataFrame(
+                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                ),
+                transforms=TransformsHandler(Slice(slice_direction=1)),
+                columns={"abc": None},
+            ),
+        ],
+    )
+    def test(self, config, tmp_path):
+        config.to_json(tmp_path / "config.json")
+        new_config = BidsTypeDatasetConfig.from_json(tmp_path / "config.json")
+        assert config.columns == new_config.columns
+        pd.testing.assert_frame_equal(config.data, new_config.data)
+        assert config.transforms == new_config.transforms
+
+
+class TestBidsTypeDatasetWithConfig:
+    def test_df(self):
+        df = pd.DataFrame(
+            {
+                "participant_id": ["sub-000", "sub-010"],
+                "session_id": ["ses-M000", "ses-M003"],
+            }
+        )
+        dataset = DatasetWithConfig(
+            image=Image(
+                Bids(BIDS),
+                BidsFileType(data_type="anat", suffix="T1w"),
+            ),
+            transforms=TransformsHandler(),
+            columns=None,
+            data=df,
+        )
+        dataset._df["n_samples"] = 1
+        assert (dataset.config.data["n_samples"] == 1).all()
+        dataset._df = pd.DataFrame()
+        pd.testing.assert_frame_equal(dataset.config.data, pd.DataFrame())

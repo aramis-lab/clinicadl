@@ -1,6 +1,10 @@
-from typing import Iterable, Optional, TypeVar
+from typing import Any, Iterable, Optional, TypeVar
+
+import pandas as pd
+from pydantic import Field, field_serializer
 
 from clinicadl.transforms import TransformsHandler
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.tsvtools import create_participants_sessions_df
 from clinicadl.utils.typing import DataFrameType
 
@@ -15,7 +19,7 @@ from ..structures.images import SubjectSpecificImage
 from .utils import ColumnType, DatasetChecker, MultimodalSamplerDataset, SpatialCheck
 
 
-class BidsTypeDataset(MultimodalSamplerDataset):
+class _BidsTypeDataset(MultimodalSamplerDataset):
     """
     A :py:class:`clinicadl.data.datasets.utils.MultimodalSamplerDataset` that is
     able to read in a :term:`BIDS` directory to load images.
@@ -34,6 +38,22 @@ class BidsTypeDataset(MultimodalSamplerDataset):
         super().__init__(data, transforms, columns)
 
         self._look_for_images()
+
+    def describe(self) -> dict[str, Any]:
+        """
+        Returns a description of the dataset.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary describing the dataset.
+        """
+        return {
+            "participant_session_pairs": self.get_participant_session_couples(),
+            "file_type": dict(self.image.file_type.to_dict()),
+            "extraction": dict(self.transforms.extraction.to_dict()),
+            "total_number_samples": len(self),
+        }
 
     def sanity_check(
         self,
@@ -95,10 +115,52 @@ class BidsTypeDataset(MultimodalSamplerDataset):
             ), f"For ({participant}, {session}), no image associated with {self.image.file_type}"
 
 
+def _read_df(dict_df: dict) -> pd.DataFrame:
+    """
+    To read a DataFrame from a JSON file.
+    """
+    df = pd.DataFrame.from_dict(dict_df)
+    try:
+        df.index = df.index.astype(int)
+    finally:
+        return df
+
+
+class BidsTypeDatasetConfig(ClinicaDLConfig):
+    """
+    Base config class for datasets that inherit from ``_BidsTypeDataset``.
+    """
+
+    data: Optional[DataFrameType] = Field(reader=_read_df)
+    transforms: TransformsHandler = Field(reader=TransformsHandler.from_dict)
+    columns: Optional[ColumnType]
+
+    @field_serializer("data")
+    def _serialize_df(self, df: pd.DataFrame) -> dict:
+        return df.to_dict()
+
+
+class BidsTypeDatasetWithConfig(_BidsTypeDataset):
+    """
+    To synchronize the DataFrame in the dataset and the one
+    the config class.
+    """
+
+    config: BidsTypeDatasetConfig
+
+    @property
+    def _df(self) -> pd.DataFrame:
+        return self.config.data
+
+    @_df.setter
+    def _df(self, df: pd.DataFrame) -> None:
+        self.config.data = df
+
+
 T = TypeVar("T")
 
 
-class BidsNiftiDataset(BidsTypeDataset):
+class BidsNiftiDataset(_BidsTypeDataset):
     """
     A :py:class:`BidsTypeDataset` that reads NIfTI images.
     """
@@ -181,7 +243,7 @@ def _differentiate_masks(
     return individual_masks, common_masks
 
 
-class BidsTensorDataset(BidsTypeDataset):
+class BidsTensorDataset(_BidsTypeDataset):
     """
     A :py:class:`BidsTypeDataset` that reads images saved as tensors in ``.pt`` files.
     """
