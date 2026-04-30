@@ -1,24 +1,58 @@
 {
-    "source": "caps and bids",
-    "individual_masks": ["seg", "brain"],
-    "common_masks": {"left_hippo": "leftHippocampus.nii.gz", "right_hippo": "rightHippocampus.nii.gz"},
-    "also": {
-        "other_image": "image",
-        "other_mask": "mask",
-        "coefficient": "other"
+    "tensor_type": {
+        "suffix": "tensors",
+        "data_type": "tensors",
+        "extension": ".pt",
+        "with_entities": {
+            "src": "T1w",
+            "conv": "T1Transform"
+        },
+        "without_entities": null,
+        "description": "Outputs of the tensor conversion."
     },
+    "images": [
+        "image"
+    ],
+    "masks": [
+        "brain",
+        "seg",
+        "left_hippo",
+        "right_hippo"
+    ],
+    "additional_data": [],
     "transforms": [
-        "Reampling", "CropOrPad", "Custom with load also"
+        {
+            "name_": "Resample",
+            "include": null,
+            "exclude": null,
+            "copy": false,
+            "target": 1.1,
+            "pre_affine_name": null,
+            "image_interpolation": "linear",
+            "label_interpolation": "nearest",
+            "scalars_only": false
+        },
+        {
+            "name_": "CropOrPad",
+            "include": null,
+            "exclude": null,
+            "copy": false,
+            "target_shape": 2,
+            "padding_mode": 0.0,
+            "mask_name": null,
+            "labels": null
+        },
+        "CustomTransform()"
     ],
     "spacing": [
         1.1,
         1.1,
         1.1
     ],
-    "shape": [
-        1,
+    "spatial_shape": [
         2,
         2,
         2
-    ]
+    ],
+    "interrupted": false
 }

@@ -1,17 +1,34 @@
 {
-    "source": "raw",
-    "individual_masks": ["brain", "seg"],
-    "also": {},
+    "tensor_type": {
+        "suffix": "tensors",
+        "data_type": "tensors",
+        "extension": ".pt",
+        "with_entities": {
+            "res": "1d3x1d2x1d1",
+            "src": "T1w",
+            "conv": "T1Masks"
+        },
+        "without_entities": null,
+        "description": "Outputs of the tensor conversion."
+    },
+    "images": [
+        "image"
+    ],
+    "masks": [
+        "brain",
+        "seg"
+    ],
+    "additional_data": [],
     "transforms": [],
     "spacing": [
-        1.2999999523162842,
-        1.2000000476837158,
-        1.100000023841858
+        1.3,
+        1.2,
+        1.1
     ],
-    "shape": [
-        1,
+    "spatial_shape": [
         3,
         3,
         3
-    ]
+    ],
+    "interrupted": false
 }

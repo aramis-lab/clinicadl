@@ -1,14 +1,27 @@
 {
-    "source": "bids",
-    "individual_masks": [],
-    "common_masks": [],
-    "also": {},
+    "tensor_type": {
+        "suffix": "tensors",
+        "data_type": "tensors",
+        "extension": ".pt",
+        "with_entities": {
+            "trc": "18FAV45",
+            "src": "pet",
+            "conv": "raw"
+        },
+        "without_entities": null,
+        "description": "Outputs of the tensor conversion."
+    },
+    "images": [
+        "image"
+    ],
+    "masks": [],
+    "additional_data": [],
     "transforms": [],
     "spacing": null,
-    "shape": [
-        1,
+    "spatial_shape": [
         1,
         1,
         1
-    ]
+    ],
+    "interrupted": false
 }
