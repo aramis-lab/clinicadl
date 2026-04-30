@@ -1,12 +1,10 @@
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
 
 from clinicadl.utils.dictionary.words import (
-    DATASET_ID,
-    N_SAMPLES,
     PARTICIPANT_ID,
     SESSION_ID,
 )
@@ -47,7 +45,7 @@ def df_to_tsv(
 
 def read_data(
     data: DataFrameType,
-    check_protected_names: bool = True,
+    protected_names: Optional[Iterable[str]] = None,
     check_duplicates: bool = True,
 ) -> pd.DataFrame:
     """
@@ -58,7 +56,7 @@ def read_data(
     ----------
     data : DataFrameType
         The :py:class:`pandas.Dataframe` or a path to the DataFrame.
-    check_protected_names : bool, default=True
+    protected_names : Optional[Iterable[str]], default=None
         Whether to check if the DataFrame contains some column names that are protected.
     check_duplicates : bool, default=True
         Whether to check if the DataFrame contains duplicated (participant, session) pairs.
@@ -75,7 +73,7 @@ def read_data(
     DataFrameError
         If the columns ('participant_id', 'session_id') are not found in the DataFrame.
     DataFrameError
-        If ``check_protected_names`` is ``True`` and the DataFrame contains columns named ``"n_samples"`` or ``"dataset_id"``.
+        If the DataFrame contains columns in``protected_names``.
     DataFrameError
         If ``check_duplicates`` is ``True`` and the DataFrame contains duplicated (participant, session) pairs.
     """
@@ -86,13 +84,15 @@ def read_data(
     elif not isinstance(data, pd.DataFrame):
         raise TypeError(f"'data' must be a path or a DataFrame. Got: {data}")
 
-    _check_df(data, check_protected_names, check_duplicates)
+    _check_df(data, protected_names, check_duplicates)
 
     return data
 
 
 def _check_df(
-    df: pd.DataFrame, check_protected_names: bool = True, check_duplicates: bool = True
+    df: pd.DataFrame,
+    protected_names: Optional[Iterable[str]],
+    check_duplicates: bool = True,
 ) -> None:
     """
     Checks the input DataFrame.
@@ -105,9 +105,8 @@ def _check_df(
             f"The dataframe is not in the correct format. "
             f"Columns should include {PARTICIPANT_ID, SESSION_ID}"
         )
-    if check_protected_names:
-        protected_names = {N_SAMPLES, DATASET_ID}
-        if len(protected_names.intersection(set(df.columns.values))) > 0:
+    if protected_names:
+        if len(set(protected_names).intersection(set(df.columns.values))) > 0:
             raise DataFrameError(
                 f"The dataframe contains some protected column names. "
                 f"Please do not use names in {protected_names}"
