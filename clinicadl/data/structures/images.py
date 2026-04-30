@@ -15,7 +15,7 @@ from .datapoint import DataPoint
 ImageT = TypeVar("ImageT")
 
 
-class _SubjectSpecificImage(Generic[ImageT]):
+class SubjectSpecificImage(Generic[ImageT]):
     image_type: ImageT
 
     def __init__(self, bids: Bids, file_type: BidsFileType):
@@ -45,7 +45,7 @@ class _SubjectSpecificImage(Generic[ImageT]):
         return self.image_type(path=path)
 
 
-class Image(_SubjectSpecificImage[tio.ScalarImage]):
+class Image(SubjectSpecificImage[tio.ScalarImage]):
     """
     To handle image loading from a :term:`BIDS` given a :py:class:`~clinicadl.io.BidsFileType`.
     """
@@ -53,7 +53,7 @@ class Image(_SubjectSpecificImage[tio.ScalarImage]):
     image_type = tio.ScalarImage
 
 
-class IndividualMask(_SubjectSpecificImage[tio.LabelMap]):
+class IndividualMask(SubjectSpecificImage[tio.LabelMap]):
     """
     To handle image-specific mask loading from a :term:`BIDS` given a :py:class:`~clinicadl.io.BidsFileType`.
     """
@@ -174,7 +174,7 @@ class TensorContent:
         torch.save(to_save, path)
 
 
-class Tensor(_SubjectSpecificImage[DataPoint]):
+class Tensor(SubjectSpecificImage[DataPoint]):
     """
     To handle tensor loading from a :term:`BIDS` given a :py:class:`~clinicadl.io.TensorType`.
     The fields to keep from the tensor files may be specified.
@@ -217,11 +217,11 @@ T = TypeVar("T")
 
 
 def _filter_dict(
-    dict_: dict[T, Any], filter: Optional[Iterable[T]] = None
+    dict_: dict[T, Any], filter_: Optional[Iterable[T]] = None
 ) -> dict[T, Any]:
     """
     To filter a dictionary's keys.
     """
-    if filter is None:
+    if filter_ is None:
         return dict_
-    return {key: value for key, value in dict_.items() if key in filter}
+    return {key: value for key, value in dict_.items() if key in filter_}

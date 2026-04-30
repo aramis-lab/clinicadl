@@ -254,3 +254,8 @@ class TestBidsReader:
             ("sub-999", "ses-M099"),
             ("sub-999", "ses-M999"),
         }
+
+    def test_from_to_json(self, tmp_path):
+        bids = Bids(DATA_DIR / "bids")
+        bids.to_json(tmp_path / "bids.json")
+        assert Bids.from_json(tmp_path / "bids.json").path == DATA_DIR / "bids"

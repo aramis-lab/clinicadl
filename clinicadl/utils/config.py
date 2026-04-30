@@ -217,6 +217,13 @@ class ClinicaDLConfig(BaseModel):
 
             return serialized
 
+        elif isinstance(value, dict):
+            serialized = {}
+            for name, elem in value.items():
+                serialized[name] = cls.serialize_anything(elem)
+
+            return serialized
+
         return value
 
     @classmethod

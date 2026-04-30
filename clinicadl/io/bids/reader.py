@@ -6,9 +6,11 @@ from pathlib import Path
 from typing import Optional
 
 from clinicadl.utils.bids import BidsEntity, Session, Subject
+from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.json import read_json
+from clinicadl.utils.objects import HasConfig, equal_if_config_equal
 from clinicadl.utils.typing import PathType
 
 from .files import BidsFileType
@@ -25,7 +27,20 @@ class DatasetType(BaseEnum):
     STUDY = "study"
 
 
-class Bids:
+class BidsConfig(ObjectConfig["Bids"]):
+    """
+    Config class for ``Bids``.
+    """
+
+    path: Path
+
+    @classmethod
+    def _get_class(cls):
+        return Bids
+
+
+@equal_if_config_equal
+class Bids(HasConfig[BidsConfig]):
     """
     A class to read :term:`BIDS` datasets or :term:`BIDS derivatives` (including :term:`CAPS`).
 
@@ -95,9 +110,12 @@ class Bids:
 
     """
 
-    def __init__(self, directory: PathType):
-        self.directory = Path(directory)
-        self.dataset_type, self.is_caps = self._read_bids_type(self.directory)
+    _config_type = BidsConfig
+
+    def __init__(self, path: PathType):
+        self.config = self._config_type(path=path)
+        self.path = Path(path)
+        self.dataset_type, self.is_caps = self._read_bids_type(self.path)
 
     @staticmethod
     def _read_bids_type(bids_dir: Path) -> tuple[DatasetType, bool]:
@@ -128,10 +146,10 @@ class Bids:
         Where the subject-specific directories are stored.
         """
         if self.is_caps:
-            return self.directory / "subjects"
+            return self.path / "subjects"
         elif self.dataset_type == DatasetType.STUDY:
-            return self.directory / "sourcedata" / "raw"
-        return self.directory
+            return self.path / "sourcedata" / "raw"
+        return self.path
 
     @property
     def tensors_dir(self) -> Path:
@@ -139,8 +157,8 @@ class Bids:
         Where the tensors produced by ``ClinicaDL`` are saved.
         """
         if self.dataset_type == DatasetType.DERIVATIVE:
-            return self.directory.parent / "tensors"
-        return self.directory / "derivatives" / "tensors"
+            return self.path.parent / "tensors"
+        return self.path / "derivatives" / "tensors"
 
     def get_path(
         self,
@@ -464,6 +482,6 @@ class Bids:
 
         else:
             assert session is None, "Cannot pass a session without a participant"
-            root = self.directory
+            root = self.path
 
         return root

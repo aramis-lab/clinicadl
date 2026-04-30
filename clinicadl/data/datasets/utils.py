@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.dictionary.words import (
+    DATASET_ID,
     N_SAMPLES,
     PARTICIPANT_ID,
     SAMPLE_TYPE,
@@ -27,7 +28,7 @@ from .base import Dataset
 logger = getLogger(__name__)
 
 
-class _MultiSamplesDataset(Dataset):
+class _MultiSamplesDataset(Dataset[Sample]):
     """
     An abstract :py:class:`~clinicadl.data.datasets.Dataset` to handle multiple samples per image.
 
@@ -243,7 +244,7 @@ class SamplerDataset(_MultiSamplesDataset):
         return self.transforms.extraction.num_samples_per_image(data)
 
 
-ColumnType: TypeAlias = Union[
+ColumnsType: TypeAlias = Union[
     Sequence[str], dict[str, Optional[Callable[[pd.Series], pd.Series]]]
 ]
 
@@ -257,7 +258,7 @@ class MultimodalSamplerDataset(SamplerDataset):
         self,
         data: DataFrameType,
         transforms: TransformsHandler,
-        columns: Optional[ColumnType],
+        columns: Optional[ColumnsType],
     ):
         super().__init__(transforms)
 
@@ -271,7 +272,7 @@ class MultimodalSamplerDataset(SamplerDataset):
         """
         Validates the input DataFrame.
         """
-        df = read_data(data)
+        df = read_data(data, protected_names=(DATASET_ID,))
 
         return deepcopy(
             df.sort_values(by=[PARTICIPANT_ID, SESSION_ID]).reset_index(drop=True)
@@ -368,11 +369,7 @@ class DatasetChecker:
 
     def __init__(
         self,
-        spatial_checks: Optional[Iterable[str | SpatialCheck]] = [
-            "affine",
-            "shape",
-            "global_spacing",
-        ],
+        spatial_checks: Optional[Iterable[str | SpatialCheck]],
     ):
         self.spatial_checks = (
             [SpatialCheck(check) for check in spatial_checks] if spatial_checks else []

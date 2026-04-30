@@ -97,9 +97,6 @@ class Sample(DataPoint, ABC):
 
     It is a :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`, with additional attributes.
 
-    Consistency of voxel spacings and spatial shapes of the different images inside the ``Sample``
-    will be checked, unless ``check_consistency=False``.
-
     Attributes
     ----------
     image : torchio.ScalarImage
@@ -140,7 +137,6 @@ class Sample(DataPoint, ABC):
         image_path: Union[Path, tuple[Path, ...]],
         sample_type: SampleType = SampleType.IMAGE,
         sample_position: Optional[Union[int, tuple[int, int, int]]] = None,
-        check_consistency: bool = True,
         **kwargs: Any,
     ):
         config = SampleConfig(
@@ -154,9 +150,6 @@ class Sample(DataPoint, ABC):
         )
         kwargs.update(config.to_raw_dict())
         super().__init__(**kwargs)
-        if check_consistency:
-            _ = self.spatial_shape
-            _ = self.spacing
 
 
 class Sample2DConfig(SampleConfig):
@@ -208,7 +201,6 @@ class Sample2D(Sample):
         sample_position: int,
         slice_direction: int,
         squeeze: bool,
-        check_consistency: bool = True,
         **kwargs: Any,
     ):
         config = Sample2DConfig(
@@ -222,7 +214,7 @@ class Sample2D(Sample):
             squeeze=squeeze,
         )
         kwargs.update(config.to_raw_dict())
-        super().__init__(**kwargs, check_consistency=check_consistency)
+        super().__init__(**kwargs)
 
     def get_image_tensor(self, image_name: str) -> Tensor:
         """
@@ -312,3 +304,6 @@ class Sample2D(Sample):
             assert (
                 len(tensor.shape) == 4
             ), f"If squeeze=False, a 4D tensor is expected (including one channel dimension). Got: {tensor.shape}"
+
+
+SAMPLE_FIELDS = tuple(Sample2DConfig.model_fields.keys())

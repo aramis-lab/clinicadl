@@ -473,9 +473,7 @@ class TestBidsTypeDatasetConfig:
     def test(self, config, tmp_path):
         config.to_json(tmp_path / "config.json")
         new_config = BidsTypeDatasetConfig.from_json(tmp_path / "config.json")
-        assert config.columns == new_config.columns
-        pd.testing.assert_frame_equal(config.data, new_config.data)
-        assert config.transforms == new_config.transforms
+        assert new_config == config
 
 
 class TestBidsTypeDatasetWithConfig:

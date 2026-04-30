@@ -16,7 +16,7 @@ from ..structures import (
     Tensor,
 )
 from ..structures.images import SubjectSpecificImage
-from .utils import ColumnType, DatasetChecker, MultimodalSamplerDataset, SpatialCheck
+from .utils import ColumnsType, DatasetChecker, MultimodalSamplerDataset, SpatialCheck
 
 
 class _BidsTypeDataset(MultimodalSamplerDataset):
@@ -30,7 +30,7 @@ class _BidsTypeDataset(MultimodalSamplerDataset):
         image: SubjectSpecificImage,
         data: Optional[DataFrameType],
         transforms: TransformsHandler,
-        columns: Optional[ColumnType],
+        columns: Optional[ColumnsType],
     ):
         self.image = image
         data = self._create_df(data)
@@ -133,11 +133,23 @@ class BidsTypeDatasetConfig(ClinicaDLConfig):
 
     data: Optional[DataFrameType] = Field(reader=_read_df)
     transforms: TransformsHandler = Field(reader=TransformsHandler.from_dict)
-    columns: Optional[ColumnType]
+    columns: Optional[ColumnsType]
 
     @field_serializer("data")
     def _serialize_df(self, df: pd.DataFrame) -> dict:
         return df.to_dict()
+
+    def __eq__(self, other: Any) -> bool:
+        if self.__class__ is not other.__class__:
+            return NotImplemented
+        for field in self.__class__.model_fields.keys():
+            v1, v2 = getattr(self, field), getattr(other, field)
+            if isinstance(v1, pd.DataFrame) and isinstance(v2, pd.DataFrame):
+                if not v1.equals(v2):
+                    return False
+            elif v1 != v2:
+                return False
+        return True
 
 
 class BidsTypeDatasetWithConfig(_BidsTypeDataset):
@@ -172,7 +184,7 @@ class BidsNiftiDataset(_BidsTypeDataset):
         image: Image,
         data: Optional[DataFrameType],
         transforms: TransformsHandler,
-        columns: ColumnType,
+        columns: Optional[ColumnsType],
         masks: Optional[dict[str, IndividualMask | CommonMask]],
     ):
         super().__init__(image, data, transforms, columns)
@@ -255,7 +267,7 @@ class BidsTensorDataset(_BidsTypeDataset):
         tensor: Tensor,
         data: Optional[DataFrameType],
         transforms: TransformsHandler,
-        columns: ColumnType,
+        columns: Optional[ColumnsType],
     ):
         super().__init__(
             tensor,
