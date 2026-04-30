@@ -441,56 +441,56 @@ class TensorConversion:
 
         return images
 
-    @staticmethod
-    def _check_shapes_consistency(images: DataPoint) -> None:
-        """
-        Checks if all images related to the same (participant, session)
-        (i.e. the image and the associated masks) have the same shape.
-        """
-        try:
-            images.spatial_shape
-        except RuntimeError as exc:
-            message = f"Inconsistent shapes were found for ({images.participant}, {images.session}):\n"
-            for image in images.get_images(intensity_only=False):
-                message += f"   * {image.path}: {image.spatial_shape}\n"
-            message += "The masks associated to an image must have the same shape!"
-            raise TensorConversionError(message) from exc
+    # @staticmethod
+    # def _check_shapes_consistency(images: DataPoint) -> None:
+    #     """
+    #     Checks if all images related to the same (participant, session)
+    #     (i.e. the image and the associated masks) have the same shape.
+    #     """
+    #     try:
+    #         images.spatial_shape
+    #     except RuntimeError as exc:
+    #         message = f"Inconsistent shapes were found for ({images.participant}, {images.session}):\n"
+    #         for image in images.get_images(intensity_only=False):
+    #             message += f"   * {image.path}: {image.spatial_shape}\n"
+    #         message += "The masks associated to an image must have the same shape!"
+    #         raise TensorConversionError(message) from exc
 
-    @staticmethod
-    def _check_affines_consistency(images: DataPoint) -> None:
-        """
-        Checks if all images related to the same (participant, session)
-        (i.e. the image and the associated masks) have the same affine matrix.
-        """
-        try:
-            images.affine
-        except RuntimeError as exc:
-            message = f"Inconsistent affine matrices were found for ({images.participant}, {images.session}):\n"
-            for image in images.get_images(intensity_only=False):
-                message += f"   * {image.path}:\n {image.affine}\n"
-            message += (
-                "The masks associated to an image must have the same affine matrix!"
-            )
-            raise TensorConversionError(message) from exc
+    # @staticmethod
+    # def _check_affines_consistency(images: DataPoint) -> None:
+    #     """
+    #     Checks if all images related to the same (participant, session)
+    #     (i.e. the image and the associated masks) have the same affine matrix.
+    #     """
+    #     try:
+    #         images.affine
+    #     except RuntimeError as exc:
+    #         message = f"Inconsistent affine matrices were found for ({images.participant}, {images.session}):\n"
+    #         for image in images.get_images(intensity_only=False):
+    #             message += f"   * {image.path}:\n {image.affine}\n"
+    #         message += (
+    #             "The masks associated to an image must have the same affine matrix!"
+    #         )
+    #         raise TensorConversionError(message) from exc
 
-    @staticmethod
-    def _check_spacings_consistency(images: DataPoint) -> None:
-        """
-        Checks if all images related to the same (participant, session)
-        (i.e. the image and the associated masks) have the same voxel spacings.
-        """
-        try:
-            images.spacing
-        except RuntimeError as exc:
-            message = f"Inconsistent voxel spacings were found for ({images.participant}, {images.session}):\n"
-            for image in images.get_images(intensity_only=False):
-                message += f"   {image.path}: {image.spacing}\n"
-            message += (
-                "For a mask to be used on an image, it must have the same spacing as the image!\n"
-                "If you don't care about voxel spacing and want to ignore this error, set `ignore_spacing` "
-                "to True."
-            )
-            raise TensorConversionError(message) from exc
+    # @staticmethod
+    # def _check_spacings_consistency(images: DataPoint) -> None:
+    #     """
+    #     Checks if all images related to the same (participant, session)
+    #     (i.e. the image and the associated masks) have the same voxel spacings.
+    #     """
+    #     try:
+    #         images.spacing
+    #     except RuntimeError as exc:
+    #         message = f"Inconsistent voxel spacings were found for ({images.participant}, {images.session}):\n"
+    #         for image in images.get_images(intensity_only=False):
+    #             message += f"   {image.path}: {image.spacing}\n"
+    #         message += (
+    #             "For a mask to be used on an image, it must have the same spacing as the image!\n"
+    #             "If you don't care about voxel spacing and want to ignore this error, set `ignore_spacing` "
+    #             "to True."
+    #         )
+    #         raise TensorConversionError(message) from exc
 
     ### to save tensors ###
     def _save_images_as_tensors(self, images: DataPoint, path: Path) -> None:
@@ -536,44 +536,44 @@ class TensorConversion:
         torch.save(mask_dict, path)
 
     ### to check consistency across the dataset
-    def _check_consistency_with_dataset(self, images: DataPoint) -> None:
-        """
-        Checks that the voxel spacing and the shape for a
-        (participant, session) is consistent with the rest of
-        the dataset.
-        """
-        image = images.image
-        self._set_ref_info(image)
-        if not self._ignore_spacing:
-            self._check_spacing(image)
-        self._check_shape(image)
+    # def _check_consistency_with_dataset(self, images: DataPoint) -> None:
+    #     """
+    #     Checks that the voxel spacing and the shape for a
+    #     (participant, session) is consistent with the rest of
+    #     the dataset.
+    #     """
+    #     image = images.image
+    #     self._set_ref_info(image)
+    #     if not self._ignore_spacing:
+    #         self._check_spacing(image)
+    #     self._check_shape(image)
 
-    def _set_ref_info(self, image: tio.Image) -> None:
-        """
-        Sets the reference information to that of the first image
-        seen.
-        """
-        if self._ref_image_spacing is None:
-            self._ref_image_spacing = image
-        if self._ref_image_shape is None:
-            self._ref_image_shape = image
+    # def _set_ref_info(self, image: tio.Image) -> None:
+    #     """
+    #     Sets the reference information to that of the first image
+    #     seen.
+    #     """
+    #     if self._ref_image_spacing is None:
+    #         self._ref_image_spacing = image
+    #     if self._ref_image_shape is None:
+    #         self._ref_image_shape = image
 
-    def _check_spacing(self, image: tio.Image) -> None:
-        """
-        Checks that the voxel spacing of an image is (approximately)
-        equal to the reference spacing.
-        """
-        spacing = tuple(float(s) for s in image.spacing)
-        if not np.isclose(
-            spacing, self._ref_image_spacing.spacing, rtol=SPACING_RTOL
-        ).all():
-            raise TensorConversionError(
-                "Different voxel spacings found in the dataset: "
-                f"for example, voxel spacing is {spacing} in {image.path}, "
-                f"but {tuple(float(s) for s in self._ref_image_spacing.spacing)} in {self._ref_image_spacing.path}.\n"
-                "If you don't care about voxel spacing and want to ignore this error, set `ignore_spacing` "
-                "to True."
-            )
+    # def _check_spacing(self, image: tio.Image) -> None:
+    #     """
+    #     Checks that the voxel spacing of an image is (approximately)
+    #     equal to the reference spacing.
+    #     """
+    #     spacing = tuple(float(s) for s in image.spacing)
+    #     if not np.isclose(
+    #         spacing, self._ref_image_spacing.spacing, rtol=SPACING_RTOL
+    #     ).all():
+    #         raise TensorConversionError(
+    #             "Different voxel spacings found in the dataset: "
+    #             f"for example, voxel spacing is {spacing} in {image.path}, "
+    #             f"but {tuple(float(s) for s in self._ref_image_spacing.spacing)} in {self._ref_image_spacing.path}.\n"
+    #             "If you don't care about voxel spacing and want to ignore this error, set `ignore_spacing` "
+    #             "to True."
+    #         )
 
     def _check_shape(self, image: tio.Image) -> None:
         """
