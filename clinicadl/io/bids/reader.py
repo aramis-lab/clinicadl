@@ -114,7 +114,7 @@ class Bids(HasConfig[BidsConfig]):
 
     def __init__(self, path: PathType):
         self.config = self._config_type(path=path)
-        self.path = Path(path)
+        self.path = Path(path).resolve()
         self.dataset_type, self.is_caps = self._read_bids_type(self.path)
 
     @staticmethod
