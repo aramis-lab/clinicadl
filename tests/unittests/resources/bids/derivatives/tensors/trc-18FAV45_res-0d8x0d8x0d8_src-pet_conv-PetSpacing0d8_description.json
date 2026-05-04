@@ -1,5 +1,5 @@
 {
-    "tensor_type": {
+    "TensorType": {
         "suffix": "tensors",
         "data_type": "tensors",
         "extension": ".pt",
@@ -12,21 +12,34 @@
         "without_entities": null,
         "description": "Outputs of the tensor conversion."
     },
-    "images": [
-        "image"
-    ],
-    "masks": [],
-    "additional_data": [],
-    "transforms": [],
-    "spacing": [
+    "Images": {
+        "image": [
+            "../../",
+            {
+                "suffix": "pet",
+                "data_type": "pet",
+                "extension": ".nii.*",
+                "with_entities": {
+                    "trc": "18FAV45",
+                    "res": "0d8x0d8x0d8"
+                },
+                "without_entities": null,
+                "description": null
+            }
+        ]
+    },
+    "Masks": [],
+    "AdditionalData": [],
+    "Transforms": [],
+    "Spacing": [
         0.8,
         0.8,
         0.8
     ],
-    "spatial_shape": [
+    "SpatialShape": [
         1,
         1,
         1
     ],
-    "interrupted": false
+    "Interrupted": false
 }

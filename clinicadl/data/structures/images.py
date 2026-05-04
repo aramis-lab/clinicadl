@@ -6,7 +6,7 @@ import torch
 import torchio as tio
 from typing_extensions import Self
 
-from clinicadl.io import Bids, BidsFileType, TensorType
+from clinicadl.io import Bids, BidsFileType
 from clinicadl.utils.bids import BidsFile
 from clinicadl.utils.typing import PathType
 
@@ -176,12 +176,15 @@ class TensorContent:
 
 class Tensor(SubjectSpecificImage[DataPoint]):
     """
-    To handle tensor loading from a :term:`BIDS` given a :py:class:`~clinicadl.io.TensorType`.
+    To handle tensor loading from a :term:`BIDS` given a :py:class:`~clinicadl.io.BidsFileType`.
     The fields to keep from the tensor files may be specified.
     """
 
     def __init__(
-        self, bids: Bids, file_type: TensorType, to_load: Optional[Iterable[str]] = None
+        self,
+        bids: Bids,
+        file_type: BidsFileType,
+        to_load: Optional[Iterable[str]] = None,
     ):
         super().__init__(bids, file_type)
         self.to_load = to_load
