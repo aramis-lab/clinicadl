@@ -304,7 +304,14 @@ class TestDatasetChecker:
                 "An error occurred when checking (sub-005, ses-M000) (see above). If you don't care about voxel spacing consistency and want to ignore this error, please modify 'spatial_checks'."
             ),
         ):
-            checker.check(dataset)
+            checker.check_data_point(dataset[0])
+        checker.enabled = False
+        checker.check_data_point(dataset[0])
+        checker.reset()
+        with pytest.raises(
+            RuntimeError,
+        ):
+            checker.check_data_point(dataset[0])
 
     def test_shape(self):
         dataset = Sampler(transforms=TransformsHandler()).subset(
@@ -337,6 +344,7 @@ class TestDatasetChecker:
             [("sub-003", "ses-M000"), ("sub-004", "ses-M001")]
         )
         checker = DatasetChecker(spatial_checks=["global_shape", "spacing"])
+        checker.check_data_point(dataset[0])
         with pytest.raises(
             RuntimeError,
             match=re.escape(
@@ -344,7 +352,12 @@ class TestDatasetChecker:
                 "If you don't care about spatial shape consistency and want to ignore this error, please modify 'spatial_checks'."
             ),
         ):
-            checker.check(dataset)
+            checker.check_data_point(dataset[1])
+
+        checker.reset()
+        checker.check_data_point(dataset[1])
+        checker.enabled = False
+        checker.check_data_point(dataset[0])
 
     def test_global_spacing(self):
         dataset = Sampler(transforms=TransformsHandler()).subset(

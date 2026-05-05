@@ -156,7 +156,7 @@ class Bids(HasConfig[BidsConfig]):
     """
 
     _config_type = BidsConfig
-    DATASET_DESCRIPTION_NAME = "dataset_description.json"
+    DATASET_DESC_FILENAME = "dataset_description.json"
 
     def __init__(self, path: PathType):
         self.config = self._config_type(path=path)
@@ -168,7 +168,7 @@ class Bids(HasConfig[BidsConfig]):
         """
         Gets the DatasetType and determines whether the dataset is a CAPS or not.
         """
-        data_desc_path = bids_dir / cls.DATASET_DESCRIPTION_NAME
+        data_desc_path = bids_dir / cls.DATASET_DESC_FILENAME
         if not data_desc_path.exists():
             raise FileNotFoundError(
                 f"A BIDS (or a derivative) must contain a dataset_description.json. Nothing found at: {data_desc_path}"

@@ -16,7 +16,13 @@ from ..structures import (
     Tensor,
 )
 from ..structures.images import SubjectSpecificImage
-from .utils import ColumnsType, DatasetChecker, MultimodalSamplerDataset, SpatialCheck
+from .utils import (
+    DEFAULT_SPATIAL_CHECKS,
+    ColumnsType,
+    DatasetChecker,
+    MultimodalSamplerDataset,
+    SpatialCheck,
+)
 
 
 class _BidsTypeDataset(MultimodalSamplerDataset):
@@ -57,11 +63,7 @@ class _BidsTypeDataset(MultimodalSamplerDataset):
 
     def sanity_check(
         self,
-        spatial_checks: Optional[Iterable[str | SpatialCheck]] = [
-            "affine",
-            "shape",
-            "global_spacing",
-        ],
+        spatial_checks: Optional[Iterable[str | SpatialCheck]] = DEFAULT_SPATIAL_CHECKS,
     ) -> None:
         """
         Performs a sanity check on the current dataset.

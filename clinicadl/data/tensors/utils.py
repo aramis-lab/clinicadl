@@ -31,11 +31,8 @@ def _read_transform(
     return serialized
 
 
-def _read_images(images: dict[str, tuple[str, dict[str, Any]]]) -> dict[str, Image]:
-    return {
-        name: Image(Bids(value[0]), BidsFileType(**value[1]))
-        for name, value in images.items()
-    }
+def _read_image(image: tuple[str, dict[str, Any]]) -> dict[str, Image]:
+    return Image(Bids(image[0]), BidsFileType(**image[1]))
 
 
 def _read_masks(
@@ -55,7 +52,7 @@ class TensorDescription(ClinicaDLConfig):
     """
 
     tensor_type: BidsFileType
-    images: dict[str, Image] = Field(reader=_read_images)
+    image: Image = Field(reader=_read_image)
     masks: dict[str, IndividualMask | CommonMask] = Field(reader=_read_masks)
     additional_data: list[str]
     transforms: list[str | Transform | TransformConfig] = Field(
@@ -108,21 +105,16 @@ class TensorDescription(ClinicaDLConfig):
         file_type.data_type = None
         return Bids(tensor_dir).build_path(file_type)
 
-    @field_serializer("images")
-    def _serialize_images(
-        self, images: dict[str, Image]
-    ) -> dict[str, tuple[str, dict[str, Any]]]:
+    @field_serializer("image")
+    def _serialize_image(self, image: Image) -> tuple[str, dict[str, Any]]:
         """
-        To convert Images to tuples (bids_path, file_type).
+        To convert the Image to a tuple (bids_path, file_type).
         """
-        return {
-            name: (value.bids.path, value.file_type.to_dict())
-            for name, value in images.items()
-        }
+        return (image.bids.path, image.file_type.to_dict())
 
     @field_serializer("masks")
     def _serialize_masks(
-        self, images: dict[str, IndividualMask | CommonMask]
+        self, masks: dict[str, IndividualMask | CommonMask]
     ) -> dict[str, tuple[str, dict[str, Any]] | str]:
         """
         To convert IndividualMasks to tuples (bids_path, file_type) and CommonMasks to str (the path of the mask).
@@ -131,7 +123,7 @@ class TensorDescription(ClinicaDLConfig):
             name: (value.bids.path, value.file_type.to_dict())
             if isinstance(value, IndividualMask)
             else value.file.path.resolve()
-            for name, value in images.items()
+            for name, value in masks.items()
         }
 
     def to_dict(self, **kwargs):

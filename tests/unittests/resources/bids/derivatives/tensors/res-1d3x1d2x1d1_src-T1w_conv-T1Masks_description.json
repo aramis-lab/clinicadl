@@ -11,21 +11,19 @@
         "without_entities": null,
         "description": "Outputs of the tensor conversion."
     },
-    "Images": {
-        "image": [
-            "../../",
-            {
-                "suffix": "T1w",
-                "data_type": "anat",
-                "extension": ".nii.*",
-                "with_entities": {
-                    "res": "1d3x1d2x1d1"
-                },
-                "without_entities": null,
-                "description": null
-            }
-        ]
-    },
+    "Image": [
+        "../../",
+        {
+            "suffix": "T1w",
+            "data_type": "anat",
+            "extension": ".nii.*",
+            "with_entities": {
+                "res": "1d3x1d2x1d1"
+            },
+            "without_entities": null,
+            "description": null
+        }
+    ],
     "Masks": {
         "brain": [
             "../../",

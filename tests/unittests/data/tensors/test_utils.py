@@ -23,9 +23,7 @@ def _tensor_description(custom_transforms: bool):
             data_type="tensors",
             with_entities={"src": "pet", "conv": "raw"},
         ),
-        images={
-            "image": Image(Bids(BIDS), BidsFileType(suffix="T1w", data_type="anat"))
-        },
+        image=Image(Bids(BIDS), BidsFileType(suffix="T1w", data_type="anat")),
         masks={
             "common_mask": CommonMask(BIDS / "mask.nii.gz"),
             "individual_mask": IndividualMask(
@@ -70,7 +68,7 @@ class TestTensorDescription:
     def test_read_write(self, tensor_description: TensorDescription, tmp_path, caplog):
         write_json(
             tmp_path / "dataset_description.json",
-            {"BIDSVersion": "1", "DatasetType": "derivative"},
+            {"BIDSVersion": "1.10.0", "DatasetType": "derivative", "Name": "abc"},
         )
         with caplog.at_level(logging.INFO):
             tensor_description.write(tmp_path)
@@ -84,9 +82,8 @@ class TestTensorDescription:
         assert json["TensorType"]["with_entities"] == {"src": "pet", "conv": "raw"}
         assert json["Transforms"][0]["name_"] == "Crop"
         assert json["Transforms"][1]["name_"] == "Pad"
-        assert set(json["Images"].keys()) == {"image"}
-        assert json["Images"]["image"][0] == str(BIDS)
-        assert json["Images"]["image"][1]["suffix"] == "T1w"
+        assert json["Image"][0] == str(BIDS)
+        assert json["Image"][1]["suffix"] == "T1w"
         assert set(json["Masks"].keys()) == {"common_mask", "individual_mask"}
         assert json["Masks"]["individual_mask"][0] == str(BIDS)
         assert json["Masks"]["individual_mask"][1]["suffix"] == "mask"
@@ -102,8 +99,8 @@ class TestTensorDescription:
         )
         assert tensor_description.tensor_type == new_tensor_description.tensor_type
         assert (
-            tensor_description.images["image"].file_type.suffix
-            == new_tensor_description.images["image"].file_type.suffix
+            tensor_description.image.file_type.suffix
+            == new_tensor_description.image.file_type.suffix
         )
         assert (
             tensor_description.masks["individual_mask"].file_type.suffix
@@ -130,7 +127,7 @@ class TestTensorDescription:
     ):
         write_json(
             tmp_path / "dataset_description.json",
-            {"BIDSVersion": "1", "DatasetType": "derivative"},
+            {"BIDSVersion": "1.10.0", "DatasetType": "derivative", "Name": "abc"},
         )
         tensor_description_with_trasnforms.write(tmp_path)
         json = read_json(tmp_path / "src-pet_conv-raw_description.json")

@@ -362,6 +362,13 @@ class SpatialCheck(str, BaseEnum):
     GLOBAL_SHAPE = "global_shape"
 
 
+DEFAULT_SPATIAL_CHECKS = [
+    "affine",
+    "shape",
+    "global_spacing",
+]
+
+
 class DatasetChecker:
     """
     To perform spatial checks on a :py:class:`clinicadl.data.datasets.Dataset`.
@@ -374,7 +381,15 @@ class DatasetChecker:
         self.spatial_checks = (
             [SpatialCheck(check) for check in spatial_checks] if spatial_checks else []
         )
-        self._ref_sample: Optional[Sample] = None
+        self.ref_sample: Optional[Sample] = None
+        self.enabled = True
+
+    def reset(self):
+        """
+        Resets the running statistics tracked on the dataset.
+        """
+        self.ref_sample = None
+        self.enabled = True
 
     def check(self, dataset: Dataset[Sample]) -> None:
         """
@@ -382,42 +397,47 @@ class DatasetChecker:
         It iterates over all the samples to see if they are loaded correctly,
         and performs spatial checks on the samples, depending on the value of ``self.spatial_checks``.
         """
-        self._ref_sample: Optional[DataPoint] = None
+        self.reset()
 
         for sample in dataset:
-            self._spatial_checks(sample)
+            self.check_data_point(sample)
 
-    def _spatial_checks(self, sample: Sample) -> None:
+    def check_data_point(self, data_point: DataPoint) -> None:
         """
         Checks spacing, affine matrix, and/or image shape consistency in a sample.
         Also compares to a reference sample to check consistency across samples.
         """
+        if not self.enabled:
+            return
+
         if (
             SpatialCheck.SPACING in self.spatial_checks
             and SpatialCheck.GLOBAL_SPACING not in self.spatial_checks
         ):
             _check_intra_sample_consistency(
-                sample, attr="spacing", desc="voxel spacing"
+                data_point, attr="spacing", desc="voxel spacing"
             )
 
         if SpatialCheck.AFFINE in self.spatial_checks:
-            _check_intra_sample_consistency(sample, attr="affine", desc="affine matrix")
+            _check_intra_sample_consistency(
+                data_point, attr="affine", desc="affine matrix"
+            )
 
         if (
             SpatialCheck.SHAPE in self.spatial_checks
             and SpatialCheck.GLOBAL_SHAPE not in self.spatial_checks
         ):
             _check_intra_sample_consistency(
-                sample, attr="spatial_shape", desc="spatial shape"
+                data_point, attr="spatial_shape", desc="spatial shape"
             )
 
-        if self._ref_sample is None:
-            self._ref_sample = sample
+        if self.ref_sample is None:
+            self.ref_sample = data_point
 
         if SpatialCheck.GLOBAL_SPACING in self.spatial_checks:
             _check_dataset_consistency(
-                sample,
-                self._ref_sample,
+                data_point,
+                self.ref_sample,
                 tolerance=SPACING_RTOL,
                 attr="spacing",
                 desc="voxel spacing",
@@ -425,8 +445,8 @@ class DatasetChecker:
 
         if SpatialCheck.GLOBAL_SHAPE in self.spatial_checks:
             _check_dataset_consistency(
-                sample,
-                self._ref_sample,
+                data_point,
+                self.ref_sample,
                 tolerance=0,
                 attr="spatial_shape",
                 desc="spatial shape",
