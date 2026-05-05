@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, TypeVar
+from typing import Any, Iterable, Optional, Sequence, TypeVar
 
 import pandas as pd
 from pydantic import Field, field_serializer
@@ -122,8 +122,21 @@ def _read_df(dict_df: dict) -> pd.DataFrame:
     df = pd.DataFrame.from_dict(dict_df)
     try:
         df.index = df.index.astype(int)
-    finally:
-        return df
+    except (ValueError, TypeError):
+        pass
+    return df
+
+
+def _read_columns(
+    columns: Sequence[str] | dict[str, Any] | None,
+) -> Sequence[str] | None:
+    """
+    To read columns. No need for column processing functions here
+    as the DataFrame saved has already been processed.
+    """
+    if isinstance(columns, dict):
+        return list(columns.keys())
+    return columns
 
 
 class BidsTypeDatasetConfig(ClinicaDLConfig):
@@ -133,7 +146,7 @@ class BidsTypeDatasetConfig(ClinicaDLConfig):
 
     data: Optional[DataFrameType] = Field(reader=_read_df)
     transforms: TransformsHandler = Field(reader=TransformsHandler.from_dict)
-    columns: Optional[ColumnsType]
+    columns: Optional[ColumnsType] = Field(reader=_read_columns)
 
     @field_serializer("data")
     def _serialize_df(self, df: pd.DataFrame) -> dict:

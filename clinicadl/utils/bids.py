@@ -19,7 +19,7 @@ class BidsFile:
     """
 
     def __init__(self, path: PathType):
-        self.path = Path(path).resolve()
+        self.path = Path(path)
         self.entities = self._get_entities(self.path.name)
         self.suffix = self._get_suffix(self.path.name)
         self.extension = self._get_extension(self.path.name)

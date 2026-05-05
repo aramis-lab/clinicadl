@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from copy import copy
 from pathlib import Path
 from typing import Annotated, Optional, Pattern
 
@@ -174,7 +175,7 @@ class BidsFileType(ClinicaDLConfig):
                 ].fullmatch(value):
                     return False
 
-        with_entities = self.with_entities or {}
+        with_entities = copy(self.with_entities) or {}
 
         if participant is not None:
             sub = Subject(participant)

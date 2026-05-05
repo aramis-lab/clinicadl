@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -10,6 +11,7 @@ from clinicadl.data.structures import Sample2D
 from clinicadl.io import Bids, BidsFileType
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.extraction import Slice
+from clinicadl.utils.exceptions import CannotReadJsonFieldError
 
 BIDS = Path(__file__).parents[2] / "resources" / "bids"
 MASKS = BIDS / "derivatives" / "masks"
@@ -236,6 +238,7 @@ class TestBidsDataset:
         dataset = BidsDataset(
             bids=BIDS,
             file_type=BidsFileType(suffix="T1w", data_type="anat"),
+            transforms=TransformsHandler(image_transforms=[tio.Crop(1)]),
             data=pd.DataFrame(
                 {
                     "participant_id": ["sub-000", "sub-010"],
@@ -243,9 +246,17 @@ class TestBidsDataset:
                     "age": [1, 2],
                 }
             ),
-            columns=["age"],
+            columns={"age": lambda x: x * 10},
         )
         len(dataset)
         dataset.to_json(tmp_path / "dataset.json", overwrite=True)
-        new_dataset = dataset.from_json(tmp_path / "dataset.json")
-        assert dataset.config == new_dataset.config
+        with pytest.raises(
+            CannotReadJsonFieldError,
+            match=re.escape("BidsDataset cannot read the field(s) ['transforms']"),
+        ):
+            dataset.from_json(tmp_path / "dataset.json")
+        new_dataset = dataset.from_json(
+            tmp_path / "dataset.json",
+            transforms=TransformsHandler(image_transforms=[tio.Crop(1)]),
+        )
+        pd.testing.assert_frame_equal(dataset.config.data, new_dataset.config.data)

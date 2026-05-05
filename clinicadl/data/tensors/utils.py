@@ -130,7 +130,7 @@ class TensorDescription(ClinicaDLConfig):
         return {
             name: (value.bids.path, value.file_type.to_dict())
             if isinstance(value, IndividualMask)
-            else value.file.path
+            else value.file.path.resolve()
             for name, value in images.items()
         }
 

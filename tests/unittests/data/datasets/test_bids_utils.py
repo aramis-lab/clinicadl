@@ -20,6 +20,7 @@ from clinicadl.data.structures import (
 )
 from clinicadl.io import Bids, BidsFileType, TensorType
 from clinicadl.transforms import TransformsHandler
+from clinicadl.transforms.config import CropConfig
 from clinicadl.transforms.extraction import Slice
 
 BIDS = Path(__file__).parents[2] / "resources" / "bids"
@@ -458,15 +459,10 @@ class TestBidsTypeDatasetConfig:
                 data=pd.DataFrame(
                     {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
                 ),
-                transforms=TransformsHandler(Slice(slice_direction=1)),
-                columns=["abc"],
-            ),
-            BidsTypeDatasetConfig(
-                data=pd.DataFrame(
-                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                transforms=TransformsHandler(
+                    extraction=Slice(), image_transforms=[CropConfig(cropping=1)]
                 ),
-                transforms=TransformsHandler(Slice(slice_direction=1)),
-                columns={"abc": None},
+                columns=["abc"],
             ),
         ],
     )
@@ -474,6 +470,30 @@ class TestBidsTypeDatasetConfig:
         config.to_json(tmp_path / "config.json")
         new_config = BidsTypeDatasetConfig.from_json(tmp_path / "config.json")
         assert new_config == config
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            BidsTypeDatasetConfig(
+                data=pd.DataFrame(
+                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                ),
+                transforms=TransformsHandler(),
+                columns={"abc": None},
+            ),
+            BidsTypeDatasetConfig(
+                data=pd.DataFrame(
+                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                ),
+                transforms=TransformsHandler(),
+                columns={"abc": lambda x: x},
+            ),
+        ],
+    )
+    def test_columns(self, config, tmp_path):
+        config.to_json(tmp_path / "config.json")
+        new_config = BidsTypeDatasetConfig.from_json(tmp_path / "config.json")
+        assert new_config.columns == ["abc"]
 
 
 class TestBidsTypeDatasetWithConfig:
