@@ -3,10 +3,21 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Any, Optional
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    constr,
+    model_validator,
+    with_config,
+)
+from typing_extensions import Self
 
 from clinicadl.utils.bids import BidsEntity, Session, Subject
-from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.json import read_json
@@ -18,7 +29,7 @@ from .files import BidsFileType
 NO_FILE_FOUND = "no file found"
 
 
-class DatasetType(BaseEnum):
+class DatasetType(str, BaseEnum):
     """DatasetTypes allowed by the BIDS specification
     (https://bids-specification.readthedocs.io/en/stable/glossary.html#datasettype-metadata)"""
 
@@ -37,6 +48,40 @@ class BidsConfig(ObjectConfig["Bids"]):
     @classmethod
     def _get_class(cls):
         return Bids
+
+
+SemVer = Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")]
+
+
+class DatasetDescription(ClinicaDLConfig):
+    """
+    The information stored in a BIDS' dataset description file.
+    """
+
+    name: str = Field(alias="Name")
+    bids_version: SemVer = Field(alias="BIDSVersion")
+    dataset_type: DatasetType = Field(alias="DatasetType")
+
+    model_config = ConfigDict(
+        validate_by_name=True,
+        validate_by_alias=True,
+        extra="allow",
+    )
+
+    @property
+    def is_caps(self) -> bool:
+        return "CAPSVersion" in self.__pydantic_extra__
+
+    @classmethod
+    def from_json(cls, json_path, **kwargs):
+        return cls(**read_json(json_path))
+
+    @model_validator(mode="after")
+    def _validate_caps_version(self) -> Self:
+        if self.is_caps:
+            assert (
+                self.dataset_type == DatasetType.DERIVATIVE
+            ), f"If the directory is a CAPS, DatasetType must be 'derivative' in dataset_description.json. Got: '{self.dataset_type}'"
 
 
 @equal_if_config_equal
@@ -111,43 +156,33 @@ class Bids(HasConfig[BidsConfig]):
     """
 
     _config_type = BidsConfig
+    DATASET_DESCRIPTION_NAME = "dataset_description.json"
 
     def __init__(self, path: PathType):
         self.config = self._config_type(path=path)
         self.path = Path(path).resolve()
-        self.dataset_type, self.is_caps = self._read_bids_type(self.path)
+        self.dataset_desc = self._read_bids_description(self.path)
 
-    @staticmethod
-    def _read_bids_type(bids_dir: Path) -> tuple[DatasetType, bool]:
+    @classmethod
+    def _read_bids_description(cls, bids_dir: Path) -> DatasetDescription:
         """
         Gets the DatasetType and determines whether the dataset is a CAPS or not.
         """
-        data_desc_path = (bids_dir / "dataset_description").with_suffix(JSON)
+        data_desc_path = bids_dir / cls.DATASET_DESCRIPTION_NAME
         if not data_desc_path.exists():
             raise FileNotFoundError(
                 f"A BIDS (or a derivative) must contain a dataset_description.json. Nothing found at: {data_desc_path}"
             )
-        data_desc = read_json(data_desc_path)
-        assert (
-            "DatasetType" in data_desc
-        ), "dataset_description.json must contain 'DatasetType'"
-        dataset_type = DatasetType(data_desc["DatasetType"])
-        is_caps = True if "CAPSVersion" in data_desc else False
-        if is_caps:
-            assert (
-                dataset_type == DatasetType.DERIVATIVE
-            ), f"If the directory is a CAPS, DatasetType must be 'derivative' in dataset_description.json. Got: '{dataset_type.value}'"
-
-        return dataset_type, is_caps
+        return DatasetDescription.from_json(data_desc_path)
 
     @property
     def participants_dir(self) -> Path:
         """
         Where the subject-specific directories are stored.
         """
-        if self.is_caps:
+        if self.dataset_desc.is_caps:
             return self.path / "subjects"
-        elif self.dataset_type == DatasetType.STUDY:
+        elif self.dataset_desc.dataset_type == DatasetType.STUDY:
             return self.path / "sourcedata" / "raw"
         return self.path
 
@@ -156,7 +191,7 @@ class Bids(HasConfig[BidsConfig]):
         """
         Where the tensors produced by ``ClinicaDL`` are saved.
         """
-        if self.dataset_type == DatasetType.DERIVATIVE:
+        if self.dataset_desc.dataset_type == DatasetType.DERIVATIVE:
             return self.path.parent / "tensors"
         return self.path / "derivatives" / "tensors"
 

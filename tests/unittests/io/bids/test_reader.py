@@ -2,11 +2,47 @@ import re
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from clinicadl.io import Bids, BidsFileType, T1Linear
-from clinicadl.utils.json import write_json
+from clinicadl.io.bids.reader import DatasetDescription
+from clinicadl.utils.json import read_json, write_json
 
 DATA_DIR = Path(__file__).parents[2] / "resources"
+
+
+def test_dataset_description(tmp_path):
+    desc = DatasetDescription(
+        name="abc", BIDSVersion="1.0.0", DatasetType="raw", additional="x"
+    )
+    assert desc.dataset_type == "raw"
+    assert desc.name == "abc"
+    assert desc.bids_version == "1.0.0"
+
+    desc.to_json(tmp_path / "desc.json")
+    json = read_json(tmp_path / "desc.json")
+    assert set(json.keys()) == {"Name", "BIDSVersion", "DatasetType", "additional"}
+
+    new_desc = DatasetDescription.from_json(tmp_path / "desc.json")
+    assert desc == new_desc
+
+    with pytest.raises(
+        ValidationError,
+    ):
+        DatasetDescription(name="abc", BIDSVersion="1", DatasetType="raw")
+
+    with pytest.raises(
+        ValidationError,
+    ):
+        DatasetDescription(name="abc", BIDSVersion="1.0.0", DatasetType="abc")
+
+    with pytest.raises(
+        ValidationError,
+        match="If the directory is a CAPS, DatasetType must be 'derivative' in dataset_description.json. Got: 'raw'",
+    ):
+        DatasetDescription(
+            name="abc", BIDSVersion="1.0.0", DatasetType="raw", CAPSVersion="x"
+        )
 
 
 class TestBidsReader:
@@ -16,31 +52,6 @@ class TestBidsReader:
             match=re.escape(
                 f"A BIDS (or a derivative) must contain a dataset_description.json. Nothing found at: {tmp_path / 'dataset_description.json'}"
             ),
-        ):
-            Bids(tmp_path)
-
-        write_json(tmp_path / "dataset_description.json", {})
-        with pytest.raises(
-            AssertionError, match="dataset_description.json must contain 'DatasetType'"
-        ):
-            Bids(tmp_path)
-
-        write_json(
-            tmp_path / "dataset_description.json",
-            {"DatasetType": "caps"},
-            overwrite=True,
-        )
-        with pytest.raises(NotImplementedError):
-            Bids(tmp_path)
-
-        write_json(
-            tmp_path / "dataset_description.json",
-            {"DatasetType": "raw", "CAPSVersion": "0.11"},
-            overwrite=True,
-        )
-        with pytest.raises(
-            AssertionError,
-            match="If the directory is a CAPS, DatasetType must be 'derivative' in dataset_description.json. Got: 'raw'",
         ):
             Bids(tmp_path)
 
