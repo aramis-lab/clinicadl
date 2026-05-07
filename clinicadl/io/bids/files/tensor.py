@@ -63,12 +63,18 @@ class TensorType(BidsFileType):
             entities = {}
         else:
             entities = _entities_intersection(
-                [{key: value.pattern for key, value in image.with_entities.items()}]
+                [
+                    {key: value.pattern for key, value in image.with_entities.items()}
+                    if image.with_entities
+                    else dict()
+                ]
                 + [
                     {
                         key: value.pattern
                         for key, value in file_type.with_entities.items()
                     }
+                    if file_type.with_entities
+                    else dict()
                     for file_type in individual_masks
                 ]
                 + [file.entities for file in common_masks]

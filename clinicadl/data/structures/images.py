@@ -8,11 +8,16 @@ from typing_extensions import Self
 
 from clinicadl.io import Bids, BidsFileType
 from clinicadl.utils.bids import BidsFile
+from clinicadl.utils.dictionary.suffixes import JSON
+from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
 from .datapoint import DataPoint
 
 ImageT = TypeVar("ImageT")
+
+SOURCE_FILES_KEY = "Sources"
+PATH_PREFIX = "file://"
 
 
 class SubjectSpecificImage(Generic[ImageT]):
@@ -93,6 +98,7 @@ class TensorContent:
     images: dict[str, tio.ScalarImage]
     masks: dict[str, tio.LabelMap]
     additional_data: dict[str, Any]
+    paths: list[Path]
 
     @classmethod
     def from_datapoint(
@@ -121,6 +127,13 @@ class TensorContent:
             additional_data=data_point.get_non_images_dict(
                 include=include, exclude=["participant", "session"]
             ),
+            paths=[
+                image.path
+                for image in data_point.get_images_dict(
+                    include=include, intensity_only=False
+                ).values()
+                if image.path
+            ],
         )
 
     @classmethod
@@ -149,8 +162,13 @@ class TensorContent:
             for name, mask in content["masks"].items()
         }
 
+        paths: list[str] = read_json(path.with_suffix(JSON))[SOURCE_FILES_KEY]
+
         return cls(
-            images=images, masks=masks, additional_data=content["additional_data"]
+            images=images,
+            masks=masks,
+            additional_data=content["additional_data"],
+            paths=[p.replace(PATH_PREFIX, "") for p in paths],
         )
 
     def save(self, path: Path) -> None:
@@ -172,6 +190,10 @@ class TensorContent:
         to_save["additional_data"] = self.additional_data
 
         torch.save(to_save, path)
+        write_json(
+            path.with_suffix(JSON),
+            {SOURCE_FILES_KEY: [PATH_PREFIX + p for p in self.paths]},
+        )
 
 
 class Tensor(SubjectSpecificImage[DataPoint]):

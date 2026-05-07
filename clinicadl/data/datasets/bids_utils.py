@@ -1,4 +1,6 @@
-from typing import Any, Iterable, Optional, Sequence, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence, TypeVar
 
 import pandas as pd
 from pydantic import Field, field_serializer
@@ -11,18 +13,16 @@ from clinicadl.utils.typing import DataFrameType
 from ..structures import (
     CommonMask,
     DataPoint,
-    Image,
     IndividualMask,
-    Tensor,
 )
-from ..structures.images import SubjectSpecificImage
+from ..utils import DEFAULT_SPATIAL_CHECKS, DatasetChecker, SpatialCheck
 from .utils import (
-    DEFAULT_SPATIAL_CHECKS,
     ColumnsType,
-    DatasetChecker,
     MultimodalSamplerDataset,
-    SpatialCheck,
 )
+
+if TYPE_CHECKING:
+    from ..structures.images import Image, SubjectSpecificImage, Tensor
 
 
 class _BidsTypeDataset(MultimodalSamplerDataset):

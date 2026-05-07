@@ -8,7 +8,6 @@ import torch
 import torchio as tio
 
 from clinicadl.data.datasets.utils import (
-    DatasetChecker,
     MultimodalSamplerDataset,
     SamplerDataset,
 )
@@ -290,94 +289,3 @@ class TestMulitmodalSamplerDataset:
                 columns={"cat": bad_cat_encoding},
                 transforms=TransformsHandler(),
             )
-
-
-class TestDatasetChecker:
-    def test_spacing(self):
-        dataset = Sampler(transforms=TransformsHandler()).subset(
-            [("sub-005", "ses-M000")]
-        )
-        checker = DatasetChecker(spatial_checks=["spacing"])
-        with pytest.raises(
-            RuntimeError,
-            match=re.escape(
-                "An error occurred when checking (sub-005, ses-M000) (see above). If you don't care about voxel spacing consistency and want to ignore this error, please modify 'spatial_checks'."
-            ),
-        ):
-            checker.check_data_point(dataset[0])
-        checker.enabled = False
-        checker.check_data_point(dataset[0])
-        checker.reset()
-        with pytest.raises(
-            RuntimeError,
-        ):
-            checker.check_data_point(dataset[0])
-
-    def test_shape(self):
-        dataset = Sampler(transforms=TransformsHandler()).subset(
-            [("sub-005", "ses-M000")]
-        )
-        checker = DatasetChecker(spatial_checks=["shape"])
-        with pytest.raises(
-            RuntimeError,
-            match=re.escape(
-                "If you don't care about spatial shape consistency and want to ignore this error, please modify 'spatial_checks'."
-            ),
-        ):
-            checker.check(dataset)
-
-    def test_affine(self):
-        dataset = Sampler(transforms=TransformsHandler()).subset(
-            [("sub-004", "ses-M001")]
-        )
-        checker = DatasetChecker(spatial_checks=["affine", "shape"])
-        with pytest.raises(
-            RuntimeError,
-            match=re.escape(
-                "If you don't care about affine matrix consistency and want to ignore this error, please modify 'spatial_checks'."
-            ),
-        ):
-            checker.check(dataset)
-
-    def test_global_shape(self):
-        dataset = Sampler(transforms=TransformsHandler()).subset(
-            [("sub-003", "ses-M000"), ("sub-004", "ses-M001")]
-        )
-        checker = DatasetChecker(spatial_checks=["global_shape", "spacing"])
-        checker.check_data_point(dataset[0])
-        with pytest.raises(
-            RuntimeError,
-            match=re.escape(
-                "Different spatial shape found in the dataset: for example, spatial shape is (4, 4, 4) for (sub-004, ses-M001), but (3, 3, 3) for (sub-003, ses-M000).\n"
-                "If you don't care about spatial shape consistency and want to ignore this error, please modify 'spatial_checks'."
-            ),
-        ):
-            checker.check_data_point(dataset[1])
-
-        checker.reset()
-        checker.check_data_point(dataset[1])
-        checker.enabled = False
-        checker.check_data_point(dataset[0])
-
-    def test_global_spacing(self):
-        dataset = Sampler(transforms=TransformsHandler()).subset(
-            [("sub-003", "ses-M000"), ("sub-004", "ses-M001")]
-        )
-        checker = DatasetChecker(spatial_checks=["global_spacing", "shape"])
-        with pytest.raises(
-            RuntimeError,
-            match=re.escape(
-                "Different voxel spacing found in the dataset: for example, voxel spacing is (2.0, 2.0, 2.0) for (sub-004, ses-M001), but (1.0, 1.0, 1.0) for (sub-003, ses-M000).\n"
-                "If you don't care about voxel spacing consistency and want to ignore this error, please modify 'spatial_checks'."
-            ),
-        ):
-            checker.check(dataset)
-
-    def test_passes(self):
-        dataset = Sampler(transforms=TransformsHandler()).subset(
-            [("sub-003", "ses-M000"), ("sub-006", "ses-M000")]
-        )
-        checker = DatasetChecker(
-            spatial_checks=["affine", "shape", "global_spacing", "global_shape"]
-        )
-        checker.check(dataset)

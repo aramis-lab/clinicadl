@@ -346,7 +346,7 @@ class TestClinicaPipelines:
         )
 
 
-class TestTensor:
+class TestTensorType:
     def test_init(self):
         tensor = TensorType(entities={"conv": "abc", "trc": r"18FD.*"})
         assert tensor.with_entities == {
@@ -437,6 +437,23 @@ class TestTensor:
                 [],
                 True,
                 {"src": re.compile("T1w")},
+            ),
+            (
+                BidsFileType(
+                    data_type="",
+                    suffix="pet",
+                ),
+                [
+                    BidsFileType(
+                        data_type="",
+                        suffix="mask",
+                    ),
+                ],
+                [
+                    BidsFile("abc/mask.nii.gz"),
+                ],
+                False,
+                {"src": re.compile("pet")},
             ),
         ],
     )

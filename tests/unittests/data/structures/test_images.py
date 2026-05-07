@@ -13,6 +13,7 @@ from clinicadl.data.structures import (
     TensorContent,
 )
 from clinicadl.io import Bids, BidsFileType, T1Linear, TensorType
+from clinicadl.utils.json import read_json
 
 CAPS = Path(__file__).parents[2] / "resources" / "bids" / "derivatives" / "caps"
 MASKS = Path(__file__).parents[2] / "resources" / "bids" / "derivatives" / "masks"
@@ -46,9 +47,23 @@ class TestTensorContent:
     def test_from_datapoint(self):
         d = DataPoint(
             image=tio.ScalarImage(tensor=torch.zeros(1, 2, 2, 2)),
-            image_=tio.ScalarImage(tensor=torch.ones(1, 2, 2, 2)),
+            image_=tio.ScalarImage(
+                path=(
+                    img_path := CAPS
+                    / "subjects"
+                    / "sub-000"
+                    / "ses-M000"
+                    / "t1_linear"
+                    / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz"
+                )
+            ),
             mask=tio.LabelMap(tensor=torch.zeros(1, 1, 1, 1)),
-            mask_=tio.LabelMap(tensor=torch.ones(1, 1, 1, 1)),
+            mask_=tio.LabelMap(
+                path=(
+                    mask_path := CAPS
+                    / "space-MNI152NLin2009cSym_res-1d3x1d2x1d1_label-leftHippocampus_mask.nii"
+                )
+            ),
             participant="",
             session="",
             other=0,
@@ -63,11 +78,13 @@ class TestTensorContent:
         assert set(tensor.masks.keys()) == {"mask", "mask_"}
         torch.testing.assert_close(tensor.masks["mask"].tensor, torch.zeros(1, 1, 1, 1))
         assert tensor.additional_data == {"other": 0, "other_": 1}
+        assert tensor.paths == [img_path, mask_path]
 
         tensor = TensorContent.from_datapoint(d, include=["image", "mask_", "other"])
         assert set(tensor.images.keys()) == {"image"}
         assert set(tensor.masks.keys()) == {"mask_"}
         assert set(tensor.additional_data.keys()) == {"other"}
+        assert tensor.paths == [mask_path]
 
     def test_save_load(self, tmp_path):
         tensor = TensorContent(
@@ -88,8 +105,11 @@ class TestTensorContent:
                 ),
             },
             additional_data={"other": 0, "other_": 1},
+            paths=["dir/path.nii.gz", "dir_/path_.nii.gz"],
         )
         tensor.save(tmp_path / "tensor.pt")
+        json = read_json(tmp_path / "tensor.json")
+        assert json["Sources"] == ["file://dir/path.nii.gz", "file://dir_/path_.nii.gz"]
 
         tensor = TensorContent.load(tmp_path / "tensor.pt")
         assert set(tensor.images.keys()) == {"image", "image_"}
@@ -101,6 +121,7 @@ class TestTensorContent:
         torch.testing.assert_close(tensor.masks["mask"].tensor, torch.zeros(1, 1, 1, 1))
         np.testing.assert_allclose(tensor.masks["mask"].affine, np.eye(4) * 2)
         assert tensor.additional_data == {"other": 0, "other_": 1}
+        assert tensor.paths == ["dir/path.nii.gz", "dir_/path_.nii.gz"]
 
 
 def test_tensor():

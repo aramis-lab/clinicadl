@@ -11,7 +11,7 @@ from clinicadl.utils.dictionary.words import (
 from clinicadl.utils.exceptions import DataFrameError
 
 from .dictionary.utils import SEP
-from .typing import DataFrameType
+from .typing import DataFrameType, PathType
 
 
 def df_to_tsv(

@@ -1,9 +1,10 @@
+from dataclasses import asdict, dataclass
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
-from pydantic import Field, PositiveFloat, PositiveInt, field_serializer
+from pydantic import Field, PositiveFloat, PositiveInt, field_validator
 from typing_extensions import Self
 
 from clinicadl.io import Bids, BidsFileType
@@ -12,10 +13,9 @@ from clinicadl.transforms.factory import get_transform_from_dict
 from clinicadl.transforms.types import Transform
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.dictionary.suffixes import JSON, TSV
+from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.names import camel_to_snake, snake_to_camel
 from clinicadl.utils.tsvtools import df_to_tsv, read_data
-
-from ..structures import CommonMask, Image, IndividualMask
 
 logger = getLogger(__name__)
 
@@ -31,19 +31,15 @@ def _read_transform(
     return serialized
 
 
-def _read_image(image: tuple[str, dict[str, Any]]) -> dict[str, Image]:
-    return Image(Bids(image[0]), BidsFileType(**image[1]))
+@dataclass
+class ConversionRow:
+    """
+    A row of the conversions.tsv
+    """
 
-
-def _read_masks(
-    masks: dict[str, tuple[str, dict[str, Any]] | str],
-) -> dict[str, IndividualMask | CommonMask]:
-    return {
-        name: CommonMask(value)
-        if isinstance(value, str)
-        else IndividualMask(Bids(value[0]), BidsFileType(**value[1]))
-        for name, value in masks.items()
-    }
+    conv_id: str
+    description: str
+    description_json: str
 
 
 class TensorDescription(ClinicaDLConfig):
@@ -52,8 +48,8 @@ class TensorDescription(ClinicaDLConfig):
     """
 
     tensor_type: BidsFileType
-    image: Image = Field(reader=_read_image)
-    masks: dict[str, IndividualMask | CommonMask] = Field(reader=_read_masks)
+    image: tuple[Path, BidsFileType]
+    masks: dict[str, tuple[Path, BidsFileType] | Path]
     additional_data: list[str]
     transforms: list[str | Transform | TransformConfig] = Field(
         reader=lambda x: list(map(_read_transform, x))
@@ -61,15 +57,53 @@ class TensorDescription(ClinicaDLConfig):
     spacing: Optional[tuple[PositiveFloat, PositiveFloat, PositiveFloat]]
     spatial_shape: Optional[tuple[PositiveInt, PositiveInt, PositiveInt]]
     interrupted: bool
+    description: Optional[str]
     participants_sessions: pd.DataFrame
 
-    def get_json_filename(self, tensor_dir: Path) -> Path:
+    @field_validator("image", mode="after")
+    @classmethod
+    def _resolve_image_path(
+        cls, v: tuple[Path, BidsFileType]
+    ) -> tuple[Path, BidsFileType]:
+        return v[0].resolve(), v[1]
+
+    @field_validator("masks", mode="after")
+    @classmethod
+    def _resolve_masks_path(
+        cls, v: dict[str, tuple[Path, BidsFileType] | Path]
+    ) -> dict[str, tuple[Path, BidsFileType] | Path]:
+        for key, value in v.items():
+            if isinstance(value, Path):
+                v[key] = value.resolve()
+            else:
+                v[key] = value[0].resolve(), value[1]
+
+        return v
+
+    @staticmethod
+    def get_conversions_tsv_path(tensors_dir: Path) -> Path:
+        """
+        Gets the path to the ``.tsv`` file enumerating all the conversions.
+
+        Parameters
+        ----------
+        tensors_dir : Path
+            The BIDS derivative where the tensors are saved.
+
+        Returns
+        -------
+        Path
+            The path to the ``.tsv`` file.
+        """
+        return tensors_dir / "conversions.tsv"
+
+    def get_json_path(self, tensors_dir: Path) -> Path:
         """
         Gets the path to the ``.json`` description file.
 
         Parameters
         ----------
-        tensor_dir : Path
+        tensors_dir : Path
             The BIDS derivative where the tensors are saved.
 
         Returns
@@ -77,16 +111,16 @@ class TensorDescription(ClinicaDLConfig):
         Path
             The path to the ``.json`` file.
         """
-        return self._get_filename(tensor_dir, suffix="description", extension=JSON)
+        return self._get_filename(tensors_dir, suffix="description", extension=JSON)
 
-    def get_df_filename(self, tensor_dir: Path) -> Path:
+    def get_tsv_path(self, tensors_dir: Path) -> Path:
         """
         Gets the path to the ``.tsv`` file containing the (participant, session) couples
         converted.
 
         Parameters
         ----------
-        tensor_dir : Path
+        tensors_dir : Path
             The BIDS derivative where the tensors are saved.
 
         Returns
@@ -95,36 +129,16 @@ class TensorDescription(ClinicaDLConfig):
             The path to the ``.tsv`` file.
         """
         return self._get_filename(
-            tensor_dir, suffix="participantsXsessions", extension=TSV
+            tensors_dir, suffix="participantsXsessions", extension=TSV
         )
 
-    def _get_filename(self, tensor_dir: Path, suffix: str, extension: str) -> Path:
+    def _get_filename(self, tensors_dir: Path, suffix: str, extension: str) -> Path:
         file_type = self.tensor_type.model_copy()
         file_type.extension = extension
         file_type.suffix = suffix
         file_type.data_type = None
-        return Bids(tensor_dir).build_path(file_type)
 
-    @field_serializer("image")
-    def _serialize_image(self, image: Image) -> tuple[str, dict[str, Any]]:
-        """
-        To convert the Image to a tuple (bids_path, file_type).
-        """
-        return (image.bids.path, image.file_type.to_dict())
-
-    @field_serializer("masks")
-    def _serialize_masks(
-        self, masks: dict[str, IndividualMask | CommonMask]
-    ) -> dict[str, tuple[str, dict[str, Any]] | str]:
-        """
-        To convert IndividualMasks to tuples (bids_path, file_type) and CommonMasks to str (the path of the mask).
-        """
-        return {
-            name: (value.bids.path, value.file_type.to_dict())
-            if isinstance(value, IndividualMask)
-            else value.file.path.resolve()
-            for name, value in masks.items()
-        }
+        return Bids(tensors_dir).build_path(file_type)
 
     def to_dict(self, **kwargs):
         dict_ = super().to_dict(**kwargs)
@@ -136,7 +150,7 @@ class TensorDescription(ClinicaDLConfig):
             {camel_to_snake(name): value for name, value in dict_.items()}, **kwargs
         )
 
-    def write(self, tensor_dir: Path) -> None:
+    def write(self, tensors_dir: Path) -> None:
         """
         Writes the description of the conversion in a ``.json`` file and the
         (participant, session) couples whose images have been converted in
@@ -144,19 +158,20 @@ class TensorDescription(ClinicaDLConfig):
 
         Parameters
         ----------
-        tensor_dir : Path
+        tensors_dir : Path
             The :BIDS derivative where the tensors are saved.
         """
         self.to_json(
-            json_file := self.get_json_filename(tensor_dir),
+            json_file := self.get_json_path(tensors_dir),
             exclude=["participants_sessions"],
             overwrite=True,
         )
         logger.info("Tensor conversion description saved in %s", str(json_file))
         df_to_tsv(
-            tsv_file := self.get_df_filename(tensor_dir), self.participants_sessions
+            tsv_file := self.get_tsv_path(tensors_dir), self.participants_sessions
         )
         logger.info("(participant, session) pairs converted saved in %s", str(tsv_file))
+        self._update_conversions_tsv(tensors_dir)
 
     @classmethod
     def read(cls, description_json: Path) -> Self:
@@ -184,6 +199,35 @@ class TensorDescription(ClinicaDLConfig):
         return cls.from_json(
             description_json, participants_sessions=df
         )  # transforms may be impossible to read and is not needed
+
+    def _update_conversions_tsv(self, tensors_dir: Path) -> None:
+        """
+        Adds the conversion in the conversions.tsv file.
+        """
+        tsv_path = self.get_conversions_tsv_path(tensors_dir)
+
+        if not tsv_path.exists():
+            df = pd.DataFrame()
+        else:
+            df = pd.read_csv(tsv_path, sep=SEP)
+
+        df = pd.concat(
+            [
+                df,
+                pd.DataFrame(
+                    [
+                        asdict(
+                            ConversionRow(
+                                conv_id=self.tensor_type.with_entities["conv"].pattern,
+                                description=self.description,
+                                description_json=self.get_tsv_path(tensors_dir).name,
+                            )
+                        )
+                    ],
+                ),
+            ]
+        )
+        df.to_csv(tsv_path, sep=SEP, index=False)
 
     @classmethod
     def _check_dict(

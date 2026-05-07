@@ -22,35 +22,34 @@ from clinicadl.utils.dictionary.words import (
 from clinicadl.utils.exceptions import TensorConversionError
 from clinicadl.utils.variables import BIDS_VERSION
 
-from ..datasets.utils import DEFAULT_SPATIAL_CHECKS, DatasetChecker, SpatialCheck
-from ..datatypes.factory import get_datatype_from_dict
 from ..structures import DataPoint
-from ..structures.images import (
-    CommonMask,
-    IndividualMask,
-    SubjectSpecificImage,
-    TensorContent,
-)
+from ..structures.images import TensorContent
+from ..utils import DatasetChecker, SpatialCheck
 from .utils import TensorDescription
 
 if TYPE_CHECKING:
+    from clinicadl.io import BidsFileType
+
     from ..datasets import BidsDataset
 
 logger = getLogger(__name__)
+
+DEFAULT_NAME = "raw"
+DEFAULT_DESCRIPTION = "Raw images are converted without any transformation."
 
 
 class TensorConversion:
     """
     To convert raw files to tensors to speed up data loading during training or inference.
 
-    Before conversion to tensors, transforms at the image level can be applied, in order not
+    Before conversion to tensors, transforms at the image level can be applied in order not
     to have to compute them each time the image is loaded.
     Images are also converted to the same coordinate system (RAS+).
 
     Parameters
     ----------
-    dataset : BidsLikeTensorDataset
-        The :py:class:`clinicadl.data.datasets.tensor_dataset.BidsLikeTensorDataset` on which conversion will be performed.
+    dataset : BidsDataset
+        The :py:class:`clinicadl.data.datasets.BidsDataset` on which conversion will be performed.
     """
 
     def __init__(self, dataset: BidsDataset):
@@ -60,12 +59,11 @@ class TensorConversion:
         self._conversion_name: Optional[str] = None
         self._tensor_type: Optional[TensorType] = None
         self._tensor_description: Optional[TensorDescription] = None
-        self._spatial_checkers: Optional[Iterator[DatasetChecker]] = None
+        self._spatial_checkers: Optional[tuple[DatasetChecker, ...]] = None
         self._spacing_checker = DatasetChecker(
             [SpatialCheck.GLOBAL_SPACING]
         )  # will not raise warning but will just keep track of spacing
         self._shape_checker = DatasetChecker([SpatialCheck.GLOBAL_SHAPE])
-
         self._participants_sessions_converted = set()
 
     def _init_tensors_dir(self) -> Bids:
@@ -85,7 +83,14 @@ class TensorConversion:
         """
         Resets the state of the converter.
         """
-        self.__init__(self.dataset)
+        self.__save_transforms = False
+        self._conversion_name = None
+        self._tensor_type = None
+        self._tensor_description = None
+        self._spatial_checkers = None
+        for checker in self._all_spatial_checkers:
+            checker.reset()
+        self._participants_sessions_converted = set()
 
     @property
     def _save_transforms(self) -> bool:
@@ -99,7 +104,7 @@ class TensorConversion:
         if save_transforms and (
             len(self.dataset.transforms.image_transforms.transforms) == 0
         ):
-            logger.info("'save_transforms' is True, but there are no image transform.")
+            logger.info("save_transforms is True, but there are no image transform.")
 
         self.__save_transforms = save_transforms and (
             len(self.dataset.transforms.image_transforms.transforms) > 0
@@ -113,15 +118,19 @@ class TensorConversion:
         return self._conversion_name
 
     @conversion_name.setter
-    def conversion_name(self, conversion_name: Optional[str]) -> str:
+    def conversion_name(self, conversion_name: Optional[str]) -> None:
         if conversion_name:
+            if conversion_name == DEFAULT_NAME:
+                raise ValueError(
+                    f"If you pass a conversion name, it cannot be '{DEFAULT_NAME}'."
+                )
             self._conversion_name = conversion_name
         else:
             if self._save_transforms:
                 raise ValueError(
-                    "'conversion_name' cannot be 'raw' if 'save_transforms' is True."
+                    "Please pass a conversion_name if save_transforms is True."
                 )
-            self._conversion_name = "raw"
+            self._conversion_name = DEFAULT_NAME
 
     @property
     def tensor_type(self) -> TensorType:
@@ -148,21 +157,35 @@ class TensorConversion:
         if not self._tensor_description:
             self._tensor_description = TensorDescription(
                 tensor_type=self.tensor_type,
-                images={"image": self.dataset.image},
-                masks=self.dataset.individual_masks | self.dataset.common_masks,
+                image=(self.dataset.image.bids.path, self.dataset.image.file_type),
+                masks={
+                    name: (mask.bids.path, mask.file_type)
+                    for name, mask in self.dataset.individual_masks.items()
+                }
+                | {
+                    name: mask.file.path
+                    for name, mask in self.dataset.common_masks.items()
+                },
                 additional_data=[],
-                transforms=self.dataset.transforms.image_transforms.transforms
+                transforms=self.dataset.transforms.config.image_transforms.to_raw()
                 if self._save_transforms
                 else [],
                 spacing=None,
                 spatial_shape=None,
                 interrupted=True,
+                description=DEFAULT_DESCRIPTION
+                if self.conversion_name == DEFAULT_NAME
+                else None,
                 participants_sessions=pd.DataFrame(),
             )
 
-        self._tensor_description.participants_sessions = pd.DataFrame.from_records(
-            list(self._participants_sessions_converted),
-            columns=[PARTICIPANT_ID, SESSION_ID],
+        self._tensor_description.participants_sessions = (
+            pd.DataFrame.from_records(
+                list(self._participants_sessions_converted),
+                columns=[PARTICIPANT_ID, SESSION_ID],
+            )
+            .sort_values([PARTICIPANT_ID, SESSION_ID])
+            .reset_index(drop=True)
         )
         self._tensor_description.spacing = self.spacing
         self._tensor_description.spatial_shape = self.spatial_shape
@@ -198,7 +221,7 @@ class TensorConversion:
         """
         Path to the json file describing the current conversion.
         """
-        return self.tensor_description.get_json_filename(self.tensors_dir.path)
+        return self.tensor_description.get_json_path(self.tensors_dir.path)
 
     @property
     def _all_spatial_checkers(self) -> Iterable[DatasetChecker]:
@@ -216,23 +239,24 @@ class TensorConversion:
 
     def to_tensors(
         self,
-        n_proc: int = 1,
-        conversion_name: Optional[str] = None,
-        spatial_checks: Optional[Iterable[str | SpatialCheck]] = DEFAULT_SPATIAL_CHECKS,
+        conversion_name: Optional[str],
+        spatial_checks: Optional[Iterable[str | SpatialCheck]],
+        save_transforms: bool,
+        description: Optional[str] = None,
         overwrite: bool = False,
-        save_transforms: bool = False,
         check_transforms: bool = True,
+        n_proc: int = 1,
     ) -> TensorDescription:
         """
-        Performs conversion.
+        Performs conversion to tensors.
 
-        See :py:meth:`clinicadl.data.datasets.tensor_dataset.BidsLikeTensorDataset.to_tensors`.
+        See :py:meth:`clinicadl.data.datasets.BidsDataset.to_tensors`.
         """
         self._reset()
         self._save_transforms = save_transforms
         self.conversion_name = conversion_name
-        self._spatial_checkers = (
-            DatasetChecker(spatial_checks=check) for check in spatial_checks
+        self._spatial_checkers = tuple(
+            DatasetChecker(spatial_checks=[check]) for check in (spatial_checks or [])
         )
 
         if self.json.is_file() and overwrite:
@@ -241,6 +265,13 @@ class TensorConversion:
             remove_tensors(self.json)
         elif self.json.is_file():
             self._merge_conversion_safely(check_transforms=check_transforms)
+
+        if description:
+            if not conversion_name:
+                raise ValueError(
+                    "You cannot pass a description if you don't pass a conversion_name."
+                )
+            self.tensor_description.description = description
 
         try:
             now = datetime.now().strftime("%H:%M:%S")
@@ -261,6 +292,7 @@ class TensorConversion:
             ) from exc
         else:
             self.tensor_description.interrupted = False
+            return self.tensor_description
         finally:
             self.tensor_description.write(self.tensors_dir.path)
 
@@ -287,15 +319,19 @@ class TensorConversion:
 
     def _transform(self, images: DataPoint) -> DataPoint:
         """
-        Puts all the images in RAS+ space and apply
+        Puts all the images in RAS+ space and applies
         the transforms at the image level.
         """
         images = tio.ToCanonical()(images)
         if self._save_transforms:
-            return self.dataset.config.transforms.apply_image_transforms(images)
+            return self.dataset.transforms.apply_image_transforms(images)
         return images
 
     def _spatial_check(self, images: DataPoint) -> None:
+        """
+        Performs spatial checks to check intra-sample and inter-sample
+        consistency.
+        """
         for checker in self._spatial_checkers:
             try:
                 checker.check_data_point(images)
@@ -316,15 +352,12 @@ class TensorConversion:
         """
         path.parent.mkdir(exist_ok=True, parents=True)
 
-        TensorContent(
-            intensity_images := images.get_images_dict(intensity_only=True),
-            masks := images.get_masks_dict(),
-            non_images := images.get_non_images_dict(),
-        ).save(path)
+        content = TensorContent.from_datapoint(images)
+        content.save(path)
 
-        new_keys = set(intensity_images.keys()).union(masks.keys()).union(
-            non_images.keys()
-        ) - set({"image"}).union(self.tensor_description.masks.keys())
+        new_keys = set(content.images.keys()).union(content.masks.keys()).union(
+            content.additional_data.keys()
+        ) - {"image"}.union(self.tensor_description.masks.keys())
         self.tensor_description.additional_data = set(
             self.tensor_description.additional_data
         ).union(new_keys)
@@ -354,7 +387,7 @@ class TensorConversion:
         Tries to merge the old conversion with the current one.
         Checks beforehand that they match.
         """
-        old_conversion_info = TensorDescription.from_json(self.json)
+        old_conversion_info = TensorDescription.read(self.json)
 
         self._compare_images(old_conversion_info)
         self._compare_masks(old_conversion_info)
@@ -370,7 +403,10 @@ class TensorConversion:
 
         self._merge_spatial_checkers(old_conversion_info)
         self._participants_sessions_converted = set(
-            old_conversion_info.participants_sessions
+            zip(
+                old_conversion_info.participants_sessions[PARTICIPANT_ID],
+                old_conversion_info.participants_sessions[SESSION_ID],
+            )
         )
 
     def _compare_images(self, old_conversion: TensorDescription) -> None:
@@ -383,55 +419,58 @@ class TensorConversion:
 
     def _compare_masks(self, old_conversion: TensorDescription) -> None:
         """
-        Checks that all individual masks have been converted.
-
-        If 'match_exactly', it will check that the individual masks in .pt files
-        match exactly the individual masks of the dataset. Otherwise, it will
-        only check that the .pt files have AT LEAST the individual masks required by the dataset.
+        Checks that the masks match between two conversions.
         """
+
+        def _mask_description(mask: tuple | Path) -> str:
+            if isinstance(mask, tuple):
+                return "subject-specific mask"
+            elif isinstance(mask, Path):
+                return "common mask"
+
         if (old_masks := set(old_conversion.masks.keys())) != (
             new_masks := set(self.tensor_description.masks.keys())
         ):
             raise TensorConversionError(
-                f"The masks in the previous dataset were: {old_masks}. The masks in the current one are: {new_masks}"
+                f"The masks in the previous dataset were: {old_masks}. The masks in the current one are: {new_masks}."
             )
 
         for name, old_mask in old_conversion.masks.items():
             new_mask = self.tensor_description.masks[name]
 
-            if not isinstance(old_mask, type(new_mask)):
+            if not isinstance(new_mask, type(old_mask)):
                 raise TensorConversionError(
-                    f"Previously, mask '{name}' was a {_mask_description(old_mask)}, currently it is a {_mask_description(new_mask)}"
+                    f"Previously, mask '{name}' was a {_mask_description(old_mask)}, currently it is a {_mask_description(new_mask)}."
                 )
 
-            if isinstance(old_mask, IndividualMask):
-                _compare_subject_specific_images(old_mask, new_mask)
+            if isinstance(old_mask, tuple):
+                _compare_subject_specific_images(old_mask, new_mask, name=name)
             else:
-                if str(old_mask.file.path) != str(new_mask.file.path):
+                if str(old_mask) != str(new_mask):
                     raise TensorConversionError(
-                        f"Previously, mask '{name}' was in {old_mask.file.path}, currently it is in {new_mask.file.path}."
+                        f"Previously, mask '{name}' was in {old_mask}, currently it is in {new_mask}."
                     )
 
     def _compare_transforms(self, old_conversion: TensorDescription) -> None:
         """
         Checks that image transforms used during conversion match the current ones.
         """
+
+        def _error_msg(old: bool) -> str:
+            return (
+                f"Custom transforms {'have been' if old else 'are'} used in the {'previous' if old else 'current'} dataset, e.g.: '{transform}'. "
+                "ClinicaDL cannot read such custom transforms. "
+                "If you are sure that the transforms match, set 'check_transforms' to False."
+            )
+
         for transform in old_conversion.transforms:
             if not isinstance(transform, TransformConfig):
-                raise TensorConversionError(
-                    f"Custom transforms have been used during the old conversion, e.g.: '{transform}'. "
-                    "ClinicaDL cannot read such custom transforms. "
-                    "If you are sure that the transforms match, set 'check_transforms' to False."
-                )
+                raise TensorConversionError(_error_msg(old=True))
 
         image_transforms = self.dataset.transforms.config.image_transforms.to_raw()
         for transform in image_transforms:
             if not isinstance(transform, TransformConfig):
-                raise TensorConversionError(
-                    f"Custom transforms have been passed to the current dataset, e.g.: '{transform}'.\n"
-                    "ClinicaDL cannot compare such custom transforms to those applied during the previous conversion. "
-                    "If you are sure that the transforms match, set 'check_transforms' to False."
-                )
+                raise TensorConversionError(_error_msg(old=False))
 
         if old_conversion.transforms != image_transforms:
             raise TensorConversionError(
@@ -440,14 +479,17 @@ class TensorConversion:
             )
 
     def _merge_spatial_checkers(self, old_conversion_info: TensorDescription) -> None:
+        """
+        Resets the spatial checkers with values obtained in the previous dataset.
+        """
         if not (
-            old_conversion_info.spacing
-            or old_conversion_info.spatial_shape
+            (old_conversion_info.spacing or old_conversion_info.spatial_shape)
             and len(old_conversion_info.participants_sessions) > 0
         ):
             return
 
-        ref_participant, ref_session = old_conversion_info.participants_sessions[0]
+        first_row = old_conversion_info.participants_sessions.iloc[0]
+        ref_participant, ref_session = first_row[PARTICIPANT_ID], first_row[SESSION_ID]
         spatial_shape = old_conversion_info.spatial_shape or (1, 1, 1)
         spacing = list(old_conversion_info.spacing or (1.0, 1.0, 1.0))
         affine = np.diag(spacing + [1.0])
@@ -460,14 +502,13 @@ class TensorConversion:
             ),
         )
 
-        checker: DatasetChecker
         for checker in self._all_spatial_checkers:
             if (
                 checker.spatial_checks
                 and SpatialCheck.GLOBAL_SPACING in checker.spatial_checks
             ):
                 _update_checker(
-                    self._spacing_checker,
+                    checker,
                     ref_sample if old_conversion_info.spacing else None,
                 )
             if (
@@ -475,12 +516,16 @@ class TensorConversion:
                 and SpatialCheck.GLOBAL_SHAPE in checker.spatial_checks
             ):
                 _update_checker(
-                    self._shape_checker,
+                    checker,
                     ref_sample if old_conversion_info.spatial_shape else None,
                 )
 
 
 def _update_checker(checker: DatasetChecker, ref_sample: Optional[DataPoint]) -> None:
+    """
+    Updates the reference sample of a spatial checker, or disable the checker
+    if no reference is provided.
+    """
     if ref_sample:
         checker.ref_sample = ref_sample
     else:
@@ -488,24 +533,23 @@ def _update_checker(checker: DatasetChecker, ref_sample: Optional[DataPoint]) ->
 
 
 def _compare_subject_specific_images(
-    old: SubjectSpecificImage, new: SubjectSpecificImage
+    old: tuple[Path, BidsFileType],
+    new: tuple[Path, BidsFileType],
+    name: Optional[str] = None,
 ) -> None:
-    if old.file_type != new.file_type:
+    """
+    To compare images or subject-specific masks.
+    """
+    add_str = f"the mask '{name}' in " if name else ""
+    if old[1] != new[1]:
         raise TensorConversionError(
-            "The file type of the previous dataset does not match the current "
-            f"file type. Previously, got {old.file_type},"
-            f"whereas current file type is {new.file_type}"
+            f"The file type of {add_str}the previous dataset does not match the current "
+            f"file type. Previously, got {old[1]},"
+            f"whereas current file type is {new[1]}"
         )
-    if str(old.bids.path) != str(new.bids.path):
+    if str(old[0]) != str(new[0]):
         raise TensorConversionError(
-            "The path to the previous BIDS does not match the current "
-            f"path. Previously, got {old.bids.path},"
-            f"whereas current path is {new.bids.path}"
+            f"The path to the BIDS of {add_str}the previous dataset does not match the current "
+            f"path. Previously, got {old[0]}, "
+            f"whereas current path is {new[0]}"
         )
-
-
-def _mask_description(mask: IndividualMask | CommonMask) -> str:
-    if isinstance(mask, IndividualMask):
-        return "subject-specific mask"
-    elif isinstance(mask, IndividualMask):
-        return "common mask"

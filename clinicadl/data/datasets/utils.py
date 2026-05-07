@@ -2,13 +2,11 @@ from abc import abstractmethod
 from bisect import bisect_right
 from copy import deepcopy
 from logging import getLogger
-from typing import Any, Callable, Iterable, Optional, Sequence, TypeAlias, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, TypeAlias, Union
 
-import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.dictionary.words import (
     DATASET_ID,
     N_SAMPLES,
@@ -16,14 +14,16 @@ from clinicadl.utils.dictionary.words import (
     SAMPLE_TYPE,
     SESSION_ID,
 )
-from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType
-from clinicadl.utils.variables import SPACING_RTOL
 
-from ..structures import DataPoint
 from ..structures.sample import SAMPLE_FIELDS, Sample, Sample2D, SampleType
 from .base import Dataset
+
+if TYPE_CHECKING:
+    from clinicadl.transforms import TransformsHandler
+
+    from ..structures import DataPoint
 
 logger = getLogger(__name__)
 
@@ -347,144 +347,3 @@ class MultimodalSamplerDataset(SamplerDataset):
         """
         Loads the image and the masks.
         """
-
-
-class SpatialCheck(str, BaseEnum):
-    """
-    Possible spatial checks performed to check consistency of images and
-    masks in a sample and across a samples.
-    """
-
-    SPACING = "spacing"
-    AFFINE = "affine"
-    SHAPE = "shape"
-    GLOBAL_SPACING = "global_spacing"
-    GLOBAL_SHAPE = "global_shape"
-
-
-DEFAULT_SPATIAL_CHECKS = [
-    "affine",
-    "shape",
-    "global_spacing",
-]
-
-
-class DatasetChecker:
-    """
-    To perform spatial checks on a :py:class:`clinicadl.data.datasets.Dataset`.
-    """
-
-    def __init__(
-        self,
-        spatial_checks: Optional[Iterable[str | SpatialCheck]],
-    ):
-        self.spatial_checks = (
-            [SpatialCheck(check) for check in spatial_checks] if spatial_checks else []
-        )
-        self.ref_sample: Optional[Sample] = None
-        self.enabled = True
-
-    def reset(self):
-        """
-        Resets the running statistics tracked on the dataset.
-        """
-        self.ref_sample = None
-        self.enabled = True
-
-    def check(self, dataset: Dataset[Sample]) -> None:
-        """
-        Performs the checks on the input dataset.
-        It iterates over all the samples to see if they are loaded correctly,
-        and performs spatial checks on the samples, depending on the value of ``self.spatial_checks``.
-        """
-        self.reset()
-
-        for sample in dataset:
-            self.check_data_point(sample)
-
-    def check_data_point(self, data_point: DataPoint) -> None:
-        """
-        Checks spacing, affine matrix, and/or image shape consistency in a sample.
-        Also compares to a reference sample to check consistency across samples.
-        """
-        if not self.enabled:
-            return
-
-        if (
-            SpatialCheck.SPACING in self.spatial_checks
-            and SpatialCheck.GLOBAL_SPACING not in self.spatial_checks
-        ):
-            _check_intra_sample_consistency(
-                data_point, attr="spacing", desc="voxel spacing"
-            )
-
-        if SpatialCheck.AFFINE in self.spatial_checks:
-            _check_intra_sample_consistency(
-                data_point, attr="affine", desc="affine matrix"
-            )
-
-        if (
-            SpatialCheck.SHAPE in self.spatial_checks
-            and SpatialCheck.GLOBAL_SHAPE not in self.spatial_checks
-        ):
-            _check_intra_sample_consistency(
-                data_point, attr="spatial_shape", desc="spatial shape"
-            )
-
-        if self.ref_sample is None:
-            self.ref_sample = data_point
-
-        if SpatialCheck.GLOBAL_SPACING in self.spatial_checks:
-            _check_dataset_consistency(
-                data_point,
-                self.ref_sample,
-                tolerance=SPACING_RTOL,
-                attr="spacing",
-                desc="voxel spacing",
-            )
-
-        if SpatialCheck.GLOBAL_SHAPE in self.spatial_checks:
-            _check_dataset_consistency(
-                data_point,
-                self.ref_sample,
-                tolerance=0,
-                attr="spatial_shape",
-                desc="spatial shape",
-            )
-
-
-def _check_intra_sample_consistency(data_point: DataPoint, attr: str, desc: str) -> Any:
-    """
-    Checks that an attribute (e.g., voxel spacing) is consistent
-    in a sample.
-    """
-    try:
-        return getattr(data_point, attr)
-    except RuntimeError as exc:
-        exc.add_note(
-            f"\nAn error occurred when checking ({data_point.participant}, {data_point.session}) (see above). "
-            f"If you don't care about {desc} consistency and want to ignore this error, please modify 'spatial_checks'."
-        )
-        raise
-
-
-def _check_dataset_consistency(
-    data_point: DataPoint,
-    ref_data_point: Optional[DataPoint],
-    tolerance: float,
-    attr: str,
-    desc: str,
-) -> None:
-    """
-    Checks that a sample attribute (e.g., voxel spacing) is consistent
-    with a reference sample.
-    """
-    attr_value = _check_intra_sample_consistency(data_point, attr, desc)
-    ref_attr_value = getattr(ref_data_point, attr)
-    if not np.isclose(attr_value, ref_attr_value, rtol=tolerance).all():
-        raise RuntimeError(
-            f"Different {desc} found in the dataset: "
-            f"for example, {desc} is {attr_value} for ({data_point.participant}, {data_point.session}), "
-            f"but {ref_attr_value} for ({ref_data_point.participant}, {ref_data_point.session}).\n"
-            f"If you don't care about {desc} consistency and want to ignore this error, please modify 'spatial_checks'."
-        )

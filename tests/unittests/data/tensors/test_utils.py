@@ -5,9 +5,8 @@ import pandas as pd
 import pytest
 import torchio as tio
 
-from clinicadl.data.structures import CommonMask, Image, IndividualMask
 from clinicadl.data.tensors import TensorDescription
-from clinicadl.io import Bids, BidsFileType
+from clinicadl.io import BidsFileType
 from clinicadl.transforms.config import CropConfig, PadConfig
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.tsvtools import read_data
@@ -21,14 +20,15 @@ def _tensor_description(custom_transforms: bool):
             suffix="tensors",
             extension=".pt",
             data_type="tensors",
-            with_entities={"src": "pet", "conv": "raw"},
+            with_entities={
+                "src": "pet",
+                "conv": "transform" if custom_transforms else "raw",
+            },
         ),
-        image=Image(Bids(BIDS), BidsFileType(suffix="T1w", data_type="anat")),
+        image=(BIDS, BidsFileType(suffix="T1w", data_type="anat")),
         masks={
-            "common_mask": CommonMask(BIDS / "mask.nii.gz"),
-            "individual_mask": IndividualMask(
-                Bids(BIDS), BidsFileType(suffix="mask", data_type="anat")
-            ),
+            "common_mask": BIDS / "mask.nii.gz",
+            "individual_mask": (BIDS, BidsFileType(suffix="mask", data_type="anat")),
         },
         additional_data=["coeff"],
         transforms=[
@@ -38,6 +38,7 @@ def _tensor_description(custom_transforms: bool):
         spacing=(1, 1, 1),
         spatial_shape=(3, 3, 3),
         interrupted=True,
+        description=None if custom_transforms else "raw conversion",
         participants_sessions=pd.DataFrame(
             {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
         ),
@@ -50,35 +51,48 @@ def tensor_description():
 
 
 @pytest.fixture
-def tensor_description_with_trasnforms():
+def tensor_description_with_transforms():
     return _tensor_description(custom_transforms=True)
 
 
+@pytest.fixture(scope="class")
+def tensors_dir(tmp_path_factory):
+    tensors_dir = tmp_path_factory.mktemp("tensors")
+    write_json(
+        tensors_dir / "dataset_description.json",
+        {"BIDSVersion": "1.10.0", "DatasetType": "derivative", "Name": "abc"},
+    )
+    return tensors_dir
+
+
 class TestTensorDescription:
-    def test_get_json_filename(self, tensor_description: TensorDescription):
-        assert str(tensor_description.get_json_filename(BIDS)) == str(
+    def test_get_conversions_tsv_path(self, tensor_description: TensorDescription):
+        assert str(tensor_description.get_conversions_tsv_path(BIDS)) == str(
+            BIDS / "conversions.tsv"
+        )
+
+    def test_get_json_path(self, tensor_description: TensorDescription):
+        assert str(tensor_description.get_json_path(BIDS)) == str(
             BIDS / "src-pet_conv-raw_description.json"
         )
 
-    def test_get_df_filename(self, tensor_description: TensorDescription):
-        assert str(tensor_description.get_df_filename(BIDS)) == str(
+    def test_get_tsv_path(self, tensor_description: TensorDescription):
+        assert str(tensor_description.get_tsv_path(BIDS)) == str(
             BIDS / "src-pet_conv-raw_participantsXsessions.tsv"
         )
 
-    def test_read_write(self, tensor_description: TensorDescription, tmp_path, caplog):
-        write_json(
-            tmp_path / "dataset_description.json",
-            {"BIDSVersion": "1.10.0", "DatasetType": "derivative", "Name": "abc"},
-        )
+    def test_read_write(
+        self, tensor_description: TensorDescription, tensors_dir, caplog
+    ):
         with caplog.at_level(logging.INFO):
-            tensor_description.write(tmp_path)
-        assert f"Tensor conversion description saved in {tmp_path / 'src-pet_conv-raw_description.json'}"
-        assert f"(participant, session) pairs converted saved in {tmp_path / 'src-pet_conv-raw_participantsXsessions.tsv'}"
+            tensor_description.write(tensors_dir)
+        assert f"Tensor conversion description saved in {tensors_dir / 'src-pet_conv-raw_description.json'}"
+        assert f"(participant, session) pairs converted saved in {tensors_dir / 'src-pet_conv-raw_participantsXsessions.tsv'}"
         pd.testing.assert_frame_equal(
-            read_data(tmp_path / "src-pet_conv-raw_participantsXsessions.tsv"),
+            read_data(tensors_dir / "src-pet_conv-raw_participantsXsessions.tsv"),
             tensor_description.participants_sessions,
         )
-        json = read_json(tmp_path / "src-pet_conv-raw_description.json")
+        json = read_json(tensors_dir / "src-pet_conv-raw_description.json")
         assert json["TensorType"]["with_entities"] == {"src": "pet", "conv": "raw"}
         assert json["Transforms"][0]["name_"] == "Crop"
         assert json["Transforms"][1]["name_"] == "Pad"
@@ -92,19 +106,29 @@ class TestTensorDescription:
         assert json["Spacing"] == [1.0, 1.0, 1.0]
         assert json["SpatialShape"] == [3, 3, 3]
         assert json["Interrupted"]
+        assert json["Description"] == "raw conversion"
         assert "participants_sessions" not in json
+        pd.testing.assert_frame_equal(
+            pd.read_csv(tensors_dir / "conversions.tsv", sep="\t"),
+            pd.DataFrame(
+                {
+                    "conv_id": ["raw"],
+                    "description": ["raw conversion"],
+                    "description_json": ["src-pet_conv-raw_participantsXsessions.tsv"],
+                }
+            ),
+        )
 
         new_tensor_description = TensorDescription.read(
-            tmp_path / "src-pet_conv-raw_description.json"
+            tensors_dir / "src-pet_conv-raw_description.json"
         )
         assert tensor_description.tensor_type == new_tensor_description.tensor_type
         assert (
-            tensor_description.image.file_type.suffix
-            == new_tensor_description.image.file_type.suffix
+            tensor_description.image[1].suffix == new_tensor_description.image[1].suffix
         )
         assert (
-            tensor_description.masks["individual_mask"].file_type.suffix
-            == new_tensor_description.masks["individual_mask"].file_type.suffix
+            tensor_description.masks["individual_mask"][1].suffix
+            == new_tensor_description.masks["individual_mask"][1].suffix
         )
         assert (
             tensor_description.masks["common_mask"]
@@ -117,25 +141,35 @@ class TestTensorDescription:
         assert tensor_description.spacing == new_tensor_description.spacing
         assert tensor_description.spatial_shape == new_tensor_description.spatial_shape
         assert tensor_description.interrupted == new_tensor_description.interrupted
+        assert tensor_description.description == new_tensor_description.description
         pd.testing.assert_frame_equal(
             tensor_description.participants_sessions,
             new_tensor_description.participants_sessions,
         )
 
     def test_read_write_with_custom_transform(
-        self, tensor_description_with_trasnforms: TensorDescription, tmp_path
+        self, tensor_description_with_transforms: TensorDescription, tensors_dir
     ):
-        write_json(
-            tmp_path / "dataset_description.json",
-            {"BIDSVersion": "1.10.0", "DatasetType": "derivative", "Name": "abc"},
-        )
-        tensor_description_with_trasnforms.write(tmp_path)
-        json = read_json(tmp_path / "src-pet_conv-raw_description.json")
+        tensor_description_with_transforms.write(tensors_dir)
+        json = read_json(tensors_dir / "src-pet_conv-transform_description.json")
         assert json["Transforms"][0] == "Crop(cropping=1)"
         assert json["Transforms"][1]["name_"] == "Pad"
+        pd.testing.assert_frame_equal(
+            pd.read_csv(tensors_dir / "conversions.tsv", sep="\t"),
+            pd.DataFrame(
+                {
+                    "conv_id": ["raw", "transform"],
+                    "description": ["raw conversion", None],
+                    "description_json": [
+                        "src-pet_conv-raw_participantsXsessions.tsv",
+                        "src-pet_conv-transform_participantsXsessions.tsv",
+                    ],
+                }
+            ),
+        )
 
         new_tensor_description = TensorDescription.read(
-            tmp_path / "src-pet_conv-raw_description.json"
+            tensors_dir / "src-pet_conv-transform_description.json"
         )
         assert new_tensor_description.transforms[0] == "Crop(cropping=1)"
         assert new_tensor_description.transforms[1].padding == 1
