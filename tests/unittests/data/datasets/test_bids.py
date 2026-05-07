@@ -1,4 +1,5 @@
 import re
+import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -16,6 +17,12 @@ from clinicadl.utils.exceptions import CannotReadJsonFieldError
 BIDS = Path(__file__).parents[2] / "resources" / "bids"
 MASKS = BIDS / "derivatives" / "masks"
 CAPS = BIDS / "derivatives" / "caps"
+
+
+def transform(x: dict) -> dict:
+    x["new_data"] = 0
+    x.add_image(torch.ones(1, 2, 2, 2), "new_image")
+    return x
 
 
 class TestBidsDataset:
@@ -260,3 +267,49 @@ class TestBidsDataset:
             transforms=TransformsHandler(image_transforms=[tio.Crop(1)]),
         )
         pd.testing.assert_frame_equal(dataset.config.data, new_dataset.config.data)
+
+    def test_to_tensors(self, tmp_path):
+        shutil.copytree(BIDS, tmp_path, dirs_exist_ok=True)
+
+        dataset = BidsDataset(
+            bids=tmp_path,
+            file_type=BidsFileType(suffix="T1w", data_type="anat"),
+            transforms=TransformsHandler(
+                image_transforms=[tio.Crop((0, 1, 0, 1, 0, 1)), transform],
+                extraction=Slice(),
+            ),
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-000", "sub-010"],
+                    "session_id": ["ses-M000", "ses-M003"],
+                    "age": [1, 2],
+                }
+            ),
+            columns={"age": lambda x: x * 10},
+            masks={
+                "mask1": BidsFileType(suffix="mask", data_type="anat"),
+                "mask2": (
+                    CAPS
+                    / "space-MNI152NLin2009cSym_res-1d3x1d2x1d1_label-leftHippocampus_mask.nii"
+                ),
+            },
+        )
+        tensor_dataset = dataset.to_tensors(conversion_name="x", save_transforms=True)
+        assert (
+            tmp_path / "derivatives" / "tensors" / "src-T1w_conv-x_description.json"
+        ).exists()
+        sample = tensor_dataset[0]
+        assert sample["age"] == 10
+        assert sample.spatial_shape == (1, 2, 2)
+        assert "new_data" in sample
+        assert set(sample.get_images_dict(intensity_only=False).keys()) == {
+            "image",
+            "new_image",
+            "mask1",
+            "mask2",
+        }
+
+        tensor_dataset = dataset.to_tensors(conversion_name="y", save_transforms=False)
+        sample = tensor_dataset[0]
+        assert sample.spatial_shape == (1, 2, 2)
+        assert "new_data" in sample

@@ -1,8 +1,9 @@
 from collections.abc import Sequence
-from copy import copy
+from copy import copy, deepcopy
 from pathlib import Path
-from typing import Any, Optional, TypeAlias
+from typing import Any, Iterable, Optional, TypeAlias
 
+import torchio as tio
 from pydantic import Field, field_validator
 
 from clinicadl.io import Bids, BidsFileType
@@ -16,12 +17,15 @@ from ..structures import (
     Image,
     IndividualMask,
 )
+from ..tensors import TensorConversion
+from ..utils import DEFAULT_SPATIAL_CHECKS, SpatialCheck
 from .bids_utils import (
     BidsNiftiDataset,
     BidsTypeDatasetConfig,
     BidsTypeDatasetWithConfig,
     ColumnsType,
 )
+from .tensor import TensorDataset
 
 MasksType: TypeAlias = dict[str, PathType | BidsFileType | tuple[Bids, BidsFileType]]
 
@@ -124,3 +128,35 @@ class BidsDataset(
                 masks[name] = CommonMask(mask)
 
         return masks
+
+    def to_tensors(
+        self,
+        conversion_name: Optional[str] = None,
+        spatial_checks: Optional[Iterable[str | SpatialCheck]] = DEFAULT_SPATIAL_CHECKS,
+        save_transforms: bool = False,
+        description: Optional[str] = None,
+        overwrite: bool = False,
+        check_transforms: bool = True,
+        n_proc: int = 1,
+    ) -> TensorDataset:
+        converter = TensorConversion(self)
+        conversion = converter.to_tensors(
+            conversion_name=conversion_name,
+            spatial_checks=spatial_checks,
+            save_transforms=save_transforms,
+            description=description,
+            overwrite=overwrite,
+            check_transforms=check_transforms,
+            n_proc=n_proc,
+        )
+        transforms = deepcopy(self.transforms)
+        if conversion.transforms:
+            transforms.image_transforms = tio.Compose([])
+
+        return TensorDataset(
+            conversion.get_json_path(converter.tensors_dir.path),
+            data=copy(self.df),
+            transforms=transforms,
+            columns=copy(self.columns),
+            to_load=list(conversion.masks.keys()) + conversion.additional_data,
+        )

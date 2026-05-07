@@ -1,7 +1,5 @@
-import json
 import re
 import shutil
-import warnings
 from copy import copy
 from pathlib import Path
 from typing import Optional
@@ -11,23 +9,18 @@ import pandas as pd
 import pytest
 import torch
 import torchio as tio
+from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint, TensorContent
 from clinicadl.data.structures.images import CommonMask, Image, IndividualMask
 from clinicadl.data.tensors import (
     TensorConversion,
     TensorDescription,
-    tensor_conversion,
 )
 from clinicadl.io import Bids, BidsFileType
-from clinicadl.io.maps.training.splits.tmp import TmpDir
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import (
-    ClampConfig,
     CropConfig,
-    PadConfig,
-    RescaleIntensityConfig,
-    ToCanonicalConfig,
 )
 from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.exceptions import TensorConversionError
@@ -74,15 +67,6 @@ class CustomTransform(tio.Transform):
             ),
             "other_mask",
         )
-        datapoint["coefficient"] = 0.5
-
-        return datapoint
-
-
-class CustomTransformBis(tio.Transform):
-    def apply_transform(self, datapoint: DataPoint) -> DataPoint:
-        datapoint.add_image(datapoint.image, "other_image")
-        datapoint["other_mask"] = 1.0
         datapoint["coefficient"] = 0.5
 
         return datapoint
@@ -171,14 +155,6 @@ class BidsDataset:
             datapoint[mask].path = participant + "_" + f"mask{i}" + ".nii.gz"
 
         return datapoint
-
-
-# PET_FILE_TYPE = BidsFileType(
-#     data_type="pet",
-#     suffix="pet",
-#     with_entities={"trc": "18FAV45"},
-#     without_entities={"desc": "Crop"},
-# )
 
 
 class TestToTensors:
@@ -549,6 +525,12 @@ class TestToTensors:
         ):
             converter.to_tensors(
                 conversion_name="raw",
+                save_transforms=False,
+                spatial_checks=None,
+            )
+        with pytest.raises(AssertionError):
+            converter.to_tensors(
+                conversion_name="abc_d",
                 save_transforms=False,
                 spatial_checks=None,
             )

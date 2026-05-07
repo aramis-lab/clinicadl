@@ -292,7 +292,7 @@ class Bids(HasConfig[BidsConfig]):
                 rel_path = os.path.relpath(full_path, dir_)
                 try:
                     if file_type.match(rel_path, participant, session):
-                        selected_files.append(full_path)
+                        selected_files.append(Path(full_path))
                 except (ValueError, AssertionError):  # not a BIDS file
                     continue
 

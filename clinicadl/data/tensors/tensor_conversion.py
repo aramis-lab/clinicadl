@@ -352,6 +352,9 @@ class TensorConversion:
         """
         path.parent.mkdir(exist_ok=True, parents=True)
 
+        del images["image_path"]
+        del images["file_type"]
+
         content = TensorContent.from_datapoint(images)
         content.save(path)
 

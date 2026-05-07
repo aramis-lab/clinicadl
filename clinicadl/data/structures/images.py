@@ -192,7 +192,7 @@ class TensorContent:
         torch.save(to_save, path)
         write_json(
             path.with_suffix(JSON),
-            {SOURCE_FILES_KEY: [PATH_PREFIX + p for p in self.paths]},
+            {SOURCE_FILES_KEY: [PATH_PREFIX + str(p) for p in self.paths]},
         )
 
 

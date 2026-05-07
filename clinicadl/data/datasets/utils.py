@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from bisect import bisect_right
 from copy import deepcopy
