@@ -1,5 +1,5 @@
 {
     "Sources": [
-        "bids:raw:sub-999/ses-M099/anat/sub-999_ses-M099_trc-18FAV45_res-1x1x1_pet.nii.gz"
+        "file://../../sub-999/ses-M099/anat/sub-999_ses-M099_trc-18FAV45_res-1x1x1_pet.nii.gz"
     ]
 }

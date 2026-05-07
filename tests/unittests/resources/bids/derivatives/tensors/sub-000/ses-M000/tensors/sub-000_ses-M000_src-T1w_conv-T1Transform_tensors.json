@@ -1,7 +1,9 @@
 {
     "Sources": [
-        "bids:caps:sub-000/ses-M000/t1_linear/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz",
-        "bids:raw:sub-000/ses-M000/anat/sub-000_ses-M000_res-1d3x1d2x1d1_label-brain_mask.nii.gz",
-        "bids:derivative:sub-000/ses-M000/anat/sub-000_ses-M000_res-1d3x1d2x1d1_seg-FreeSurfer_dseg.nii.gz"
+        "file://../.../sub-000/ses-M000/t1_linear/sub-000_ses-M000_res-1d3x1d2x1d1_T1w.nii.gz",
+        "file://../../sub-000/ses-M000/anat/sub-000_ses-M000_res-1d3x1d2x1d1_label-brain_mask.nii.gz",
+        "file://../masks/sub-000/ses-M000/anat/sub-000_ses-M000_res-1d3x1d2x1d1_seg-FreeSurfer_dseg.nii.gz",
+        "file://../caps/space-MNI152NLin2009cSym_res-1d3x1d2x1d1_label-leftHippocampus_mask.nii",
+        "file://../caps/space-MNI152NLin2009cSym_res-1x1x1_label-rightHippocampus_mask.nii.gz"
     ]
 }

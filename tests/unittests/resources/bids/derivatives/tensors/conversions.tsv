@@ -1,5 +1,5 @@
-conv_id	description	conv_json
+conv_id	description	description_json
 raw	Raw images are converted without any transformation.	*_conv-raw_description.json
-T1Masks		res-1d3x1d2x1d1_conv-T1Masks_description.json
+T1Masks		res-1d3x1d2x1d1_src-T1w_conv-T1Masks_description.json
 T1Transform	T1 images cropped	src-T1w_conv-T1Transform_description.json
 PetSpacing1	PET images with spacing 1.00x1.00x1.00mm	trc-18FAV45_res-0d8x0d8x0d8_src-pet_conv-PetSpacing1_description.json

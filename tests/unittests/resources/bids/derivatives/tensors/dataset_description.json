@@ -8,22 +8,5 @@
             "Version": "2.0.0",
             "CodeURL": "https://github.com/aramis-lab/clinicadl/releases/tag/v<release>"
         }
-    ],
-    "DatasetLinks": {
-        "raw": "file:///<path>/bids",
-        "derivative": "file:///<path>/bids/derivatives/masks",
-        "derivative1": "file:///<path>/bids/derivatives/resampling",
-        "caps": "file:///<path>/bids/derivatives/caps"
-    },
-    "SourceDatasets": [
-        {
-            "URL": "file:///<path>/bids"
-        },
-        {
-            "URL": "file:///<path>/bids/derivatives/caps"
-        },
-        {
-            "URL": "file:///<path>/bids/derivatives/resampling"
-        }
     ]
 }

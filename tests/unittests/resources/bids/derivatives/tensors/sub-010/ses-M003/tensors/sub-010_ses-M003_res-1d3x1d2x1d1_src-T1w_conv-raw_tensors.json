@@ -1,5 +1,5 @@
 {
     "Sources": [
-        "bids:raw:sub-010/ses-M003/anat/sub-010_ses-M003_res-1d3x1d2x1d1_T1w.nii.gz"
+        "file://../../sub-010/ses-M003/anat/sub-010_ses-M003_res-1d3x1d2x1d1_T1w.nii.gz"
     ]
 }
