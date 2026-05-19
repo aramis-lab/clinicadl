@@ -4,8 +4,10 @@ import torch
 import torchio as tio
 
 from clinicadl.data.dataloader.batch import Batch
-from clinicadl.data.datatypes import T1Linear
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
+from clinicadl.io import BidsFileType
+
+FILE_TYPE = BidsFileType(data_type="anat", suffix="T1w")
 
 
 def test_init():
@@ -27,7 +29,7 @@ def test_typing():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=T1Linear(),
+        file_type=FILE_TYPE,
     )
     batch = Batch([datapoint, datapoint])
     assert str(batch[0].image_path[0]) == "abc.nii.gz"
@@ -115,7 +117,7 @@ def test_get_field():
                 participant=f"sub-{i}",
                 session=f"ses-{i}",
                 image_path="abc.nii.gz",
-                datatype=T1Linear(),
+                file_type=FILE_TYPE,
                 squeeze=False,
                 slice_direction=1,
                 sample_position=0,

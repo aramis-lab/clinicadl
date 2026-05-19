@@ -17,12 +17,12 @@ from clinicadl.data.dataloader import (
 from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.dataloader.config import get_dataloader_from_json_safely
 from clinicadl.data.datasets import (
-    CapsDataset,
+    BidsDataset,
     ConcatDataset,
     PairedDataset,
     UnpairedDataset,
 )
-from clinicadl.data.datatypes import PETLinear, T1Linear
+from clinicadl.io import BidsFileType
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import PadConfig
 from clinicadl.transforms.extraction import Slice
@@ -52,27 +52,25 @@ GOOD_INPUTS = [
     {"collate_fn": ToBatchCollate()},
 ]
 
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t").drop(7)
+BIDS_DIR = Path(__file__).parents[2] / "resources" / "bids"
+DATA = pd.read_csv(BIDS_DIR / "participantsXsessions.tsv", sep="\t").drop(7)
 DATA["age"] = [0.0, 0.0, 1.0, 1.0, 5.0, 5.0, 10.0]
 
-CAPS = CapsDataset(
-    CAPS_DIR,
-    datatype=PETLinear(
-        use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-    ),
+FILE_TYPE = BidsFileType(
+    data_type="pet", suffix="pet", without_entities={"desc": "Crop"}
+)
+
+BIDS = BidsDataset(
+    BIDS_DIR,
+    file_type=FILE_TYPE,
     columns=["age"],
     data=DATA,
 )
-CAPS_WITHOUT_LABEL = CapsDataset(
-    CAPS_DIR,
-    datatype=PETLinear(
-        use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-    ),
+BIDS_WITHOUT_LABEL = BidsDataset(
+    BIDS_DIR,
+    file_type=FILE_TYPE,
     data=DATA,
 )
-CAPS.read_tensor_conversion()
-CAPS_WITHOUT_LABEL.read_tensor_conversion()
 
 
 @pytest.mark.parametrize("args", GOOD_INPUTS)
@@ -95,7 +93,7 @@ def test_get_object():
         drop_last=True,
         pin_memory=True,
     )
-    dataloader = dataloader_config.get_object(CAPS)
+    dataloader = dataloader_config.get_object(BIDS)
     assert dataloader.batch_size == 2
     assert dataloader.drop_last
     assert dataloader.pin_memory
@@ -120,7 +118,7 @@ def test_get_object():
     dataloader_config = DataLoaderConfig(
         shuffle=True,
     )
-    dataloader = dataloader_config.get_object(PairedDataset([CAPS, CAPS_WITHOUT_LABEL]))
+    dataloader = dataloader_config.get_object(PairedDataset([BIDS, BIDS_WITHOUT_LABEL]))
     assert isinstance(dataloader.sampler, DistributedSampler)
     assert dataloader.sampler.shuffle
     assert dataloader.sampler.num_replicas == 1
@@ -132,7 +130,7 @@ def test_get_object():
     assert batch[0].get_field("age") == torch.tensor([5.0])
 
     dataloader_config = DataLoaderConfig(shuffle=False, collate_fn=ToBatchCollate())
-    dataloader = dataloader_config.get_object(ConcatDataset([CAPS, CAPS_WITHOUT_LABEL]))
+    dataloader = dataloader_config.get_object(ConcatDataset([BIDS, BIDS_WITHOUT_LABEL]))
     assert isinstance(dataloader.sampler, DistributedSampler)
     assert not dataloader.sampler.shuffle
     assert dataloader.sampler.num_replicas == 1
@@ -149,7 +147,7 @@ def test_get_object():
     with pytest.raises(
         KeyError, match="Failed to get the column 'sex' in the dataframe*"
     ):
-        dataloader_config.get_object(CAPS)
+        dataloader_config.get_object(BIDS)
 
     dataloader_config = DataLoaderConfig(
         sampling_weights="session_id",
@@ -157,29 +155,29 @@ def test_get_object():
     with pytest.raises(
         ValueError, match="Got 'session_id' for 'sampling_weights' but cannot convert*"
     ):
-        dataloader_config.get_object(CAPS)
+        dataloader_config.get_object(BIDS)
 
     dataloader_config = DataLoaderConfig(
         sampling_weights="age",
     )
     with pytest.raises(ValueError, match="For data parallelism*"):
-        dataloader_config.get_object(CAPS, rank=0)
+        dataloader_config.get_object(BIDS, rank=0)
 
     with pytest.raises(
         ValueError, match="Can't use 'sampling_weights' with UnpairedDataset."
     ):
-        dataloader_config.get_object(UnpairedDataset([CAPS, CAPS]))
+        dataloader_config.get_object(UnpairedDataset([BIDS, BIDS]))
 
     with pytest.raises(
         ValueError,
         match="'rank' must be strictly smaller than 'dp_degree'. Got dp_degree=2 and rank=2",
     ):
-        dataloader_config.get_object(CAPS, rank=2, dp_degree=2)
+        dataloader_config.get_object(BIDS, rank=2, dp_degree=2)
 
     # tets other datasets
     dataloader = DataLoaderConfig(
         batch_size=2, collate_fn=ToBatchesCollate()
-    ).get_object(UnpairedDataset([CAPS, CAPS_WITHOUT_LABEL]))
+    ).get_object(UnpairedDataset([BIDS, BIDS_WITHOUT_LABEL]))
     dataloader.set_epoch(5)
     batch = next(iter(dataloader))
     assert isinstance(batch, (list, tuple))
@@ -188,7 +186,7 @@ def test_get_object():
 
     dataloader = DataLoaderConfig(
         batch_size=5, shuffle=True, collate_fn=MergeBatchesCollate()
-    ).get_object(PairedDataset([CAPS, CAPS_WITHOUT_LABEL]))
+    ).get_object(PairedDataset([BIDS, BIDS_WITHOUT_LABEL]))
     batch = next(iter(dataloader))
     assert len(batch) == 5
 
@@ -202,47 +200,41 @@ def test_workers():
         prefetch_factor=2,
         persistent_workers=True,
     )
-    dataloader = dataloader_config.get_object(CAPS)
+    dataloader = dataloader_config.get_object(BIDS)
     assert dataloader.num_workers == 1
     assert dataloader.prefetch_factor == 2
     assert dataloader.persistent_workers
 
 
 def test_train_eval():
-    caps = CapsDataset(
-        CAPS_DIR,
-        datatype=PETLinear(
-            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-        ),
+    bids = BidsDataset(
+        BIDS_DIR,
+        file_type=FILE_TYPE,
         transforms=TransformsHandler(augmentations=[PadConfig(padding=1)]),
         data=DATA,
     )
-    caps.read_tensor_conversion()
-    dataloader = iter(DataLoaderConfig().get_object(caps))
-    caps.train()
+    dataloader = iter(DataLoaderConfig().get_object(bids))
+    bids.train()
     out = next(dataloader)
     assert out[0].image.shape == (1, 3, 3, 3)
-    caps.eval()
+    bids.eval()
     out = next(dataloader)
     assert out[0].image.shape == (1, 1, 1, 1)
 
 
 def test_ddp():
-    caps = CapsDataset(
-        CAPS_DIR,
-        datatype=PETLinear(
-            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-        ),
+    bids = BidsDataset(
+        BIDS_DIR,
+        file_type=FILE_TYPE,
         data=DATA,
         columns=["age"],
     )
-    caps.read_tensor_conversion()
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         shuffle=False,
     )
 
-    dataloader = iter(dataloader_config.get_object(caps, dp_degree=2, rank=0))
+    dataloader = iter(dataloader_config.get_object(bids, dp_degree=2, rank=0))
     batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M000"
@@ -258,7 +250,7 @@ def test_ddp():
     with pytest.raises(StopIteration):
         next(dataloader)
 
-    dataloader = iter(dataloader_config.get_object(caps, dp_degree=2, rank=1))
+    dataloader = iter(dataloader_config.get_object(bids, dp_degree=2, rank=1))
     batch = next(dataloader)
     assert len(batch) == 2
     assert batch[0].session == "ses-M003"
@@ -280,7 +272,7 @@ def test_ddp():
         shuffle=True,
     )
 
-    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=0)
+    dataloader = dataloader_config.get_object(bids, dp_degree=2, rank=0)
     dataloader.set_epoch(5)
     dataloader = iter(dataloader)
     batch = next(dataloader)
@@ -298,7 +290,7 @@ def test_ddp():
     with pytest.raises(StopIteration):
         next(dataloader)
 
-    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=1)
+    dataloader = dataloader_config.get_object(bids, dp_degree=2, rank=1)
     dataloader.set_epoch(5)
     dataloader = iter(dataloader)
     batch = next(dataloader)
@@ -322,7 +314,7 @@ def test_ddp():
         sampling_weights="age",
     )
 
-    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=0)
+    dataloader = dataloader_config.get_object(bids, dp_degree=2, rank=0)
     torch.manual_seed(0)
     assert dataloader.sampler.num_samples == 4
     dataloader = iter(dataloader)
@@ -341,7 +333,7 @@ def test_ddp():
     with pytest.raises(StopIteration):
         next(dataloader)
 
-    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=1)
+    dataloader = dataloader_config.get_object(bids, dp_degree=2, rank=1)
     assert dataloader.sampler.num_samples == 3
     dataloader = iter(dataloader)
     batch = next(dataloader)
@@ -368,39 +360,21 @@ def test_ddp():
         ]
         .reset_index()
     )
-    caps = CapsDataset(
-        CAPS_DIR,
-        datatype=T1Linear(use_uncropped_image=True),
+    bids = BidsDataset(
+        BIDS_DIR,
+        file_type=BidsFileType(data_type="anat", suffix="T1w"),
         data=sub_data,
         transforms=TransformsHandler(extraction=Slice(slices=[0, 1])),
-        masks=["brain"],
+        masks={"brain": BidsFileType(data_type="anat", suffix="mask")},
     )
-    caps.read_tensor_conversion("t1_masks")
 
     dataloader_config = DataLoaderConfig(
         batch_size=2,
         sampling_weights="age",
     )
-    torch.manual_seed(1)
+    torch.manual_seed(2)
 
-    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=0)
-    torch.testing.assert_close(
-        dataloader.sampler.weights, torch.tensor([0, 0, 1, 1], dtype=torch.float64)
-    )
-    assert dataloader.sampler.num_samples == 2
-    dataloader = iter(dataloader)
-    batch = next(dataloader)
-    assert len(batch) == 2
-    assert batch[0].session == "ses-M003"
-    assert batch[0].participant == "sub-010"
-    assert batch[0].sample_position == 0
-    assert batch[1].session == "ses-M003"
-    assert batch[1].participant == "sub-010"
-    assert batch[1].sample_position == 0
-    with pytest.raises(StopIteration):
-        next(dataloader)
-
-    dataloader = dataloader_config.get_object(caps, dp_degree=2, rank=1)
+    dataloader = dataloader_config.get_object(bids, dp_degree=2, rank=0)
     torch.testing.assert_close(
         dataloader.sampler.weights, torch.tensor([0, 0, 1, 1], dtype=torch.float64)
     )
@@ -414,6 +388,23 @@ def test_ddp():
     assert batch[1].session == "ses-M003"
     assert batch[1].participant == "sub-010"
     assert batch[1].sample_position == 0
+    with pytest.raises(StopIteration):
+        next(dataloader)
+
+    dataloader = dataloader_config.get_object(bids, dp_degree=2, rank=1)
+    torch.testing.assert_close(
+        dataloader.sampler.weights, torch.tensor([0, 0, 1, 1], dtype=torch.float64)
+    )
+    assert dataloader.sampler.num_samples == 2
+    dataloader = iter(dataloader)
+    batch = next(dataloader)
+    assert len(batch) == 2
+    assert batch[0].session == "ses-M003"
+    assert batch[0].participant == "sub-010"
+    assert batch[0].sample_position == 1
+    assert batch[1].session == "ses-M003"
+    assert batch[1].participant == "sub-010"
+    assert batch[1].sample_position == 1
     with pytest.raises(StopIteration):
         next(dataloader)
 
@@ -457,25 +448,3 @@ def test_serialize_deserialize(tmp_path):
     assert isinstance(new_config, DataLoaderConfig)
     assert isinstance(new_config.collate_fn, CustomCollate)
     assert fields == ["collate_fn"]
-
-
-def test_custom_dataset():
-    from ..datasets.utils import CustomDataset
-
-    data = pd.DataFrame.from_records(
-        [
-            ("sub-100", "ses-M000"),
-            ("sub-100", "ses-M012"),
-            ("sub-999", "ses-M099"),
-            ("sub-999", "ses-M999"),
-        ],
-        columns=["participant_id", "session_id"],
-    )
-    dataset = CustomDataset(data)
-    dataloader = DataLoaderConfig(
-        batch_size=2,
-        shuffle=False,
-    ).get_object(dataset)
-    batch = next(iter(dataloader))
-    assert (batch[0].participant, batch[0].session) == ("sub-100", "ses-M000")
-    assert (batch[1].participant, batch[1].session) == ("sub-100", "ses-M012")

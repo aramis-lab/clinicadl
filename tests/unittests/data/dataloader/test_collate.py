@@ -13,17 +13,20 @@ from clinicadl.data.dataloader import (
     ToBatchesCollate,
 )
 from clinicadl.data.dataloader.collate.factory import get_collate_from_dict
-from clinicadl.data.datatypes import T1Linear
 from clinicadl.data.structures import Sample, Sample2D
+from clinicadl.io import BidsFileType
 from clinicadl.utils.json import read_json
 from clinicadl.utils.numerics import merge_numerics
+
+FILE_TYPE = BidsFileType(data_type="anat", suffix="T1w")
+FILE_TYPE_BIS = BidsFileType(data_type="anat", suffix="FLAIR")
 
 SAMPLE_1 = Sample(
     image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=np.eye(4)),
     mask=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3), affine=np.eye(4)),
     participant=str(1),
     session=str(1),
-    datatype=T1Linear(),
+    file_type=FILE_TYPE,
     image_path=Path("abc"),
     np_field=np.array([1, 2]),
     torch_field=torch.tensor([1, 2]),
@@ -36,7 +39,7 @@ SAMPLE_1_BIS = Sample(
     mask=tio.LabelMap(tensor=torch.randn(3, 3, 3, 3), affine=np.eye(4)),
     participant=str(1),
     session=str(1),
-    datatype=T1Linear(use_uncropped_image=True),
+    file_type=FILE_TYPE_BIS,
     image_path=Path("bcd"),
     np_field=np.array([2, 3]),
     torch_field=torch.tensor([2, 3]),
@@ -50,7 +53,7 @@ SAMPLE_2D = Sample2D(
     image=tio.ScalarImage(tensor=torch.randn(2, 1, 3, 3), affine=np.eye(4)),
     participant=str(1),
     session=str(1),
-    datatype=T1Linear(use_uncropped_image=True),
+    file_type=FILE_TYPE_BIS,
     image_path=Path("bcd"),
     sample_position=0,
     slice_direction=0,
@@ -90,10 +93,10 @@ def test_merge_batches(merge_numerics_mock):
     assert batch[0].participant == "1"
     assert batch[0].session == "1"
     assert batch[0].image_path == (Path("abc"), Path("bcd"), Path("bcd"))
-    assert batch[0].datatype == (
-        T1Linear(),
-        T1Linear(use_uncropped_image=True),
-        T1Linear(use_uncropped_image=True),
+    assert batch[0].file_type == (
+        FILE_TYPE,
+        FILE_TYPE_BIS,
+        FILE_TYPE_BIS,
     )
     np.testing.assert_allclose(batch[0].np_field, np.array([[1, 2], [2, 3]]))
     torch.testing.assert_close(batch[0].torch_field, torch.tensor([[1, 2], [2, 3]]))

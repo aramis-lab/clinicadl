@@ -9,14 +9,12 @@ import torchio as tio
 from clinicadl.data.structures import Sample2D
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import (
-    DATATYPE,
-    IMAGE,
+    FILE_TYPE,
     IMAGE_PATH,
     PARTICIPANT,
     SESSION,
     SQUEEZE,
 )
-from clinicadl.utils.factories import get_args_from
 from clinicadl.utils.numerics import merge_numerics
 from clinicadl.utils.objects import HasConfig
 
@@ -142,8 +140,8 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
                     [sample[SQUEEZE] for sample in samples_collection],
                     SQUEEZE,
                 )
-            args[DATATYPE] = tuple(
-                d for sample in samples_collection for d in sample.datatype
+            args[FILE_TYPE] = tuple(
+                d for sample in samples_collection for d in sample.file_type
             )
             args[IMAGE_PATH] = tuple(
                 p for sample in samples_collection for p in sample.image_path
@@ -157,9 +155,6 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
                 args[field] = self._merge_field(
                     [sample[field] for sample in samples_collection if field in sample],
                 )
-
-            if "check_consistency" in get_args_from(type_.__init__):
-                args["check_consistency"] = False
 
             mergers.append(type_(**args))
 

@@ -16,7 +16,9 @@ from clinicadl.io import Bids, TensorType
 from clinicadl.io.bids.reader import DatasetDescription
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.utils.dictionary.words import (
+    PARTICIPANT,
     PARTICIPANT_ID,
+    SESSION,
     SESSION_ID,
 )
 from clinicadl.utils.exceptions import TensorConversionError
@@ -24,6 +26,7 @@ from clinicadl.utils.variables import BIDS_VERSION
 
 from ..structures import DataPoint
 from ..structures.images import TensorContent
+from ..structures.sample import SAMPLE_FIELDS
 from ..utils import DatasetChecker, SpatialCheck
 from .utils import TensorDescription
 
@@ -352,8 +355,9 @@ class TensorConversion:
         """
         path.parent.mkdir(exist_ok=True, parents=True)
 
-        del images["image_path"]
-        del images["file_type"]
+        for key in images.get_non_images_dict():
+            if key in set(SAMPLE_FIELDS) - {PARTICIPANT, SESSION}:
+                del images[key]
 
         content = TensorContent.from_datapoint(images)
         content.save(path)

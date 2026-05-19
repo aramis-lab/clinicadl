@@ -80,7 +80,7 @@ def get_dataset_from_json_safely(
 ) -> tuple[Optional[Dataset], list[str]]:
     """
     Factory function to get a :py:class:`Dataset` from the
-    file saved with :py:meth:`Dataset.to_json`, which will not raised errors.
+    file saved with :py:meth:`Dataset.to_json` that will not raised errors.
 
     If some fields of the serialized dataset cannot be read, they will be reported, and
     the field of ``default`` will be used to override them (if not ``None``).

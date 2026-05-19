@@ -15,7 +15,6 @@ CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
 
 AFFINE = np.diag([1.3, 1.2, 1.1, 1])
 IMAGE = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=AFFINE)
-ISO_IMAGE = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=np.eye(4))
 DOUBLE_IMAGE = tio.ScalarImage(tensor=torch.randn(2, 3, 3, 3), affine=AFFINE)
 AGE = 1
 MASK = tio.LabelMap(tensor=torch.randn(2, 3, 3, 3), affine=AFFINE)
@@ -133,41 +132,8 @@ def test_sample():
             sample_position=0,
         )
 
-    with pytest.raises(RuntimeError):
-        Sample(
-            image=IMAGE,
-            participant=PARTICIPANT,
-            session=SESSION,
-            file_type=FILE_TYPE,
-            image_path=PATH,
-            other_image=ISO_IMAGE,
-        )
-
-    sample = Sample(
-        image=IMAGE,
-        participant=PARTICIPANT,
-        session=SESSION,
-        file_type=FILE_TYPE,
-        image_path=PATH,
-        other_image=ISO_IMAGE,
-        check_consistency=False,
-    )
-    assert sample["other_image"].spatial_shape == (3, 3, 3)
-
 
 def test_sample_2d():
-    with pytest.raises(RuntimeError):
-        Sample2D(
-            image=tio.ScalarImage(tensor=torch.randn(1, 1, 3, 3), affine=AFFINE),
-            participant=PARTICIPANT,
-            session=SESSION,
-            iso_image=ISO_IMAGE,
-            file_type=FILE_TYPE,
-            image_path=PATH,
-            sample_position=1,
-            squeeze=False,
-            slice_direction=0,
-        )
     with pytest.raises(
         ValidationError,
         match=r"The dimension along 'slice_direction' should be 1. But here got slice_direction=0 and spatial_shape of \(3, 1, 3\)",
@@ -181,7 +147,6 @@ def test_sample_2d():
             sample_position=2,
             squeeze=False,
             slice_direction=0,
-            check_consistency=False,
         )
 
     sample = Sample2D(
@@ -194,7 +159,6 @@ def test_sample_2d():
         sample_position=1,
         squeeze=False,
         slice_direction=1,
-        check_consistency=False,
     )
     assert sample.session is SESSION
     assert sample.sample_position == 1
