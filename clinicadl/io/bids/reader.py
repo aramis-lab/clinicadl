@@ -83,6 +83,8 @@ class DatasetDescription(ClinicaDLConfig):
                 self.dataset_type == DatasetType.DERIVATIVE
             ), f"If the directory is a CAPS, DatasetType must be 'derivative' in dataset_description.json. Got: '{self.dataset_type}'"
 
+        return self
+
 
 @equal_if_config_equal
 class Bids(HasConfig[BidsConfig]):

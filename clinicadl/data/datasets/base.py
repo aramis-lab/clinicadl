@@ -94,7 +94,7 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
             A subset of the original dataset, restricted to the (participant, session) pairs mentioned in ``data``.
         """
         if isinstance(particpants_sessions, (str, Path)):
-            new_df = read_data(particpants_sessions, check_protected_names=False)
+            new_df = read_data(particpants_sessions)
         else:
             new_df = pd.DataFrame.from_records(
                 particpants_sessions, columns=[PARTICIPANT_ID, SESSION_ID]

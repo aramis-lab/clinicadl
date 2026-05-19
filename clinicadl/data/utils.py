@@ -99,11 +99,11 @@ class SpatialCheck(str, BaseEnum):
     GLOBAL_SHAPE = "global_shape"
 
 
-DEFAULT_SPATIAL_CHECKS = [
+DEFAULT_SPATIAL_CHECKS = (
     "affine",
     "shape",
     "global_spacing",
-]
+)
 
 
 class DatasetChecker:

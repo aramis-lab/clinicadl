@@ -241,19 +241,6 @@ class TestMulitmodalSamplerDataset:
         assert dataset[8]["age"] == 20.0
         assert dataset[8]["cat"] == "B"
 
-        with pytest.raises(DataFrameError):
-            MultimodalSampler(
-                data=pd.DataFrame(
-                    {
-                        "participant_id": ["sub-000"],
-                        "session_id": ["ses-M000"],
-                        "dataset_id": [0],
-                    }
-                ),
-                columns=None,
-                transforms=TransformsHandler(),
-            )
-
     def test_checks(self):
         df = copy(DF)
         df["sample_type"] = None

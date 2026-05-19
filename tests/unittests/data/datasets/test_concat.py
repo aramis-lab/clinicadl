@@ -1,128 +1,114 @@
-import warnings
 from pathlib import Path
-from typing import Optional
+from typing import Iterable
+from unittest.mock import Mock
 
-import numpy as np
 import pandas as pd
 import pytest
+import torch
+import torchio as tio
+from pydantic import ValidationError
 
-from clinicadl.data.datasets import CapsDataset, ConcatDataset, MultiSamplesDataset
-from clinicadl.data.datatypes import PETLinear, T1Linear
-from clinicadl.transforms import TransformsHandler
-from clinicadl.transforms.extraction import Image, Slice
-from clinicadl.utils.exceptions import TensorConversionError
+from clinicadl.data.datasets import ConcatDataset, Dataset, TensorDataset
+from clinicadl.data.structures import Sample
+from clinicadl.io import BidsFileType
 
-from .utils import subset_df
-
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-DATAFRAME = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
+TENSORS = Path(__file__).parents[2] / "resources" / "bids" / "derivatives" / "tensors"
 
 
-def sub_data(
-    participants_sessions: Optional[list[tuple[str, str]]] = None,
-) -> pd.DataFrame:
-    return subset_df(DATAFRAME, participants_sessions)
+class MyDataset(Dataset):
+    def __init__(
+        self,
+        participants_sessions: Iterable[tuple[str, str]],
+        suffix: str = "T1w",
+        image_shape: int = 3,
+        additional_col: bool = False,
+    ):
+        self.suffix = suffix
+        self.image_shape = image_shape
+        self._df = pd.DataFrame(
+            {
+                "participant_id": [pair[0] for pair in participants_sessions],
+                "session_id": [pair[1] for pair in participants_sessions],
+            }
+        )
+        if additional_col:
+            self._df["age"] = range(len(participants_sessions))
+
+    def __len__(self):
+        return len(self._df)
+
+    def train(self):
+        pass
+
+    def eval(self):
+        pass
+
+    def __getitem__(self, idx):
+        return Sample(
+            participant=self.df.iloc[idx]["participant_id"],
+            session=self.df.iloc[idx]["session_id"],
+            image=tio.ScalarImage(
+                tensor=torch.randn(
+                    1, self.image_shape, self.image_shape, self.image_shape
+                )
+            ),
+            image_path="x",
+            file_type=BidsFileType(data_type="anat", suffix=self.suffix),
+        )
+
+    def get_sample_info(self, idx, column):
+        return self.df.iloc[idx][column]
 
 
-def create_caps_datasets(pet_all: bool = False):
-    t1_data = sub_data(
+def test_checks():
+    dataset = MyDataset([("sub-000", "ses-M000")])
+    dataset.df["dataset_id"] = 0
+    with pytest.raises(
+        ValidationError,
+        match="'dataset_id' is a protected name. It cannot be in the DataFrames of the underlying datasets.",
+    ):
+        ConcatDataset([dataset, dataset])
+
+
+def test_get_participant_session_couples():
+    bids_1 = MyDataset(
         [
             ("sub-000", "ses-M000"),
             ("sub-010", "ses-M003"),
         ]
     )
-    if not pet_all:
-        pet_data = sub_data(
-            [
-                ("sub-100", "ses-M000"),
-                ("sub-100", "ses-M012"),
-                ("sub-999", "ses-M099"),
-                ("sub-999", "ses-M999"),
-            ]
-        )
-    else:
-        pet_data = sub_data()
-
-    t1_data.loc[0, "age"] = np.nan
-    t1_data = t1_data.drop(columns=["diagnosis", "category"])
-    pet_data = pet_data.drop(columns="category")
-
-    caps_t1 = CapsDataset(
-        CAPS_DIR,
-        datatype=T1Linear(use_uncropped_image=True),
-        data=t1_data,
-        transforms=TransformsHandler(extraction=Slice(squeeze=True)),
+    bids_2 = MyDataset(
+        [
+            ("sub-010", "ses-M012"),
+            ("sub-999", "ses-M999"),
+        ]
     )
-    caps_pet = CapsDataset(
-        CAPS_DIR,
-        datatype=PETLinear(
-            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-        ),
-        data=pet_data,
-    )
-    return caps_t1, caps_pet
-
-
-def test_checks():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    with pytest.raises(
-        TensorConversionError,
-        match="Tensor conversion must be performed BEFORE joining the datasets.*",
-    ):
-        ConcatDataset([caps_t1, caps_pet])
-    caps_pet.read_tensor_conversion("pet_spacing-1")
-    with pytest.warns(
-        match="You are trying to concatenate datasets with different voxel spacings:*"
-    ):
-        ConcatDataset([caps_t1, caps_pet])
-    with pytest.warns(
-        match="You are trying to concatenate datasets with different dimensionalities:*"
-    ):
-        ConcatDataset([caps_t1, caps_pet])
-
-    caps_t1.transforms.extraction = Image()
-    caps_pet.read_tensor_conversion()
-    with pytest.warns(
-        match="You are trying to concatenate datasets with different image shapes:*"
-    ):
-        ConcatDataset([caps_t1, caps_pet])
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        ConcatDataset([caps_t1, caps_pet], raise_warnings=False)
-
-
-def test_get_participant_session_couples():
-    caps_t1, caps_pet = create_caps_datasets(pet_all=True)
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset(
-        (d for d in [caps_t1, caps_pet]), raise_warnings=False
-    )
+    multimodal_dataset = ConcatDataset(d for d in [bids_1, bids_2])
     assert multimodal_dataset.get_participant_session_couples() == set(
         [
             ("sub-000", "ses-M000"),
-            ("sub-000", "ses-M003"),
             ("sub-010", "ses-M003"),
             ("sub-010", "ses-M012"),
-            ("sub-100", "ses-M000"),
-            ("sub-100", "ses-M012"),
-            ("sub-999", "ses-M099"),
             ("sub-999", "ses-M999"),
         ]
     )
 
 
 def test_get_sample_info():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-    assert multimodal_dataset.get_sample_info(6, "age") == 3
-    with pytest.raises(IndexError):
-        multimodal_dataset.get_sample_info(10, "age")
-    with pytest.raises(IndexError):
-        multimodal_dataset.get_sample_info(-1, "age")
+    bids_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    bids_2 = MyDataset(
+        [
+            ("sub-010", "ses-M012"),
+            ("sub-999", "ses-M999"),
+        ]
+    )
+    multimodal_dataset = ConcatDataset([bids_1, bids_2])
+    assert multimodal_dataset.get_sample_info(2, "participant_id") == "sub-010"
     with pytest.raises(
         KeyError,
         match="No column named 'diagnosis' in the metadata DataFrame of the dataset from which the sample is taken.",
@@ -131,91 +117,130 @@ def test_get_sample_info():
 
 
 def test_len():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-    assert len(multimodal_dataset) == 10
-
-
-def test_describe():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-    description = multimodal_dataset.describe()
-    assert len(description) == 2
-    assert description[0]["total_samples"] == 6
-    assert description[1]["total_samples"] == 4
+    bids_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    bids_2 = MyDataset(
+        [
+            ("sub-010", "ses-M012"),
+        ]
+    )
+    multimodal_dataset = ConcatDataset([bids_1, bids_2])
+    assert len(multimodal_dataset) == 3
 
 
 def test_train_val():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
+    bids_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+        ]
+    )
+    bids_2 = MyDataset(
+        [
+            ("sub-010", "ses-M012"),
+        ]
+    )
+    bids_1.train = Mock()
+    bids_1.eval = Mock()
+    bids_2.train = Mock()
+    bids_2.eval = Mock()
+
+    multimodal_dataset = ConcatDataset([bids_1, bids_2])
     multimodal_dataset.eval()
-    assert multimodal_dataset.datasets[0].eval_mode
-    assert multimodal_dataset.datasets[1].eval_mode
+    bids_1.eval.assert_called_once()
+    bids_2.eval.assert_called_once()
     multimodal_dataset.train()
-    assert not multimodal_dataset.datasets[0].eval_mode
-    assert not multimodal_dataset.datasets[1].eval_mode
+    bids_1.train.assert_called_once()
+    bids_2.train.assert_called_once()
+
+
+def test_df():
+    bids_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+        ]
+    )
+    bids_2 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-999", "ses-M999"),
+        ],
+        additional_col=True,
+    )
+    multimodal_dataset = ConcatDataset([bids_1, bids_2])
+    pd.testing.assert_frame_equal(
+        multimodal_dataset.df.fillna(-1),
+        pd.DataFrame(
+            {
+                "dataset_id": [0, 1, 1],
+                "participant_id": ["sub-000", "sub-000", "sub-999"],
+                "session_id": ["ses-M000", "ses-M000", "ses-M999"],
+                "age": [-1, 0.0, 1.0],
+            }
+        ),
+    )
+
+
+def test__getitem__():
+    bids_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+        ]
+    )
+    bids_2 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-999", "ses-M999"),
+        ],
+        suffix="flair",
+    )
+    multimodal_dataset = ConcatDataset([bids_1, bids_2])
+    assert multimodal_dataset[0].participant == "sub-000"
+    assert multimodal_dataset[0].file_type[0].suffix.pattern == "T1w"
+    assert multimodal_dataset[2].participant == "sub-999"
+    assert multimodal_dataset[2].file_type[0].suffix.pattern == "flair"
 
 
 def test_subset():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-    subset = multimodal_dataset.subset(
-        sub_data(
-            [
-                ("sub-999", "ses-M999"),
-                ("sub-010", "ses-M003"),
-                ("sub-999", "ses-M099"),
-            ]
-        )
+    bids_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-000", "ses-M003"),
+            ("sub-010", "ses-M003"),
+        ]
     )
-    assert len((subset)) == 5
-    assert subset[0].session == "ses-M003"
-    assert "T1w" in str(subset[0].image_path[0])
-    assert subset[4].session == "ses-M099"
-    assert "pet" in str(subset[4].image_path[0])
+    bids_2 = MyDataset(
+        [
+            ("sub-010", "ses-M003"),
+            ("sub-999", "ses-M999"),
+        ],
+        additional_col=True,
+    )
+    multimodal_dataset = ConcatDataset([bids_1, bids_2])
+    subset = multimodal_dataset.subset(
+        [
+            ("sub-000", "ses-M003"),
+            ("sub-010", "ses-M003"),
+        ]
+    )
+    assert len((subset)) == 3
     pd.testing.assert_frame_equal(
         subset.df.fillna(-1),
         pd.DataFrame(
             {
-                "dataset_id": [0, 1, 1],
-                "participant_id": ["sub-010", "sub-999", "sub-999"],
-                "session_id": ["ses-M003", "ses-M999", "ses-M099"],
-                "age": [2.0, 4.0, 4.0],
-                "n_samples": [3, 1, 1],
-                "diagnosis": [-1, "CN", "MCI"],
-            }
-        ),
-    )
-    pd.testing.assert_frame_equal(
-        subset.datasets[0].df[
-            [
-                "participant_id",
-                "session_id",
-                "age",
-                "n_samples",
-            ]
-        ],
-        pd.DataFrame(
-            {
-                "participant_id": ["sub-010"],
-                "session_id": ["ses-M003"],
-                "age": [2.0],
-                "n_samples": [3],
+                "dataset_id": [0, 0, 1],
+                "participant_id": ["sub-000", "sub-010", "sub-010"],
+                "session_id": ["ses-M003", "ses-M003", "ses-M003"],
+                "age": [-1, -1, 0.0],
             }
         ),
     )
 
     subset = multimodal_dataset.subset(
         [
-            ("sub-999", "ses-M099"),
             ("sub-999", "ses-M999"),
         ]
     )
@@ -226,122 +251,49 @@ def test_subset():
         match=r"No \(participant, session\) pairs are in the dataset. This would lead to an empty dataset!",
     ):
         multimodal_dataset.subset(
-            sub_data(
-                [
-                    ("sub-010", "ses-M012"),
-                ]
-            )
+            [
+                ("sub-010", "ses-M012"),
+            ]
         )
 
 
-def test_df():
-    caps_t1 = CapsDataset(
-        CAPS_DIR,
-        datatype=T1Linear(use_uncropped_image=True),
-        data=sub_data([("sub-000", "ses-M000")]).drop(
-            columns=["diagnosis", "category"]
-        ),
-        transforms=TransformsHandler(extraction=Slice(squeeze=True)),
+def test_sanity_check():
+    bids_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+        ]
     )
-    caps_pet = CapsDataset(
-        CAPS_DIR,
-        datatype=PETLinear(
-            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-        ),
-        data=sub_data([("sub-999", "ses-M999"), ("sub-000", "ses-M000")]).drop(
-            columns=["category"]
-        ),
+    bids_2 = MyDataset(
+        [
+            ("sub-010", "ses-M003"),
+        ],
+        image_shape=2,
     )
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-    pd.testing.assert_frame_equal(
-        multimodal_dataset.df.fillna(-1),
-        pd.DataFrame(
-            {
-                "dataset_id": [0, 1, 1],
-                "participant_id": ["sub-000", "sub-000", "sub-999"],
-                "session_id": ["ses-M000", "ses-M000", "ses-M999"],
-                "age": [1, 1, 4],
-                "n_samples": [3, 1, 1],
-                "diagnosis": [-1, "CN", "CN"],
-            }
-        ),
-    )
-
-
-def test__getitem__():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset([caps_t1, caps_pet])
-    assert multimodal_dataset[0].participant == "sub-000"
-    assert multimodal_dataset[0].session == "ses-M000"
-    assert multimodal_dataset[0].sample_type == "slice"
-    assert multimodal_dataset[3].participant == "sub-010"
-    assert multimodal_dataset[3].session == "ses-M003"
-    assert multimodal_dataset[3].sample_type == "slice"
-    assert multimodal_dataset[6].participant == "sub-100"
-    assert multimodal_dataset[6].session == "ses-M000"
-    assert multimodal_dataset[6].sample_type == "image"
+    multimodal_dataset = ConcatDataset([bids_1, bids_2])
+    with pytest.raises(
+        RuntimeError,
+        match="Different spatial shape found in the dataset:",
+    ):
+        multimodal_dataset.sanity_check(spatial_checks=["global_shape"])
 
 
 def test_from_json_to_json(tmp_path):
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    multimodal_dataset = ConcatDataset([caps_t1, caps_pet], raise_warnings=False)
+    tensors = TensorDataset(
+        TENSORS / "res-1d3x1d2x1d1_src-T1w_conv-T1Masks_description.json"
+    )
+    multimodal_dataset = ConcatDataset([tensors, tensors])
 
     multimodal_dataset.to_json(tmp_path / "dataset.json")
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        multimodal_dataset = ConcatDataset.from_json(tmp_path / "dataset.json")
+    multimodal_dataset = ConcatDataset.from_json(tmp_path / "dataset.json")
 
-    assert len(multimodal_dataset) == 10
-    assert multimodal_dataset[6].participant == "sub-100"
-    assert multimodal_dataset[6].session == "ses-M000"
+    assert len(multimodal_dataset) == 4
+    assert multimodal_dataset[3].participant == "sub-010"
+    assert multimodal_dataset[3].session == "ses-M003"
 
-
-def test_custom_dataset():
-    from .utils import CustomMultiSamplesDataset
-
-    df = sub_data(
+    bids = MyDataset(
         [
-            ("sub-100", "ses-M000"),
-            ("sub-100", "ses-M012"),
-            ("sub-999", "ses-M099"),
-            ("sub-999", "ses-M999"),
+            ("sub-000", "ses-M000"),
         ]
     )
-    dataset = CustomMultiSamplesDataset(df)
-    with pytest.raises(
-        ValueError,
-        match="ConcatDataset needs the number of samples per image for each underlying dataset.*",
-    ):
-        ConcatDataset([dataset, dataset])
-
-    dataset.df["n_samples"] = [1, 2, 2, 1]
-    concat = ConcatDataset([dataset, dataset])
-    assert len(concat) == 12
-    assert concat.get_participant_session_couples() == set(
-        [
-            ("sub-100", "ses-M000"),
-            ("sub-100", "ses-M012"),
-            ("sub-999", "ses-M099"),
-            ("sub-999", "ses-M999"),
-        ]
-    )
-
-    concat.get_sample_info(8, "age") == 3
-    with pytest.raises(
-        NotImplementedError,
-        match="'describe' not implemented in CustomMultiSamplesDataset",
-    ):
-        concat.describe()
-
-    concat.eval()
-    assert dataset.evaluation
-    concat.train()
-    assert not dataset.evaluation
-
-    assert str(concat[8].image_path[0]) == "2"
+    multimodal_dataset = ConcatDataset([bids, bids])
+    multimodal_dataset.to_json(tmp_path / "dataset.json", overwrite=True)

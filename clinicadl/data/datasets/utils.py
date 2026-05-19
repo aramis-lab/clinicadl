@@ -4,7 +4,16 @@ from abc import abstractmethod
 from bisect import bisect_right
 from copy import deepcopy
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, TypeAlias, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Optional,
+    Sequence,
+    TypeAlias,
+    Union,
+)
 
 import pandas as pd
 from tqdm import tqdm
@@ -19,6 +28,7 @@ from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType
 
 from ..structures.sample import SAMPLE_FIELDS, Sample, Sample2D, SampleType
+from ..utils import DEFAULT_SPATIAL_CHECKS, DatasetChecker, SpatialCheck
 from .base import Dataset
 
 if TYPE_CHECKING:
@@ -359,3 +369,32 @@ class MultimodalSamplerDataset(SamplerDataset):
         """
         Loads the image and the masks.
         """
+
+
+class CheckableDataset(Dataset):
+    def sanity_check(
+        self,
+        spatial_checks: Optional[Iterable[str | SpatialCheck]] = DEFAULT_SPATIAL_CHECKS,
+    ) -> None:
+        """
+        Performs a sanity check on the current dataset.
+
+        It will iterate over the whole dataset to check if images are loaded and transformed correctly,
+        and potentially perform spatial checks on the loaded images.
+
+        Parameters
+        ----------
+        spatial_checks : Optional[Iterable[str  |  SpatialCheck]], default=[ "affine", "shape", "global_spacing"]
+            Spatial checks to perform on the images:
+
+            - ``"spacing"``: checks **intra-sample voxel spacing consistency**, i.e. that all the images and masks
+              in a :py:class:`~clinicadl.data.structures.Sample` have the same voxel spacing.
+            - ``"affine"``: checks **intra-sample affine matrix consistency** (so it includes ``"spacing"``).
+            - ``"shape"``: checks **intra-sample spatial shape consistency**.
+            - ``"global_spacing"``: checks **inter-sample voxel spacing consistency**, i.e. that all the ``Samples``
+              in the dataset have the same voxel spacing (so it includes ``"spacing"``).
+            - "``global_shape"``: checks **inter-sample spatial shape consistency** (so it includes ``"shape"``).
+
+            If ``None``, no spatial check.
+        """
+        DatasetChecker(spatial_checks).check(self)

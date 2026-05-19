@@ -11,16 +11,18 @@ from clinicadl.utils.typing import PathType
 from .base import Dataset
 
 # pylint: disable=unused-import
-from .caps import CapsDataset
+from .bids import BidsDataset
 from .concat import ConcatDataset
 from .paired import PairedDataset
+from .tensor import TensorDataset
 from .unpaired import UnpairedDataset
 
 
 class ImplementedDataset(str, Enum):
     """Implemented Datasets."""
 
-    CAPS = "CapsDataset"
+    BIDS = "BidsDataset"
+    TENSOR = "TensorDataset"
     CONCAT = "ConcatDataset"
     PAIRED = "PairedDataset"
     UNPAIRED = "UnpairedDataset"
