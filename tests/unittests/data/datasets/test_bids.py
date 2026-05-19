@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 import torch
 import torchio as tio
+from monai import data
 
 from clinicadl.data.datasets import BidsDataset
 from clinicadl.data.structures import Sample2D
@@ -225,6 +226,21 @@ class TestBidsDataset:
         assert dataset[0].image.spatial_shape == (3, 3, 3)
         dataset.train()
         assert dataset[0].image.spatial_shape == (2, 2, 2)
+
+    def test_sort(self):
+        dataset = BidsDataset(
+            bids=BIDS,
+            file_type=BidsFileType(suffix="T1w", data_type="anat"),
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-010", "sub-000"],
+                    "session_id": ["ses-M003", "ses-M000"],
+                }
+            ),
+        )
+        assert dataset[0].participant == "sub-010"
+        dataset.sort()
+        assert dataset[0].participant == "sub-000"
 
     def test_from_to_json(self, tmp_path):
         dataset = BidsDataset(

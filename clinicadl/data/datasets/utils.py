@@ -10,7 +10,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from clinicadl.utils.dictionary.words import (
-    DATASET_ID,
     N_SAMPLES,
     PARTICIPANT_ID,
     SAMPLE_TYPE,
@@ -141,10 +140,6 @@ class SamplerDataset(_MultiSamplesDataset):
 
     This dataset also deals with the transformation pipeline to apply to the data, with a distinction between the transformations
     apply to the whole 3D images, and those apply to the sample (e.g. a patch or a slice). See :py:class:`clinicadl.transforms.TransformsHandler`.
-
-    See Also
-    --------
-    clinicadl.data.datasets.MultiSamplesDataset
     """
 
     def __init__(self, transforms: TransformsHandler):
@@ -156,6 +151,23 @@ class SamplerDataset(_MultiSamplesDataset):
 
     def train(self) -> None:
         self.eval_mode = False
+
+    def sort(self) -> None:
+        """
+        Sorts the dataset by (participant, session) pairs (alphabetic order).
+
+        Examples
+        --------
+        .. code-block:: python
+            >>> dataset[0].participant
+            'sub-001'
+            >>> dataset[1].participant
+            'sub-000'
+            >>> dataset.sort()
+            >>> dataset[0].participant
+            'sub-000'
+        """
+        self.df.sort_values([PARTICIPANT_ID, SESSION_ID], inplace=True)
 
     def __getitem__(self, idx: int) -> Sample:
         participant, session, index_in_image = self._get_sample_meta_data(idx)
@@ -274,11 +286,9 @@ class MultimodalSamplerDataset(SamplerDataset):
         """
         Validates the input DataFrame.
         """
-        df = read_data(data, protected_names=(DATASET_ID,))
+        df = read_data(data)
 
-        return deepcopy(
-            df.sort_values(by=[PARTICIPANT_ID, SESSION_ID]).reset_index(drop=True)
-        )
+        return deepcopy(df)
 
     def _validate_columns(
         self,

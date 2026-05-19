@@ -165,6 +165,21 @@ class TestTensorDataset:
         dataset.train()
         assert dataset[0].image.spatial_shape == (2, 2, 2)
 
+    def test_sort(self):
+        dataset = TensorDataset(
+            TENSORS
+            / "trc-18FAV45_res-0d8x0d8x0d8_src-pet_conv-PetSpacing0d8_description.json",
+            data=pd.DataFrame(
+                {
+                    "participant_id": ["sub-999", "sub-100"],
+                    "session_id": ["ses-M099", "ses-M000"],
+                }
+            ),
+        )
+        assert dataset[0].participant == "sub-999"
+        dataset.sort()
+        assert dataset[0].participant == "sub-100"
+
     def test_from_to_json(self, tmp_path):
         dataset = TensorDataset(
             TENSORS / "src-T1w_conv-T1Transform_description.json",

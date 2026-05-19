@@ -89,6 +89,13 @@ class MultimodalSampler(MultimodalSamplerDataset):
 
 
 class TestSamplerDataset:
+    def test_sort(self):
+        dataset = Sampler(transforms=TransformsHandler())
+        dataset._df = dataset.df.iloc[::-1]
+        assert dataset[0].participant == "sub-006"
+        dataset.sort()
+        assert dataset[0].participant == "sub-003"
+
     def test_train_eval(self):
         dataset = Sampler(
             TransformsHandler(augmentations=[tio.Crop(cropping=(0, 1, 0, 1, 0, 1))])

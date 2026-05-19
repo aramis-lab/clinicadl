@@ -135,7 +135,7 @@ def make_kfold(
     >>> len(val_baseline)
     8
     """
-    df = read_data(data, check_duplicates=False, check_protected_names=False)
+    df = read_data(data, check_duplicates=False)
 
     if isinstance(data, (str, Path)):
         output_dir = output_dir or Path(data).parent
