@@ -54,7 +54,7 @@ class ColinSample(Sample):
     >>> from clinicadl.data.structures.examples import ColinSample
     >>> colin = ColinSample()
     >>> colin
-    ColinSample(Keys: ('head', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
+    ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
     >>> colin.participant
     'sub-colin'
     >>> colin = ColinSample(participant="sub-000")
@@ -97,7 +97,7 @@ class ColinSample2D(Sample2D):
     >>> from clinicadl.data.structures.examples import ColinSample2D
     >>> colin = ColinSample2D()
     >>> colin
-    ColinSample2D(Keys: ('head', 'slice_direction', 'squeeze', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
+    ColinSample2D(Keys: ('head', 'slice_direction', 'squeeze', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
     >>> colin.participant
     'sub-colin'
     >>> colin = ColinSample2D(participant="sub-000")

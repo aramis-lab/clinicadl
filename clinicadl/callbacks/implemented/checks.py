@@ -24,7 +24,7 @@ from ..base import Callback
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import DataLoader
     from clinicadl.data.datasets import Dataset
-    from clinicadl.data.datasets.base_bids import BidsLikeDataset
+    from clinicadl.data.datasets.factory import ImplementedDatasetT
     from clinicadl.io import Maps
     from clinicadl.losses.types import LossType
     from clinicadl.models import Model
@@ -222,7 +222,7 @@ class _CheckDataFrames:
         Checks that "participant_id" and "session_id" are in the DataFrame.
         """
         try:
-            df = read_data(df, check_protected_names=False, check_duplicates=False)
+            df = read_data(df, check_duplicates=False)
         except DataFrameError as e:
             raise DataFrameError(
                 "The DataFrame of your clinicadl.data.dataset.Dataset is not valid."
@@ -565,7 +565,7 @@ def _compare_dataloaders(
 
 def _compare_datasets(
     new: Dataset,
-    old: Union[BidsLikeDataset, CollectionDataset[BidsLikeDataset]],
+    old: ImplementedDatasetT,
     except_fields: list[str],
 ) -> Optional[str]:
     """
@@ -575,36 +575,33 @@ def _compare_datasets(
         return (
             f"the two datasets are not the same type. Got {type(new)} and {type(old)}"
         )
+
     if isinstance(old, CollectionDataset):
         for new_dataset, old_dataset in zip(new.datasets, old.datasets):
             if error_msg := _compare_datasets(
                 new_dataset, old_dataset, except_fields=except_fields
             ):
                 return error_msg
+        return _compare_fields(new, old, except_fields=except_fields + ["datasets"])
     else:
-        if (
-            "directory" not in except_fields
-            and new.config.directory != old.config.directory
-        ):
-            return f"the two datasets don't come from the same directory: {str(new.config.directory)} and {str(old.config.directory)}"
-        if (
-            "datatype" not in except_fields
-            and new.config.datatype != old.config.datatype
-        ):
-            return f"the two datasets don't have the same datatypes, which differ in their pattern or key. Got {new.config.datatype} and {old.config.datatype}"
-        if (
-            "transforms" not in except_fields
-            and new.config.transforms != old.config.transforms
-        ):
-            return f"the two datasets don't have the same transforms. Got {new.config.transforms}\nand\n\n{old.config.transforms}"
-        if "masks" not in except_fields and (masks_1 := set(new.config.masks)) != (
-            masks_2 := set(old.config.masks)
-        ):
-            return f"the two datasets don't have the same masks. Got {masks_1} and {masks_2}"
-        if "columns" not in except_fields and (
-            columns_1 := set(new.config.columns)
-        ) != (columns_2 := set(old.config.columns)):
-            return f"the two datasets don't have the same columns or column processing. Got {columns_1} and {columns_2}"
+        return _compare_fields(new, old, except_fields=except_fields)
+
+
+def _compare_fields(
+    new: ImplementedDatasetT, old: ImplementedDatasetT, except_fields: list[str]
+) -> Optional[str]:
+    for key in new.config.get_fields():
+        if key in except_fields:
+            continue
+
+        new_value = getattr(new.config, key)
+        old_value = getattr(old.config, key)
+        if isinstance(new_value, pd.DataFrame) and isinstance(old_value, pd.DataFrame):
+            equal_ = new_value.equals(old_value)
+        else:
+            equal_ = new_value == old_value
+        if not equal_:
+            return f"the two datasets have different parameters for '{key}'. Got:\n{new_value}\nAND\n{old_value}"
 
 
 class _CheckBatch:

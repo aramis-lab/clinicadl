@@ -47,8 +47,8 @@ class ToBatchesCollate(HasConfig[ToBatchesCollateConfig], CollateFn):
     .. code-block::
 
         >>> batch[0]
-        [ColinSample(Keys: ('head', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2),
-         ColinSample(Keys: ('head', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
+        [ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2),
+         ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
         >>> batch[0][0].participant
         'sub-001'
         >>> batch[0][1].participant

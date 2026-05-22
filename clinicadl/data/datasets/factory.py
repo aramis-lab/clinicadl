@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, Optional
 
+from clinicadl.io.bids.reader import Bids
 from clinicadl.utils.factories import (
     factory_from_dict,
     factory_from_json,
@@ -16,6 +17,10 @@ from .concat import ConcatDataset
 from .paired import PairedDataset
 from .tensor import TensorDataset
 from .unpaired import UnpairedDataset
+
+ImplementedDatasetT = (
+    BidsDataset | TensorDataset | ConcatDataset | PairedDataset | UnpairedDataset
+)
 
 
 class ImplementedDataset(str, Enum):

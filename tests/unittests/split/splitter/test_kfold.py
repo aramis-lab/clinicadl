@@ -1,63 +1,82 @@
 from copy import deepcopy
 from pathlib import Path
+from typing import Iterable
 
 import pandas as pd
 import pytest
+import torch
+import torchio as tio
 
 from clinicadl.data.datasets import (
-    CapsDataset,
     ConcatDataset,
+    Dataset,
     PairedDataset,
     UnpairedDataset,
 )
-from clinicadl.data.datatypes import PETLinear, T1Linear
+from clinicadl.data.structures import Sample
+from clinicadl.io import BidsFileType
 from clinicadl.split.splitter import KFold
-from clinicadl.transforms.extraction import Patch
+from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
 
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-DATA = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
-
-SPLIT_DIR = CAPS_DIR / "splits" / "split" / "2_fold"
-
-CAPS = CapsDataset(
-    CAPS_DIR,
-    datatype=PETLinear(
-        tracer="18FAV45",
-        suvr_reference_region="pons2",
-        use_uncropped_image=True,
-    ),
-    data=DATA,
+TSV_PATH = (
+    Path(__file__).parents[2] / "resources" / "bids" / "participantsXsessions.tsv"
 )
-CAPS_T1 = CapsDataset(
-    CAPS_DIR,
-    datatype=T1Linear(use_uncropped_image=True),
-    data=pd.DataFrame.from_dict(
-        {
-            "participant_id": ["sub-000", "sub-010"],
-            "session_id": ["ses-M000", "ses-M003"],
-        }
-    ),
-)
-CAPS_PET = CapsDataset(
-    CAPS_DIR,
-    datatype=PETLinear(
-        use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-    ),
-    data=pd.DataFrame.from_dict(
-        {
-            "participant_id": ["sub-000", "sub-100", "sub-999"],
-            "session_id": ["ses-M003", "ses-M012", "ses-M099"],
-        }
-    ),
-)
-CAPS_T1.read_tensor_conversion()
-CAPS_PET.read_tensor_conversion()
+SPLIT_DIR = Path(__file__).parents[2] / "resources" / "split" / "2_fold"
+BAD_SPLIT_1 = Path(__file__).parents[2] / "resources" / "bad_split"
+BAD_SPLIT_2 = Path(__file__).parents[2] / "resources" / "bad_split_2"
 
+
+class MyDataset(Dataset):
+    def __init__(self, participants_sessions: Iterable[tuple[str, str]], **kwargs):
+        self._df = pd.DataFrame(
+            {
+                "participant_id": [pair[0] for pair in participants_sessions],
+                "session_id": [pair[1] for pair in participants_sessions],
+            }
+        )
+        for col, value in kwargs.items():
+            self._df[col] = value
+
+    def __len__(self):
+        return len(self._df)
+
+    def train(self):
+        pass
+
+    def eval(self):
+        pass
+
+    def __getitem__(self, idx):
+        return Sample(
+            participant=self.df.iloc[idx]["participant_id"],
+            session=self.df.iloc[idx]["session_id"],
+            image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
+            image_path="x",
+            file_type=BidsFileType(data_type="anat", suffix="T1w"),
+        )
+
+    def get_sample_info(self, idx, column):
+        return self.df.iloc[idx][column]
+
+
+df = pd.read_csv(TSV_PATH, sep="\t")
+DATASET = MyDataset(participants_sessions=set(zip(df[PARTICIPANT_ID], df[SESSION_ID])))
+DATASET_1 = MyDataset(
+    participants_sessions=[("sub-000", "ses-M000"), ("sub-010", "ses-M003")]
+)
+DATASET_2 = MyDataset(
+    participants_sessions=[
+        ("sub-000", "ses-M000"),
+        ("sub-100", "ses-M012"),
+        ("sub-999", "ses-M099"),
+        ("sub-999", "ses-M999"),
+    ]
+)
 SPLITTER = KFold(SPLIT_DIR)
 
 
 def test_kfold():
-    splits = iter(SPLITTER.get_splits(CAPS))
+    splits = iter(SPLITTER.get_splits(DATASET))
     split = next(splits)
     assert split.index == 0
     assert split.split_dir == SPLIT_DIR
@@ -75,14 +94,14 @@ def test_kfold():
         next(splits)
 
     # test "splits" arg
-    splits = iter(SPLITTER.get_splits(CAPS, splits=[1]))
+    splits = iter(SPLITTER.get_splits(DATASET, splits=[1]))
     split = next(splits)
     assert split.index == 1
     with pytest.raises(StopIteration):
         next(splits)
 
     # indexerror
-    splits = iter(SPLITTER.get_splits(CAPS, splits=[0, 2]))
+    splits = iter(SPLITTER.get_splits(DATASET, splits=[0, 2]))
     next(splits)
     with pytest.raises(
         IndexError,
@@ -92,21 +111,20 @@ def test_kfold():
 
     # errors
     with pytest.raises(FileNotFoundError, match="No such directory:*"):
-        KFold(CAPS_DIR / "splits" / "bad_split" / "2_fold")
+        KFold(SPLIT_DIR / "abc")
 
     # eval dataset
-    caps_patch = deepcopy(CAPS)
-    caps_patch.transforms.extraction = Patch(patch_size=1)
-    caps_patch.read_tensor_conversion()
-    split = next(iter(SPLITTER.get_splits(CAPS, eval_dataset=caps_patch)))
+    eval_dataset = deepcopy(DATASET)
+    eval_dataset.df["x"] = "x"
+    split = next(iter(SPLITTER.get_splits(DATASET, eval_dataset=eval_dataset)))
     assert len(split.train_dataset) == 2
     assert len(split.val_dataset) == 2
-    assert split.train_dataset.transforms.extraction.sample_type == "image"
-    assert split.val_dataset.transforms.extraction.sample_type == "patch"
+    assert "x" not in split.train_dataset.df
+    assert "x" in split.val_dataset.df
 
 
 def test_kfold_concat():
-    multimodal_dataset = ConcatDataset([CAPS_T1, CAPS_PET])
+    multimodal_dataset = ConcatDataset([DATASET_1, DATASET_2])
     splits = iter(SPLITTER.get_splits(multimodal_dataset))
     split = next(splits)
     assert len(split.train_dataset) == 2
@@ -114,7 +132,7 @@ def test_kfold_concat():
 
 
 def test_kfold_paired():
-    paired = PairedDataset([CAPS_PET, CAPS_PET])
+    paired = PairedDataset([DATASET_2, DATASET_2])
     splits = iter(SPLITTER.get_splits(paired))
     split = next(splits)
     assert len(split.train_dataset) == 1
@@ -122,18 +140,8 @@ def test_kfold_paired():
 
 
 def test_kfold_unpaired():
-    unpaired = UnpairedDataset([CAPS_PET, CAPS_PET])
+    unpaired = UnpairedDataset([DATASET_2, DATASET_2])
     splits = iter(SPLITTER.get_splits(unpaired))
     split = next(splits)
     assert len(split.train_dataset) == 1
     assert len(split.val_dataset) == 1
-
-
-def test_custom_dataset():
-    from ...data.datasets.utils import CustomDataset
-
-    custom = CustomDataset(CAPS.df)
-    splits = iter(SPLITTER.get_splits(custom))
-    split = next(splits)
-    assert len(split.train_dataset) == 2
-    assert len(split.val_dataset) == 2

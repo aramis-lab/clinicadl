@@ -15,19 +15,23 @@ class SubDataPoint(DataPoint):
 
 
 def test_DataPoint():
-    caps_dir = Path(__file__).parents[2] / "resources" / "caps_example"
+    bids_dir = Path(__file__).parents[2] / "resources" / "bids"
     affine = np.diag([1.3, 1.2, 1.1, 1])
     image = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=affine)
     mask = tio.LabelMap(tensor=torch.ones(1, 3, 3, 4), affine=np.diag(np.ones(4)))
     image_path = (
-        caps_dir
-        / "subjects"
+        bids_dir
         / "sub-000"
         / "ses-M000"
-        / "t1_linear"
-        / "sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz"
+        / "anat"
+        / "sub-000_ses-M000_res-1d3x1d2x1d1_T1w.nii.gz"
     )
-    mask_path = caps_dir / "masks" / "leftHippocampus.nii.gz"
+    mask_path = (
+        bids_dir
+        / "derivatives"
+        / "caps"
+        / "space-MNI152NLin2009cSym_res-1d3x1d2x1d1_label-leftHippocampus_mask.nii"
+    )
 
     # first basic test
     data_point = DataPoint(

@@ -9,9 +9,9 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.dataloader import Batch
-from clinicadl.data.datatypes import DataType
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
 from clinicadl.infer import SlicesToImageInferer
+from clinicadl.io import BidsFileType
 from clinicadl.transforms.config import ActivationsConfig
 
 from .utils import NnWrapper
@@ -45,7 +45,7 @@ def test_inferer():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=DataType(pattern="abc", key="abc"),
+        file_type=BidsFileType(data_type="abc", suffix="abc"),
     )
     network = nn.Conv2d(2, 4, 3)
 
@@ -139,7 +139,7 @@ def test_inferer():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=DataType(pattern="abc", key="abc"),
+        file_type=BidsFileType(data_type="abc", suffix="abc"),
         sample_position=0,
         slice_direction=1,
         squeeze=True,

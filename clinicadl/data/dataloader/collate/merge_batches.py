@@ -83,7 +83,7 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
     .. code-block::
 
         >>> batch
-        [ColinSample(Keys: ('head', 'sex', 'age', 'label', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
+        [ColinSample(Keys: ('head', 'sex', 'age', 'label', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
         >>> batch[0].participant  # same value in the two samples
         'sub-001'
         >>> batch[0].age

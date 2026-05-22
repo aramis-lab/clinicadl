@@ -7,39 +7,15 @@ import pytest
 
 from clinicadl.split.make_splits import make_split
 
-
-def remove_non_empty_dir(dir_path: Path):
-    """
-    Remove a non-empty directory using only pathlib.
-
-    Parameters
-    ----------
-    dir_path : Path
-        Path to the directory to remove.
-    """
-    if dir_path.exists() and dir_path.is_dir():
-        for item in dir_path.iterdir():  # Iterate through directory contents
-            if item.is_dir():
-                remove_non_empty_dir(item)  # Recursively remove subdirectories
-            else:
-                item.unlink()  # Remove files
-        dir_path.rmdir()  # Remove the now-empty directory
-    else:
-        print(f"{dir_path} does not exist or is not a directory.")
+TSV_DIR = Path(__file__).parents[2] / "resources" / "tsv"
+DF = pd.read_csv(TSV_DIR / "test_df.tsv", sep="\t")
 
 
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-TMP_DIR = Path(__file__).parents[2] / "resources" / "tmp"
-
-DF_PATH = CAPS_DIR / "tsv" / "test_df.tsv"
-DF = pd.read_csv(DF_PATH, sep="\t")
-
-
-def test_good_split():
+def test_good_split(tmp_path):
     stratification = ["age", "sex", "test", "diagnosis"]
     split_dir = make_split(
-        DF_PATH,
-        output_dir=TMP_DIR,
+        TSV_DIR / "test_df.tsv",
+        output_dir=tmp_path,
         subset_name="test",
         stratification=stratification,
         p_categorical_threshold=0.9,
@@ -48,7 +24,7 @@ def test_good_split():
         seed=0,
     )
 
-    assert split_dir == TMP_DIR / "split"
+    assert split_dir == tmp_path / "split"
     assert (split_dir / "single_split_config.json").is_file
     with (split_dir / "single_split_config.json").open(mode="r") as file:
         dict_ = json.load(file)
@@ -92,12 +68,8 @@ def test_good_split():
 
     continuous_stats = pd.read_csv(split_dir / "split_continuous_stats.tsv", sep="\t")
     categorical_stats = pd.read_csv(split_dir / "split_categorical_stats.tsv", sep="\t")
-    ref_continuous_stats = pd.read_csv(
-        CAPS_DIR / "tsv" / "ref_continuous_stats.tsv", sep="\t"
-    )
-    ref_categorical_stats = pd.read_csv(
-        CAPS_DIR / "tsv" / "ref_categorical_stats.tsv", sep="\t"
-    )
+    ref_continuous_stats = pd.read_csv(TSV_DIR / "ref_continuous_stats.tsv", sep="\t")
+    ref_categorical_stats = pd.read_csv(TSV_DIR / "ref_categorical_stats.tsv", sep="\t")
 
     assert (categorical_stats == ref_categorical_stats).all().all()
     assert (continuous_stats == ref_continuous_stats).all().all()
@@ -105,7 +77,7 @@ def test_good_split():
     # test other args
     split_dir = make_split(
         DF,
-        output_dir=TMP_DIR,
+        output_dir=tmp_path,
         subset_name="val",
         stratification=True,
         longitudinal=True,
@@ -113,7 +85,7 @@ def test_good_split():
         seed=1,
     )
 
-    assert split_dir == TMP_DIR / "split_2"
+    assert split_dir == tmp_path / "split_2"
     val_baseline_df = pd.read_csv(split_dir / "val_baseline.tsv", sep="\t")
     assert len(val_baseline_df) == 10
     assert set(val_baseline_df.columns) == {
@@ -137,15 +109,13 @@ def test_good_split():
         output_dir=None,
         stratification=False,
     )
-    assert split_dir == TMP_DIR / "split_2" / "split"
+    assert split_dir == tmp_path / "split_2" / "split"
     assert (split_dir / "test_baseline.tsv").exists()
     assert not (split_dir / "split_continuous_stats.tsv").exists()
     assert not (split_dir / "split_categorical_stats.tsv").exists()
 
-    remove_non_empty_dir(TMP_DIR)
 
-
-def test_special_cases():
+def test_special_cases(tmp_path):
     # no output dir
     with pytest.raises(
         ValueError,
@@ -162,7 +132,7 @@ def test_special_cases():
     ):
         make_split(
             DF,
-            output_dir=TMP_DIR,
+            output_dir=tmp_path,
             stratification=True,
             p_categorical_threshold=1.1,
             n_test=3,
@@ -171,7 +141,7 @@ def test_special_cases():
     # n_test=0
     split_dir = make_split(
         DF,
-        output_dir=TMP_DIR,
+        output_dir=tmp_path,
         stratification=True,
         n_test=0,
     )
@@ -196,7 +166,7 @@ def test_special_cases():
     with pytest.raises(RuntimeError, match="Unable to find a valid split after*"):
         split_dir = make_split(
             DF,
-            output_dir=TMP_DIR,
+            output_dir=tmp_path,
             stratification=True,
             n_test=10,
             p_categorical_threshold=1.0,
@@ -210,8 +180,6 @@ def test_special_cases():
     ):
         split_dir = make_split(
             DF,
-            output_dir=TMP_DIR,
+            output_dir=tmp_path,
             stratification=["abc"],
         )
-
-    remove_non_empty_dir(TMP_DIR)

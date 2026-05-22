@@ -10,9 +10,6 @@ from pydantic import ValidationError
 from clinicadl.data.structures import Sample, Sample2D
 from clinicadl.io import BidsFileType
 
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-
-
 AFFINE = np.diag([1.3, 1.2, 1.1, 1])
 IMAGE = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=AFFINE)
 DOUBLE_IMAGE = tio.ScalarImage(tensor=torch.randn(2, 3, 3, 3), affine=AFFINE)

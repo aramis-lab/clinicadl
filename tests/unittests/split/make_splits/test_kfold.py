@@ -8,45 +8,21 @@ from pydantic import ValidationError
 
 from clinicadl.split.make_splits import make_kfold
 
-
-def remove_non_empty_dir(dir_path: Path):
-    """
-    Remove a non-empty directory using only pathlib.
-
-    Parameters
-    ----------
-    dir_path : Path
-        Path to the directory to remove.
-    """
-    if dir_path.exists() and dir_path.is_dir():
-        for item in dir_path.iterdir():  # Iterate through directory contents
-            if item.is_dir():
-                remove_non_empty_dir(item)  # Recursively remove subdirectories
-            else:
-                item.unlink()  # Remove files
-        dir_path.rmdir()  # Remove the now-empty directory
-    else:
-        print(f"{dir_path} does not exist or is not a directory.")
+TSV_DIR = Path(__file__).parents[2] / "resources" / "tsv"
+DF = pd.read_csv(TSV_DIR / "test_df.tsv", sep="\t")
 
 
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-TMP_DIR = Path(__file__).parents[2] / "resources" / "tmp"
-
-DF_PATH = CAPS_DIR / "tsv" / "test_df.tsv"
-DF = pd.read_csv(DF_PATH, sep="\t")
-
-
-def test_good_split():
+def test_good_split(tmp_path):
     split_dir = make_kfold(
-        DF_PATH,
-        output_dir=TMP_DIR,
+        TSV_DIR / "test_df.tsv",
+        output_dir=tmp_path,
         subset_name="val",
         stratification="diagnosis",
         n_splits=3,
         seed=0,
     )
 
-    assert split_dir == TMP_DIR / "3_fold"
+    assert split_dir == tmp_path / "3_fold"
     assert (split_dir / "split-0").is_dir()
     assert (split_dir / "split-1").is_dir()
     assert (split_dir / "split-2").is_dir()
@@ -104,7 +80,7 @@ def test_good_split():
     # test other args
     split_dir = make_kfold(
         DF,
-        output_dir=TMP_DIR,
+        output_dir=tmp_path,
         subset_name="val",
         stratification=True,
         longitudinal=True,
@@ -112,7 +88,7 @@ def test_good_split():
         seed=1,
     )
 
-    assert split_dir == TMP_DIR / "5_fold"
+    assert split_dir == tmp_path / "5_fold"
     val_baseline_df = pd.read_csv(split_dir / "split-0" / "val_baseline.tsv", sep="\t")
     assert len(val_baseline_df) == 8
     assert set(val_baseline_df.columns) == {
@@ -125,20 +101,18 @@ def test_good_split():
     assert set(val_df.columns) == {"participant_id", "session_id", "sex"}
 
     # test other args
-    shutil.copy(DF_PATH, TMP_DIR / "test_df.tsv")
+    shutil.copy(TSV_DIR / "test_df.tsv", tmp_path / "test_df.tsv")
     split_dir = make_kfold(
-        TMP_DIR / "test_df.tsv",
+        tmp_path / "test_df.tsv",
         output_dir=None,
         stratification=False,
         n_splits=4,
     )
-    assert split_dir == TMP_DIR / "4_fold"
+    assert split_dir == tmp_path / "4_fold"
     assert (split_dir / "split-3" / "validation_baseline.tsv").exists()
 
-    remove_non_empty_dir(TMP_DIR)
 
-
-def test_special_cases():
+def test_special_cases(tmp_path):
     # no output dir
     with pytest.raises(ValueError, match="You must specify the output directory."):
         make_kfold(
@@ -150,7 +124,7 @@ def test_special_cases():
     with pytest.raises(ValidationError, match="'n_splits' must be at least 2."):
         make_kfold(
             DF,
-            output_dir=TMP_DIR,
+            output_dir=tmp_path,
             stratification=True,
             n_splits=1,
         )
@@ -162,7 +136,7 @@ def test_special_cases():
     ):
         make_kfold(
             DF,
-            output_dir=TMP_DIR,
+            output_dir=tmp_path,
             stratification=["age", "sex"],
         )
 
@@ -171,7 +145,7 @@ def test_special_cases():
     ):
         make_kfold(
             DF,
-            output_dir=TMP_DIR,
+            output_dir=tmp_path,
             stratification="abc",
         )
 
@@ -181,8 +155,6 @@ def test_special_cases():
     ):
         make_kfold(
             DF,
-            output_dir=TMP_DIR,
+            output_dir=tmp_path,
             stratification="age",
         )
-
-    remove_non_empty_dir(TMP_DIR)

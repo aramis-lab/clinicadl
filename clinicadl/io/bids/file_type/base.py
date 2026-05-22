@@ -64,6 +64,17 @@ class BidsFileType(ClinicaDLConfig):
     without_entities: Optional[dict[AlphanumericStr, Pattern]] = None
     description: Optional[str] = None
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BidsFileType):
+            return NotImplemented
+
+        self_fields = {k: v for k, v in self.model_dump().items() if k != "description"}
+        other_fields = {
+            k: v for k, v in other.model_dump().items() if k != "description"
+        }
+
+        return self_fields == other_fields
+
     def match(
         self,
         path: str | Path,

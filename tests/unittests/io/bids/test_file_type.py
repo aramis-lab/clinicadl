@@ -16,6 +16,18 @@ from clinicadl.io import (
 from clinicadl.utils.bids import BidsFile
 
 
+class SubFileType(BidsFileType):
+    pass
+
+
+def test_equal():
+    file_type = SubFileType(data_type="abc", suffix="abc", description="a desc")
+    other = SubFileType(data_type="abc", suffix="abc", description="another desc")
+    assert file_type == other
+    other.suffix = "bcd"
+    assert file_type != other
+
+
 class TestBidsFileType:
     @pytest.mark.parametrize(
         "path,match",

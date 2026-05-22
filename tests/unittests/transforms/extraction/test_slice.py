@@ -10,9 +10,9 @@ from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-SLICE_TSV = CAPS_DIR / "tsv" / "extract_slices_test.tsv"
-BAD_SLICE_TSV_1 = CAPS_DIR / "tsv" / "extract_slices_test_bad.tsv"
+TSV_DIR = Path(__file__).parents[2] / "resources" / "tsv"
+SLICE_TSV = TSV_DIR / "extract_slices_test.tsv"
+BAD_SLICE_TSV_1 = TSV_DIR / "extract_slices_test_bad.tsv"
 
 
 def test_args():

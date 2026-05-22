@@ -13,16 +13,16 @@ import torchio as tio
 
 from clinicadl.callbacks import Callback, CallbacksHandler
 from clinicadl.data.dataloader import Batch, CollateFn, DataLoaderConfig
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatypes import PETLinear
-from clinicadl.io import Maps
+from clinicadl.data.datasets import BidsDataset
+from clinicadl.io import Maps, T1Linear
 from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import MetricConfig, MSEMetricConfig
 from clinicadl.train import ComputationalConfig, Trainer
+from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.exceptions import CannotReadJsonError
 
 MAPS_PATH = Path(__file__).parents[1] / "resources" / "maps_example"
-CAPS_PATH = Path(__file__).parents[1] / "resources" / "caps_example"
+CAPS_PATH = Path(__file__).parents[1] / "resources" / "bids" / "derivatives" / "caps"
 
 
 def _add_maps_to_trainer(trainer: Trainer, tmp_path: Path) -> Maps:
@@ -39,13 +39,15 @@ def _setup_dataloader():
     from clinicadl.data.structures import DataPoint
 
     batch = Batch(
-        DataPoint(
-            image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
-            participant=str(i),
-            session=str(i),
-            label=i,
-        )
-        for i in range(2)
+        [
+            DataPoint(
+                image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
+                participant=str(i),
+                session=str(i),
+                label=i,
+            )
+            for i in range(2)
+        ]
     )
 
     loader = MagicMock()
@@ -411,11 +413,9 @@ class TestSideMethods:
     def test_get_split(self, trainer: Trainer, tmp_path):
         maps = _add_maps_to_trainer(trainer, tmp_path)
 
-        caps = CapsDataset(
-            directory=CAPS_PATH,
-            datatype=PETLinear(
-                tracer="18FAV45",
-                suvr_reference_region="pons2",
+        bids = BidsDataset(
+            bids=CAPS_PATH,
+            file_type=T1Linear(
                 use_uncropped_image=True,
             ),
             data=pd.DataFrame(
@@ -425,9 +425,8 @@ class TestSideMethods:
                 }
             ),
         )
-        caps.read_tensor_conversion()
-        caps.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
-        caps.to_json(
+        bids.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
+        bids.to_json(
             maps.training.data.validation.splits[0].dataset_json, overwrite=True
         )
         DataLoaderConfig(batch_size=3).to_json(
@@ -460,11 +459,9 @@ class TestSideMethods:
         ):
             trainer._get_split(split_idx=0)
 
-        caps = CapsDataset(
-            directory=CAPS_PATH,
-            datatype=PETLinear(
-                tracer="18FAV45",
-                suvr_reference_region="pons2",
+        bids = BidsDataset(
+            bids=CAPS_PATH,
+            file_type=T1Linear(
                 use_uncropped_image=True,
             ),
             data=pd.DataFrame(
@@ -474,9 +471,9 @@ class TestSideMethods:
                     "age": [0.0],
                 }
             ),
-            columns={"age": lambda x: int(x)},
+            transforms=TransformsHandler(image_transforms=[tio.RescaleIntensity()]),
         )
-        caps.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
+        bids.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
         with pytest.raises(
             CannotReadJsonError,
             match=f"ClinicaDL could not read the dataset in {maps.training.data.train.splits[0].dataset_json}.\n"
@@ -522,24 +519,21 @@ class TestSideMethods:
     def test_get_dataloader(self, trainer: Trainer, tmp_path):
         maps = _add_maps_to_trainer(trainer, tmp_path)
 
-        caps = CapsDataset(
-            directory=CAPS_PATH,
-            datatype=PETLinear(
-                tracer="18FAV45",
-                suvr_reference_region="pons2",
+        caps = BidsDataset(
+            bids=CAPS_PATH,
+            file_type=T1Linear(
                 use_uncropped_image=True,
             ),
             data=pd.DataFrame(
                 {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
             ),
         )
-        caps.read_tensor_conversion()
         caps.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
         DataLoaderConfig(batch_size=2).to_json(
             maps.training.data.train.splits[0].dataloader_json, overwrite=True
         )
         dataloader = trainer._get_dataloader(maps.training.data.train.splits[0])
-        assert isinstance(dataloader.dataset, CapsDataset)
+        assert isinstance(dataloader.dataset, BidsDataset)
         assert dataloader.batch_size == 2
 
         DataLoaderConfig(collate_fn=CustomCollate()).to_json(
@@ -552,11 +546,9 @@ class TestSideMethods:
         ):
             trainer._get_dataloader(maps.training.data.train.splits[0])
 
-        caps = CapsDataset(
-            directory=CAPS_PATH,
-            datatype=PETLinear(
-                tracer="18FAV45",
-                suvr_reference_region="pons2",
+        caps = BidsDataset(
+            bids=CAPS_PATH,
+            file_type=T1Linear(
                 use_uncropped_image=True,
             ),
             data=pd.DataFrame(
@@ -566,7 +558,7 @@ class TestSideMethods:
                     "age": [0.0],
                 }
             ),
-            columns={"age": lambda x: int(x)},
+            transforms=TransformsHandler(image_transforms=[tio.RescaleIntensity()]),
         )
         caps.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
         with pytest.raises(

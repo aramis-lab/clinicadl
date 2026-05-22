@@ -24,7 +24,7 @@ from clinicadl.utils.json import read_json
 from clinicadl.utils.objects import HasConfig, equal_if_config_equal
 from clinicadl.utils.typing import PathType
 
-from .files import BidsFileType
+from .file_type import BidsFileType
 
 NO_FILE_FOUND = "no file found"
 
