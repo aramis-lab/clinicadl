@@ -24,6 +24,7 @@ from clinicadl.utils.dictionary.words import (
     SAMPLE_TYPE,
     SESSION_ID,
 )
+from clinicadl.utils.exceptions import add_note
 from clinicadl.utils.tsvtools import read_data
 from clinicadl.utils.typing import DataFrameType
 
@@ -251,9 +252,10 @@ class SamplerDataset(_MultiSamplesDataset):
                         participant, session
                     )
                 except Exception as e:
-                    e.add_note(
+                    add_note(
+                        e,
                         f"\nAn error occurred when reading the data of ({participant}, {session}) "
-                        "to count the number of samples (see above)."
+                        "to count the number of samples (see above).",
                     )
                     raise
 

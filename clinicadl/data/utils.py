@@ -14,6 +14,7 @@ import pandas as pd
 from clinicadl.io import Bids
 from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.enum import BaseEnum
+from clinicadl.utils.exceptions import add_note
 from clinicadl.utils.typing import PathType
 from clinicadl.utils.variables import SPACING_RTOL
 
@@ -198,9 +199,10 @@ def _check_intra_sample_consistency(data_point: DataPoint, attr: str, desc: str)
     try:
         return getattr(data_point, attr)
     except RuntimeError as exc:
-        exc.add_note(
+        add_note(
+            exc,
             f"\nAn error occurred when checking ({data_point.participant}, {data_point.session}) (see above). "
-            f"If you don't care about {desc} consistency and want to ignore this error, please modify 'spatial_checks'."
+            f"If you don't care about {desc} consistency and want to ignore this error, please modify 'spatial_checks'.",
         )
         raise
 
