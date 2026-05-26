@@ -284,6 +284,7 @@ class _CheckDataConsistency:
                 maps.training.data.train.splits[split_idx].dataset_json,
                 getter=get_dataset_from_json_safely,
                 comparator=_compare_datasets,
+                except_fields=["data"],
                 new_group=split.index,
                 old_group=split_idx,
                 stage="training",
@@ -293,6 +294,7 @@ class _CheckDataConsistency:
                 maps.training.data.validation.splits[split_idx].dataset_json,
                 getter=get_dataset_from_json_safely,
                 comparator=_compare_datasets,
+                except_fields=["data"],
                 new_group=split.index,
                 old_group=split_idx,
                 stage="validation",
@@ -485,12 +487,16 @@ class _CheckDataConsistency:
         new_group: Union[str, int],
         old_group: Union[str, int],
         stage: str,
+        except_fields: Optional[list[str]] = None,
         resume: bool = False,
     ) -> None:
         """
         Compares a dataset (or dataloader) with one serialized in a file.
         Raises warning if different or if the file cannot be read properly.
         """
+        if not except_fields:
+            except_fields = []
+
         args = {
             "phase": stage.replace("validate", "validation"),
             "type": "dataloader" if isinstance(new, DataLoaderConfig) else "dataset",
@@ -530,7 +536,7 @@ class _CheckDataConsistency:
                 "Beware that differences between %(type)ss could lead to inconsistent results%(across)s.",
                 args,
             )
-        if error_msg := comparator(new, old, problematic_fields):
+        if error_msg := comparator(new, old, problematic_fields + except_fields):
             args["error_msg"] = error_msg
             logger.warning(
                 "The %(phase)s %(type)ss of %(group_type)s-%(old_group)s and the one %(compared_with)s are different: %(error_msg)s\nThis may lead to inconsistent results%(across)s.",

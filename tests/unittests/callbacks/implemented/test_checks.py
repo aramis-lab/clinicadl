@@ -310,10 +310,10 @@ class TestDataConsistency:
         MAPS = create_new_maps(tmp_path)
         self.SPLIT.index = 2
 
-        self.BAD_DATASET.subset([("sub-000", "ses-M000")]).to_json(
+        self.BAD_DATASET.subset([("sub-999", "ses-M099")]).to_json(
             MAPS.training.data.train.splits[0].dataset_json, overwrite=True
         )
-        self.BAD_DATASET.subset([("sub-010", "ses-M003")]).to_json(
+        self.BAD_DATASET.subset([("sub-100", "ses-M000")]).to_json(
             MAPS.training.data.validation.splits[0].dataset_json, overwrite=True
         )
         self.BAD_DATALOADER.to_json(
@@ -347,7 +347,6 @@ class TestDataConsistency:
             "The training dataloaders of split-0 and the one of split-2 are different: the two dataloaders have different batch sizes. Got 1 and 2\n"
             "This may lead to inconsistent results across splits."
         )
-        print(caplog.records)
         assert len(caplog.records) == 4
 
         write_json(
