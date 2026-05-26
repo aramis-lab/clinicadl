@@ -27,7 +27,9 @@ from .bids_utils import (
 )
 from .tensor import TensorDataset
 
-MasksType: TypeAlias = dict[str, PathType | BidsFileType | tuple[Bids, BidsFileType]]
+MasksType: TypeAlias = dict[
+    str, PathType | BidsFileType | tuple[PathType | Bids, BidsFileType]
+]
 
 
 def _deserialize_masks(serialized_masks: Optional[dict]) -> Optional[MasksType]:
@@ -78,6 +80,18 @@ class BidsDatasetConfig(ObjectConfig["BidsDataset"], BidsTypeDatasetConfig):
             for name, value in v.items():
                 if isinstance(value, tuple):
                     v[name] = (cls._convert_to_bids(value[0]), value[1])
+        return v
+
+    @field_validator("masks", mode="after")
+    @classmethod
+    def _resolve_path(
+        cls, v: Optional[dict[str, Path | BidsFileType | tuple[Bids, BidsFileType]]]
+    ) -> Optional[dict[str, Path | BidsFileType | tuple[Bids, BidsFileType]]]:
+        if v:
+            for name, value in v.items():
+                if isinstance(value, Path):
+                    v[name] = value.resolve()
+
         return v
 
     @classmethod
@@ -336,9 +350,7 @@ class BidsDataset(
         data: Optional[DataFrameType] = None,
         transforms: TransformsHandler = TransformsHandler(),
         columns: Optional[ColumnsType] = None,
-        masks: Optional[
-            dict[str, PathType | BidsFileType | tuple[PathType | Bids, BidsFileType]]
-        ] = None,
+        masks: Optional[MasksType] = None,
     ):
         self.config = self._config_type(
             bids=bids,
