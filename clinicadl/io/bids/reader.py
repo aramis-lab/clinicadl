@@ -3,22 +3,19 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Annotated, Any, Optional
+from typing import Annotated, Optional
 
 from pydantic import (
-    BaseModel,
     ConfigDict,
     Field,
     StringConstraints,
-    constr,
+    field_validator,
     model_validator,
-    with_config,
 )
 from typing_extensions import Self
 
 from clinicadl.utils.bids import BidsEntity, Session, Subject
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
-from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.json import read_json
 from clinicadl.utils.objects import HasConfig, equal_if_config_equal
@@ -44,6 +41,10 @@ class BidsConfig(ObjectConfig["Bids"]):
     """
 
     path: Path
+
+    @field_validator("path", mode="after")
+    def _resolve_path(cls, v: Path) -> Path:
+        return v.resolve()
 
     @classmethod
     def _get_class(cls):
@@ -162,7 +163,7 @@ class Bids(HasConfig[BidsConfig]):
 
     def __init__(self, path: PathType):
         self.config = self._config_type(path=path)
-        self.path = Path(path).resolve()
+        self.path = self.config.path
         self.dataset_desc = self._read_bids_description(self.path)
 
     @classmethod
