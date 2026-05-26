@@ -6,7 +6,6 @@ import pandas as pd
 import pytest
 import torch
 import torchio as tio
-from monai import data
 
 from clinicadl.data.datasets import BidsDataset
 from clinicadl.data.structures import Sample2D
@@ -64,6 +63,7 @@ class TestBidsDataset:
             bids=Bids(BIDS),
             file_type=BidsFileType(suffix="T1w", data_type="anat"),
             masks={
+                "mask2": (MASKS, BidsFileType(suffix="dseg", data_type="anat")),
                 "mask3": str(
                     CAPS
                     / "space-MNI152NLin2009cSym_res-1d3x1d2x1d1_label-leftHippocampus_mask.nii"
@@ -71,6 +71,7 @@ class TestBidsDataset:
             },
         )
         assert dataset.image.bids.path == BIDS
+        assert dataset.individual_masks["mask2"].bids.path == MASKS
         assert (
             dataset.common_masks["mask3"].file.path
             == CAPS

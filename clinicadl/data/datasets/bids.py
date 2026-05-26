@@ -68,6 +68,18 @@ class BidsDatasetConfig(ObjectConfig["BidsDataset"], BidsTypeDatasetConfig):
             return Bids(v)
         return v
 
+    @field_validator("masks", mode="before")
+    @classmethod
+    def _convert_to_bids_(cls, v: Any) -> Any:
+        """
+        Convert a path to a ``Bids``.
+        """
+        if isinstance(v, dict):
+            for name, value in v.items():
+                if isinstance(value, tuple):
+                    v[name] = (cls._convert_to_bids(value[0]), value[1])
+        return v
+
     @classmethod
     def _get_class(cls):
         return BidsDataset
@@ -325,7 +337,7 @@ class BidsDataset(
         transforms: TransformsHandler = TransformsHandler(),
         columns: Optional[ColumnsType] = None,
         masks: Optional[
-            dict[str, PathType | BidsFileType | tuple[Bids, BidsFileType]]
+            dict[str, PathType | BidsFileType | tuple[PathType | Bids, BidsFileType]]
         ] = None,
     ):
         self.config = self._config_type(
