@@ -86,12 +86,15 @@ def _setup(
         data=metadata,
         masks={
             "head": (
-                "/Users/thibault.devarax/Desktop/code/clinicadl_data_ci/data_ci/bids/derivatives/masks",
+                bids_dir / "derivatives" / "masks",
                 BidsFileType(
                     data_type="anat", suffix="mask", with_entities={"label": "head"}
                 ),
             ),
-            "left_hemisphere": "/Users/thibault.devarax/Desktop/code/clinicadl_data_ci/data_ci/bids/derivatives/masks/leftHemisphere.nii.gz",
+            "left_hemisphere": bids_dir
+            / "derivatives"
+            / "masks"
+            / "leftHemisphere.nii.gz",
         },
         columns=["age"],
         transforms=TransformsHandler(
