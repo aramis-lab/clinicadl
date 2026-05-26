@@ -162,6 +162,7 @@ def _soft_compare_df(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
 
 
 PATH_PATTERN = r'(?:[A-Za-z]:\\[^ \n\r\t]*)|(?:/[^\s"\']+)'
+OBJECT_ADRESS_PATTERN = r"\s+at 0x[0-9A-Fa-f]+"
 DATE_PATTERN = r"^(\s*Date:\s*).*$|\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b"
 THROUGHPUT_PATTERN = r"^(\s*Throughput:\s*).*$"
 NUMBER_PATTERN = r"\b\d*\.\d+(?:[eE][+-]?\d+)?\b|\b\d+[eE][+-]?\d+\b"
@@ -176,6 +177,7 @@ def _normalize_str(text: str) -> str:
     for line in text.splitlines():
         line = re.sub(THROUGHPUT_PATTERN, r"\1<throughput>", line)
         line = re.sub(DATE_PATTERN, r"\1<date>", line)
+        line = re.sub(OBJECT_ADRESS_PATTERN, "hash", line)
         line = re.sub(
             NUMBER_PATTERN,
             lambda m: _replace_with_same_length(m, "x"),

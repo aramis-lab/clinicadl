@@ -23,7 +23,7 @@ class ResampleMask(tio.SpatialTransform):
     """
 
     def apply_transform(self, datapoint: DataPoint) -> DataPoint:
-        datapoint["leftHemisphere"].affine = datapoint.image.affine
+        datapoint["left_hemisphere"].affine = datapoint.image.affine
 
         return datapoint
 
@@ -41,7 +41,7 @@ class RandomMasking(tio.IntensityTransform):
         apply_common_mask = random.random() >= 0.5
         if apply_common_mask:
             label[0] = 0
-            common_mask: tio.LabelMap = datapoint["leftHemisphere"]
+            common_mask: tio.LabelMap = datapoint["left_hemisphere"]
             image.data *= common_mask.data
 
         apply_individual_mask = random.random() >= 0.5

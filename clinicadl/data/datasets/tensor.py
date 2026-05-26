@@ -2,6 +2,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Optional
 
+from pydantic import field_validator
+
 from clinicadl.io import Bids
 from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.config import ObjectConfig
@@ -23,6 +25,11 @@ class TensorDatasetConfig(ObjectConfig["TensorDataset"], BidsTypeDatasetConfig):
 
     description_json: Path
     to_load: Optional[Sequence[str]]
+
+    @field_validator("description_json", mode="after")
+    @classmethod
+    def _resolve_path(cls, v: Path) -> Path:
+        return v.resolve()
 
     @classmethod
     def _get_class(cls):

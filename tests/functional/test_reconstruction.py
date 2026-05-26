@@ -10,18 +10,18 @@ A reconstruction task on 3D patches trained on 2 splits (KFold splitting) with:
 Between the two splits, the Trainer is recreated.
 """
 
-
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
 from clinicadl.callbacks import MonitorCallback, TrainingCheckpointCallback
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatypes import T1Linear
+from clinicadl.data.datasets import BidsDataset
 from clinicadl.infer import PatchesToImageInferer
+from clinicadl.io import BidsFileType
 from clinicadl.losses.config import MSELossConfig
 from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import LossMetricConfig
@@ -36,32 +36,31 @@ from clinicadl.transforms.config import ZNormalizationConfig
 from clinicadl.transforms.extraction import Patch
 
 if TYPE_CHECKING:
+    from clinicadl.data.datasets import TensorDataset
     from clinicadl.split import Split
 
 
 def _setup(
-    caps_dir: Path, metadata: Path, maps_path: Path
-) -> tuple[CapsDataset, CapsDataset, Trainer]:
-    train_dataset = CapsDataset(
-        directory=caps_dir,
-        datatype=T1Linear(use_uncropped_image=False),
-        data=metadata,
+    bids_dir: Path, maps_path: Path
+) -> tuple[TensorDataset, TensorDataset, Trainer]:
+    train_dataset = BidsDataset(
+        bids=bids_dir,
+        file_type=BidsFileType(data_type="anat", suffix="T1w"),
         transforms=TransformsHandler(
             image_transforms=[ZNormalizationConfig()],
             extraction=Patch(patch_size=8, overlap=0.5),
         ),
     )
-    train_dataset.read_tensor_conversion()
+    train_dataset_tensors = train_dataset.to_tensors(conversion_name="RawImages")
 
-    eval_dataset = CapsDataset(
-        directory=caps_dir,
-        datatype=T1Linear(use_uncropped_image=False),
-        data=metadata,
+    eval_dataset = BidsDataset(
+        bids=bids_dir,
+        file_type=BidsFileType(data_type="anat", suffix="T1w"),
         transforms=TransformsHandler(
             image_transforms=[ZNormalizationConfig()],
         ),
     )
-    eval_dataset.read_tensor_conversion()
+    eval_dataset_tensors = eval_dataset.to_tensors(conversion_name="RawImages")
 
     model = ReconstructionModel(
         network=AutoEncoderConfig(
@@ -94,7 +93,7 @@ def _setup(
         overwrite=True,
     )
 
-    return train_dataset, eval_dataset, trainer
+    return train_dataset_tensors, eval_dataset_tensors, trainer
 
 
 def _train(
@@ -118,16 +117,17 @@ def _train(
 def _test_trainer(
     tmp_path: Path,
     ref: Path,
-    caps_dir: Path,
-    metadata_tsv: Path,
+    bids_dir: Path,
     kfold_dir: Path,
     gpu: bool,
 ) -> None:
     from ..utils import compare_maps_dir
 
+    shutil.copytree(bids_dir, tmp_path / "bids")
+    bids_dir = tmp_path / "bids"
     maps_path = tmp_path / "maps"
 
-    train_dataset, eval_dataset, trainer = _setup(caps_dir, metadata_tsv, maps_path)
+    train_dataset, eval_dataset, trainer = _setup(bids_dir, maps_path)
     kfold = KFold(kfold_dir)
     split = next(
         iter(kfold.get_splits(train_dataset, eval_dataset=eval_dataset, splits=[0]))
@@ -139,15 +139,21 @@ def _test_trainer(
     )
     _train(split, trainer, gpu=gpu)
 
-    compare_maps_dir(maps_path, ref)
+    compare_maps_dir(
+        maps_path,
+        ref,
+        except_=[
+            "training/data",
+        ],
+    )
 
 
-def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, kfold_dir):
+def test_train(tmp_path, ref_data, bids_dir, metadata_tsv, kfold_dir):
     ref_maps = ref_data / "maps_test_reconstruction"
-    _test_trainer(tmp_path, ref_maps, caps_dir, metadata_tsv, kfold_dir, gpu=False)
+    _test_trainer(tmp_path, ref_maps, bids_dir, metadata_tsv, kfold_dir, gpu=False)
 
 
 @pytest.mark.gpu
-def test_train_gpu(tmp_path, ref_data, caps_dir, metadata_tsv, kfold_dir):
+def test_train_gpu(tmp_path, ref_data, bids_dir, metadata_tsv, kfold_dir):
     ref_maps = ref_data / "maps_test_reconstruction_gpu"
-    _test_trainer(tmp_path, ref_maps, caps_dir, metadata_tsv, kfold_dir, gpu=True)
+    _test_trainer(tmp_path, ref_maps, bids_dir, metadata_tsv, kfold_dir, gpu=True)
