@@ -148,12 +148,12 @@ def _test_trainer(
     )
 
 
-def test_train(tmp_path, ref_data, bids_dir, metadata_tsv, kfold_dir):
+def test_train(tmp_path, ref_data, bids_dir, kfold_dir):
     ref_maps = ref_data / "maps_test_reconstruction"
-    _test_trainer(tmp_path, ref_maps, bids_dir, metadata_tsv, kfold_dir, gpu=False)
+    _test_trainer(tmp_path, ref_maps, bids_dir, kfold_dir, gpu=False)
 
 
 @pytest.mark.gpu
-def test_train_gpu(tmp_path, ref_data, bids_dir, metadata_tsv, kfold_dir):
+def test_train_gpu(tmp_path, ref_data, bids_dir, kfold_dir):
     ref_maps = ref_data / "maps_test_reconstruction_gpu"
-    _test_trainer(tmp_path, ref_maps, bids_dir, metadata_tsv, kfold_dir, gpu=True)
+    _test_trainer(tmp_path, ref_maps, bids_dir, kfold_dir, gpu=True)
