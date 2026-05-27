@@ -126,7 +126,9 @@ def _compare_anything(content: Any, ref_content: Any) -> None:
     To compare any information that can be found in a MAPS.
     """
     if isinstance(content, dict) and isinstance(ref_content, dict):
-        assert set(content.keys()) == set(ref_content.keys())
+        assert set(content.keys()) == set(
+            ref_content.keys()
+        ), f"OUT: {content.keys()}, REF: {ref_content.keys()}"
         for key in content:
             try:
                 _compare_anything(content[key], ref_content[key])

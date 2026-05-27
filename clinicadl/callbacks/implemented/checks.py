@@ -8,8 +8,11 @@ from typing import TYPE_CHECKING, Callable, Optional, TypeVar, Union
 import pandas as pd
 import torch
 
-from clinicadl.data.dataloader import Batch, BatchType, DataLoaderConfig
-from clinicadl.data.dataloader.config import get_dataloader_from_json_safely
+from clinicadl.data.dataloader import Batch, BatchType
+from clinicadl.data.dataloader.loader import (
+    DataLoaderConfig,
+    get_dataloader_from_json_safely,
+)
 from clinicadl.data.datasets.collection import CollectionDataset
 from clinicadl.data.datasets.factory import get_dataset_from_json_safely
 from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
