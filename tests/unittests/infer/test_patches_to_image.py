@@ -9,9 +9,9 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.dataloader import Batch
-from clinicadl.data.datatypes import DataType
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
 from clinicadl.infer import PatchesToImageInferer
+from clinicadl.io import BidsFileType
 from clinicadl.transforms.config import ActivationsConfig
 
 from .utils import NnWrapper
@@ -61,7 +61,7 @@ def test_inferer():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=DataType(pattern="abc", key="abc"),
+        file_type=BidsFileType(data_type="abc", suffix="abc"),
     )
     network = nn.Identity()
 
@@ -86,7 +86,8 @@ def test_inferer():
             network,
         )
     assert str(out.image_path[0]) == "abc.nii.gz"
-    torch.testing.assert_close(out["output"].tensor, expected_output)
+    assert isinstance(out["output"], torch.Tensor)
+    torch.testing.assert_close(out["output"], expected_output)
     assert out is sample
 
     # batch
@@ -99,18 +100,10 @@ def test_inferer():
             input_dtype=torch.half,
         )
     assert str(out[0].image_path[0]) == "abc.nii.gz"
-    torch.testing.assert_close(
-        out[0]["output"].tensor, expected_output.to(dtype=torch.half)
-    )
+    torch.testing.assert_close(out[0]["output"], expected_output.to(dtype=torch.half))
     assert out[0] is sample
 
     # output format and name
-    with pytest.raises(ValidationError):
-        PatchesToImageInferer(
-            patch_size=(3, 2, 2),
-            output_type="tensor",
-        )
-
     network.to(dtype=torch.float)
     inferer = PatchesToImageInferer(
         patch_size=(3, 2, 2),
@@ -151,37 +144,6 @@ def test_inferer():
     assert isinstance(out["output"], tio.LabelMap)
     np.testing.assert_allclose(out["output"].affine, np.diag([1.2, 1.1, 1, 1]))
 
-    # output type inferred
-    inferer = PatchesToImageInferer(
-        patch_size=(3, 2, 2),
-        output_type=None,
-    )
-    sample["label"] = tio.LabelMap(
-        tensor=torch.randint(0, 2, (2, 3, 3, 3)), affine=np.diag([1.2, 1.1, 1, 1])
-    )
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], tio.LabelMap)
-
-    sample["label"] = None
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], tio.ScalarImage)
-
-    sample["label"] = 1
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], tio.ScalarImage)
-
     # kwargs
     network = NnWrapper(network)
     inferer = PatchesToImageInferer(patch_size=(3, 2, 2))
@@ -195,7 +157,7 @@ def test_inferer():
             network,
             offset=1,
         )
-    torch.testing.assert_close(out["output"].tensor + 1, out_["output"].tensor)
+    torch.testing.assert_close(out["output"] + 1, out_["output"])
 
     # errors
     inferer = PatchesToImageInferer(
@@ -221,7 +183,7 @@ def test_inferer():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=DataType(pattern="abc", key="abc"),
+        file_type=BidsFileType(data_type="abc", suffix="abc"),
         sample_position=0,
         slice_direction=1,
         squeeze=True,

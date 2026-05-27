@@ -12,6 +12,8 @@ MANDATORY_ARGS = {
     "threshold": 0.5,
     "softmax": True,
     "transforms": [PadConfig(padding=0)],
+    "keys": ["a", "b"],
+    "output_key": "c",
 }
 
 
@@ -19,4 +21,4 @@ def test_name():
     for name in ImplementedTransform:
         config = globals()[f"{name.value}Config"]
         c = config(**MANDATORY_ARGS)
-        assert c.name == name.value
+        assert c.name_ == name.value

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 import pandas as pd
 import pytest
@@ -33,10 +33,10 @@ from clinicadl.callbacks import (
     ModelCheckpointCallback,
     TrainingCheckpointCallback,
 )
-from clinicadl.data.datasets import CapsDataset, PairedDataset
-from clinicadl.data.datatypes import T1Linear
+from clinicadl.data.dataloader import MergeBatchesCollate
+from clinicadl.data.datasets import BidsDataset, PairedDataset
 from clinicadl.infer import SimpleInferer
-from clinicadl.io import Maps
+from clinicadl.io import BidsFileType, Maps
 from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import LossMetricConfig, MAEMetricConfig
 from clinicadl.models import Model
@@ -47,7 +47,11 @@ from clinicadl.optim.optimizers.config import AdamConfig
 from clinicadl.split import SingleSplit
 from clinicadl.train import ComputationalConfig, Trainer
 from clinicadl.transforms import TransformsHandler
-from clinicadl.transforms.config import FormatConfig, ZNormalizationConfig
+from clinicadl.transforms.config import (
+    FormatConfig,
+    MergeFieldsConfig,
+    ZNormalizationConfig,
+)
 
 from .utils import ErrorCallback, TestDeviceCallback
 
@@ -126,14 +130,13 @@ class TwoHeadsRegressionModel(Model):
     def get_loss_functions(self):
         return {"loss_age": self.loss_age, "loss_sex": self.loss_sex}
 
-    def forward_step(self, batch: Sequence[Batch]):
-        image = self._merge_images(batch)
-        labels = batch[0].get_field(
-            "label", ensure_channel_dim=True, dtype=torch.float32
-        )
-        age, sex = labels[:, 0], labels[:, 1]
+    def forward_step(self, batch: Batch):
+        self._merge_images(batch)
+        images = batch.get_field("image", dtype=torch.float32)
+        age = batch.get_field("age", dtype=torch.float32)
+        sex = batch.get_field("sex", dtype=torch.float32)
 
-        out = self.network(image)
+        out = self.network(images)
         pred_age, pred_sex = out[:, 0], out[:, 1]
 
         return {
@@ -141,8 +144,9 @@ class TwoHeadsRegressionModel(Model):
             "loss_sex": self.loss_sex(pred_sex, sex),
         }
 
-    def evaluation_step(self, batch: Sequence[Batch]):
-        out = self.inferer(batch[0], self.network, input_dtype=torch.float32)
+    def evaluation_step(self, batch: Batch):
+        self._merge_images(batch)
+        out = self.inferer(batch, self.network, input_dtype=torch.float32)
 
         out.add_field(out.get_field("output")[:, 0], "output_age")
         out.add_field(out.get_field("output")[:, 1], "output_sex")
@@ -169,11 +173,11 @@ class TwoHeadsRegressionModel(Model):
         return self.evaluation_step(batch)
 
     @staticmethod
-    def _merge_images(batch: tuple[Batch, Batch]) -> torch.Tensor:
-        return (
-            batch[0].get_field("image", dtype=torch.float32)
-            + batch[1].get_field("image", dtype=torch.float32)
-        ) / 2  # the same image. Just for the test
+    def _merge_images(batch: Batch) -> None:
+        for data in batch:
+            data["image"].set_data(
+                torch.mean(data["image"].tensor, dim=0, keepdim=True)
+            )
 
 
 def _encode_sex(gender: pd.Series) -> pd.Series:
@@ -201,21 +205,20 @@ def build_callbacks() -> list[Callback]:
 
 
 def _setup(
-    caps_dir: Path, metadata: Path, maps_path: Path, base_model_dir: Path, gpu: bool
+    bids_dir: Path, metadata: Path, maps_path: Path, base_model_dir: Path, gpu: bool
 ) -> tuple[Dataset, Trainer]:
     data = pd.read_csv(metadata, sep="\t")
-    data["sex"] = _encode_sex(data["sex"])
-    dataset = CapsDataset(
-        directory=caps_dir,
-        datatype=T1Linear(use_uncropped_image=False),
+    dataset = BidsDataset(
+        bids=bids_dir,
+        file_type=BidsFileType(data_type="anat", suffix="T1w"),
         data=data,
-        label=["age", "sex"],
-        columns=["age", "sex"],
+        columns={"age": None, "sex": _encode_sex},
         transforms=TransformsHandler(
-            image_transforms=[ZNormalizationConfig()],
+            image_transforms=[
+                ZNormalizationConfig(),
+            ],
         ),
     )
-    dataset.read_tensor_conversion()
 
     paired_dataset = PairedDataset([dataset, dataset])
 
@@ -270,8 +273,8 @@ def _train(
 ) -> None:
     splitter = SingleSplit(split_dir)
     split = splitter.get_split(dataset)
-    split.build_train_loader(batch_size=2)
-    split.build_val_loader()
+    split.build_train_loader(batch_size=2, collate_fn=MergeBatchesCollate())
+    split.build_val_loader(collate_fn=MergeBatchesCollate())
 
     try:
         trainer.train(
@@ -292,7 +295,7 @@ def _test_trainer(
     tmp_path: Path,
     ref: Path,
     base_model: Path,
-    caps_dir: Path,
+    bids_dir: Path,
     metadata_tsv: Path,
     split_dir: Path,
     gpu: bool,
@@ -301,7 +304,7 @@ def _test_trainer(
 
     maps_path = tmp_path / "maps"
 
-    dataset, trainer = _setup(caps_dir, metadata_tsv, maps_path, base_model, gpu=gpu)
+    dataset, trainer = _setup(bids_dir, metadata_tsv, maps_path, base_model, gpu=gpu)
     _train(split_dir, dataset, trainer, gpu=gpu)
 
     except_ = [
@@ -318,7 +321,7 @@ def _test_trainer(
     )
 
 
-def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
+def test_train(tmp_path, ref_data, bids_dir, metadata_tsv, split_dir):
     ref = ref_data / "maps_test_regression_interrupted"
     maps_classif = Maps(ref_data / "maps_test_classification")
     maps_classif.read()
@@ -327,7 +330,7 @@ def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
         tmp_path,
         ref,
         base_model,
-        caps_dir,
+        bids_dir,
         metadata_tsv,
         split_dir,
         gpu=False,
@@ -335,7 +338,7 @@ def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
 
 
 @pytest.mark.gpu
-def test_train_gpu(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
+def test_train_gpu(tmp_path, ref_data, bids_dir, metadata_tsv, split_dir):
     ref = ref_data / "maps_test_regression_interrupted_gpu"
     maps_classif = Maps(ref_data / "maps_test_classification")
     maps_classif.read()
@@ -344,7 +347,7 @@ def test_train_gpu(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir):
         tmp_path,
         ref,
         base_model,
-        caps_dir,
+        bids_dir,
         metadata_tsv,
         split_dir,
         gpu=True,

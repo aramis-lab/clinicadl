@@ -35,20 +35,20 @@ def _resume(maps_path: Path, base_model_dir: Path):
     trainer.resume(split_idx=0)
 
 
-def _modify_paths(maps_path: Path, caps_dir: Path):
+def _modify_paths(maps_path: Path, bids_dir: Path):
     maps = Maps(maps_path)
     maps.read()
 
     dataset_json = maps.open_file(maps.training.data.train.splits[0].dataset_json)
-    dataset_json["datasets"][0]["directory"] = str(caps_dir)
-    dataset_json["datasets"][1]["directory"] = str(caps_dir)
+    dataset_json["datasets"][0]["bids"]["path"] = str(bids_dir)
+    dataset_json["datasets"][1]["bids"]["path"] = str(bids_dir)
     maps.save_file(
         dataset_json, maps.training.data.train.splits[0].dataset_json, overwrite=True
     )
 
     dataset_json = maps.open_file(maps.training.data.validation.splits[0].dataset_json)
-    dataset_json["datasets"][0]["directory"] = str(caps_dir)
-    dataset_json["datasets"][1]["directory"] = str(caps_dir)
+    dataset_json["datasets"][0]["bids"]["path"] = str(bids_dir)
+    dataset_json["datasets"][1]["bids"]["path"] = str(bids_dir)
     maps.save_file(
         dataset_json,
         maps.training.data.validation.splits[0].dataset_json,
@@ -58,7 +58,7 @@ def _modify_paths(maps_path: Path, caps_dir: Path):
 
 def _test_resume(
     tmp_path: Path,
-    caps_dir: Path,
+    bids_dir: Path,
     ref_interrupted: Path,
     ref_resumed: Path,
     ref_uninterrupted: Path,
@@ -67,8 +67,9 @@ def _test_resume(
     from ..utils import compare_maps_dir
 
     maps_path = tmp_path / "maps"
+
     shutil.copytree(ref_interrupted, maps_path, dirs_exist_ok=True)
-    _modify_paths(maps_path, caps_dir)
+    _modify_paths(maps_path, bids_dir)
 
     _resume(maps_path, base_model)
 
@@ -89,13 +90,13 @@ def _test_resume(
     )
 
 
-def test_train(tmp_path, ref_data, caps_dir):
+def test_train(tmp_path, ref_data, bids_dir):
     maps_classif = Maps(ref_data / "maps_test_classification")
     maps_classif.read()
     base_model = maps_classif.training.splits[0].models.final.model_pt
     _test_resume(
         tmp_path=tmp_path,
-        caps_dir=caps_dir,
+        bids_dir=bids_dir,
         ref_interrupted=ref_data / "maps_test_regression_interrupted",
         ref_resumed=ref_data / "maps_test_regression_resumed",
         ref_uninterrupted=ref_data / "maps_test_regression_uninterrupted",
@@ -104,13 +105,13 @@ def test_train(tmp_path, ref_data, caps_dir):
 
 
 @pytest.mark.gpu
-def test_train_gpu(tmp_path, ref_data, caps_dir):
+def test_train_gpu(tmp_path, ref_data, bids_dir):
     maps_classif = Maps(ref_data / "maps_test_classification")
     maps_classif.read()
     base_model = maps_classif.training.splits[0].models.final.model_pt
     _test_resume(
         tmp_path=tmp_path,
-        caps_dir=caps_dir,
+        bids_dir=bids_dir,
         ref_interrupted=ref_data / "maps_test_regression_interrupted_gpu",
         ref_resumed=ref_data / "maps_test_regression_resumed_gpu",
         ref_uninterrupted=ref_data / "maps_test_regression_uninterrupted_gpu",

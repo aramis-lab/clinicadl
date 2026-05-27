@@ -11,7 +11,7 @@ class ColinDataPoint(DataPoint):
     """
     Example of a :py:class:`~clinicadl.data.structures.DataPoint`.
 
-    It contains a T1 image, a mask as a label, and an additional mask called "head".
+    It contains a T1 image and a mask called "head".
 
     The default fields can be overwritten.
 
@@ -20,7 +20,7 @@ class ColinDataPoint(DataPoint):
     >>> from clinicadl.data.structures.examples import ColinDataPoint
     >>> colin = ColinDataPoint()
     >>> colin
-    ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+    ColinDataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
     >>> colin.participant
     'sub-colin'
     >>> colin = ColinDataPoint(participant="sub-000")
@@ -33,7 +33,6 @@ class ColinDataPoint(DataPoint):
         # pylint: disable=no-member
         args = {
             "image": tio_colin.t1,
-            "label": tio_colin.brain,
             "head": tio_colin.head,
             "participant": "sub-colin",
             "session": "ses-M000",
@@ -46,7 +45,7 @@ class ColinSample(Sample):
     """
     Example of a :py:class:`~clinicadl.data.structures.Sample`.
 
-    It contains a T1 image, a mask as a label, and an additional mask called "head".
+    It contains a T1 image and an mask called "head".
 
     The default fields can be overwritten.
 
@@ -55,7 +54,7 @@ class ColinSample(Sample):
     >>> from clinicadl.data.structures.examples import ColinSample
     >>> colin = ColinSample()
     >>> colin
-    ColinSample(Keys: ('head', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 3)
+    ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
     >>> colin.participant
     'sub-colin'
     >>> colin = ColinSample(participant="sub-000")
@@ -64,17 +63,16 @@ class ColinSample(Sample):
     """
 
     def __init__(self, **kwargs):
-        from clinicadl.data.datatypes import DataType
+        from clinicadl.io import BidsFileType
 
         tio_colin = Colin27()
         # pylint: disable=no-member
         args = {
             "image": tio_colin.t1,
-            "label": tio_colin.brain,
             "head": tio_colin.head,
             "participant": "sub-colin",
             "session": "ses-M000",
-            "datatype": DataType.from_folder_and_suffix(folder="t1", suffix="T1w"),
+            "file_type": BidsFileType(data_type="t1", suffix="T1w"),
             "image_path": Path("bids")
             / "sub-000"
             / "ses-M000"
@@ -90,7 +88,7 @@ class ColinSample2D(Sample2D):
     """
     Example of a :py:class:`~clinicadl.data.structures.Sample2D`.
 
-    It contains a T1 image, a mask as a label, and an additional mask called "head".
+    It contains a T1 image and an additional mask called "head".
 
     The default fields can be overwritten.
 
@@ -99,7 +97,7 @@ class ColinSample2D(Sample2D):
     >>> from clinicadl.data.structures.examples import ColinSample2D
     >>> colin = ColinSample2D()
     >>> colin
-    ColinSample2D(Keys: ('head', 'slice_direction', 'squeeze', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 3)
+    ColinSample2D(Keys: ('head', 'slice_direction', 'squeeze', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
     >>> colin.participant
     'sub-colin'
     >>> colin = ColinSample2D(participant="sub-000")
@@ -108,18 +106,17 @@ class ColinSample2D(Sample2D):
     """
 
     def __init__(self, **kwargs):
-        from clinicadl.data.datatypes import DataType
+        from clinicadl.io import BidsFileType
 
         tio_colin = Colin27()
         tio_colin = tio.CropOrPad(target_shape=(181, 1, 181))(tio_colin)
         # pylint: disable=no-member
         args = {
             "image": tio_colin.t1,
-            "label": tio_colin.brain,
             "head": tio_colin.head,
             "participant": "sub-colin",
             "session": "ses-M000",
-            "datatype": DataType.from_folder_and_suffix(folder="t1", suffix="T1w"),
+            "file_type": BidsFileType(data_type="t1", suffix="T1w"),
             "image_path": Path("bids")
             / "sub-000"
             / "ses-M000"

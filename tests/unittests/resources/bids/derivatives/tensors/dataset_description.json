@@ -1,0 +1,12 @@
+{
+    "Name": "Conversions to tensors",
+    "BIDSVersion": "1.11.0",
+    "DatasetType": "derivative",
+    "GeneratedBy": [
+        {
+            "Name": "ClinicaDL",
+            "Version": "2.0.0",
+            "CodeURL": "https://github.com/aramis-lab/clinicadl/releases/tag/v<release>"
+        }
+    ]
+}

@@ -7,9 +7,9 @@ import torch.nn as nn
 import torchio as tio
 
 from clinicadl.data.dataloader import Batch
-from clinicadl.data.datatypes import DataType
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
 from clinicadl.infer import SimpleInferer
+from clinicadl.io import BidsFileType
 from clinicadl.transforms.config import ActivationsConfig
 
 from .utils import NnWrapper
@@ -26,7 +26,7 @@ def test_inferer():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=DataType(pattern="abc", key="abc"),
+        file_type=BidsFileType(data_type="abc", suffix="abc"),
     )
     network = nn.Sequential(nn.Flatten(start_dim=-4), nn.Linear(2 * 3**3, 2))
 
@@ -36,6 +36,7 @@ def test_inferer():
             network,
         )
     assert str(out.image_path[0]) == "abc.nii.gz"
+    assert isinstance(out["output"], torch.Tensor)
     assert out["output"].size() == torch.Size([2])
     torch.testing.assert_close(out["output"].sum(), torch.tensor(1.0))
     assert out is sample
@@ -95,47 +96,6 @@ def test_inferer():
     assert isinstance(out["output"], tio.LabelMap)
     np.testing.assert_allclose(out["output"].affine, np.diag([1.2, 1.1, 1, 1]))
 
-    # tensor
-    inferer = SimpleInferer(
-        output_type="tensor",
-    )
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], torch.Tensor)
-
-    # output type inferred
-    inferer = SimpleInferer(
-        output_type=None,
-    )
-    sample["label"] = tio.LabelMap(
-        tensor=torch.randint(0, 2, (2, 3, 3, 3)), affine=np.diag([1.2, 1.1, 1, 1])
-    )
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], tio.LabelMap)
-
-    sample["label"] = None
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], tio.ScalarImage)
-
-    sample["label"] = 1
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], torch.Tensor)
-
     # kwargs
     network = NnWrapper(network)
     inferer = SimpleInferer()
@@ -157,7 +117,7 @@ def test_inferer():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=DataType(pattern="abc", key="abc"),
+        file_type=BidsFileType(data_type="abc", suffix="abc"),
         sample_position=0,
         slice_direction=1,
         squeeze=True,

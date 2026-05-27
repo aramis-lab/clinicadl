@@ -573,6 +573,7 @@ def _shutdown_logging(logger: logging.Logger) -> None:
     for handler in logger.handlers[:]:
         handler.close()
         logger.removeHandler(handler)
+    logger.setLevel(logging.NOTSET)  # default: use parent's level
 
 
 def _get_log_file_dir(

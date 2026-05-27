@@ -171,4 +171,4 @@ def test_name():
     for name in ImplementedLoss:
         config = globals()[f"{name.value}Config"]
         c = config()
-        assert c.name == name.value
+        assert c.name_ == name.value

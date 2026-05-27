@@ -1,18 +1,18 @@
 from abc import abstractmethod
-from typing import Any, Generic, Iterable, Sequence, TypeVar, Union
+from typing import Any, Generic, Iterable, Sequence, TypeVar
 
 import pandas as pd
-from pydantic import Field, field_validator
+from pydantic import Field
 from typing_extensions import Self
 
 from clinicadl.utils.config import ObjectConfig
-from clinicadl.utils.exceptions import TensorConversionError
+from clinicadl.utils.dictionary.words import DATASET_ID
 from clinicadl.utils.objects import HasConfig
 from clinicadl.utils.typing import DataFrameType
 
-from .abstract import Dataset
-from .multi_samples import MultiSamplesDataset
-from .tensor import TensorDataset
+from .base import Dataset
+
+D = TypeVar("D", bound=Dataset)
 
 
 def _get_dataset_from_dict(data: dict[str, Any]) -> Dataset:
@@ -29,55 +29,42 @@ class CollectionDatasetConfig(ObjectConfig["CollectionDataset"]):
     Base config class for ``CollectionDatasets``.
     """
 
-    datasets: tuple[MultiSamplesDataset, ...] = Field(
+    datasets: tuple[Dataset, ...] = Field(
         reader=lambda x: tuple(map(_get_dataset_from_dict, x))
     )
 
-    @field_validator("datasets", mode="after")
     @classmethod
-    def _check_n_samples(
-        cls, datasets: Sequence[MultiSamplesDataset]
-    ) -> Sequence[MultiSamplesDataset]:
-        """
-        Checks that tensor conversion has been performed before joining the dataset.
-        """
+    def _check_dataset_id_column(
+        cls, datasets: tuple[Dataset, ...]
+    ) -> tuple[Dataset, ...]:
         for dataset in datasets:
-            if isinstance(dataset, TensorDataset):
-                if not dataset.converted:
-                    raise TensorConversionError(
-                        "Tensor conversion must be performed BEFORE joining the datasets. Please call "
-                        "'to_tensors' or 'read_tensor_conversion' for each dataset."
-                    )
-            else:
-                if not dataset._has_len:
-                    raise ValueError(
-                        f"{cls._get_name()} needs the number of samples per image for each underlying dataset. "
-                        "Please ensure that 'n_samples' is a column of the metadata DataFrame of the datasets."
-                    )
+            assert (
+                DATASET_ID not in dataset.df.columns
+            ), f"'{DATASET_ID}' is a protected name. It cannot be in the DataFrames of the underlying datasets."
+
+        return datasets
+
+    @classmethod
+    def _check_at_least_two_datasets(
+        cls, datasets: tuple[Dataset, ...]
+    ) -> tuple[Dataset, ...]:
+        assert (
+            len(datasets) >= 2
+        ), f"{cls._get_name()} requires at least 2 datasets to join!"
 
         return datasets
 
 
-D = TypeVar("D", bound=MultiSamplesDataset)
-
-
 class CollectionDataset(HasConfig[CollectionDatasetConfig], Dataset, Generic[D]):
     """
-    Abstract class defining some common logic for the :py:class:`~clinicadl.data.datasets.Dataset`
-    that are a collections of :py:class:`~clinicadl.data.datasets.MultiSamplesDataset`.
+    Abstract class defining some common logic for the datasets
+    that are a collections of :py:class:`~clinicadl.data.datasets.Dataset`.
     """
-
-    datasets: tuple[D, ...]
-    _df: pd.DataFrame
 
     def __init__(self, datasets: Iterable[D], **kwargs):
         self.config = self._config_type(datasets=datasets, **kwargs)
         self._df = self._merge_dfs(self.config.datasets)
         self.datasets = self.config.datasets
-
-    @property
-    def df(self) -> pd.DataFrame:
-        return self._df
 
     def eval(self) -> None:
         for dataset in self.datasets:
@@ -88,24 +75,12 @@ class CollectionDataset(HasConfig[CollectionDatasetConfig], Dataset, Generic[D])
             dataset.train()
 
     def subset(
-        self, particpants_sessions: Union[DataFrameType, Sequence[tuple[str, str]]]
+        self, particpants_sessions: DataFrameType | Iterable[tuple[str, str]]
     ) -> Self:
         return type(self)(
-            list(dataset.subset(particpants_sessions) for dataset in self.datasets)
+            list(dataset.subset(particpants_sessions) for dataset in self.datasets),
+            **self.config.to_dict(exclude=["datasets", "name_"]),
         )
-
-    def describe(self) -> tuple[dict[str, Any], ...]:
-        """
-        Returns a description of the underlying datasets.
-
-        Returns
-        -------
-        tuple[dict[str, Any], ...]
-            The descriptions returned by :py:meth:`Dataset.describe
-            <clinicadl.data.datasets.Dataset.describe>` for each
-            sub-dataset forming the current dataset.
-        """
-        return tuple([dataset.describe() for dataset in self.datasets])
 
     @staticmethod
     @abstractmethod

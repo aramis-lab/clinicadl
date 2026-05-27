@@ -1,5 +1,5 @@
 """Some useful data structures used in ``ClinicaDL``."""
 
 from .datapoint import DataPoint
-from .label import Column, Mask
+from .images import CommonMask, Image, IndividualMask, Tensor, TensorContent
 from .sample import Sample, Sample2D

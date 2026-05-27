@@ -20,13 +20,13 @@ from clinicadl.data.dataloader import (
     DataLoaderConfig,
     MergeBatchesCollate,
 )
-from clinicadl.data.datasets import CapsDataset, UnpairedDataset
-from clinicadl.data.datatypes import PETLinear, T1Linear
-from clinicadl.io import Maps
+from clinicadl.data.datasets import BidsDataset, TensorDataset, UnpairedDataset
+from clinicadl.io import BidsFileType, Maps, PetLinear
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.exceptions import DataFrameError, DataLeakageError
 from clinicadl.utils.json import write_json
+from tests.unittests.split.test_split import BIDS_DIR
 
 
 class Split(Mock):
@@ -40,14 +40,16 @@ class Split(Mock):
 
 
 MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
-CAPS_PATH = Path(__file__).parents[2] / "resources" / "caps_example"
+BIDS_PATH = Path(__file__).parents[2] / "resources" / "bids"
 MAPS = Maps(MAPS_PATH)
-CAPS = CapsDataset(
-    directory=CAPS_PATH,
-    datatype=PETLinear(
-        tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
-    ),
-    data=CAPS_PATH / "tsv" / "labels.tsv",
+FILE_TYPE = BidsFileType(
+    without_entities={"desc": "Crop"}, suffix="pet", data_type="pet"
+)
+CAPS = BidsDataset(
+    bids=BIDS_PATH,
+    file_type=FILE_TYPE,
+    data=BIDS_PATH / "participantsXsessions.tsv",
+    columns=["age"],
 )
 MAPS.read()
 MODEL = Mock()
@@ -293,14 +295,11 @@ class TestDataLeakage:
 
 class TestDataConsistency:
     checker = ChecksCallback()
-    BAD_DATASET = CapsDataset(
-        directory=CAPS_PATH,
-        datatype=PETLinear(
-            tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
-        ),
-        data=CAPS_PATH / "tsv" / "labels.tsv",
+    BAD_DATASET = BidsDataset(
+        bids=BIDS_PATH,
+        file_type=FILE_TYPE,
         transforms=TransformsHandler(image_transforms=[tio.ZNormalization()]),
-        label="age",
+        data=BIDS_PATH / "participantsXsessions.tsv",
         columns=["age"],
     )
     BAD_DATALOADER = DataLoaderConfig(batch_size=2, collate_fn=CustomCollate())
@@ -311,10 +310,10 @@ class TestDataConsistency:
         MAPS = create_new_maps(tmp_path)
         self.SPLIT.index = 2
 
-        self.BAD_DATASET.subset([("sub-000", "ses-M000")]).to_json(
+        self.BAD_DATASET.subset([("sub-999", "ses-M099")]).to_json(
             MAPS.training.data.train.splits[0].dataset_json, overwrite=True
         )
-        self.BAD_DATASET.subset([("sub-010", "ses-M003")]).to_json(
+        self.BAD_DATASET.subset([("sub-100", "ses-M000")]).to_json(
             MAPS.training.data.validation.splits[0].dataset_json, overwrite=True
         )
         self.BAD_DATALOADER.to_json(
@@ -337,26 +336,18 @@ class TestDataConsistency:
             "and thus could not compare with the dataset of split-2. Beware that differences between datasets could lead to inconsistent results across splits."
         )
         assert caplog.records[1].message == (
-            "The training datasets of split-0 and the one of split-2 are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results across splits."
-        )
-        assert caplog.records[2].message == (
             f"Could not read the arguments ['transforms'] of the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
             "and thus could not compare with the dataset of split-2. Beware that differences between datasets could lead to inconsistent results across splits."
         )
-        assert caplog.records[3].message == (
-            "The validation datasets of split-0 and the one of split-2 are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results across splits."
-        )
-        assert caplog.records[4].message == (
+        assert caplog.records[2].message == (
             f"Could not read the arguments ['collate_fn'] of the training dataloader of split-0 (in {MAPS.training.data.train.splits[0].dataloader_json}), "
             "and thus could not compare with the dataloader of split-2. Beware that differences between dataloaders could lead to inconsistent results across splits."
         )
-        assert caplog.records[5].message == (
+        assert caplog.records[3].message == (
             "The training dataloaders of split-0 and the one of split-2 are different: the two dataloaders have different batch sizes. Got 1 and 2\n"
             "This may lead to inconsistent results across splits."
         )
-        assert len(caplog.records) == 6
+        assert len(caplog.records) == 4
 
         write_json(
             MAPS.training.data.train.splits[0].dataset_json, {"abc": 0}, overwrite=True
@@ -438,28 +429,20 @@ class TestDataConsistency:
         )
         with caplog.at_level("WARNING"):
             self.checker.on_resume(maps=MAPS, split=self.SPLIT)
-        assert len(caplog.records) == 6
+        assert len(caplog.records) == 4
         assert caplog.records[0].message == (
             f"Could not read the arguments ['transforms'] of the training dataset of split-0 (in {MAPS.training.data.train.splits[0].dataset_json}), "
             "and thus could not compare with the dataset passed for resuming training. Beware that differences between datasets could lead to inconsistent results."
         )
         assert caplog.records[1].message == (
-            "The training datasets of split-0 and the one passed for resuming training are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results."
-        )
-        assert caplog.records[2].message == (
             f"Could not read the arguments ['transforms'] of the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
             "and thus could not compare with the dataset passed for resuming training. Beware that differences between datasets could lead to inconsistent results."
         )
-        assert caplog.records[3].message == (
-            "The validation datasets of split-0 and the one passed for resuming training are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results."
-        )
-        assert caplog.records[4].message == (
+        assert caplog.records[2].message == (
             f"Could not read the arguments ['collate_fn'] of the training dataloader of split-0 (in {MAPS.training.data.train.splits[0].dataloader_json}), "
             "and thus could not compare with the dataloader passed for resuming training. Beware that differences between dataloaders could lead to inconsistent results."
         )
-        assert caplog.records[5].message == (
+        assert caplog.records[3].message == (
             "The training dataloaders of split-0 and the one passed for resuming training are different: the two dataloaders have different batch sizes. Got 1 and 2\n"
             "This may lead to inconsistent results."
         )
@@ -521,7 +504,7 @@ class TestDataConsistency:
             )
         assert len(caplog.records) == 0
 
-        self.BAD_DATASET.to_json(
+        self.BAD_DATASET.subset([("sub-010", "ses-M003")]).to_json(
             MAPS.training.data.validation.splits[0].dataset_json, overwrite=True
         )
         caplog.clear()
@@ -533,11 +516,7 @@ class TestDataConsistency:
             f"Could not read the arguments ['transforms'] of the validation dataset of split-0 (in {MAPS.training.data.validation.splits[0].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.validate. Beware that differences between datasets could lead to inconsistent results in validation metrics."
         )
-        assert caplog.records[1].message == (
-            "The validation datasets of split-0 and the one passed to Trainer.validate are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results in validation metrics."
-        )
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 1
 
         write_json(
             MAPS.training.data.validation.splits[0].dataset_json,
@@ -584,7 +563,9 @@ class TestDataConsistency:
             )
         assert len(caplog.records) == 0
 
-        self.BAD_DATASET.to_json(MAPS.test.groups[GROUP].dataset_json, overwrite=True)
+        self.BAD_DATASET.subset([("sub-100", "ses-M000")]).to_json(
+            MAPS.test.groups[GROUP].dataset_json, overwrite=True
+        )
         caplog.clear()
         with caplog.at_level("WARNING"):
             self.checker.on_test_start(
@@ -597,11 +578,7 @@ class TestDataConsistency:
             f"Could not read the arguments ['transforms'] of the test dataset of group-X (in {MAPS.test.groups[GROUP].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.test. Beware that differences between datasets could lead to inconsistent results in test metrics."
         )
-        assert caplog.records[1].message == (
-            "The test datasets of group-X and the one passed to Trainer.test are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results in test metrics."
-        )
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 1
 
         write_json(
             MAPS.test.groups[GROUP].dataset_json,
@@ -653,7 +630,7 @@ class TestDataConsistency:
             )
         assert len(caplog.records) == 0
 
-        self.BAD_DATASET.to_json(
+        self.BAD_DATASET.subset([("sub-100", "ses-M000")]).to_json(
             MAPS.prediction.groups[GROUP].dataset_json, overwrite=True
         )
         caplog.clear()
@@ -668,11 +645,7 @@ class TestDataConsistency:
             f"Could not read the arguments ['transforms'] of the prediction dataset of group-X (in {MAPS.prediction.groups[GROUP].dataset_json}), "
             "and thus could not compare with the dataset passed to Trainer.predict. Beware that differences between datasets could lead to inconsistent results in predictions."
         )
-        assert caplog.records[1].message == (
-            "The prediction datasets of group-X and the one passed to Trainer.predict are different: the two datasets don't have the same label. Got None and age\n"
-            "This may lead to inconsistent results in predictions."
-        )
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 1
 
         write_json(
             MAPS.prediction.groups[GROUP].dataset_json,
@@ -694,121 +667,136 @@ class TestDataConsistency:
         assert len(caplog.records) == 1
 
 
-class TestCompareDatasets:
-    DATASET = CapsDataset(
-        directory=CAPS_PATH,
-        datatype=T1Linear(use_uncropped_image=True),
-        data=pd.DataFrame(
-            {
-                "participant_id": ["sub-000"],
-                "session_id": ["ses-M000"],
-                "age": [1.0],
-                "diagnosis": ["CN"],
-            }
-        ),
-        columns=["age"],
-    )
-
-    def test_type(self):
-        class CustomCaps(CapsDataset):
-            pass
-
-        dataset = CustomCaps(
-            directory=self.DATASET.config.directory,
-            datatype=self.DATASET.config.datatype,
-            data=self.DATASET.config.data,
-            columns=self.DATASET.config.columns,
-        )
-        assert re.match(
-            "the two datasets are not the same type. Got .*CustomCaps'> and .*CapsDataset'>",
-            _compare_datasets(dataset, self.DATASET, except_fields=[]),
-        )
-
-    def test_directory(self, tmp_path):
-        shutil.copytree(CAPS_PATH, tmp_path, dirs_exist_ok=True)
-        dataset = CapsDataset(
-            tmp_path,
-            datatype=self.DATASET.config.datatype,
-            data=self.DATASET.config.data,
-            columns=self.DATASET.config.columns,
-        )
-        assert re.match(
-            f"the two datasets don't come from the same directory: {tmp_path} and {CAPS_PATH}",
-            _compare_datasets(dataset, self.DATASET, except_fields=[]),
-        )
-        assert (
-            _compare_datasets(dataset, self.DATASET, except_fields=["directory"])
-            is None
-        )
-
-    @pytest.mark.parametrize(
-        "name,arg,error_msg",
-        [
-            (
-                "datatype",
-                PETLinear(
-                    tracer="18FAV45",
-                    suvr_reference_region="pons2",
-                    use_uncropped_image=True,
+@pytest.mark.parametrize(
+    "dataset1,dataset2,field_name,error_msg",
+    [
+        (
+            BidsDataset(
+                bids=BIDS_PATH,
+                file_type=FILE_TYPE,
+                data=pd.DataFrame(
+                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
                 ),
-                "the two datasets don't have the same datatypes, which differ in their pattern or key. Got .*pet_linear.* and .*t1_linear.*",
             ),
-            (
-                "label",
-                "age",
-                "the two datasets don't have the same label. Got age and None",
+            BidsDataset(
+                bids=BIDS_PATH,
+                file_type=FILE_TYPE,
+                data=pd.DataFrame(
+                    {
+                        "participant_id": ["sub-000", "sub-010"],
+                        "session_id": ["ses-M000", "ses-M003"],
+                    }
+                ),
             ),
-            (
-                "transforms",
-                TransformsHandler(extraction=Slice()),
-                "the two datasets don't have the same transforms. Got TransformsHandler configuration for slice extraction.*TransformsHandler configuration for image extraction.*",
+            "data",
+            "the two datasets have different parameters for 'data'. Got:",
+        ),
+        (
+            BidsDataset(
+                bids=BIDS_PATH,
+                file_type=FILE_TYPE,
+                data=pd.DataFrame(
+                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                ),
             ),
-            (
-                "masks",
-                ["brain"],
-                "the two datasets don't have the same masks. Got {'brain'} and set()",
+            BidsDataset(
+                bids=BIDS_PATH,
+                file_type=BidsFileType(data_type="anat", suffix="T1w"),
+                data=pd.DataFrame(
+                    {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                ),
             ),
-            (
-                "columns",
-                ["diagnosis"],
-                "the two datasets don't have the same columns or column processing. Got {'diagnosis'} and {'age'}",
+            "file_type",
+            r"the two datasets have different parameters for 'file_type'. Got:.*suffix=re.compile\('pet'\).*AND.*suffix=re.compile\('T1w'\).*",
+        ),
+        (
+            TensorDataset(
+                BIDS_DIR
+                / "derivatives"
+                / "tensors"
+                / "res-1d3x1d2x1d1_src-T1w_conv-raw_description.json"
             ),
-        ],
-    )
-    def test_other_args(self, name, arg, error_msg):
-        dataset = deepcopy(self.DATASET)
-        setattr(dataset.config, name, arg)
-        assert _compare_datasets(dataset, self.DATASET, except_fields=[name]) is None
+            BidsDataset(
+                bids=BIDS_PATH,
+                file_type=FILE_TYPE,
+            ),
+            None,
+            r"the two datasets are not the same type. Got .*TensorDataset.* and .*BidsDataset.*",
+        ),
+        (
+            BidsDataset(
+                bids=BIDS_PATH,
+                file_type=FILE_TYPE,
+            ),
+            BidsDataset(
+                bids=BIDS_PATH,
+                file_type=FILE_TYPE,
+            ),
+            None,
+            None,
+        ),
+        (
+            UnpairedDataset(
+                [
+                    dataset := BidsDataset(
+                        bids=BIDS_PATH,
+                        file_type=FILE_TYPE,
+                        data=pd.DataFrame(
+                            {"participant_id": ["sub-000"], "session_id": ["ses-M000"]}
+                        ),
+                    ),
+                    dataset,
+                ]
+            ),
+            UnpairedDataset(
+                [
+                    dataset := BidsDataset(
+                        bids=BIDS_PATH,
+                        file_type=FILE_TYPE,
+                        data=pd.DataFrame(
+                            {
+                                "participant_id": ["sub-000", "sub-010"],
+                                "session_id": ["ses-M000", "ses-M003"],
+                            }
+                        ),
+                    ),
+                    dataset,
+                ]
+            ),
+            "data",
+            "the two datasets have different parameters for 'data'. Got:",
+        ),
+        (
+            UnpairedDataset(
+                [
+                    dataset,
+                    dataset,
+                ],
+                oversample=True,
+            ),
+            UnpairedDataset(
+                [
+                    dataset,
+                    dataset,
+                ],
+                oversample=False,
+            ),
+            "oversample",
+            "the two datasets have different parameters for 'oversample'. Got:",
+        ),
+    ],
+)
+def test_compare_datasets(dataset1, dataset2, field_name, error_msg):
+    if field_name:
+        assert _compare_datasets(dataset1, dataset2, except_fields=[field_name]) is None
+    if error_msg:
         assert re.match(
             error_msg,
-            _compare_datasets(dataset, self.DATASET, except_fields=[]),
-            re.DOTALL,
+            _compare_datasets(dataset1, dataset2, except_fields=[]),
+            re.DOTALL,  # for \n characters
         )
-
-    def test_collection_dataset(self):
-        self.DATASET.read_tensor_conversion()
-        dataset = deepcopy(self.DATASET)
-        dataset.config.label = "age"
-        error_msg = _compare_datasets(
-            UnpairedDataset([self.DATASET, self.DATASET]),
-            UnpairedDataset([self.DATASET, self.DATASET]),
-            except_fields=[],
-        )
-        assert error_msg is None
-        error_msg = _compare_datasets(
-            UnpairedDataset([dataset, dataset]),
-            UnpairedDataset([self.DATASET, self.DATASET]),
-            except_fields=[],
-        )
-        assert (
-            error_msg == "the two datasets don't have the same label. Got age and None"
-        )
-        error_msg = _compare_datasets(
-            UnpairedDataset([dataset, dataset]),
-            UnpairedDataset([self.DATASET, self.DATASET]),
-            except_fields=["label"],
-        )
-        assert error_msg is None
+    else:
+        assert _compare_datasets(dataset1, dataset2, except_fields=[]) is None
 
 
 @pytest.mark.parametrize(

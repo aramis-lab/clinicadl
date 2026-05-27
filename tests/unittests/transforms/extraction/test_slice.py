@@ -10,9 +10,9 @@ from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-SLICE_TSV = CAPS_DIR / "tsv" / "extract_slices_test.tsv"
-BAD_SLICE_TSV_1 = CAPS_DIR / "tsv" / "extract_slices_test_bad.tsv"
+TSV_DIR = Path(__file__).parents[2] / "resources" / "tsv"
+SLICE_TSV = TSV_DIR / "extract_slices_test.tsv"
+BAD_SLICE_TSV_1 = TSV_DIR / "extract_slices_test_bad.tsv"
 
 
 def test_args():
@@ -42,7 +42,6 @@ def test_args():
 def test_num_samples_per_image():
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(2, 5, 7, 3)
-    mask_1 = torch.randint(0, 2, (1, 5, 3, 7))
     label = torch.randint(0, 2, (2, 5, 3, 7))
 
     data_point = DataPoint(
@@ -51,7 +50,6 @@ def test_num_samples_per_image():
         participant="sub-000",
         session="ses-M000",
         image_path="abc.nii.gz",
-        mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
 
     slice = Slice()
@@ -89,7 +87,6 @@ def test_extract_sample():
     slice = Slice(discarded_slices=[4], borders=1, slice_direction=2)
     affine = np.diag([3, 2, 1, 1])
     image_tensor = torch.randn(1, 5, 3, 7)
-    mask_1 = torch.randint(0, 2, (1, 5, 3, 7))
     label = torch.randint(0, 2, (2, 5, 3, 7))
 
     data_point = DataPoint(
@@ -98,15 +95,12 @@ def test_extract_sample():
         participant="sub-000",
         session="ses-M000",
         image_path="abc.nii.gz",
-        mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
     extracted_data = slice(data_point, sample_index=3)
     assert isinstance(extracted_data.image, tio.ScalarImage)
     assert (extracted_data.image.tensor == image_tensor[:, :, :, 5:6]).all()
     assert isinstance(extracted_data.label, tio.LabelMap)
     assert (extracted_data.label.tensor == label[:, :, :, 5:6]).all()
-    assert isinstance(extracted_data["mask_1"], tio.LabelMap)
-    assert (extracted_data["mask_1"].tensor == mask_1[:, :, :, 5:6]).all()
 
     assert np.isclose(extracted_data.image.affine, affine).all()
     assert np.isclose(extracted_data.label.affine, affine).all()
@@ -163,7 +157,6 @@ def test_extract_sample():
         participant="sub-000",
         session="ses-M000",
         image_path="abc.nii.gz",
-        mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
 
     extracted_data = extractor(data_point, sample_index=0)

@@ -4,7 +4,7 @@ from inspect import signature
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Protocol, TypeVar
 
-from clinicadl.utils.dictionary.words import NAME
+from clinicadl.utils.dictionary.words import NAME_
 from clinicadl.utils.exceptions import CannotReadJsonFieldError
 
 from .config import ClinicaDLConfig
@@ -269,11 +269,11 @@ def _base_factory_from_json(
     if not isinstance(dict_, dict):
         raise NotInterpretableJsonError(json_path, object_type.__name__)
 
-    if NAME not in dict_:
-        err = MissingFieldsError(fields=[NAME])
+    if NAME_ not in dict_:
+        err = MissingFieldsError(fields=[NAME_])
         raise MissingFieldsJsonError(err, json_path)
 
-    name = enum(dict_[NAME]).value
+    name = enum(dict_[NAME_]).value
     if config:
         name += "Config"
     obj: JsonReaderWriter = context[name]
@@ -295,10 +295,10 @@ def _base_factory_from_dict(
     to the dict is implemented and accessible (i.e. in the context).
     Then, it will create the object with parameters inside the dict.
     """
-    if NAME not in config_dict:
-        raise MissingFieldsError(fields=[NAME])
+    if NAME_ not in config_dict:
+        raise MissingFieldsError(fields=[NAME_])
 
-    name = enum(config_dict[NAME]).value
+    name = enum(config_dict[NAME_]).value
     if config:
         name += "Config"
     obj: Serializable = context[name]

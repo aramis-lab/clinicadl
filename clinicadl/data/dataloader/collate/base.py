@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Sequence, TypeVar, Union
 
-from clinicadl.utils.objects import JsonReaderWriter
+from clinicadl.utils.objects import HasConfig, JsonReaderWriter, equal_if_config_equal
 
 from ..batch import Batch
 
@@ -42,3 +42,8 @@ class CollateFn(JsonReaderWriter, ABC):
         BatchType
             A :py:class:`~clinicadl.data.dataloader.Batch`, a sequence of ``Batches``, or a dictionary of ``Batches``.
         """
+
+
+@equal_if_config_equal
+class ImplementedCollateFn(CollateFn, HasConfig):
+    pass

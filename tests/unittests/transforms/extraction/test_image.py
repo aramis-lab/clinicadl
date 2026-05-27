@@ -12,7 +12,6 @@ def test_num_samples_per_image():
 
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=img),
-        label=1,
         participant="sub-000",
         session="ses-000",
     )
@@ -34,7 +33,6 @@ def test_extract_sample():
         session="ses-M000",
         image_path="abc.nii.gz",
         label=tio.LabelMap(tensor=label, affine=affine),
-        mask_1=tio.LabelMap(tensor=mask_1, affine=affine),
     )
     extracted_data_point = image_extractor(data_point, sample_index=0)
     assert extracted_data_point is data_point
@@ -42,8 +40,6 @@ def test_extract_sample():
     assert (extracted_data_point.image.tensor == image_tensor).all()
     assert isinstance(extracted_data_point.label, tio.LabelMap)
     assert (extracted_data_point.label.tensor == label).all()
-    assert isinstance(extracted_data_point["mask_1"], tio.LabelMap)
-    assert (extracted_data_point["mask_1"].tensor == mask_1).all()
 
     assert np.isclose(extracted_data_point.image.affine, affine).all()
     assert np.isclose(extracted_data_point.label.affine, affine).all()

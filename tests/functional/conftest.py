@@ -13,18 +13,18 @@ def ref_data(request) -> Path:
 
 
 @pytest.fixture
-def caps_dir(ref_data) -> Path:
-    return ref_data / "caps"
+def bids_dir(ref_data) -> Path:
+    return ref_data / "bids"
 
 
 @pytest.fixture
-def metadata_tsv(caps_dir) -> Path:
-    return caps_dir / "metadata.tsv"
+def metadata_tsv(bids_dir) -> Path:
+    return bids_dir / "metadata.tsv"
 
 
 @pytest.fixture
-def split_dir(caps_dir) -> Path:
-    return caps_dir / "splits" / "split"
+def split_dir(bids_dir) -> Path:
+    return bids_dir / "splits" / "split"
 
 
 @pytest.fixture

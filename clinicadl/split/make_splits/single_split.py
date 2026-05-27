@@ -184,7 +184,7 @@ def make_split(
     3	sex	    M	    count	19.0	5.0
 
     """
-    df = read_data(data, check_duplicates=False, check_protected_names=False)
+    df = read_data(data, check_duplicates=False)
 
     if isinstance(data, (str, Path)):
         output_dir = output_dir or Path(data).parent

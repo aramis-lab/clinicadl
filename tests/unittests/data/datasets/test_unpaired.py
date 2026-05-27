@@ -1,69 +1,76 @@
+import re
 from pathlib import Path
-from typing import Optional
+from typing import Iterable
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
+import torch
+import torchio as tio
+from pydantic import ValidationError
 
-from clinicadl.data.datasets import CapsDataset, UnpairedDataset
-from clinicadl.data.datatypes import PETLinear, T1Linear
-from clinicadl.transforms import TransformsHandler
-from clinicadl.transforms.extraction import Slice
-from clinicadl.utils.exceptions import TensorConversionError
+from clinicadl.data.datasets import Dataset, TensorDataset, UnpairedDataset
+from clinicadl.data.structures import Sample
+from clinicadl.io import BidsFileType
 
-from .utils import subset_df
-
-CAPS_DIR = Path(__file__).parents[2] / "resources" / "caps_example"
-DATAFRAME = pd.read_csv(CAPS_DIR / "tsv" / "labels.tsv", sep="\t")
+TENSORS = Path(__file__).parents[2] / "resources" / "bids" / "derivatives" / "tensors"
 
 
-def sub_data(
-    participants_sessions: Optional[list[tuple[str, str]]] = None,
-) -> pd.DataFrame:
-    return subset_df(DATAFRAME, participants_sessions)
+class MyDataset(Dataset):
+    def __init__(
+        self,
+        participants_sessions: Iterable[tuple[str, str]],
+        suffix: str = "T1w",
+        **kwargs,
+    ):
+        self.suffix = suffix
+        self._df = pd.DataFrame(
+            {
+                "participant_id": [pair[0] for pair in participants_sessions],
+                "session_id": [pair[1] for pair in participants_sessions],
+            }
+        )
+        for arg, values in kwargs.items():
+            self._df[arg] = values
 
+    def __len__(self):
+        return len(self._df)
 
-def create_caps_datasets():
-    t1_data = sub_data(
-        [
-            ("sub-010", "ses-M003"),
-            ("sub-000", "ses-M000"),
-        ]
-    )
-    pet_data = sub_data(
-        [
-            ("sub-010", "ses-M003"),
-            ("sub-999", "ses-M099"),
-            ("sub-000", "ses-M000"),
-        ]
-    )
-    t1_data = t1_data.drop(columns=["diagnosis", "category"])
-    pet_data = pet_data.drop(columns="category")
+    def train(self):
+        pass
 
-    caps_t1 = CapsDataset(
-        CAPS_DIR,
-        datatype=T1Linear(use_uncropped_image=True),
-        data=t1_data,
-        transforms=TransformsHandler(extraction=Slice(slices=[0, 1])),
-    )
-    caps_pet = CapsDataset(
-        CAPS_DIR,
-        datatype=PETLinear(
-            use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-        ),
-        data=pet_data,
-    )
+    def eval(self):
+        pass
 
-    return caps_t1, caps_pet
+    def __getitem__(self, idx):
+        return Sample(
+            participant=self.df.iloc[idx]["participant_id"],
+            session=self.df.iloc[idx]["session_id"],
+            image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
+            image_path="x",
+            file_type=BidsFileType(data_type="anat", suffix=self.suffix),
+        )
+
+    def get_sample_info(self, idx, column):
+        return self.df.iloc[idx][column]
 
 
 def test_checks():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
+    dataset_1 = MyDataset([("sub-000", "ses-M000")])
     with pytest.raises(
-        TensorConversionError,
-        match="Tensor conversion must be performed BEFORE joining*",
+        ValidationError,
+        match=re.escape("UnpairedDataset requires at least 2 datasets to join!"),
     ):
-        UnpairedDataset([caps_t1, caps_pet])
+        UnpairedDataset([dataset_1])
+
+    dataset_1 = MyDataset([("sub-000", "ses-M000")], dataset_id=[0])
+    with pytest.raises(
+        ValidationError,
+        match=re.escape(
+            "'dataset_id' is a protected name. It cannot be in the DataFrames of the underlying datasets."
+        ),
+    ):
+        UnpairedDataset([dataset_1, dataset_1])
 
 
 def test_df():
@@ -71,262 +78,223 @@ def test_df():
         {
             "dataset_id": [0, 0, 1, 1, 1],
             "participant_id": ["sub-000", "sub-010", "sub-000", "sub-010", "sub-999"],
-            "session_id": ["ses-M000", "ses-M003", "ses-M000", "ses-M003", "ses-M099"],
-            "age": [1, 2, 1, 2, 4],
-            "n_samples": [2, 2, 1, 1, 1],
+            "session_id": ["ses-M000", "ses-M000", "ses-M001", "ses-M000", "ses-M999"],
+            "age": [1, 2, 1, 2, 3],
             "diagnosis": ["nan", "nan", "CN", "AD", "MCI"],
         }
     )
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
-    assert unpaired.df.fillna("nan").equals(ref_df)
-    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=False)
-    assert unpaired.df.fillna("nan").equals(ref_df)
-
-
-def test_get_participant_session_couples():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=False)
-    assert unpaired.get_participant_session_couples() == set(
-        [
-            ("sub-010", "ses-M003"),
-            ("sub-999", "ses-M099"),
-            ("sub-000", "ses-M000"),
-        ]
+    dataset_1 = MyDataset(
+        [("sub-000", "ses-M000"), ("sub-010", "ses-M000")], age=[1, 2]
     )
-    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
-    assert unpaired.get_participant_session_couples() == set(
-        [
-            ("sub-010", "ses-M003"),
-            ("sub-999", "ses-M099"),
-            ("sub-000", "ses-M000"),
-        ]
+    dataset_2 = MyDataset(
+        [("sub-000", "ses-M001"), ("sub-010", "ses-M000"), ("sub-999", "ses-M999")],
+        diagnosis=["CN", "AD", "MCI"],
+        age=[1, 2, 3],
     )
-
-
-def test_get_sample_info():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    unpaired = UnpairedDataset([caps_t1, caps_pet])
-    assert unpaired.get_sample_info(0, "age") == (2, 4)
-    assert unpaired.get_sample_info(2, "age") == (1, 1)
-    with pytest.raises(IndexError):
-        unpaired.get_sample_info(10, "age")
-    with pytest.raises(IndexError):
-        unpaired.get_sample_info(-1, "age")
-    with pytest.raises(KeyError):
-        unpaired.get_sample_info(0, "abc")
-
-
-def test_describe():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    unpaired = UnpairedDataset([caps_t1, caps_pet])
-    description = unpaired.describe()
-    assert len(description) == 2
-    assert description[0]["total_samples"] == 4
-    assert description[1]["total_samples"] == 3
+    unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=True)
+    assert unpaired.df.fillna("nan").equals(ref_df)
+    unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=False)
+    assert unpaired.df.fillna("nan").equals(ref_df)
 
 
 def test_train_val():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    unpaired = UnpairedDataset([caps_t1, caps_pet])
-    unpaired.eval()
-    assert unpaired.datasets[0].eval_mode
-    assert unpaired.datasets[1].eval_mode
-    unpaired.train()
-    assert not unpaired.datasets[0].eval_mode
-    assert not unpaired.datasets[1].eval_mode
+    bids_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+        ]
+    )
+    bids_2 = MyDataset(
+        [
+            ("sub-001", "ses-M001"),
+        ]
+    )
+    bids_1.train = Mock()
+    bids_1.eval = Mock()
+    bids_2.train = Mock()
+    bids_2.eval = Mock()
+
+    multimodal_dataset = UnpairedDataset([bids_1, bids_2])
+    multimodal_dataset.eval()
+    bids_1.eval.assert_called_once()
+    bids_2.eval.assert_called_once()
+    multimodal_dataset.train()
+    bids_1.train.assert_called_once()
+    bids_2.train.assert_called_once()
 
 
 def test_len():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
-    assert len(unpaired) == 4
-    unpaired = UnpairedDataset([caps_t1, caps_pet])
+    dataset_1 = MyDataset([("sub-000", "ses-M000"), ("sub-010", "ses-M000")])
+    dataset_2 = MyDataset(
+        [("sub-000", "ses-M001"), ("sub-010", "ses-M000"), ("sub-999", "ses-M999")],
+    )
+    unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=True)
     assert len(unpaired) == 3
+    unpaired = UnpairedDataset([dataset_1, dataset_2])
+    assert len(unpaired) == 2
 
 
-def test_subset():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    unpaired = UnpairedDataset([caps_t1, caps_pet])
-    subset = unpaired.subset(
-        sub_data(
-            [
-                ("sub-999", "ses-M099"),
-                ("sub-000", "ses-M000"),
-            ]
-        )
+def test_get_participant_session_couples():
+    dataset_1 = MyDataset([("sub-000", "ses-M000"), ("sub-010", "ses-M000")])
+    dataset_2 = MyDataset(
+        [("sub-000", "ses-M001"), ("sub-010", "ses-M000"), ("sub-999", "ses-M999")],
     )
-    assert len(subset) == 2
-    assert subset.df.fillna("nan").equals(
-        pd.DataFrame(
-            {
-                "dataset_id": [0, 1, 1],
-                "participant_id": ["sub-000", "sub-999", "sub-000"],
-                "session_id": ["ses-M000", "ses-M099", "ses-M000"],
-                "age": [1, 4, 1],
-                "n_samples": [2, 1, 1],
-                "diagnosis": ["nan", "MCI", "CN"],
-            }
-        )
+    ref_set = {
+        ("sub-000", "ses-M000"),
+        ("sub-010", "ses-M000"),
+        ("sub-000", "ses-M001"),
+        ("sub-999", "ses-M999"),
+    }
+    unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=False)
+    assert unpaired.get_participant_session_couples() == ref_set
+    unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=True)
+    assert unpaired.get_participant_session_couples() == ref_set
+
+
+def test_get_sample_info():
+    dataset_1 = MyDataset([("sub-000", "ses-M000")], age=[1])
+    dataset_2 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-010", "ses-M000"),
+        ],
+        age=[2, 3],
+        diagnosis=["AD", "CN"],
     )
+    unpaired = UnpairedDataset([dataset_1, dataset_2])
+    assert unpaired.get_sample_info(0, "age") == (1, 2)
+    unpaired.set_epoch(4)
+    assert unpaired.get_sample_info(0, "age") == (1, 3)
+
+    unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=True)
+    assert unpaired.get_sample_info(0, "diagnosis") == (None, "AD")
 
     with pytest.raises(
-        RuntimeError,
-        match=r"No \(participant, session\) pairs are in the dataset. This would lead to an empty dataset!",
+        KeyError,
+        match="No column named 'abc' in any DataFrame of the datasets forming the UnpairedDataset.",
     ):
-        subset = unpaired.subset(
-            sub_data(
-                [
-                    ("sub-999", "ses-M099"),
-                ]
-            )
-        )
+        unpaired.get_sample_info(0, "abc")
 
 
-def test_set_epoch():
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
+def test__getitem__():
+    dataset_1 = MyDataset(
+        [("sub-000", "ses-M000"), ("sub-001", "ses-M000")], age=[1, 2]
+    )
+    dataset_2 = MyDataset(
+        [("sub-000", "ses-M000"), ("sub-002", "ses-M000"), ("sub-003", "ses-M000")],
+    )
 
     # oversample
-    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
+    unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=True)
     assert unpaired.mapping.equals(
         pd.DataFrame(
             {
-                0: [2, 3, 1, 0],
-                1: [2, 1, 0, 0],
-            }
-        ).rename_axis(columns="dataset_id", index="idx")
-    )
-    assert (
-        unpaired[2][0].participant,
-        unpaired[2][0].session,
-        unpaired[2][0].sample_position,
-    ) == ("sub-000", "ses-M000", 1)
-    assert (unpaired[2][1].participant, unpaired[2][1].session) == (
-        "sub-000",
-        "ses-M000",
-    )
-
-    unpaired.set_epoch(1)
-    assert unpaired.mapping.equals(
-        pd.DataFrame(
-            {
-                0: [3, 2, 0, 1],
-                1: [0, 2, 2, 1],
-            }
-        ).rename_axis(columns="dataset_id", index="idx")
-    )
-    assert (
-        unpaired[0][0].participant,
-        unpaired[0][0].session,
-        unpaired[0][0].sample_position,
-    ) == ("sub-010", "ses-M003", 1)
-    assert (unpaired[0][1].participant, unpaired[0][1].session) == (
-        "sub-000",
-        "ses-M000",
-    )
-
-    # undersample
-    unpaired = UnpairedDataset([caps_t1, caps_pet])
-    assert unpaired.mapping.equals(
-        pd.DataFrame(
-            {
-                0: [2, 3, 1],
+                0: [1, 1, 0],
                 1: [2, 1, 0],
             }
         ).rename_axis(columns="dataset_id", index="idx")
     )
-    assert (
-        unpaired[0][0].participant,
-        unpaired[0][0].session,
-        unpaired[0][0].sample_position,
-    ) == ("sub-010", "ses-M003", 0)
-    assert (unpaired[0][1].participant, unpaired[0][1].session) == (
-        "sub-999",
-        "ses-M099",
-    )
+    assert unpaired[1][0].participant == "sub-001"
+    assert unpaired[1][1].participant == "sub-002"
 
     unpaired.set_epoch(1)
     assert unpaired.mapping.equals(
         pd.DataFrame(
             {
-                0: [3, 2, 0],
+                0: [0, 0, 1],
                 1: [0, 2, 1],
+            }
+        ).rename_axis(columns="dataset_id", index="idx")
+    )
+    assert unpaired[1][0].participant == "sub-000"
+    assert unpaired[1][1].participant == "sub-003"
+
+    # undersample
+    unpaired = UnpairedDataset([dataset_1, dataset_2])
+    assert unpaired.mapping.equals(
+        pd.DataFrame(
+            {
+                0: [1, 0],
+                1: [2, 1],
+            }
+        ).rename_axis(columns="dataset_id", index="idx")
+    )
+    assert unpaired[0][0].participant == "sub-001"
+    assert unpaired[0][1].participant == "sub-003"
+
+    unpaired.set_epoch(1)
+    assert unpaired.mapping.equals(
+        pd.DataFrame(
+            {
+                0: [0, 1],
+                1: [0, 2],
             }
         ).rename_axis(columns="dataset_id", index="idx")
     )
 
 
-def test_from_json_to_json(tmp_path):
-    caps_t1, caps_pet = create_caps_datasets()
-    caps_t1.read_tensor_conversion()
-    caps_pet.read_tensor_conversion()
-    unpaired = UnpairedDataset([caps_t1, caps_pet], oversample=True)
-
-    unpaired.to_json(tmp_path / "dataset.json")
-    unpaired = UnpairedDataset.from_json(tmp_path / "dataset.json")
-
-    assert len(unpaired) == 4
-    assert (
-        unpaired[2][0].participant,
-        unpaired[2][0].session,
-        unpaired[2][0].sample_position,
-    ) == ("sub-000", "ses-M000", 1)
-    assert (unpaired[2][1].participant, unpaired[2][1].session) == (
-        "sub-000",
-        "ses-M000",
+def test_subset():
+    dataset_1 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-001", "ses-M000"),
+        ],
+        age=[1, 2],
     )
-
-
-def test_custom():
-    from .utils import CustomMultiSamplesDataset
-
-    dataset_1 = CustomMultiSamplesDataset(
-        sub_data(
-            [
-                ("sub-000", "ses-M000"),
-                ("sub-010", "ses-M012"),
-                ("sub-010", "ses-M003"),
-            ]
-        )
+    dataset_2 = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-002", "ses-M000"),
+            ("sub-003", "ses-M000"),
+        ],
+        age=[1, 3, 4],
     )
-    dataset_2 = CustomMultiSamplesDataset(
-        sub_data(
-            [
-                ("sub-010", "ses-M003"),
-                ("sub-000", "ses-M000"),
-                ("sub-010", "ses-M012"),
-            ]
-        )
-    )
-    dataset_1.df["n_samples"] = [3, 3, 2]
-    dataset_2.df["n_samples"] = [1, 1, 2]
-
     unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=True)
-    assert len(unpaired) == 8
+    subset = unpaired.subset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-003", "ses-M000"),
+        ]
+    )
+    pd.testing.assert_frame_equal(
+        subset.df,
+        pd.DataFrame(
+            {
+                "dataset_id": [0, 1, 1],
+                "participant_id": ["sub-000", "sub-000", "sub-003"],
+                "session_id": ["ses-M000"] * 3,
+                "age": [1, 1, 4],
+            }
+        ),
+    )
+    assert len(subset) == 2
+    unpaired = UnpairedDataset([dataset_1, dataset_2], oversample=False)
+    subset = unpaired.subset(
+        [
+            ("sub-000", "ses-M000"),
+            ("sub-003", "ses-M000"),
+        ]
+    )
+    assert len(subset) == 1
 
-    assert (
-        unpaired[0][0].participant,
-        unpaired[0][0].session,
-        str(unpaired[0][0].image_path[0]),
-    ) == ("sub-010", "ses-M003", "6")
-    assert (
-        unpaired[0][1].participant,
-        unpaired[0][1].session,
-        str(unpaired[0][1].image_path[0]),
-    ) == ("sub-010", "ses-M012", "2")
+
+def test_from_json_to_json(tmp_path):
+    tensors = TensorDataset(
+        TENSORS / "res-1d3x1d2x1d1_src-T1w_conv-T1Masks_description.json"
+    )
+    paired = UnpairedDataset(
+        [tensors, tensors.subset([("sub-000", "ses-M000")])], oversample=True
+    )
+
+    paired.to_json(tmp_path / "dataset.json")
+    paired = UnpairedDataset.from_json(tmp_path / "dataset.json")
+
+    assert len(paired) == 2
+    assert paired[1][0].participant == "sub-000"
+
+    bids = MyDataset(
+        [
+            ("sub-000", "ses-M000"),
+        ]
+    )
+    multimodal_dataset = UnpairedDataset([bids, bids])
+    multimodal_dataset.to_json(tmp_path / "dataset.json", overwrite=True)

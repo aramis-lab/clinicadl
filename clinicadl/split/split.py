@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import Field, NonNegativeInt, field_validator
 from typing_extensions import Self
@@ -11,6 +11,9 @@ from clinicadl.data.datasets import Dataset
 from clinicadl.data.datasets.factory import get_dataset_from_dict
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
+
+if TYPE_CHECKING:
+    from clinicadl.data.dataloader import CollateFn
 
 
 def _read_dataloader(
@@ -170,6 +173,7 @@ class Split(HasConfig[SplitConfig]):
         drop_last: bool = False,
         prefetch_factor: Optional[int] = None,
         persistent_workers: bool = False,
+        collate_fn: Optional[CollateFn] = None,
     ) -> None:
         """
         Builds a :py:class:`~torch.utils.data.DataLoader` for the training set of the split.
@@ -212,6 +216,8 @@ class Split(HasConfig[SplitConfig]):
         persistent_workers : bool (optional, default=False)
             Whether to maintain the worker processes alive at the end of an epoch.
             Can't be passed if ``num_workers=0``. Used if ``dataloader_config`` is not provided.
+        collate_fn : Optional[CollateFn], default=None
+            To customize the way samples are collated into batches. See :py:mod:`clinicadl.data.dataloader.collate`.
 
         Raises
         ------
@@ -239,6 +245,7 @@ class Split(HasConfig[SplitConfig]):
                 prefetch_factor=prefetch_factor,
                 pin_memory=pin_memory,
                 persistent_workers=persistent_workers,
+                collate_fn=collate_fn,
             )
 
     def build_val_loader(
@@ -253,6 +260,7 @@ class Split(HasConfig[SplitConfig]):
         drop_last: bool = False,
         prefetch_factor: Optional[int] = None,
         persistent_workers: bool = False,
+        collate_fn: Optional[CollateFn] = None,
     ) -> None:
         """
         Builds a :py:class:`~torch.utils.data.DataLoader` for the validation set of the split.
@@ -295,6 +303,8 @@ class Split(HasConfig[SplitConfig]):
         persistent_workers : bool (optional, default=False)
             Whether to maintain the worker processes alive at the end of an epoch.
             Can't be passed if ``num_workers=0``. Used if ``dataloader_config`` is not provided.
+        collate_fn : Optional[CollateFn], default=None
+            To customize the way samples are collated into batches. See :py:mod:`clinicadl.data.dataloader.collate`.
 
         Raises
         ------
@@ -322,6 +332,7 @@ class Split(HasConfig[SplitConfig]):
                 prefetch_factor=prefetch_factor,
                 pin_memory=pin_memory,
                 persistent_workers=persistent_workers,
+                collate_fn=collate_fn,
             )
 
     @classmethod

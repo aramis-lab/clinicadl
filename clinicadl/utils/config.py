@@ -17,7 +17,7 @@ from pydantic import (
 from pydantic.fields import FieldInfo
 from typing_extensions import Self
 
-from clinicadl.utils.dictionary.words import NAME, READER
+from clinicadl.utils.dictionary.words import NAME_, READER
 from clinicadl.utils.exceptions import (
     CannotReadFieldError,
     CannotReadJsonFieldError,
@@ -217,6 +217,13 @@ class ClinicaDLConfig(BaseModel):
 
             return serialized
 
+        elif isinstance(value, dict):
+            serialized = {}
+            for name, elem in value.items():
+                serialized[name] = cls.serialize_anything(elem)
+
+            return serialized
+
         return value
 
     @classmethod
@@ -309,7 +316,7 @@ class ConfigWithName(ClinicaDLConfig):
 
     @computed_field
     @property
-    def name(self) -> str:
+    def name_(self) -> str:
         """The name of the class associated to this config class."""
         return self._get_name()
 
@@ -319,11 +326,11 @@ class ConfigWithName(ClinicaDLConfig):
         Checks the input of :py:meth:`from_dict`.
         """
         dict_ = copy(dict_)
-        if NAME in dict_:
+        if NAME_ in dict_:
             assert (
-                dict_[NAME] == cls._get_name()
-            ), f"The input dictionary is associated to {dict_[NAME]}, not to {cls._get_name()}."
-            del dict_[NAME]
+                dict_[NAME_] == cls._get_name()
+            ), f"The input dictionary is associated to {dict_[NAME_]}, not to {cls._get_name()}."
+            del dict_[NAME_]
         return super()._check_dict(dict_)
 
 
@@ -723,8 +730,8 @@ def _order_dict(model_or_field: Any) -> Any:
     """
     if isinstance(model_or_field, dict):
         ordered_dict = OrderedDict(**model_or_field)
-        if NAME in ordered_dict:  # always 'name' at the beginning
-            ordered_dict.move_to_end(NAME, last=False)
+        if NAME_ in ordered_dict:  # always 'name' at the beginning
+            ordered_dict.move_to_end(NAME_, last=False)
 
         for key, value in ordered_dict.items():
             ordered_dict[key] = _order_dict(value)

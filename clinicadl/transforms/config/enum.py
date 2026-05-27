@@ -48,6 +48,7 @@ class ImplementedTransform(str, BaseEnum):
     SOBEL = "SobelGradients"
 
     FORMAT = "Format"
+    MERGE_FIELDS = "MergeFields"
 
     @classmethod
     def _missing_(cls, value):

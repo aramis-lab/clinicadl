@@ -29,7 +29,6 @@ from clinicadl.transforms.config import AsDiscreteConfig
 
 DATAPOINT = DataPoint(
     image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
-    label=None,
     participant="abc",
     session="abc",
 )

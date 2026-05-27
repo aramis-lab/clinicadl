@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import torch
 from monai import transforms
@@ -17,9 +17,9 @@ from pydantic import (
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.dictionary.words import COPY_, EXCLUDE, INCLUDE
+from clinicadl.utils.dtype import read_dtype
 from clinicadl.utils.factories import get_defaults_from
 
-from ..homemade import Format
 from .base import TransformConfig
 from .enum import Rounding, SobelPaddingMode
 
@@ -35,7 +35,6 @@ __all__ = [
     "LabelFilterConfig",
     "FillHolesConfig",
     "SobelGradientsConfig",
-    "FormatConfig",
 ]
 
 ACTIVATIONS_MONAI_DEFAULTS = get_defaults_from(transforms.Activations)
@@ -46,7 +45,6 @@ SMALL_OBJECTS_MONAI_DEFAULTS = get_defaults_from(transforms.RemoveSmallObjects)
 LABEL_FILTER_MONAI_DEFAULTS = get_defaults_from(transforms.LabelFilter)
 FILL_HOLES_MONAI_DEFAULTS = get_defaults_from(transforms.FillHoles)
 SOBEL_MONAI_DEFAULTS = get_defaults_from(transforms.SobelGradients)
-FORMAT_DEFAULTS = get_defaults_from(Format)
 
 
 class MonaiTransformConfig(TransformConfig):
@@ -113,18 +111,6 @@ class ActivationsConfig(MonaiTransformConfig, _DimConfig):
         return self
 
 
-def _read_dtype(dtype_str: Optional[str]) -> Optional[torch.dtype]:
-    """
-    To read a serialized torch.dtype.
-    """
-    if dtype_str is None:
-        return None
-
-    import torch
-
-    return getattr(torch, dtype_str.split(".", 1)[1])
-
-
 class AsDiscreteConfig(MonaiTransformConfig, _DimConfig):
     """
     Config class for :py:class:`monai.transforms.AsDiscrete`.
@@ -134,7 +120,7 @@ class AsDiscreteConfig(MonaiTransformConfig, _DimConfig):
     to_onehot: Optional[PositiveInt] = AS_DISCRETE_MONAI_DEFAULTS["to_onehot"]
     threshold: Optional[float] = AS_DISCRETE_MONAI_DEFAULTS["threshold"]
     rounding: Optional[Rounding] = AS_DISCRETE_MONAI_DEFAULTS["rounding"]
-    dtype: torch.dtype = Field(default=torch.float, reader=_read_dtype)
+    dtype: torch.dtype = Field(default=torch.float, reader=read_dtype)
 
     @model_validator(mode="after")
     def exclude_multiple_arguments(self):
@@ -218,9 +204,7 @@ class SobelGradientsConfig(MonaiTransformConfig):
     normalize_kernels: bool = SOBEL_MONAI_DEFAULTS["normalize_kernels"]
     normalize_gradients: bool = SOBEL_MONAI_DEFAULTS["normalize_gradients"]
     padding_mode: SobelPaddingMode = SOBEL_MONAI_DEFAULTS["padding_mode"]
-    dtype: torch.dtype = Field(
-        default=SOBEL_MONAI_DEFAULTS["dtype"], reader=_read_dtype
-    )
+    dtype: torch.dtype = Field(default=SOBEL_MONAI_DEFAULTS["dtype"], reader=read_dtype)
 
     @field_validator("kernel_size", mode="after")
     @classmethod
@@ -231,22 +215,3 @@ class SobelGradientsConfig(MonaiTransformConfig):
         if v % 2 == 0:
             raise ValueError(f"'kernel_size' should be odd. Got {v}")
         return v
-
-
-class FormatConfig(MonaiTransformConfig):
-    """
-    Config class for :py:class:`clinicadl.transforms.homemade.Format`.
-    """
-
-    dtype: Optional[torch.dtype] = Field(
-        default=FORMAT_DEFAULTS["dtype"], reader=_read_dtype
-    )
-    squeeze: Union[bool, NonNegativeInt, Sequence[NonNegativeInt]] = FORMAT_DEFAULTS[
-        "squeeze"
-    ]
-    unsqueeze: Optional[NonNegativeInt] = FORMAT_DEFAULTS["unsqueeze"]
-
-    @classmethod
-    def _get_class(cls) -> type[MonaiTransform]:
-        """Returns the transform associated to this config class."""
-        return Format

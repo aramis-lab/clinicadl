@@ -1,0 +1,5 @@
+{
+    "Name": "Raw BIDS",
+    "BIDSVersion": "1.11.0",
+    "DatasetType": "raw"
+}

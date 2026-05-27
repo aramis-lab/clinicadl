@@ -30,6 +30,7 @@ Pre-processing
    PadConfig
    RemapLabelsConfig
    OneHotConfig
+   MergeFieldsConfig
 
 
 .. _api_augmentation:

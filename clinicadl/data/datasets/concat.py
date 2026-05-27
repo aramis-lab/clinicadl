@@ -1,21 +1,23 @@
 from __future__ import annotations
 
-import warnings
 from bisect import bisect_right
-from typing import Any, Iterable, Sequence, Union
+from logging import getLogger
+from typing import Any, Iterable, Sequence
 
 import numpy as np
 import pandas as pd
-from pydantic import model_validator
+from pydantic import field_validator
 from typing_extensions import Self
 
 from clinicadl.utils.dictionary.words import DATASET_ID
 from clinicadl.utils.typing import DataFrameType
-from clinicadl.utils.variables import SPACING_RTOL
 
-from ..structures import Sample, Sample2D
+from ..structures import Sample
+from .base import Dataset
 from .collection import CollectionDataset, CollectionDatasetConfig
-from .multi_samples import MultiSamplesDataset
+from .utils import CheckableDataset
+
+logger = getLogger(__name__)
 
 
 class ConcatDatasetConfig(CollectionDatasetConfig):
@@ -23,56 +25,12 @@ class ConcatDatasetConfig(CollectionDatasetConfig):
     Config class for ``ConcatDataset``.
     """
 
-    raise_warnings: bool
-
-    @model_validator(mode="after")
-    def _check_dimensionality_and_spacing(self) -> Self:
-        if self.raise_warnings:
-            self._check_consistency(self.datasets)
-
-        return self
-
-    @staticmethod
-    def _check_consistency(
-        datasets: Sequence[MultiSamplesDataset],
-    ) -> Sequence[MultiSamplesDataset]:
-        """
-        Checks if all datasets have images of the same dimensionality (2D or 3D).
-        """
-        _2d = False
-        _3d = False
-        shapes = set()
-        spacings = set()
-        for dataset in datasets:
-            sample = dataset[0]
-            if isinstance(sample, Sample2D) and sample.squeeze:
-                _2d = True
-            else:
-                _3d = True
-            shapes.add(tuple(sample.image.shape))
-            if not any(
-                np.allclose(sample.spacing, spacing, rtol=SPACING_RTOL)
-                for spacing in spacings
-            ):
-                spacings.add(sample.image.spacing)
-
-        if _2d and _3d:
-            warnings.warn(
-                "You are trying to concatenate datasets with different dimensionalities: at least one of your dataset contains 2D slices (a Sample2D is returned "
-                "with 'squeeze=True'), whereas at least one other contains 3D elements. To disable this warning set 'raise_warnings' to False."
-            )
-        elif len(shapes) > 1:
-            warnings.warn(
-                f"You are trying to concatenate datasets with different image shapes: found an image of shape {shapes.pop()} in one dataset, "
-                f"and one with shape {shapes.pop()} in another. To disable this warning set 'raise_warnings' to False."
-            )
-        if len(spacings) > 1:
-            warnings.warn(
-                f"You are trying to concatenate datasets with different voxel spacings: found an image with spacing {spacings.pop()} in one dataset, "
-                f"and one with spacing {spacings.pop()} in another. To disable this warning set 'raise_warnings' to False."
-            )
-
-        return datasets
+    @field_validator("datasets", mode="after")
+    @classmethod
+    def _check_dataset_id_column(
+        cls, datasets: tuple[Dataset, ...]
+    ) -> tuple[Dataset, ...]:
+        return super()._check_dataset_id_column(datasets)
 
     @classmethod
     def _get_class(cls) -> type[ConcatDataset]:
@@ -80,7 +38,7 @@ class ConcatDatasetConfig(CollectionDatasetConfig):
         return ConcatDataset
 
 
-class ConcatDataset(CollectionDataset, MultiSamplesDataset):
+class ConcatDataset(CollectionDataset, CheckableDataset):
     """
     A useful class to assemble multiple :py:class:`~clinicadl.data.datasets.MultiSamplesDataset`
     (e.g. from different datasets).
@@ -169,13 +127,12 @@ class ConcatDataset(CollectionDataset, MultiSamplesDataset):
 
     def __init__(
         self,
-        datasets: Iterable[MultiSamplesDataset],
-        raise_warnings: bool = True,
+        datasets: Iterable[Dataset],
     ):
-        super().__init__(datasets=datasets, raise_warnings=raise_warnings)
+        super().__init__(datasets=datasets)
 
     def subset(
-        self, particpants_sessions: Union[DataFrameType, Sequence[tuple[str, str]]]
+        self, particpants_sessions: DataFrameType | Iterable[tuple[str, str]]
     ) -> Self:
         sub_datasets = []
         not_empty = False
@@ -194,7 +151,6 @@ class ConcatDataset(CollectionDataset, MultiSamplesDataset):
 
         return type(self)(
             sub_datasets,
-            raise_warnings=False,
         )
 
     def get_sample_info(self, idx: int, column: str) -> Any:
@@ -205,6 +161,9 @@ class ConcatDataset(CollectionDataset, MultiSamplesDataset):
             raise KeyError(
                 f"No column named '{column}' in the metadata DataFrame of the dataset from which the sample is taken."
             ) from e
+
+    def __len__(self) -> int:
+        return int(np.sum([len(dataset) for dataset in self.datasets]))
 
     def __getitem__(self, idx: int) -> Sample:
         dataset_idx, idx_in_dataset = self._get_dataset_and_rank(idx)
@@ -226,7 +185,7 @@ class ConcatDataset(CollectionDataset, MultiSamplesDataset):
         return dataset_idx, idx_in_dataset
 
     @staticmethod
-    def _merge_dfs(datasets: Sequence[MultiSamplesDataset]) -> pd.DataFrame:
+    def _merge_dfs(datasets: Sequence[Dataset]) -> pd.DataFrame:
         df: pd.DataFrame = pd.concat(
             [dataset.df for dataset in datasets],
             keys=range(len(datasets)),

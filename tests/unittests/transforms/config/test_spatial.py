@@ -19,9 +19,10 @@ from clinicadl.transforms.config.spatial import (
 mask_path = (
     Path(__file__).parents[2]
     / "resources"
-    / "caps_example"
-    / "masks"
-    / "leftHippocampus.nii.gz"
+    / "bids"
+    / "derivatives"
+    / "caps"
+    / "space-MNI152NLin2009cSym_res-1d3x1d2x1d1_label-leftHippocampus_mask.nii"
 )
 
 BAD_INPUTS = [

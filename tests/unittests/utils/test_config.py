@@ -150,19 +150,19 @@ def test_clinicadl_config(tmp_path):
     assert dict_["simple"] == "str"
     assert dict_["sub_test"] == {"a": 1}
     assert OrderedDict(dict_["object_or_config"]) == OrderedDict(
-        {"name": "ObjectTest", "a": -1}
+        {"name_": "ObjectTest", "a": -1}
     )
     assert OrderedDict(dict_["object_or_config_bis"]) == OrderedDict(
-        {"name": "ObjectTest", "a": -1}
+        {"name_": "ObjectTest", "a": -1}
     )
     assert dict_["object"] == {"a": -1, "bonus": "abc"}
     assert [OrderedDict(d) for d in dict_["list_configs"]] == [
-        OrderedDict({"name": "ObjectTest", "a": 0}),
-        OrderedDict({"name": "ObjectTest", "a": 1}),
+        OrderedDict({"name_": "ObjectTest", "a": 0}),
+        OrderedDict({"name_": "ObjectTest", "a": 1}),
     ]
     assert {name: OrderedDict(d) for name, d in dict_["dict_configs"].items()} == {
-        "1": OrderedDict({"name": "ObjectTest", "a": 0}),
-        "2": OrderedDict({"name": "ObjectTest", "a": 1}),
+        "1": OrderedDict({"name_": "ObjectTest", "a": 0}),
+        "2": OrderedDict({"name_": "ObjectTest", "a": 1}),
     }
 
     # from json
@@ -358,5 +358,5 @@ def test_to_raw_dict():
 
 def test_config_with_name():
     c = ConfigWithNameTest(a=0)
-    assert c.name == "ConfigWithNameTest"
-    assert c.to_dict()["name"] == "ConfigWithNameTest"
+    assert c.name_ == "ConfigWithNameTest"
+    assert c.to_dict()["name_"] == "ConfigWithNameTest"

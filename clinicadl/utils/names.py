@@ -9,3 +9,10 @@ def camel_to_snake(name: str) -> str:
     # Step 3: insert underscore between letters and digits
     s3 = re.sub(r"([a-zA-Z])([0-9])", r"\1_\2", s2)
     return s3.lower()
+
+
+def snake_to_camel(name: str) -> str:
+    components = name.split("_")
+    # capitalize the first letter of each component
+    camel = "".join(x.capitalize() for x in components)
+    return camel

@@ -26,8 +26,7 @@ from monai.losses import DiceLoss
 
 from clinicadl.callbacks import Callback, ModelCheckpointCallback
 from clinicadl.data.dataloader import DataLoaderConfig
-from clinicadl.data.datasets import CapsDataset
-from clinicadl.data.datatypes import T1Linear
+from clinicadl.data.datasets import TensorDataset
 from clinicadl.infer import SlicesToImageInferer
 from clinicadl.metrics.config import (
     HausdorffDistanceMetricConfig,
@@ -85,6 +84,7 @@ def _buid_model() -> Model:
             ],
             postprocessing_on_cpu=True,
         ),
+        label_key="head",
     )
 
 
@@ -103,13 +103,13 @@ def _build_callbacks(gpu: bool) -> list[Callback]:
     return callbacks
 
 
-def _setup(caps_dir: Path, metadata: Path, maps_path: Path, gpu: bool) -> None:
-    train_dataset = CapsDataset(
-        directory=caps_dir,
-        datatype=T1Linear(use_uncropped_image=False),
-        data=metadata,
-        label="head",
-        masks=["head"],
+def _setup(bids_dir: Path, maps_path: Path, gpu: bool) -> None:
+    train_dataset = TensorDataset(
+        description_json=bids_dir
+        / "derivatives"
+        / "tensors"
+        / "src-T1w_conv-raw_description.json",
+        to_load=["head"],
         transforms=TransformsHandler(
             extraction=Slice(slice_direction=0, squeeze=True),
             sample_transforms=[CropOrPadConfig(target_shape=(1, 16, 16))],
@@ -128,19 +128,17 @@ def _setup(caps_dir: Path, metadata: Path, maps_path: Path, gpu: bool) -> None:
             ],
         ),
     )
-    train_dataset.read_tensor_conversion()
 
-    eval_dataset = CapsDataset(
-        directory=caps_dir,
-        datatype=T1Linear(use_uncropped_image=False),
-        data=metadata,
-        label="head",
-        masks=["head"],
+    eval_dataset = TensorDataset(
+        description_json=bids_dir
+        / "derivatives"
+        / "tensors"
+        / "src-T1w_conv-raw_description.json",
+        to_load=["head"],
         transforms=TransformsHandler(
             sample_transforms=[CropOrPadConfig(target_shape=16)],
         ),
     )
-    eval_dataset.read_tensor_conversion()
 
     trainer = Trainer(
         maps=maps_path,
@@ -148,6 +146,7 @@ def _setup(caps_dir: Path, metadata: Path, maps_path: Path, gpu: bool) -> None:
         metrics={
             "IoU": MeanIoUConfig(
                 pred_key="seg",
+                label_key="head",
             ),
         },
         optimization=OptimizationConfig(
@@ -195,7 +194,9 @@ def _restore_trainer(maps_path: Path, gpu: bool) -> Trainer:
 def _validate(maps_path: Path, gpu: bool) -> None:
     trainer = _restore_trainer(maps_path, gpu)
 
-    trainer.add_metrics(hd=HausdorffDistanceMetricConfig(pred_key="seg"))
+    trainer.add_metrics(
+        hd=HausdorffDistanceMetricConfig(pred_key="seg", label_key="head")
+    )
 
     trainer.validate(
         split_idx=0,
@@ -236,8 +237,7 @@ def _test(
 def _test_trainer(
     tmp_path: Path,
     ref: Path,
-    caps_dir: Path,
-    metadata_tsv: Path,
+    bids_dir: Path,
     split_dir: Path,
     kfold_dir: Path,
     gpu: bool,
@@ -246,9 +246,7 @@ def _test_trainer(
 
     maps_path = tmp_path / "maps"
 
-    train_dataset, eval_dataset, trainer = _setup(
-        caps_dir, metadata_tsv, maps_path, gpu=gpu
-    )
+    train_dataset, eval_dataset, trainer = _setup(bids_dir, maps_path, gpu=gpu)
     _train(kfold_dir, train_dataset, eval_dataset, trainer, gpu=gpu)
     _validate(maps_path, gpu=gpu)
     _test(maps_path, split_dir, eval_dataset, trainer, gpu=gpu)
@@ -256,16 +254,12 @@ def _test_trainer(
     compare_maps_dir(maps_path, ref, except_=["callbacks.json"])
 
 
-def test_train(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir, kfold_dir):
+def test_train(tmp_path, ref_data, bids_dir, split_dir, kfold_dir):
     ref_maps = ref_data / "maps_test_segmentation"
-    _test_trainer(
-        tmp_path, ref_maps, caps_dir, metadata_tsv, split_dir, kfold_dir, gpu=False
-    )
+    _test_trainer(tmp_path, ref_maps, bids_dir, split_dir, kfold_dir, gpu=False)
 
 
 @pytest.mark.gpu
-def test_train_gpu(tmp_path, ref_data, caps_dir, metadata_tsv, split_dir, kfold_dir):
+def test_train_gpu(tmp_path, ref_data, bids_dir, split_dir, kfold_dir):
     ref_maps = ref_data / "maps_test_segmentation_gpu"
-    _test_trainer(
-        tmp_path, ref_maps, caps_dir, metadata_tsv, split_dir, kfold_dir, gpu=True
-    )
+    _test_trainer(tmp_path, ref_maps, bids_dir, split_dir, kfold_dir, gpu=True)

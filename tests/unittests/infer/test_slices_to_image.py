@@ -9,9 +9,9 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.dataloader import Batch
-from clinicadl.data.datatypes import DataType
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
 from clinicadl.infer import SlicesToImageInferer
+from clinicadl.io import BidsFileType
 from clinicadl.transforms.config import ActivationsConfig
 
 from .utils import NnWrapper
@@ -45,7 +45,7 @@ def test_inferer():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=DataType(pattern="abc", key="abc"),
+        file_type=BidsFileType(data_type="abc", suffix="abc"),
     )
     network = nn.Conv2d(2, 4, 3)
 
@@ -55,9 +55,9 @@ def test_inferer():
             network,
         )
     assert str(out.image_path[0]) == "abc.nii.gz"
-    assert isinstance(out["output"], tio.ScalarImage)
+    assert isinstance(out["output"], torch.Tensor)
     assert out["output"].shape == (4, 3, 5, 3)
-    torch.testing.assert_close(out["output"].tensor.sum(0), torch.ones((3, 5, 3)))
+    torch.testing.assert_close(out["output"].sum(0), torch.ones((3, 5, 3)))
     assert out is sample
 
     # batch
@@ -70,20 +70,14 @@ def test_inferer():
             input_dtype=torch.half,
         )
     assert str(out[0].image_path[0]) == "abc.nii.gz"
-    assert isinstance(out[0]["output"], tio.ScalarImage)
+    assert isinstance(out[0]["output"], torch.Tensor)
     assert out[0]["output"].shape == (4, 3, 5, 3)
     torch.testing.assert_close(
-        out[0]["output"].tensor.sum(0), torch.ones((3, 5, 3), dtype=torch.half)
+        out[0]["output"].sum(0), torch.ones((3, 5, 3), dtype=torch.half)
     )
     assert out[0] is sample
 
     # output format and name
-    with pytest.raises(ValidationError):
-        SlicesToImageInferer(
-            slice_direction=0,
-            output_type="tensor",
-        )
-
     network.to(dtype=torch.float)
     inferer = SlicesToImageInferer(
         slice_direction=0,
@@ -124,37 +118,6 @@ def test_inferer():
     assert isinstance(out["output"], tio.LabelMap)
     np.testing.assert_allclose(out["output"].affine, np.diag([1.2, 1.1, 1, 1]))
 
-    # output type inferred
-    inferer = SlicesToImageInferer(
-        slice_direction=0,
-        output_type=None,
-    )
-    sample["label"] = tio.LabelMap(
-        tensor=torch.randint(0, 2, (2, 3, 3, 3)), affine=np.diag([1.2, 1.1, 1, 1])
-    )
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], tio.LabelMap)
-
-    sample["label"] = None
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], tio.ScalarImage)
-
-    sample["label"] = 1
-    with torch.no_grad():
-        out = inferer(
-            sample,
-            network,
-        )
-    assert isinstance(out["output"], tio.ScalarImage)
-
     # kwargs
     network = NnWrapper(network)
     inferer = SlicesToImageInferer(slice_direction=0)
@@ -168,7 +131,7 @@ def test_inferer():
             network,
             offset=1,
         )
-    torch.testing.assert_close(out["output"].tensor + 1, out_["output"].tensor)
+    torch.testing.assert_close(out["output"] + 1, out_["output"])
 
     # errors
     sample = Sample2D(
@@ -176,7 +139,7 @@ def test_inferer():
         participant="abc",
         session="abc",
         image_path="abc.nii.gz",
-        datatype=DataType(pattern="abc", key="abc"),
+        file_type=BidsFileType(data_type="abc", suffix="abc"),
         sample_position=0,
         slice_direction=1,
         squeeze=True,

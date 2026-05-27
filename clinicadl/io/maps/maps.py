@@ -848,7 +848,7 @@ class Maps(Directory):
             {
                 "metrics": {
                     "mse": {
-                        "name": "MSEMetric",
+                        "name_": "MSEMetric",
                         "get_not_nans": False,
                         "pred_key": "output",
                         "label_key": "label",
@@ -929,7 +929,7 @@ class Maps(Directory):
             >>> metrics = {
                     "metrics": {
                         "mse": {
-                            "name": "MSEMetric",
+                            "name_": "MSEMetric",
                             "get_not_nans": False,
                             "pred_key": "output",
                             "label_key": "label",

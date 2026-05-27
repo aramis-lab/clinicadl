@@ -5,15 +5,11 @@ from typing import Any, Iterable, Sequence
 import pandas as pd
 from pydantic import field_validator
 
-from clinicadl.utils.dictionary.words import (
-    DATASET_ID,
-    PARTICIPANT_ID,
-    SESSION_ID,
-)
+from clinicadl.utils.dictionary.words import DATASET_ID
 
 from ..structures import Sample
+from .base import Dataset
 from .collection import CollectionDataset, CollectionDatasetConfig
-from .multi_samples import MultiSamplesDataset
 
 
 class UnpairedDatasetConfig(CollectionDatasetConfig):
@@ -25,14 +21,17 @@ class UnpairedDatasetConfig(CollectionDatasetConfig):
 
     @field_validator("datasets", mode="after")
     @classmethod
-    def _check_n_datasets(
-        cls, datasets: Sequence[MultiSamplesDataset]
-    ) -> Sequence[MultiSamplesDataset]:
-        assert (
-            len(datasets) >= 2
-        ), f"{cls._get_name()} needs at least 2 datasets to join!"
+    def _check_dataset_id_column(
+        cls, datasets: tuple[Dataset, ...]
+    ) -> tuple[Dataset, ...]:
+        return super()._check_dataset_id_column(datasets)
 
-        return datasets
+    @field_validator("datasets", mode="after")
+    @classmethod
+    def _check_at_least_two_datasets(
+        cls, datasets: tuple[Dataset, ...]
+    ) -> tuple[Dataset, ...]:
+        return super()._check_at_least_two_datasets(datasets)
 
     @classmethod
     def _get_class(cls) -> type[UnpairedDataset]:
@@ -206,7 +205,7 @@ class UnpairedDataset(CollectionDataset):
 
     def __init__(
         self,
-        datasets: Iterable[MultiSamplesDataset],
+        datasets: Iterable[Dataset],
         oversample: bool = False,
     ):
         super().__init__(datasets=datasets, oversample=oversample)
@@ -263,13 +262,10 @@ class UnpairedDataset(CollectionDataset):
 
         if all(v is None for v in list_info):
             raise KeyError(
-                f"No column named {column} in any DataFrame of the datasets forming the UnpairedDataset."
+                f"No column named '{column}' in any DataFrame of the datasets forming the UnpairedDataset."
             )
 
         return tuple(list_info)
-
-    def get_participant_session_couples(self) -> set[tuple[str, str]]:
-        return set(zip(self._df[PARTICIPANT_ID], self._df[SESSION_ID]))
 
     def set_epoch(self, epoch: int) -> None:
         """
@@ -325,7 +321,7 @@ class UnpairedDataset(CollectionDataset):
         )
 
     @staticmethod
-    def _merge_dfs(datasets: Sequence[MultiSamplesDataset]) -> pd.DataFrame:
+    def _merge_dfs(datasets: Sequence[Dataset]) -> pd.DataFrame:
         df: pd.DataFrame = pd.concat(
             [dataset.df for dataset in datasets],
             keys=range(len(datasets)),

@@ -1,0 +1,19 @@
+{
+    "Name": "Masks",
+    "BIDSVersion": "1.11.0",
+    "DatasetType": "derivative",
+    "GeneratedBy": [
+        {
+            "Name": "Manual",
+            "Description": "Fake masks generated for testing"
+        }
+    ],
+    "DatasetLinks": {
+        "raw": "file://../../"
+    },
+    "SourceDatasets": [
+        {
+            "URL": "file://../../"
+        }
+    ]
+}

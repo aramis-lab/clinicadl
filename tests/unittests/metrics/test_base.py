@@ -8,13 +8,6 @@ from clinicadl.data.structures import DataPoint
 from clinicadl.metrics import Metric
 from tests.utils import ddp_test, ddp_wrapper
 
-DATAPOINT = DataPoint(
-    image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
-    label=None,
-    participant="abc",
-    session="abc",
-)
-
 GTS = [[0, 1], [1, 0], [1, 0], [1, 0], [0, 1], [1, 0]]
 PREDS = [[0, 1], [1, 0], [0, 1], [1, 0], [1, 0], [0, 1]]
 

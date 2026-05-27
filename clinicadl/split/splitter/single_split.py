@@ -106,7 +106,7 @@ class SingleSplit(Splitter):
             dataset = datasets.CapsDataset(
                 "caps_dir",
                 data=df,
-                datatype=datatypes.PETLinear(
+                file_type=datatypes.PETLinear(
                     tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
                 ),
                 transforms=TransformsHandler(extraction=extraction.Patch()),
@@ -135,7 +135,7 @@ class SingleSplit(Splitter):
             eval_dataset = datasets.CapsDataset(
                 "caps_dir",
                 data=df,
-                datatype=datatypes.PETLinear(
+                file_type=datatypes.PETLinear(
                     tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
                 ),
             )

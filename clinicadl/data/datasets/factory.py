@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, Optional
 
+from clinicadl.io.bids.reader import Bids
 from clinicadl.utils.factories import (
     factory_from_dict,
     factory_from_json,
@@ -8,19 +9,25 @@ from clinicadl.utils.factories import (
 )
 from clinicadl.utils.typing import PathType
 
-from .abstract import Dataset
+from .base import Dataset
 
 # pylint: disable=unused-import
-from .caps import CapsDataset
+from .bids import BidsDataset
 from .concat import ConcatDataset
 from .paired import PairedDataset
+from .tensor import TensorDataset
 from .unpaired import UnpairedDataset
+
+ImplementedDatasetT = (
+    BidsDataset | TensorDataset | ConcatDataset | PairedDataset | UnpairedDataset
+)
 
 
 class ImplementedDataset(str, Enum):
     """Implemented Datasets."""
 
-    CAPS = "CapsDataset"
+    BIDS = "BidsDataset"
+    TENSOR = "TensorDataset"
     CONCAT = "ConcatDataset"
     PAIRED = "PairedDataset"
     UNPAIRED = "UnpairedDataset"
@@ -78,7 +85,7 @@ def get_dataset_from_json_safely(
 ) -> tuple[Optional[Dataset], list[str]]:
     """
     Factory function to get a :py:class:`Dataset` from the
-    file saved with :py:meth:`Dataset.to_json`, which will not raised errors.
+    file saved with :py:meth:`Dataset.to_json` that will not raised errors.
 
     If some fields of the serialized dataset cannot be read, they will be reported, and
     the field of ``default`` will be used to override them (if not ``None``).

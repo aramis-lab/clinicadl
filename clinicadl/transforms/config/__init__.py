@@ -3,6 +3,7 @@ on :torchio:`TorchIO transforms <transforms/transforms.html>`."""
 
 from .base import OneOfConfig, TransformConfig
 from .enum import ImplementedTransform
+from .homemade import *
 from .intensity import *
 from .intensity_augmentations import *
 from .label import *

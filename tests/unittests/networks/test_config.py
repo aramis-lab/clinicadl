@@ -110,4 +110,4 @@ def test_name():
     for name in ImplementedNetwork:
         config = globals()[f"{name.value}Config"]
         c = config(**MANDATORY_ARGS[name])
-        assert c.name == name.value
+        assert c.name_ == name.value

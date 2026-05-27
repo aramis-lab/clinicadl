@@ -15,13 +15,13 @@ BATCH = Batch(
     [
         DataPoint(
             image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
-            label=0,
+            age=0,
             participant="sub-0",
             session="ses-0",
         ),
         DataPoint(
             image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
-            label=1,
+            age=1,
             participant="sub-1",
             session="ses-1",
         ),
@@ -34,7 +34,7 @@ def test_SupervisedModel(tmp_path):
     loss = BCEWithLogitsLossConfig()
     optimizer = AdamConfig()
     inferer = SimpleInferer(output_name="my_output")
-    model = SupervisedModel(network, loss, optimizer, inferer=inferer)
+    model = SupervisedModel(network, loss, optimizer, inferer=inferer, label_key="age")
     optimizers = model.build_optimizers()
 
     # forward step
@@ -89,4 +89,5 @@ def test_SupervisedModel(tmp_path):
     loss = torch.nn.BCEWithLogitsLoss()
     optimizer = AdamConfig()
     model = SupervisedModel(network, loss, optimizer)
+    assert model.label_key == "label"
     optimizers = model.build_optimizers()

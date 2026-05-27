@@ -177,8 +177,8 @@ def equal_if_config_equal(cls: type[C]) -> type[C]:
     """
 
     def _config_equal(self: C, other: object) -> bool:
-        if not isinstance(other, type(self)):
-            return False
+        if type(self) is not type(other):
+            return NotImplemented
         return self.config == other.config
 
     cls.__eq__ = _config_equal

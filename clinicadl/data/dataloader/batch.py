@@ -187,15 +187,15 @@ class Batch(list[T]):
         .. code-block:: python
 
             >>> datapoint
-            ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
-            >>> datapoint["label"]
-            LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; dtype: torch.ShortTensor; memory: 13.6 MiB)
+            ColinDataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
+            >>> datapoint["head"]
+            LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; ...)
             >>> datapoint["participant"]
             'sub-colin'
 
         .. code-block:: python
 
-            >>> batch.get_field("label").shape
+            >>> batch.get_field("head").shape
             torch.Size([2, 1, 181, 217, 181])
             >>> batch.get_field("participant")
             ['sub-colin', 'sub-colin']
@@ -266,14 +266,14 @@ class Batch(list[T]):
         .. code-block:: python
 
             >>> batch[0]
-            ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head'); images: 3)
+            ColinDataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
 
         .. code-block:: python
 
             >>> import torch
             >>> batch.add_field(torch.randn(2, 1, 3, 3, 3), "output")
             >>> batch[0]
-            ColinDataPoint(Keys: ('image', 'label', 'participant', 'session', 'head', 'output'); images: 3)
+            ColinDataPoint(Keys: ('head', 'image', 'participant', 'session', 'output'); images: 2)
             >>> batch[0]["output"].shape
             torch.Size([1, 3, 3, 3])
 

@@ -6,21 +6,20 @@ import numpy as np
 import torch
 import torchio as tio
 
+from clinicadl.data.structures import Sample2D
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import (
-    DATATYPE,
-    IMAGE,
+    FILE_TYPE,
     IMAGE_PATH,
-    LABEL,
     PARTICIPANT,
     SESSION,
+    SQUEEZE,
 )
-from clinicadl.utils.factories import get_args_from
+from clinicadl.utils.numerics import merge_numerics
 from clinicadl.utils.objects import HasConfig
-from clinicadl.utils.variables import SPACING_RTOL
 
 from ..batch import Batch
-from .base import CollateFn
+from .base import ImplementedCollateFn
 
 if TYPE_CHECKING:
     from clinicadl.data.structures import Sample
@@ -41,17 +40,21 @@ class MergeBatchesCollateConfig(ObjectConfig["MergeBatchesCollate"]):
         return MergeBatchesCollate
 
 
-class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
+class MergeBatchesCollate(ImplementedCollateFn, HasConfig[MergeBatchesCollateConfig]):
     """
     To merge several batches into a single batch.
 
     This collating mode is typically to get a single batch from the outputs
-    of a :py:mod:`dataset <clinicadl.data.datasets` returning a sequence of samples.
+    of a :py:mod:`dataset <clinicadl.data.datasets>` returning a sequence of samples.
     ``MergeBatchesCollate`` will try to merge this sequence of samples by merging each field
     of the samples, except those in ``ignore``.
 
-    More precisely, images will be concatenated along the channel dimension and numeric
-    sequences will be stacked along a new dimension.
+    More precisely:
+        - :py:class:`torchio.Images <torchio.Image>` will be concatenated along the channel dimension;
+        - :py:class:`numpy.ndarrays <numpy.ndarray>` and :py:class:`torch.Tensors <torch.Tensors>`
+            will be stacked along a new dimension;
+        - otherwise, the values will be merged in a tuple. If this tuple contains only one unique
+          element (i.e. the value is the same in all the input samples), a single value will be returned.
 
     Parameters
     ----------
@@ -72,27 +75,26 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
         from clinicadl.data.structures.examples import ColinSample
         import numpy as np
 
-        sample_1 = ColinSample(participant="sub-001", extra=np.array([0, 1]), extra_bis=0)
-        sample_1_bis = ColinSample(participant="sub-001", extra=np.array([1, 2]), to_ignore="abc")
-        sample_2 = ColinSample()
-        sample_2_bis = ColinSample()
+        sample = ColinSample(participant="sub-001", label=np.array([0, 1]), age=55, sex="M")
+        sample_bis = ColinSample(participant="sub-001", label=np.array([1, 2]), age=56, to_ignore="abc")
 
-        batch = MergeBatchesCollate(ignore=["to_ignore"])([(sample_1, sample_1_bis), (sample_2, sample_2_bis)])
+        batch = MergeBatchesCollate(ignore=["to_ignore"])([(sample, sample_bis)])
 
     .. code-block::
 
         >>> batch
-        [ColinSample(Keys: ('head', 'extra', 'extra_bis', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 3),
-         ColinSample(Keys: ('head', 'datatype', 'image_path', 'sample_type', 'sample_position', 'image', 'label', 'participant', 'session'); images: 3)]
-        >>> batch[0].participant
+        [ColinSample(Keys: ('head', 'sex', 'age', 'label', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
+        >>> batch[0].participant  # same value in the two samples
         'sub-001'
+        >>> batch[0].age
+        (55, 56)
+        >>> batch[0].sex  # only in one sample, so kept as it is
+        'M'
         >>> batch[0].image.shape  # 2 channels now!
         (2, 181, 217, 181)
-        >>> batch[0].extra  # arrays are stacked
+        >>> batch[0].label  # arrays are stacked
         array([[0, 1],
                [1, 2]])
-        >>> batch[0].extra_bis  # only in one sample, so kept as it is
-        0
 
     See Also
     --------
@@ -109,13 +111,6 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
         """
         Merges a batch of sequences of :py:class:`~clinicadl.data.datasets.Sample`
         in a single :py:class:`~clinicadl.data.dataloader.Batch`.
-
-        More precisely:
-            - :py:class:`torchio.Images <torchio.Image>` will be concatenated along the channel dimension;
-            - :py:class:`numpy.ndarrays <numpy.ndarray>` and :py:class:`torch.Tensors <torch.Tensors>`
-              will be stacked along a new dimension;
-            - ``MergeBatchesCollate`` doesn't support the merger of other types of data. So, if a field of the :py:class:`Samples <~clinicadl.data.datasets.Sample>` contains
-              other type of data, the merger will be successful only if a single value is passed (see examples).
 
         Parameters
         ----------
@@ -134,26 +129,19 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
             args = {}
             type_ = self._check_types(samples_collection)
 
-            args[IMAGE] = self._merge_field(
-                [sample.image for sample in samples_collection], IMAGE
-            )
             args[PARTICIPANT] = self._get_unique_field(
                 [sample.participant for sample in samples_collection], PARTICIPANT
             )
             args[SESSION] = self._get_unique_field(
                 [sample.session for sample in samples_collection], SESSION
             )
-            if labels := [
-                sample.label
-                for sample in samples_collection
-                if sample.label is not None
-            ]:
-                args[LABEL] = self._merge_field(
-                    labels,
-                    LABEL,
+            if isinstance(samples_collection[0], Sample2D):
+                args[SQUEEZE] = self._get_unique_field(
+                    [sample[SQUEEZE] for sample in samples_collection],
+                    SQUEEZE,
                 )
-            args[DATATYPE] = tuple(
-                d for sample in samples_collection for d in sample.datatype
+            args[FILE_TYPE] = tuple(
+                d for sample in samples_collection for d in sample.file_type
             )
             args[IMAGE_PATH] = tuple(
                 p for sample in samples_collection for p in sample.image_path
@@ -166,11 +154,7 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
                     continue
                 args[field] = self._merge_field(
                     [sample[field] for sample in samples_collection if field in sample],
-                    field,
                 )
-
-            if "check_consistency" in get_args_from(type_.__init__):
-                args["check_consistency"] = False
 
             mergers.append(type_(**args))
 
@@ -207,54 +191,17 @@ class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
         """
         return set(field for sample in samples_collection for field in sample.keys())
 
-    def _merge_field(self, values: Sequence[Any], field_name: str) -> Any:
+    def _merge_field(self, values: Sequence[Any]) -> Any:
         """
         Tries to merge any field.
         """
-        if all(isinstance(value, tio.Image) for value in values):
-            return self._merge_tio(values)
-        elif all(isinstance(value, np.ndarray) for value in values):
-            return np.stack(values)
-        elif all(isinstance(value, torch.Tensor) for value in values):
-            return torch.stack(values)
+        values = merge_numerics(values, merge_lists=False)
 
-        try:
-            values = set(values)
-        except TypeError:
-            pass
+        if isinstance(values, (torch.Tensor, np.ndarray, tio.Image)):
+            return values
+
+        first = values[0]
+        if all(value == first for value in values):
+            return first
         else:
-            values = list(values)
-
-        if len(values) == 1:
-            return values.pop()
-        else:
-            raise TypeError(
-                f"MergeBatchesCollate can only merge torchio.Image, numpy.ndarray, or torch.Tensor. For '{field_name}', got: {values}"
-            )
-
-    def _merge_tio(self, values: Sequence[tio.Image]) -> tio.Image:
-        """
-        Merges :py:class:`torchio.Images`.
-        """
-        self._check_spacing(values)
-
-        tensor = torch.cat([image.tensor for image in values], dim=0)
-        affine = values[0].affine
-        if all(isinstance(value, tio.LabelMap) for value in values):
-            image = tio.LabelMap(tensor=tensor, affine=affine)
-        else:
-            image = tio.ScalarImage(tensor=tensor, affine=affine)
-
-        return image
-
-    @staticmethod
-    def _check_spacing(images: Sequence[tio.Image]) -> None:
-        """
-        Check if spacing is consistent before concatenating.
-        """
-        ref_spacing = images[0].spacing
-        for image in images[1:]:
-            if not np.isclose(ref_spacing, image.spacing, rtol=SPACING_RTOL).all():
-                raise RuntimeError(
-                    "Trying to concatenate images with different voxel spacing!"
-                )
+            return tuple(values)
