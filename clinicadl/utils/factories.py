@@ -80,7 +80,7 @@ class FactoryFromJson(Protocol[R]):
 
 class SafeFactoryFromJson(Protocol[R]):
     def __call__(
-        self, data: Path, default: Optional[R]
+        self, data: Path, default: Optional[R] = None
     ) -> tuple[Optional[R], list[str]]:
         ...
 
@@ -142,7 +142,8 @@ def _recursively_read_json(
     data: Path,
     default: Optional[ClinicaDLConfig],
     problematic_fields: list[str],
-) -> Optional[tuple[R, list[str]]]:
+    **kwargs: Any,
+) -> tuple[Optional[tuple[R]], list[str]]:
     try:
         return factory(
             data, **{arg: getattr(default, arg) for arg in problematic_fields}

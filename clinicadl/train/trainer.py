@@ -23,7 +23,8 @@ from typing_extensions import Self
 
 from clinicadl.callbacks import CallbacksHandler
 from clinicadl.callbacks.base import Event
-from clinicadl.data.dataloader import Batch, DataLoaderConfig
+from clinicadl.data.dataloader.batch import Batch
+from clinicadl.data.dataloader.loader import DataLoader, DataLoaderConfig
 from clinicadl.data.datasets.factory import get_dataset_from_json
 from clinicadl.io.maps.maps import Maps
 from clinicadl.metrics import MetricsHandler
@@ -598,10 +599,6 @@ class Trainer:
             If you pass a dataloader, it will be your validation data, otherwise, ``Trainer```
             will attempt to load the validation data from the :term:`MAPS`.
 
-            .. important::
-                ``dataloader`` must be an output of :py:meth:`clinicadl.data.DataLoaderConfig.get_object`.
-                Not just any PyTorch's dataloader is accepted.
-
         model_checkpoint: Optional[str], default=None
             The name of the model checkpoint to validate. If ``None``, all the checkpoints will
             be evaluated. The name of the checkpoint must follow one of these formats:
@@ -756,10 +753,6 @@ class Trainer:
             The dataloader containing the test data on which the model will be evaluated.
             If you pass a dataloader, it will be your test data; otherwise, ``Trainer```
             will attempt to load the test data from the :term:`MAPS`.
-
-            .. important::
-                ``dataloader`` must be an output of :py:meth:`clinicadl.data.DataLoaderConfig.get_object`.
-                Not just any PyTorch's dataloader is accepted.
 
         computational : ComputationalConfig, default=ComputationalConfig()
             Computational configuration, passed via a :py:class:`clinicadl.train.ComputationalConfig`.
@@ -1145,8 +1138,8 @@ class Trainer:
         split = Split(
             index=split_idx, train_dataset=train_dataset, val_dataset=val_dataset
         )
-        split.build_train_loader(train_dataloader_config)
-        split.build_val_loader(val_dataloader_config)
+        split.build_train_loader(**train_dataloader_config.to_raw_dict())
+        split.build_val_loader(**val_dataloader_config.to_raw_dict())
 
         return split
 

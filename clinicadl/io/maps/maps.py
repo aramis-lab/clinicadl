@@ -147,7 +147,7 @@ class Maps(Directory):
                             :icon: file
                             :color: light
 
-                            Details on the train :py:class:`dataloader <clinicadl.data.dataloader.DataLoaderConfig>`
+                            Details on the train :py:class:`dataloader <clinicadl.data.dataloader.DataLoader>`
                             for split ``0``.
 
                         .. dropdown:: dataset.json → ``maps.training.data.train.splits[0].dataset_json``
@@ -178,7 +178,7 @@ class Maps(Directory):
                             :icon: file
                             :color: light
 
-                            Details on the validation :py:class:`dataloader <clinicadl.data.dataloader.DataLoaderConfig>`
+                            Details on the validation :py:class:`dataloader <clinicadl.data.dataloader.DataLoader>`
                             for split ``0``.
 
                         .. dropdown:: dataset.json → ``maps.training.data.validation.splits[0].dataset_json``
@@ -456,7 +456,7 @@ class Maps(Directory):
                     :icon: file
                     :color: light
 
-                    Details on the :py:class:`dataset <clinicadl.data.dataloader.DataLoaderConfig>` used
+                    Details on the :py:class:`dataset <clinicadl.data.dataloader.DataLoader>` used
                     for the group ``"X"``.
 
                 .. dropdown:: dataset.json → ``maps.test.groups["X"].dataset_json``

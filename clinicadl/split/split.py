@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from pydantic import Field, NonNegativeInt, field_validator
 from typing_extensions import Self
 
-from clinicadl.data.dataloader import DataLoader, DataLoaderConfig
+from clinicadl.data.dataloader.loader import DataLoader, DataLoaderConfig
 from clinicadl.data.datasets import Dataset
 from clinicadl.data.datasets.factory import get_dataset_from_dict
 from clinicadl.utils.config import ObjectConfig
@@ -116,11 +116,7 @@ class Split(HasConfig[SplitConfig]):
             raise RuntimeError(
                 "The split has no training dataloader defined. Please run 'build_train_loader'"
             )
-        return self.config.train_loader_config.get_object(
-            dataset=self.train_dataset,
-            dp_degree=self._dp_degree,
-            rank=self._rank,
-        )
+        return self.config.train_loader_config.get_object(dataset=self.train_dataset)
 
     @property
     def val_loader(self) -> DataLoader:
@@ -129,41 +125,10 @@ class Split(HasConfig[SplitConfig]):
             raise RuntimeError(
                 "The split has no validation dataloader defined. Please run 'build_val_loader'"
             )
-        return self.config.val_loader_config.get_object(
-            dataset=self.val_dataset,
-            dp_degree=self._dp_degree,
-            rank=self._rank,
-        )
-
-    def parallelism(self, dp_degree: int, rank: int) -> None:
-        """
-        Instantiates data parallelism. Training and validation sets will then be distributed
-        across devices.
-
-        Parameters
-        ----------
-        dp_degree : int
-           The degree of data parallelism.
-        rank : int
-            Process id within the data parallelism communicator.
-
-        Raises
-        ------
-        ValueError
-            If ``rank`` is greater than ``dp_degree``.
-        """
-        if rank >= dp_degree:
-            raise ValueError(
-                "'rank' must be strictly smaller than 'dp_degree'. Got "
-                f"dp_degree={dp_degree} and rank={rank}"
-            )
-
-        self._dp_degree = dp_degree
-        self._rank = rank
+        return self.config.val_loader_config.get_object(dataset=self.val_dataset)
 
     def build_train_loader(
         self,
-        dataloader_config: Optional[DataLoaderConfig] = None,
         *,
         batch_size: int = 1,
         sampling_weights: Optional[str] = None,
@@ -233,24 +198,20 @@ class Split(HasConfig[SplitConfig]):
             If ``sampling_weights`` is not ``None`` and the associated column cannot
             be converted to float values.
         """
-        if dataloader_config:
-            self.config.train_loader_config = dataloader_config
-        else:
-            self.config.train_loader_config = DataLoaderConfig(
-                batch_size=batch_size,
-                sampling_weights=sampling_weights,
-                shuffle=shuffle,
-                num_workers=num_workers,
-                drop_last=drop_last,
-                prefetch_factor=prefetch_factor,
-                pin_memory=pin_memory,
-                persistent_workers=persistent_workers,
-                collate_fn=collate_fn,
-            )
+        self.config.train_loader_config = DataLoaderConfig(
+            batch_size=batch_size,
+            sampling_weights=sampling_weights,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            drop_last=drop_last,
+            prefetch_factor=prefetch_factor,
+            pin_memory=pin_memory,
+            persistent_workers=persistent_workers,
+            collate_fn=collate_fn,
+        )
 
     def build_val_loader(
         self,
-        dataloader_config: Optional[DataLoaderConfig] = None,
         *,
         batch_size: int = 1,
         sampling_weights: Optional[str] = None,
@@ -320,20 +281,17 @@ class Split(HasConfig[SplitConfig]):
             If ``sampling_weights`` is not ``None`` and the associated column cannot
             be converted to float values.
         """
-        if dataloader_config:
-            self.config.val_loader_config = dataloader_config
-        else:
-            self.config.val_loader_config = DataLoaderConfig(
-                batch_size=batch_size,
-                sampling_weights=sampling_weights,
-                shuffle=shuffle,
-                num_workers=num_workers,
-                drop_last=drop_last,
-                prefetch_factor=prefetch_factor,
-                pin_memory=pin_memory,
-                persistent_workers=persistent_workers,
-                collate_fn=collate_fn,
-            )
+        self.config.val_loader_config = DataLoaderConfig(
+            batch_size=batch_size,
+            sampling_weights=sampling_weights,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            drop_last=drop_last,
+            prefetch_factor=prefetch_factor,
+            pin_memory=pin_memory,
+            persistent_workers=persistent_workers,
+            collate_fn=collate_fn,
+        )
 
     @classmethod
     def _from_config(cls, config: SplitConfig) -> Self:
@@ -341,8 +299,8 @@ class Split(HasConfig[SplitConfig]):
             **config.to_raw_dict(exclude=["train_loader_config", "val_loader_config"])
         )
         if config.train_loader_config:
-            split.build_train_loader(config.train_loader_config)
+            split.config.train_loader_config = config.train_loader_config
         if config.val_loader_config:
-            split.build_val_loader(config.val_loader_config)
+            split.config.val_loader_config = config.val_loader_config
 
         return split

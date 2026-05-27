@@ -10,11 +10,9 @@
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/object_config_class.rst
-
-    DataLoaderConfig
-
     :template: autosummary/class.rst
+
+    DataLoader
     Batch
 
 Collate functions

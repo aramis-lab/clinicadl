@@ -25,7 +25,7 @@ import pytest
 from monai.losses import DiceLoss
 
 from clinicadl.callbacks import Callback, ModelCheckpointCallback
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader import DataLoader
 from clinicadl.data.datasets import TensorDataset
 from clinicadl.infer import SlicesToImageInferer
 from clinicadl.metrics.config import (
@@ -210,7 +210,7 @@ def _test(
     trainer = _restore_trainer(maps_path, gpu)
 
     test_dataset = eval_dataset.subset(split_dir / "test_baseline.tsv")
-    test_loader = DataLoaderConfig().get_object(test_dataset)
+    test_loader = DataLoader(test_dataset)
 
     trainer.test(
         model_checkpoint="split-0_final",

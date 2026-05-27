@@ -35,7 +35,7 @@ from clinicadl.callbacks import (
     LRSchedulerCallback,
     ModelCheckpointCallback,
 )
-from clinicadl.data.dataloader import DataLoaderConfig
+from clinicadl.data.dataloader import DataLoader
 from clinicadl.data.datasets import BidsDataset
 from clinicadl.io import BidsFileType
 from clinicadl.losses.config import BCEWithLogitsLossConfig
@@ -227,7 +227,7 @@ def _validate(kfold_dir: Path, dataset: Dataset, trainer: Trainer) -> None:
 
 def _test(split_dir: Path, dataset: Dataset, trainer: Trainer, gpu: bool):
     test_dataset = dataset.subset(split_dir / "test_baseline.tsv")
-    test_loader = DataLoaderConfig().get_object(test_dataset)
+    test_loader = DataLoader(test_dataset)
 
     trainer.test(
         model_checkpoint="split-1_best-f1",

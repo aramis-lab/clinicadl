@@ -139,7 +139,7 @@ class ConfigSaverCallback(Callback):
                 group_dir.dataset_json,
             )
         if not group_dir.dataloader_json.exists():
-            dataloader.config.to_json(group_dir.dataloader_json)
+            dataloader.to_json(group_dir.dataloader_json)
         if not group_dir.data_tsv.exists():
             df = _clean_df(dataloader.dataset.df)
             maps.save_file(

@@ -17,13 +17,12 @@ from clinicadl.callbacks.implemented.checks import (
 from clinicadl.data.dataloader import (
     Batch,
     CollateFn,
-    DataLoaderConfig,
     MergeBatchesCollate,
 )
+from clinicadl.data.dataloader.loader import DataLoaderConfig
 from clinicadl.data.datasets import BidsDataset, TensorDataset, UnpairedDataset
-from clinicadl.io import BidsFileType, Maps, PetLinear
+from clinicadl.io import BidsFileType, Maps
 from clinicadl.transforms import TransformsHandler
-from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.exceptions import DataFrameError, DataLeakageError
 from clinicadl.utils.json import write_json
 from tests.unittests.split.test_split import BIDS_DIR
@@ -59,8 +58,20 @@ SPLIT = Split()
 SPLIT.index = 0
 SPLIT.train_dataset = CAPS.subset([("sub-000", "ses-M000")])
 SPLIT.val_dataset = CAPS.subset([("sub-010", "ses-M003")])
-SPLIT.config.train_loader_config = DataLoaderConfig()
-SPLIT.config.val_loader_config = DataLoaderConfig()
+SPLIT.config.train_loader_config = (
+    DL_CONFIG := DataLoaderConfig(
+        batch_size=1,
+        drop_last=False,
+        pin_memory=True,
+        shuffle=True,
+        collate_fn=None,
+        sampling_weights=None,
+        num_workers=0,
+        prefetch_factor=None,
+        persistent_workers=False,
+    )
+)
+SPLIT.config.val_loader_config = DL_CONFIG
 VAL_DATALOADER = Mock()
 VAL_DATALOADER.dataset = CAPS.subset([("sub-010", "ses-M003")])
 DATALOADER = Mock()
@@ -302,7 +313,11 @@ class TestDataConsistency:
         data=BIDS_PATH / "participantsXsessions.tsv",
         columns=["age"],
     )
-    BAD_DATALOADER = DataLoaderConfig(batch_size=2, collate_fn=CustomCollate())
+    BAD_DATALOADER = DataLoaderConfig(
+        batch_size=2,
+        collate_fn=CustomCollate(),
+        **DL_CONFIG.to_raw_dict(exclude=["batch_size", "collate_fn"]),
+    )
     SPLIT = deepcopy(SPLIT)
     STATE = Mock()
 
@@ -328,7 +343,7 @@ class TestDataConsistency:
         self.SPLIT.config.train_loader_config.to_json(
             MAPS.training.data.train.splits[1].dataloader_json, overwrite=True
         )
-
+        print(self.BAD_DATALOADER)
         with caplog.at_level("WARNING"):
             self.checker.on_train_start(split=self.SPLIT, model=MODEL, maps=MAPS)
         assert caplog.records[0].message == (
@@ -830,8 +845,10 @@ def test_compare_datasets(dataset1, dataset2, field_name, error_msg):
     ],
 )
 def test_compare_dataloaders(name, arg, error_msg):
-    ref = DataLoaderConfig()
-    dataloader = DataLoaderConfig(**{name: arg})
+    ref = DL_CONFIG.model_copy()
+    dataloader = DataLoaderConfig(
+        **{name: arg}, **DL_CONFIG.to_raw_dict(exclude=[name])
+    )
     assert _compare_dataloaders(dataloader, ref, except_fields=[name]) is None
     assert re.match(
         error_msg, _compare_dataloaders(dataloader, ref, except_fields=[]), re.DOTALL

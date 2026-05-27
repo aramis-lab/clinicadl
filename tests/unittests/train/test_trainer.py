@@ -12,7 +12,7 @@ import torch.nn as nn
 import torchio as tio
 
 from clinicadl.callbacks import Callback, CallbacksHandler
-from clinicadl.data.dataloader import Batch, CollateFn, DataLoaderConfig
+from clinicadl.data.dataloader import Batch, CollateFn, DataLoader
 from clinicadl.data.datasets import BidsDataset
 from clinicadl.io import Maps, T1Linear
 from clinicadl.metrics import MetricsHandler
@@ -429,10 +429,10 @@ class TestSideMethods:
         bids.to_json(
             maps.training.data.validation.splits[0].dataset_json, overwrite=True
         )
-        DataLoaderConfig(batch_size=3).to_json(
+        DataLoader(bids, batch_size=3).to_json(
             maps.training.data.train.splits[0].dataloader_json, overwrite=True
         )
-        DataLoaderConfig(batch_size=2).to_json(
+        DataLoader(bids, batch_size=2).to_json(
             maps.training.data.validation.splits[0].dataloader_json, overwrite=True
         )
 
@@ -449,7 +449,7 @@ class TestSideMethods:
         assert split.val_loader.batch_size == 2
 
         # errors
-        DataLoaderConfig(collate_fn=CustomCollate()).to_json(
+        DataLoader(bids, collate_fn=CustomCollate()).to_json(
             maps.training.data.validation.splits[0].dataloader_json, overwrite=True
         )
         with pytest.raises(
@@ -529,14 +529,14 @@ class TestSideMethods:
             ),
         )
         caps.to_json(maps.training.data.train.splits[0].dataset_json, overwrite=True)
-        DataLoaderConfig(batch_size=2).to_json(
+        DataLoader(caps, batch_size=2).to_json(
             maps.training.data.train.splits[0].dataloader_json, overwrite=True
         )
         dataloader = trainer._get_dataloader(maps.training.data.train.splits[0])
         assert isinstance(dataloader.dataset, BidsDataset)
         assert dataloader.batch_size == 2
 
-        DataLoaderConfig(collate_fn=CustomCollate()).to_json(
+        DataLoader(caps, collate_fn=CustomCollate()).to_json(
             maps.training.data.train.splits[0].dataloader_json, overwrite=True
         )
         with pytest.raises(

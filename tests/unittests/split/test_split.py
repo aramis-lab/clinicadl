@@ -8,7 +8,7 @@ import torch
 import torchio as tio
 from torch.utils.data import DistributedSampler, WeightedRandomSampler
 
-from clinicadl.data.dataloader import DataLoaderConfig, MergeBatchesCollate
+from clinicadl.data.dataloader import MergeBatchesCollate
 from clinicadl.data.datasets import Dataset
 from clinicadl.data.datasets.bids import BidsDataset
 from clinicadl.data.structures import Sample
@@ -66,29 +66,21 @@ def test_build_loaders():
         val_dataset=VAL_DATASET,
     )
 
-    config = DataLoaderConfig(batch_size=2)
-
     with pytest.raises(
         RuntimeError,
         match="The split has no training dataloader defined. Please run 'build_train_loader'",
     ):
         split.train_loader
-    split.build_train_loader(config, batch_size=1)
-    assert split.train_loader.batch_size == 2
-    assert split.train_loader.sampler.num_replicas == 1
 
     with pytest.raises(
         RuntimeError,
         match="The split has no validation dataloader defined. Please run 'build_val_loader'",
     ):
         split.val_loader
-    split.build_val_loader(config)
-    assert split.val_loader.batch_size == 2
-    assert split.val_loader.sampler.num_replicas == 1
 
-    split.parallelism(dp_degree=2, rank=0)
-    assert split.train_loader.sampler.num_replicas == 2
-    assert split.val_loader.sampler.num_replicas == 2
+    # split.parallelism(dp_degree=2, rank=0)
+    # assert split.train_loader.sampler.num_replicas == 2
+    # assert split.val_loader.sampler.num_replicas == 2
 
     split.build_train_loader(
         batch_size=2,
@@ -115,12 +107,11 @@ def test_build_loaders():
     assert not split.val_loader.pin_memory
     assert split.val_loader.drop_last
     assert isinstance(split.val_loader.sampler, DistributedSampler)
-    assert split.val_loader.sampler.num_replicas == 2
     assert split.val_loader.collate_fn is collate
 
-    # error
-    with pytest.raises(ValueError):
-        split.parallelism(dp_degree=2, rank=2)
+    # # error
+    # with pytest.raises(ValueError):
+    #     split.parallelism(dp_degree=2, rank=2)
 
 
 @pytest.mark.skipif(
