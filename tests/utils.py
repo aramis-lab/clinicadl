@@ -177,7 +177,7 @@ def _normalize_str(text: str) -> str:
     for line in text.splitlines():
         line = re.sub(THROUGHPUT_PATTERN, r"\1<throughput>", line)
         line = re.sub(DATE_PATTERN, r"\1<date>", line)
-        line = re.sub(OBJECT_ADRESS_PATTERN, "hash", line)
+        line = re.sub(OBJECT_ADRESS_PATTERN, "<hash>", line)
         line = re.sub(
             NUMBER_PATTERN,
             lambda m: _replace_with_same_length(m, "x"),

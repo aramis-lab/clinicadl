@@ -151,3 +151,15 @@ def test_get_collate_from_dict(collate, tmp_path):
     if collate is MergeBatchesCollate:
         c = MergeBatchesCollate(ignore=["abc"])
         assert get_collate_from_dict(c.to_dict()).config.ignore == ["abc"]
+
+
+@pytest.mark.parametrize(
+    "collate,param",
+    [
+        (ToBatchCollate, {}),
+        (ToBatchesCollate, {}),
+        (MergeBatchesCollate, {"ignore": ["abc"]}),
+    ],
+)
+def test_eq(collate, param):
+    assert collate(**param) == collate(**param)

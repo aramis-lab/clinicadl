@@ -6,7 +6,7 @@ from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
 from ..batch import Batch
-from .base import CollateFn
+from .base import ImplementedCollateFn
 
 if TYPE_CHECKING:
     from clinicadl.data.structures import Sample
@@ -24,7 +24,7 @@ class ToBatchesCollateConfig(ObjectConfig["ToBatchesCollate"]):
         return ToBatchesCollate
 
 
-class ToBatchesCollate(HasConfig[ToBatchesCollateConfig], CollateFn):
+class ToBatchesCollate(ImplementedCollateFn, HasConfig[ToBatchesCollateConfig]):
     """
     To return a sequence of batches.
 

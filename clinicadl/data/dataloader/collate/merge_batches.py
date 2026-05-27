@@ -19,7 +19,7 @@ from clinicadl.utils.numerics import merge_numerics
 from clinicadl.utils.objects import HasConfig
 
 from ..batch import Batch
-from .base import CollateFn
+from .base import ImplementedCollateFn
 
 if TYPE_CHECKING:
     from clinicadl.data.structures import Sample
@@ -40,7 +40,7 @@ class MergeBatchesCollateConfig(ObjectConfig["MergeBatchesCollate"]):
         return MergeBatchesCollate
 
 
-class MergeBatchesCollate(HasConfig[MergeBatchesCollateConfig], CollateFn):
+class MergeBatchesCollate(ImplementedCollateFn, HasConfig[MergeBatchesCollateConfig]):
     """
     To merge several batches into a single batch.
 

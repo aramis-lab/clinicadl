@@ -6,7 +6,7 @@ from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
 
 from ..batch import Batch
-from .base import CollateFn
+from .base import ImplementedCollateFn
 
 if TYPE_CHECKING:
     from clinicadl.data.structures import Sample
@@ -24,7 +24,7 @@ class ToBatchCollateConfig(ObjectConfig["ToBatchCollate"]):
         return ToBatchCollate
 
 
-class ToBatchCollate(HasConfig[ToBatchCollateConfig], CollateFn):
+class ToBatchCollate(ImplementedCollateFn, HasConfig[ToBatchCollateConfig]):
     """
     To simply collate a sequence of samples in a single batch.
 
