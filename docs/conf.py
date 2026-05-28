@@ -33,7 +33,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.viewcode",
     "sphinxcontrib.bibtex",
-    "sphinx_gallery.gen_gallery",
+    # "sphinx_gallery.gen_gallery",
     "sphinx_design",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
@@ -54,7 +54,7 @@ autodoc_typehints = "description"
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torchio": ("https://torchio.readthedocs.io", None),
-    "monai": ("https://docs.monai.io/en/stable", None),
+    "monai": ("https://monai.readthedocs.io/en/stable/", None),
     "torch": ("https://pytorch.org/docs/stable", None),
     "pandas": ("https://pandas.pydata.org/docs", None),
     "pydantic": ("https://docs.pydantic.dev/latest/", None),
@@ -95,14 +95,14 @@ extlinks = {
 language = "en"
 # pygments_style = "friendly"
 
-sphinx_gallery_conf = {
-    "examples_dirs": "../examples",  # path to scripts
-    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
-    "backreferences_dir": Path("generated"),  # where mini-galleries are stored
-    "doc_module": (
-        "clinicadl",
-    ),  # generate mini-galleries for all the objects in clinicadl
-}
+# sphinx_gallery_conf = {
+#     "examples_dirs": "../examples",  # path to scripts
+#     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+#     "backreferences_dir": Path("generated"),  # where mini-galleries are stored
+#     "doc_module": (
+#         "clinicadl",
+#     ),  # generate mini-galleries for all the objects in clinicadl
+# }
 
 # sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]

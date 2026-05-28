@@ -6,5 +6,3 @@
 .. autoclass:: {{ objname }}
    :members:
    :exclude-members: model_config
-
-.. include:: {{module}}.{{objname}}.examples
