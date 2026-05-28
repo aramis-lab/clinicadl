@@ -109,7 +109,7 @@ class Bids(HasConfig[BidsConfig]):
     Parameters
     ----------
     directory : str | Path
-        The path to the :term:`BIDS-like` directory.
+        The path to the BIDS-like directory.
 
     Examples
     --------

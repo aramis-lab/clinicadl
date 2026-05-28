@@ -28,9 +28,8 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
 
     See Also
     --------
-    :py:class:`~clinicadl.data.datasets.BidsLikeDataset`
-        A ``Dataset`` with the base logic of all datasets implemented natively in ``ClinicaDL``.
-        May be easier to override than the plain ``Dataset``.
+    :py:class:`~clinicadl.data.datasets.BidsDataset`
+        A ``Dataset`` to read data organized in a :term:`BIDS`.
     """
 
     _df: pd.DataFrame
@@ -41,7 +40,7 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         A DataFrame containing metadata on the images present in the dataset.
 
         Each image must have its associated line in the DataFrame, which must contain at least the columns
-        "participant_id" and "session_id", with respectively the id (a string) of the participant and the session.
+        "participant_id" and "session_id", with the ids (strings) of the participant and the session.
 
         Example
         -------
@@ -61,7 +60,7 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         """
         Sets the dataset to evaluation mode.
 
-        It disables data augmentation in the transformation pipeline.
+        For example, disabling data augmentation in the transformation pipeline.
         """
 
     @abstractmethod
@@ -69,8 +68,19 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         """
         Sets the dataset to training mode.
 
-        It enables data augmentation in the transformation pipeline.
+        For example, enabling data augmentation in the transformation pipeline.
         """
+
+    def get_participant_session_couples(self) -> set[tuple[str, str]]:
+        """
+        Retrieves all (participant, session) pairs in the dataset.
+
+        Returns
+        -------
+        set[tuple[str, str]]
+            The set of (participant, session).
+        """
+        return set(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
 
     def subset(
         self, particpants_sessions: Union[DataFrameType, Iterable[tuple[str, str]]]
@@ -83,7 +93,7 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         data : Union[DataFrameType, Sequence[tuple[str, str]]]
             Can be either:
 
-            - a **sequence of (participant, session)**;
+            - a sequence of (participant, session);
             - a :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of (participant, session)
               pairs to extract. This list must be passed via two columns named ``"participant_id"``
               and ``"session_id"`` (other columns won't be considered).
@@ -118,7 +128,7 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
     @abstractmethod
     def get_sample_info(self, idx: int, column: str) -> Any:
         """
-        Retrieves information on a given sample. The information will
+        Retrieves information on a given sample in the metadata DataFrame. The information will
         correspond to the information on the image the sample was extracted
         from.
 
@@ -127,25 +137,13 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         idx : int
             The index of the sample in the dataset.
         column : str
-            The information to look for, i.e. a column of the DataFrame containing
-            the metadata.
+            The information to look for, i.e. a column of :py:attr:`df`.
 
         Returns
         -------
         Any
-            The information (e.g. the age, the sex, etc.)
+            The value of the column for this sample.
         """
-
-    def get_participant_session_couples(self) -> set[tuple[str, str]]:
-        """
-        Retrieves all (participant, session) pairs in the dataset.
-
-        Returns
-        -------
-        set[tuple[str, str]]
-            The set of (participant, session).
-        """
-        return set(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
 
     @abstractmethod
     def __len__(self) -> int:
@@ -173,8 +171,8 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         -------
         Union[Sample, Sequence[Sample], dict[Any, Sample]]
             A structured output containing the processed data and metadata, as a
-            :py:class:`~clinicadl.data.datasets.output.Sample`, or a sequence or dictionary
-            of such outputs.
+            :py:class:`~clinicadl.data.structures.Sample`, or a sequence or dictionary
+            of samples.
         """
 
     def _check_idx(self, idx: int) -> None:

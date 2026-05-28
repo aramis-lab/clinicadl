@@ -157,10 +157,10 @@ def skip_overload_members(app, what, name, obj, skip, options):
     return None
 
 
-def skip_private_members(app, what, name, obj, skip, options):
-    if name.startswith("_"):
-        return True
-    return skip
+# def skip_private_members(app, what, name, obj, skip, options):
+#     if name.startswith("_"):
+#         return True
+#     return skip
 
 
 # -- Simplify type hints for Pydantic models --------------------------------
@@ -270,5 +270,5 @@ def rewrite_class_signature(
 
 def setup(app):
     app.connect("autodoc-skip-member", skip_overload_members)
-    app.connect("autodoc-skip-member", skip_private_members)
+    # app.connect("autodoc-skip-member", skip_private_members)
     app.connect("autodoc-process-signature", rewrite_class_signature)

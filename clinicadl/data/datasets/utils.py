@@ -386,7 +386,7 @@ class CheckableDataset(Dataset):
 
         Parameters
         ----------
-        spatial_checks : Optional[Iterable[str  |  SpatialCheck]], default=[ "affine", "shape", "global_spacing"]
+        spatial_checks : Optional[Iterable[str  |  SpatialCheck]], default=("affine", "shape", "global_spacing")
             Spatial checks to perform on the images:
 
             - ``"spacing"``: checks **intra-sample voxel spacing consistency**, i.e. that all the images and masks

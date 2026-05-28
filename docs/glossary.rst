@@ -9,6 +9,9 @@ Glossary
     **BIDS**
         Brain Imaging Data Structure (`source <https://aramislab.paris.inria.fr/clinica/docs/public/latest/BIDS/>`__)
 
+    **BIDS derivative**
+        `<https://bids-specification.readthedocs.io/en/stable/derivatives/introduction.html>`__
+
     **CAPS**
         ClinicA Processed Data Structure (`source <https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/>`__)
 

@@ -10,10 +10,11 @@
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/class.rst
+    :template: autosummary/dataset.rst
 
     Dataset
     BidsDataset
+    TensorDataset
     ConcatDataset
     PairedDataset
     UnpairedDataset
