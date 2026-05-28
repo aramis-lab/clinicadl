@@ -76,6 +76,6 @@ neuroimaging data.
    :caption: development
    :hidden:
 
-   contributing
    whats_new
    GitHub <https://github.com/aramis-lab/clinicadl>
+..    contributing
