@@ -98,7 +98,7 @@ def _reorder(
 
 class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
     """
-    To handle all the :py:class:`~clinicadl.callbacks.Callback` passed to a :py:class:`~clinicadl.train.Trainer`.
+    To handle all the :py:class:`Callbacks <clinicadl.callbacks.Callback>` passed to a :py:class:`~clinicadl.train.Trainer`.
 
     Note that some callbacks are instantiated by default: :py:class:`~clinicadl.callbacks.LoggerCallback`,
     :py:class:`~clinicadl.callbacks.MonitorCallback`, :py:class:`~clinicadl.callbacks.ModelCheckpointCallback`
@@ -107,10 +107,10 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
     Parameters
     ----------
     callbacks : Sequence[Callback]
-        A sequence of :py:class:`~clinicadl.callbacks.Callback`.
+        A sequence of :py:class:`Callbacks <clinicadl.callbacks.Callback>`.
 
         .. important:: Order matters!
-            The order of your callbacks in ``callbacks`` may determine the order in which callbacks will be called.
+            The order of the callbacks may determine the order in which callbacks will be called.
             Note, however, that some callbacks have an immutable rank in this order. For example, no matter where you place
             :py:class:`~clinicadl.callbacks.LoggerCallback`, it will be called first to initialize logging and last to
             shutdown logging.
@@ -131,14 +131,14 @@ class CallbacksHandler(HasConfig[CallbacksHandlerConfig]):
 
     @property
     def callbacks(self) -> list[Callback]:
-        """The public callbacks currently in the CallbacksHandler."""
+        """The public callbacks currently in the ``CallbacksHandler``."""
         return self._with_defaults
 
     @property
     def all_callbacks(self) -> list[Callback]:
         """
-        The callbacks currently in the CallbacksHandler, including private callbacks
-        (non-customizable callbacks that are always used by ``ClinicaDL``).
+        The callbacks currently in the ``CallbacksHandler``, including private callbacks
+        (mandatory callbacks that are always used by ``ClinicaDL``).
         """
         return self._all
 

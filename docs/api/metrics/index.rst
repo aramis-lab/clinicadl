@@ -13,6 +13,7 @@
    :template: autosummary/class.rst
 
    MetricsHandler
+   Metric
 
 .. autosummary::
    :nosignatures:

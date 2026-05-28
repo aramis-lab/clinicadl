@@ -62,10 +62,10 @@ class Event(str, Enum):
 
 class Callback:
     """
-    To define arbitrary actions to perform at certain points of the training, evaluation and prediction workflows.
+    To define arbitrary actions to perform at certain points of the training and evaluation workflows.
 
-    Each method of this class starting by ``on_...`` is associated to an event of
-    the training, evaluation or prediction phase of the :py:class:`~clinicadl.train.Trainer`.
+    Each method of this class starting by ``"on_..."`` is associated to an event of
+    the training or evaluation phase performed by the :py:class:`~clinicadl.train.Trainer`.
     By overriding these methods, the user can define action to perform when the event happens.
 
     .. important::
@@ -102,7 +102,7 @@ class Callback:
                 - :py:meth:`on_resume`
                 - :py:meth:`on_train_end`
                 - :py:meth:`on_train_start`
-                - :py:meth:`on_validate_end`
+                - :py:meth:`on_validation_end`
                 - :py:meth:`on_validation_start`
 
                 .. code-block::
@@ -118,7 +118,7 @@ class Callback:
                     FOR EACH epoch IN training_epochs DO
                         CALL on_epoch_start
 
-                        FOR EACH batch in training_dataloader DO
+                        FOR EACH batch IN training_dataloader DO
                             CALL on_batch_start
 
                             MOVE batch TO appropriate_device
@@ -141,7 +141,7 @@ class Callback:
                         IF epoch_idx MOD evaluation_interval == 0 THEN
                             CALL on_validation_start
 
-                            FOR EACH batch in validation_dataloader DO
+                            FOR EACH batch IN validation_dataloader DO
                                 CALL on_batch_start
 
                                 MOVE batch TO appropriate_device
@@ -152,10 +152,10 @@ class Callback:
                                 DO metrics_computation
                                 CALL on_metrics_computation_end
 
-                            CALL on_batch_end
-                        END FOR
+                                CALL on_batch_end
+                            END FOR
 
-                        CALL on_validation_end
+                            CALL on_validation_end
                         END IF
 
                         CALL on_epoch_end
@@ -179,7 +179,7 @@ class Callback:
 
                     CALL on_validate_start
 
-                    FOR EACH batch in validation_dataloader DO
+                    FOR EACH batch IN validation_dataloader DO
                         CALL on_batch_start
 
                         MOVE batch TO appropriate_device
@@ -211,7 +211,7 @@ class Callback:
 
                     CALL on_test_start
 
-                    FOR EACH batch in validation_dataloader DO
+                    FOR EACH batch IN validation_dataloader DO
                         CALL on_batch_start
 
                         MOVE batch TO appropriate_device
@@ -226,36 +226,6 @@ class Callback:
                     END FOR
 
                     CALL on_test_end
-
-            .. tab-item:: :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`
-
-                - :py:meth:`on_batch_end`
-                - :py:meth:`on_batch_start`
-                - :py:meth:`on_evaluation_step_start`
-                - :py:meth:`on_metrics_computation_end`
-                - :py:meth:`on_metrics_computation_start`
-                - :py:meth:`on_predict_end`
-                - :py:meth:`on_predict_start`
-
-                .. code-block::
-                    :caption: pseudocode
-                    :emphasize-lines: 1, 4, 8, 10, 12, 15
-
-                    CALL on_predict_start
-
-                    FOR EACH batch in validation_dataloader DO
-                        CALL on_batch_start
-
-                        MOVE batch TO appropriate_device
-
-                        CALL on_prediction_step_start
-                        DO prediction_step
-                        CALL on_prediction_step_end
-
-                        CALL on_batch_end
-                    END FOR
-
-                    CALL on_predict_end
 
     """
 
@@ -276,7 +246,7 @@ class Callback:
         Parameters
         ----------
         state_dict : Mapping[str, Any]
-            The desired state of the ``Callback`, as returned by :py:meth:`state_dict`.
+            The desired state of the ``Callback``, as returned by :py:meth:`state_dict`.
         """
 
     def on_backward_step_end(
@@ -326,9 +296,9 @@ class Callback:
             The current state of the ``Trainer``.
         loss : LossType
             The loss output by :py:meth:`Model.forward_step <clinicadl.models.Model.forward_step>` and
-            input by :py:meth:`Model.forward_step <clinicadl.models.Model.forward_step>`.
+            input by :py:meth:`Model.backward_step <clinicadl.models.Model.backward_step>`.
         grad_scaler : torch.amp.GradScaler
-            The :py:class:`torch.amp.GradScaler` used to scale gradients.
+            The :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
 
     def on_batch_end(
@@ -339,7 +309,7 @@ class Callback:
         state: TrainerState,
     ) -> None:
         """
-        Called every time the processing of a batch is complete in training, validation, test or prediction phases.
+        Called every time the processing of a batch is completed during training, validation, or test phase.
 
         .. note::
             This event may be redundant with other events: e.g., in evaluation phases, it is equivalent
@@ -364,7 +334,7 @@ class Callback:
         batch: BatchType,
     ) -> None:
         """
-        Called every time a new batch has been loaded in training, validation, test or prediction phases.
+        Called every time a new batch has been loaded in training, validation or test phase.
 
         .. note::
             This event may be redundant with other events: e.g., in evaluation phases, it is equivalent
@@ -379,7 +349,7 @@ class Callback:
         state : TrainerState
             The current state of the ``Trainer``.
         batch : BatchType
-            The batch input to :py:meth:`Model.forward_step <clinicadl.models.Model.forward_step>`.
+            The input batch.
         """
 
     def on_evaluation_step_start(
@@ -449,7 +419,7 @@ class Callback:
         Parameters
         ----------
         model : Model
-            The model associated to the :py:class:`~clinicadl.train.Trainer`.
+            The model associated to the ``Trainer``.
         maps : Maps
             The :term:`MAPS` associated to the ``Trainer``.
         state : TrainerState
@@ -496,7 +466,7 @@ class Callback:
             The :term:`MAPS` associated to the ``Trainer``.
         state : TrainerState
             The current state of the ``Trainer``.
-        detailed_metrics_df : pd.DataFrame
+        detailed_metrics_df : pandas.DataFrame
             The evaluation metrics on the batch.
         """
 
@@ -511,7 +481,7 @@ class Callback:
     ) -> None:
         """
         Called every time :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>` has been called
-        be called and metrics will now be computed.
+        and metrics will now be computed.
 
         .. note::
             This event is equivalent to ``on_evaluation_step_end``.
@@ -525,8 +495,9 @@ class Callback:
         state : TrainerState
             The current state of the ``Trainer``.
         output : Batch
-            The :py:class:`clinicadl.data.dataloader.Batch` output by :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>`.
-        metrics :``be computed`.
+            The batch output by :py:meth:`Model.evaluation_step <clinicadl.models.Model.evaluation_step>`.
+        metrics : MetricsHandler
+            The metrics to compute.
         """
 
     def on_optimization_step_end(
@@ -539,7 +510,7 @@ class Callback:
         grad_scaler: torch.amp.GradScaler,
     ) -> None:
         """
-        Called every time :py:meth:`Model.backward_step <clinicadl.models.Model.optimization_step>` has just
+        Called every time :py:meth:`Model.optimization_step <clinicadl.models.Model.optimization_step>` has just
         been called in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
 
         Parameters
@@ -551,10 +522,10 @@ class Callback:
         state : TrainerState
             The current state of the ``Trainer``.
         optimizers : dict[str, torch.optim.Optimizer]
-            The current :py:class`Optimizer <torch.optim.Optimizer>`, returned as they are returned
-            by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`
+            The current :py:class:`torch.optim.Optimizer`, as returned by
+            by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`.
         grad_scaler : torch.amp.GradScaler
-            The :py:class:`torch.amp.GradScaler` used to scale gradients.
+            The :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
 
     def on_optimization_step_start(
@@ -567,7 +538,7 @@ class Callback:
         grad_scaler: torch.amp.GradScaler,
     ) -> None:
         """
-        Called every time :py:meth:`Model.backward_step <clinicadl.models.Model.optimization_step>` will
+        Called every time :py:meth:`Model.optimization_step <clinicadl.models.Model.optimization_step>` will
         be called in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
 
         Parameters
@@ -579,10 +550,10 @@ class Callback:
         state : TrainerState
             The current state of the ``Trainer``.
         optimizers : dict[str, torch.optim.Optimizer]
-            The current :py:class`Optimizer <torch.optim.Optimizer>`, returned as they are returned
-            by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`
+            The current :py:class:`torch.optim.Optimizer`, as returned by
+            by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`.
         grad_scaler : torch.amp.GradScaler
-            The :py:class:`torch.amp.GradScaler` used to scale gradients.
+            The :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
 
     def on_predict_end(
@@ -702,7 +673,7 @@ class Callback:
         computational: ComputationalConfig,
     ) -> None:
         """
-        Called when :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` is resuming a training.
+        Called once when :py:meth:`Trainer.train <clinicadl.train.Trainer.train>` is resuming a training.
 
         More precisely, this method will be called just before loading the checkpoints.
 
@@ -717,12 +688,14 @@ class Callback:
         split : Split
             The :py:class:`clinicadl.split.Split` on which training is performed.
         optimizers : dict[str, torch.optim.Optimizer]
-            The :py:class`Optimizer <torch.optim.Optimizer>` returned
+            The current :py:class:`torch.optim.Optimizer`, as returned by
             by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`.
         grad_scaler : torch.amp.GradScaler
-            The :py:class:`torch.amp.GradScaler` used to scale gradients.
+            The :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         optimization : OptimizationConfig
-            The optimization specifications of the training phase.``validation metrics`.
+            The optimization specifications of the training phase.
+        metrics : MetricsHandler
+            The validation metrics to compute.
         callbacks : CallbacksHandler
             The callbacks passed to the ``Trainer``.
         computational : ComputationalConfig
@@ -778,7 +751,9 @@ class Callback:
         dataloader : DataLoader
             The dataloader on which the test is performed.
         model_checkpoint : str
-            The model checkpoint currently being tested.``test metrics`.
+            The model checkpoint currently being tested.
+        metrics : MetricsHandler
+            The test metrics to compute.
         group_name : str
             The name given to the test data.
         callbacks : CallbacksHandler
@@ -838,12 +813,14 @@ class Callback:
         split : Split
             The :py:class:`clinicadl.split.Split` on which training is performed.
         optimizers : dict[str, torch.optim.Optimizer]
-            The :py:class`Optimizer <torch.optim.Optimizer>` returned
+            The current :py:class:`torch.optim.Optimizer`, as returned by
             by :py:meth:`Model.backward_step <clinicadl.models.Model.build_optimizers>`.
         grad_scaler : torch.amp.GradScaler
-            The :py:class:`torch.amp.GradScaler` used to scale gradients.
+            The :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         optimization : OptimizationConfig
-            The optimization specifications of the training phase.``validation metrics`.
+            The optimization specifications of the training phase.
+        metrics : MetricsHandler
+            The validation metrics to compute.
         callbacks : CallbacksHandler
             The callbacks passed to the ``Trainer``.
         computational : ComputationalConfig
@@ -901,7 +878,9 @@ class Callback:
         maps : Maps
             The :term:`MAPS` associated to the ``Trainer``.
         state : TrainerState
-            The current state of the ``Trainer``.``validation metrics`.
+            The current state of the ``Trainer``.
+        metrics : MetricsHandler
+            The validation metrics computed.
         """
 
     def on_validate_start(
@@ -937,7 +916,9 @@ class Callback:
         dataloader : DataLoader
             The dataloader on which validation is performed.
         model_checkpoint : str
-            The model checkpoint currently being validated.``validation metrics`.
+            The model checkpoint currently being validated.
+        metrics : MetricsHandler
+            The validation metrics to compute.
         callbacks : CallbacksHandler
             The callbacks passed to the ``Trainer``.
         computational : ComputationalConfig
@@ -965,7 +946,9 @@ class Callback:
         maps : Maps
             The :term:`MAPS` associated to the ``Trainer``.
         state : TrainerState
-            The current state of the ``Trainer``.``validation metrics`.
+            The current state of the ``Trainer``.
+        metrics : MetricsHandler
+            The validation metrics computed.
         """
 
     def on_validation_start(
@@ -991,5 +974,7 @@ class Callback:
         state : TrainerState
             The current state of the ``Trainer``.
         dataloader : DataLoader
-            The dataloader on which validation is performed.``validation metrics`.
+            The dataloader on which validation is performed.
+        metrics : MetricsHandler
+            The validation metrics to compute.
         """

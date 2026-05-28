@@ -62,17 +62,17 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
         These files will be saved in your :term:`MAPS` directory in ``<maps>/exec/run-<program_executed>_<datetime>``.
         In this folder, you will find:
 
-            - ``debug.log`` (if ``debug=True``): log messages with level "DEBUG". Useful to debug your execution when it failed.
-            - ``info.log``: log messages with level "INFO". General information about the execution flow.
-            - ``error.log``: log messages with level "ERROR". To have information on potential errors that stopped the execution.
+        - ``debug.log`` (if ``debug=True``): log messages with level "DEBUG". Useful to debug your execution when it failed.
+        - ``info.log``: log messages with level "INFO". General information about the execution flow.
+        - ``error.log``: log messages with level "ERROR". To have information on potential errors that stopped the execution.
 
-        Note that a file named ``warning.log``, which contain log messages with level "WARNING", will also be saved,
+        Note that a file named ``warning.log``, which contains log messages with level "WARNING", will also be saved,
         but its location depends on the program being executed. For example, if you execute :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`,
         it will be saved under ``<maps>/training/split-<split_idx>/warning.log``. This is because this file may contain
-        methodological warnings that should be stayed close to the results.
+        methodological warnings that should be mentioned close to the results.
 
     debug: bool, default=True
-        Whether to print/save the log messages with level "DEBUG". These messages are verbose, but helpful for debugging.
+        Whether to print/save the log messages with level "DEBUG". These messages are verbose but helpful for debugging.
 
     progress_bar : bool, default=True
         Whether to display a progress bar every time an iteration on a dataloader is performed.

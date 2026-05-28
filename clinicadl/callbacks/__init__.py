@@ -1,5 +1,5 @@
 """
-For monitoring and customizing the training, evaluation, and prediction phases.
+For monitoring and customizing the training and evaluation phases.
 """
 
 from .base import Callback

@@ -68,25 +68,27 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
     """
     To monitor some computation statistics during a training phase.
 
-    The statistics will then be summarized in ``<maps>/training/split-<split_idx>/summary.log``,
+    The statistics will then be summarized in the :term:`MAPS` in ``<maps>/training/split-<split_idx>/summary.log``,
     but the details can be found in ``<maps>/training/split-<split_idx>/logs/computational.tsv``.
 
     The following statistics are recorded for different phases of the training (GPU statistics
-    will be reported only if GPUs are used during the phase):
-    - Time (s): total duration of this phase;
-    - GPU Time (s): duration of GPU computation during this phase;
-    - GPU Max Memory (MB): maximum GPU memory occupied during this phase.
+    will be reported only if GPUs are used):
 
-    You may also find:
-    - Throughput (images/s): the number of image processed per second, which is equal to the batch size divided by the iteration
+    - **Time (s)**: total duration of the phase;
+    - **GPU Time (s)**: duration of GPU computation during the phase;
+    - **GPU Max Memory (MB)**: maximum GPU memory occupied during the phase.
+
+    You will also find global statistics:
+
+    - **Throughput (images/s)**: the number of image processed per second, which is equal to the batch size divided by the iteration
       time;
-    - GPU throughput: the number of image processed per second by the GPU, which is equal to the batch size divided by the iteration
+    - **GPU throughput (images/s)**: the number of image processed per second by the GPU, which is equal to the batch size divided by the iteration
       GPU time.
 
     Parameters
     ----------
     num_measurements : int, default=100
-        The number of measurement to perform for averaging the statistics.
+        The number of measurements to perform for averaging the statistics.
 
         .. note::
             - Some statistics, like the total training time, are obviously not measured ``num_measurements`` times.
@@ -138,7 +140,7 @@ class MonitorCallback(Callback, HasConfig[MonitorCallbackConfig]):
     @property
     def n_iterations(self) -> int:
         """
-        Number of batches passed to the neural network.
+        Number of batches already passed to the neural network.
         """
         return self._n_iterations
 

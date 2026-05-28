@@ -51,7 +51,7 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
     Parameters
     ----------
     metric : Optional[str], default=None
-        The metric to monitor.
+        A metric to monitor.
 
     epochs : Optional[Sequence[int]], default=None
         The list of epochs after which the neural network weights should be saved.
@@ -69,13 +69,20 @@ class ModelCheckpointCallback(Callback, HasConfig[ModelCheckpointCallbackConfig]
         from clinicadl.callbacks import ModelCheckpointCallback
         from clinicadl.train import Trainer
         from clinicadl.metrics.config import MSEMetricConfig, LossMetricConfig
-        ...
 
         trainer = Trainer(
             metrics={"loss": LossMetricConfig(), "mse": MSEMetricConfig()},
-            callbacks=[ModelCheckpointCallback(metric="mse", epochs=range(1, 100, step=10), save_last=True)],
+            callbacks=[
+                ModelCheckpointCallback(
+                    metric="mse", epochs=range(1, 100, step=10), save_last=True
+                )
+            ],
             ...
         )
+
+    See Also
+    --------
+    clinicadl.callbacks.TrainingCheckpointCallback
     """
 
     _config_type = ModelCheckpointCallbackConfig

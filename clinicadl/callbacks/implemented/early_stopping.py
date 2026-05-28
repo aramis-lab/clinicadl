@@ -228,7 +228,7 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
     """
     Early Stopping callback monitoring one or multiple metrics.
 
-    This callback stops training if monitored metric(s) do not improve for a
+    This callback stops training if the monitored metric(s) do not improve for a
     specified number of evaluation phases (which does not necessarily happen every epoch, see :py:class:`clinicadl.optim.OptimizationConfig`).
 
     It can monitor multiple metrics simultaneously and allows separate configuration for each metric.
@@ -237,13 +237,13 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
 
     .. note::
         Passing multiple metrics here means that training should stop when **all** the
-        monitored metrics have met their stopping criteria. If you want to stop the
+        monitored metrics have met their stopping criterion. If you want to stop the
         training when **any** of them has met its stopping criterion, you can instantiate
         multiple ``EarlyStoppingCallbacks`` that will monitor each metric independently.
 
     .. note::
         No need to specify if the monitored quantity should be minimized or maximized,
-        it is specified in :py:attr:`clinicadl.metric.Metric.optimum`.
+        it is specified in :py:attr:`clinicadl.metrics.Metric.optimum`.
 
     Parameters
     ----------
