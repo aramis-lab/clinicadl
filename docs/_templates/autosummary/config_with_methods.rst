@@ -4,6 +4,7 @@
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
-   :members: create, read, remove, open_file, save_file, delete_split
+   :members:
+   :exclude-members: model_config
 
 .. include:: {{module}}.{{objname}}.examples

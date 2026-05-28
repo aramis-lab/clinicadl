@@ -63,7 +63,7 @@ class ColinSample(Sample):
     """
 
     def __init__(self, **kwargs):
-        from clinicadl.io import BidsFileType
+        from clinicadl.io.bids import BidsFileType
 
         tio_colin = Colin27()
         # pylint: disable=no-member
@@ -106,7 +106,7 @@ class ColinSample2D(Sample2D):
     """
 
     def __init__(self, **kwargs):
-        from clinicadl.io import BidsFileType
+        from clinicadl.io.bids import BidsFileType
 
         tio_colin = Colin27()
         tio_colin = tio.CropOrPad(target_shape=(181, 1, 181))(tio_colin)

@@ -242,7 +242,7 @@ class TestBidsReader:
 
     def test_get_participants_sessions(self):
         bids = Bids(DATA_DIR / "bids")
-        assert bids.get_participants_sessions(
+        assert bids.get_participants_sessions_with(
             BidsFileType(
                 data_type="pet",
                 suffix="pet",

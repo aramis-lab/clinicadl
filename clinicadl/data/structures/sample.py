@@ -10,7 +10,7 @@ from pydantic import NonNegativeInt, field_validator, model_validator
 from torch import Tensor
 from typing_extensions import Self
 
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.utils.enum import SliceDirection
 from clinicadl.utils.typing import PathType
 

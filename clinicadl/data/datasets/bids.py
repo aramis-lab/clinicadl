@@ -6,7 +6,7 @@ from typing import Any, Iterable, Optional, TypeAlias
 import torchio as tio
 from pydantic import Field, field_validator
 
-from clinicadl.io import Bids, BidsFileType
+from clinicadl.io.bids import Bids, BidsFileType
 from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig
@@ -103,45 +103,31 @@ class BidsDataset(
     BidsNiftiDataset, HasConfig[BidsDatasetConfig], BidsTypeDatasetWithConfig
 ):
     """
-    Careful with n_samples in columns.
+    A :py:class:`~clinicadl.data.datasets.Dataset` working with neuroimaging data organized in :term:`BIDS` (or derivative) format.
 
-    ``CapsDataset`` is a custom :py:class:`PyTorch Dataset <torch.utils.data.Dataset>` class for working with
-    neuroimaging data in :term:`CAPS` format.
+    The user specifies the path to the :term:`BIDS` directory via ``bids``, type of data to work on via ``file_type``
+    and the (participant, session) pairs to work on via ``data``.
 
-    The user specifies the type of data to work on via ``preprocessing``, the (participant, session)
-    pairs to work on via ``data``, and the labels (scalars or segmentation masks) associated to the images
-    via ``label``.
+    ``BidsDataset`` loads the image and the potential masks (see ``masks`` argument) and puts them in a :py:class:`~clinicadl.data.structures.DataPoint`.
+    The user can add additional data in this ``DataPoint`` via the arguments ``columns``.
 
-    ``CapsDataset`` loads the image and the potential label, and put them in a :py:class:`~clinicadl.data.structures.DataPoint`.
-    The user can add additional data in this ``DataPoint`` via the arguments ``columns``, to add the values
-    of columns of the DataFrame ``data``, and ``masks``, to add masks associated to the image.
+    Transformations (e.g., preprocessing or data augmentation) can be applied to the loaded data (see ``transforms`` argument).
 
-    TransformsHandler to apply to the images are passed via the argument ``transforms``.
-
-    .. note::
-        More precisely, transforms are applied to the ``DataPoint``. If you need any additional data to compute
-        a transform (e.g. a mask for normalization), you can add them to the ``DataPoint`` via the arguments
-        ``columns`` or ``masks``.
-
-    With ``CapsDataset``, it is possible to work on the whole images, or on patches or slices extracted from the
+    With ``BidsDataset``, it is possible to work on the whole images, or on patches or slices extracted from the
     images. This is also specified via the ``transforms`` argument (e.g. ``transforms=TransformsHandler(extraction=Slice())``).
 
     .. note::
-        - Depending on the type of data you are working on (images, patches, or slices), you may not find the same information
-          in the output ``DataPoint``. See :py:mod:`clinicadl.transforms.extraction` for more details.
-        - The size of the ``CapsDataset`` depends on the type of data you are working on. For example, if you have 10 images with
+        - The size of the ``BidsDataset`` depends on the type of data you are working on. For example, if you have 10 images with
           100 slices each, and you want to work on slices, the length of your dataset will be :math:`10\\times100=1,000`.
         - To avoid confusion, we will use the term "sample" to refer to the actual element of the images we are working on
           (patch, slice or the whole image).
 
-    Finally, a ``CapsDataset`` works with tensors, so, before manipulating data, NIfTI files must be converted to PyTorch
-    ``.pt`` format with :py:func:`~CapsDataset.to_tensors`. If conversion was already performed,
-    :py:func:`~CapsDataset.read_tensor_conversion` must be called.
-
+    Finally, you may be interested in :py:meth:`to_tensors` that will convert your NIfTI images to tensors (saved in ``.pt`` files). Since opening
+    a ``.pt`` file is much faster than opening a NIfTI file, this may speed up data loading.
 
     Parameters
     ----------
-    caps_directory : PathType
+    bids : PathType | Bids
         Path to the :term:`CAPS` directory containing the neuroimaging data. A string or a :pathlib.Path:`pathlib.Path <>` object.
     preprocessing : Preprocessing, default=T1Linear()
         Description of the preprocessing steps applied to the data. See :py:mod:`clinicadl.data.datatypes` to know supported preprocessings.
@@ -155,6 +141,8 @@ class BidsDataset(
         pairs in the directory that have the wanted ``preprocessing``. The name of the created TSV depends on the preprocessing,
         but it will always start with "overview" (e.g. ``overview_t1-linear_cropped.tsv``,
         ``overview_pet-linear_18FFDG_pons2.tsv``).
+
+        Careful with n_samples in columns.
 
         .. warning::
             Beware that your ``.tsv`` files inside ``caps_directory`` may be overwritten. A good practice is not

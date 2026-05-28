@@ -11,7 +11,6 @@
    :nosignatures:
    :template: module.rst
 
-   datatypes
    datasets
    dataloader
    structures
@@ -20,7 +19,6 @@
 .. toctree::
    :hidden:
    
-   datatypes
    datasets
    dataloader
    structures

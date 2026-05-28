@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import field_validator
 
-from clinicadl.io import Bids
+from clinicadl.io.bids import Bids
 from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.objects import HasConfig

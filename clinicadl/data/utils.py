@@ -1,5 +1,5 @@
 """
-Other functions to perform various utility task.
+Other functions to perform various utility task on data.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Optional
 import numpy as np
 import pandas as pd
 
-from clinicadl.io import Bids
+from clinicadl.io.bids import Bids
 from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.exceptions import add_note
@@ -42,7 +42,7 @@ def remove_tensors(json_path: PathType) -> None:
 
         from clinicadl.data.datasets import BidsDataset
         from clinicadl.data.utils import remove_tensors
-        from clinicadl.io import BIDSFileType
+        from clinicadl.io.bids import BidsFileType
         from pathlib import Path
 
         dataset = BidsDataset(

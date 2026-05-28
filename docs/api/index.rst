@@ -35,7 +35,7 @@ functions may not be enough to give full guidelines on their use.
    
    callbacks
    data/index
-   io
+   io/index
    losses
    metrics/index
    models

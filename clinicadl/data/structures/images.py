@@ -6,7 +6,7 @@ import torch
 import torchio as tio
 from typing_extensions import Self
 
-from clinicadl.io import Bids, BidsFileType
+from clinicadl.io.bids import Bids, BidsFileType
 from clinicadl.utils.bids import BidsFile
 from clinicadl.utils.dictionary.suffixes import JSON
 from clinicadl.utils.json import read_json, write_json
