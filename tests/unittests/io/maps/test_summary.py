@@ -2,7 +2,7 @@ import re
 import time
 from datetime import datetime, timedelta
 
-from clinicadl.io.maps import MapsSummary
+from clinicadl.io.maps.summary import MapsSummary
 from clinicadl.io.maps.training import TrainingSummary
 
 

@@ -14,7 +14,7 @@ from clinicadl.data.datasets import (
     UnpairedDataset,
 )
 from clinicadl.data.structures import Sample
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.split.splitter import KFold
 from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
 

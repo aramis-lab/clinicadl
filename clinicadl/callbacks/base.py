@@ -8,7 +8,7 @@ import torch
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import Batch, BatchType, DataLoader
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.losses.types import LossType
     from clinicadl.metrics import MetricsHandler
     from clinicadl.models import Model

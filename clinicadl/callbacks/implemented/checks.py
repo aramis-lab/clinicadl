@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from clinicadl.data.dataloader import DataLoader
     from clinicadl.data.datasets import Dataset
     from clinicadl.data.datasets.factory import ImplementedDatasetT
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.losses.types import LossType
     from clinicadl.models import Model
     from clinicadl.split import Split

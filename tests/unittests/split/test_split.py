@@ -12,7 +12,7 @@ from clinicadl.data.dataloader import MergeBatchesCollate
 from clinicadl.data.datasets import Dataset
 from clinicadl.data.datasets.bids import BidsDataset
 from clinicadl.data.structures import Sample
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.split.split import Split
 
 SPLIT_DIR = Path(__file__).parents[1] / "resources" / "split"

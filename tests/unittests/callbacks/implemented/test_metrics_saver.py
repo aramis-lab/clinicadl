@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 from clinicadl.callbacks.implemented import MetricsSaverCallback
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 
 MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
 MAPS = Maps(MAPS_PATH)

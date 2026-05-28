@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 
 from clinicadl.callbacks.implemented import TrainingLossCallback
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 from clinicadl.train import TrainerState
 
 MODEL = Mock()

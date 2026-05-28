@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 from clinicadl.train import Trainer
 
 from .test_regression import TwoHeadsRegressionModel, build_callbacks

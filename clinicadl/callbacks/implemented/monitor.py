@@ -11,7 +11,6 @@ from pydantic import NonNegativeInt
 
 from clinicadl.io.maps.training import TrainingSummary
 from clinicadl.utils.config import ObjectConfig
-from clinicadl.utils.dictionary.utils import SEP
 from clinicadl.utils.dictionary.words import GPU
 from clinicadl.utils.enum import TrainerCall, TrainerStage
 from clinicadl.utils.objects import HasConfig
@@ -19,7 +18,7 @@ from clinicadl.utils.objects import HasConfig
 from ..base import Callback
 
 if TYPE_CHECKING:
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.optim import OptimizationConfig
     from clinicadl.split import Split
     from clinicadl.train import ComputationalConfig, TrainerState

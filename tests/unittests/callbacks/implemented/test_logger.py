@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import torch
 
 from clinicadl.callbacks import LoggerCallback
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 from clinicadl.train import ComputationalConfig, TrainerState
 
 MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"

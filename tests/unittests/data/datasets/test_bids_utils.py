@@ -18,7 +18,7 @@ from clinicadl.data.structures import (
     IndividualMask,
     Tensor,
 )
-from clinicadl.io import Bids, BidsFileType, TensorType
+from clinicadl.io.bids import Bids, BidsFileType, TensorType
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import CropConfig
 from clinicadl.transforms.extraction import Slice

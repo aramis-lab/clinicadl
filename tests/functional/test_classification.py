@@ -37,7 +37,7 @@ from clinicadl.callbacks import (
 )
 from clinicadl.data.dataloader import DataLoader
 from clinicadl.data.datasets import BidsDataset
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.losses.config import BCEWithLogitsLossConfig
 from clinicadl.metrics.config import ConfusionMatrixMetricConfig, LossMetricConfig
 from clinicadl.models import SupervisedModel

@@ -21,7 +21,8 @@ from clinicadl.data.dataloader import (
 )
 from clinicadl.data.dataloader.loader import DataLoaderConfig
 from clinicadl.data.datasets import BidsDataset, TensorDataset, UnpairedDataset
-from clinicadl.io import BidsFileType, Maps
+from clinicadl.io.bids import BidsFileType
+from clinicadl.io.maps import Maps
 from clinicadl.transforms import TransformsHandler
 from clinicadl.utils.exceptions import DataFrameError, DataLeakageError
 from clinicadl.utils.json import write_json

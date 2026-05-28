@@ -18,7 +18,7 @@ from clinicadl.utils.objects import HasConfig
 from ..base import Callback
 
 if TYPE_CHECKING:
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.io.maps.training.splits.tmp import EpochTmpDir
     from clinicadl.metrics import MetricsHandler
     from clinicadl.models import Model

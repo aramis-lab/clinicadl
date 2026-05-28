@@ -8,7 +8,7 @@ import torchio as tio
 from pydantic import ValidationError
 
 from clinicadl.data.structures import Sample, Sample2D
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 
 AFFINE = np.diag([1.3, 1.2, 1.1, 1])
 IMAGE = tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=AFFINE)

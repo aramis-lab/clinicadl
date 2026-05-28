@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pandas as pd
 
 from clinicadl.callbacks.implemented import ConfigSaverCallback
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 
 MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
 

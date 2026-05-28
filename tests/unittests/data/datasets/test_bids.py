@@ -9,7 +9,7 @@ import torchio as tio
 
 from clinicadl.data.datasets import BidsDataset
 from clinicadl.data.structures import Sample2D
-from clinicadl.io import Bids, BidsFileType
+from clinicadl.io.bids import Bids, BidsFileType
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.extraction import Slice
 from clinicadl.utils.exceptions import CannotReadJsonFieldError

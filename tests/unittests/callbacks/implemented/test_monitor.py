@@ -8,7 +8,7 @@ import pytest
 
 from clinicadl.callbacks import MonitorCallback
 from clinicadl.callbacks.implemented.monitor import _PhaseMonitor
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 
 OPTIMIZATION = Mock()
 COMPUTATIONAL = Mock()

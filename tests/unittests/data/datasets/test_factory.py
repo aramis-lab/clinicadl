@@ -10,7 +10,7 @@ from clinicadl.data.datasets.factory import (
     get_dataset_from_json,
     get_dataset_from_json_safely,
 )
-from clinicadl.io import T1Linear
+from clinicadl.io.bids import T1Linear
 from clinicadl.transforms import TransformsHandler
 
 CAPS_DIR = Path(__file__).parents[2] / "resources" / "bids" / "derivatives" / "caps"

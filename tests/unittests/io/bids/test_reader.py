@@ -4,9 +4,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.io import Bids, BidsFileType, T1Linear
+from clinicadl.io.bids import Bids, BidsFileType, T1Linear
 from clinicadl.io.bids.reader import DatasetDescription
-from clinicadl.utils.json import read_json, write_json
+from clinicadl.utils.json import read_json
 
 DATA_DIR = Path(__file__).parents[2] / "resources"
 

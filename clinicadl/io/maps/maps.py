@@ -720,7 +720,7 @@ class Maps(Directory):
 
     .. code-block:: python
 
-        from clinicadl.io import Maps
+        from clinicadl.io.maps import Maps
 
         maps = Maps("maps_dir")
         maps.read()
@@ -837,7 +837,7 @@ class Maps(Directory):
 
         .. code-block:: python
 
-            from clinicadl.io import Maps
+            from clinicadl.io.maps import Maps
 
             maps = Maps("maps_dir")
             maps.read()
@@ -919,7 +919,7 @@ class Maps(Directory):
 
         .. code-block:: python
 
-            from clinicadl.io import Maps
+            from clinicadl.io.maps import Maps
 
             maps = Maps("maps_dir")
             maps.read()

@@ -5,7 +5,7 @@ import torchio as tio
 
 from clinicadl.data.dataloader.batch import Batch
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 
 FILE_TYPE = BidsFileType(data_type="anat", suffix="T1w")
 

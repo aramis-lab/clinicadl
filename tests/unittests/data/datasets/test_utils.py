@@ -12,7 +12,7 @@ from clinicadl.data.datasets.utils import (
     SamplerDataset,
 )
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
-from clinicadl.io import T1Linear
+from clinicadl.io.bids import T1Linear
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import CropConfig
 from clinicadl.transforms.extraction import Patch, Slice

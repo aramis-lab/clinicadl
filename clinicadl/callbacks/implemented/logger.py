@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Optional
 import torch
 from tqdm import tqdm
 
-from clinicadl.io.maps import MapsSummary
+from clinicadl.io.maps.summary import MapsSummary
 from clinicadl.io.maps.training import TrainingSummary
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import CLINICADL
@@ -19,7 +19,7 @@ from ..base import Callback
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import BatchType
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.io.maps.exec import RunDir
     from clinicadl.losses.types import LossType
     from clinicadl.models import Model

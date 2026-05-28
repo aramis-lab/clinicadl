@@ -13,7 +13,7 @@ from ..base import Callback
 from .utils import QuantityMonitoring
 
 if TYPE_CHECKING:
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.io.maps.training.splits.models import TrainingModelDir
     from clinicadl.models import Model
     from clinicadl.train import TrainerState

@@ -248,7 +248,7 @@ class Bids(HasConfig[BidsConfig]):
 
         .. code-block:: python
 
-            >>> from clinicadl.io import Bids, BidsFileType
+            >>> from clinicadl.io.bids import Bids, BidsFileType
             >>> bids = Bids("bids")
             >>> bids.get_path(
                     file_type=BidsFileType(
@@ -383,7 +383,7 @@ class Bids(HasConfig[BidsConfig]):
         --------
         .. code-block:: python
 
-            >>> from clinicadl.io import Bids, BidsFileType
+            >>> from clinicadl.io.bids import Bids, BidsFileType
             >>> bids = Bids("bids")
             >>> bids.build_path(
                     file_type=BidsFileType(

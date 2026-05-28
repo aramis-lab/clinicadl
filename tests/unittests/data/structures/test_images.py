@@ -12,7 +12,7 @@ from clinicadl.data.structures import (
     Tensor,
     TensorContent,
 )
-from clinicadl.io import Bids, BidsFileType, T1Linear, TensorType
+from clinicadl.io.bids import Bids, BidsFileType, T1Linear, TensorType
 from clinicadl.utils.json import read_json
 
 CAPS = Path(__file__).parents[2] / "resources" / "bids" / "derivatives" / "caps"

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.io import (
+from clinicadl.io.bids import (
     BidsFileType,
     DwiDti,
     FlairLinear,
