@@ -48,14 +48,15 @@ def seed_everything(seed: Optional[int] = None, deterministic: bool = False) -> 
     """
     To control reproducibility.
 
-    It will seed pseudo-random number generators in: PyTorch, Numpy, python.random. The seed
+    It will seed pseudo-random number generators in: PyTorch, Numpy and Python's random module. The seed
     can be accessed via the environment variable ``"CLINICADL_GLOBAL_SEED"``.
 
     Besides, if ``deterministic=True``, PyTorch's operations will be configured in deterministic mode,
     to the extent possible. In this case, an environment variable ``"CLINICADL_DETERMINISTIC"`` will
     also be created.
 
-    .. important:: ``deterministic=True``
+    .. warning:: ``deterministic=True``
+
         - does not guarantee fully reproducible results; it only ensures determinism within PyTorch’s current limitations;
         - comes with a cost in computing performances. It is advised to use this parameter only for your final
           experiments.
@@ -66,6 +67,24 @@ def seed_everything(seed: Optional[int] = None, deterministic: bool = False) -> 
         The seed to use. If ``None``, a random seed will be generated.
     deterministic : bool, default=False
         Whether to configure PyTorch's operations in deterministic mode.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.utils.seed import seed_everything
+        import torch
+        import numpy as np
+        import random
+
+    .. code-block::
+
+        >>> seed_everything(0)
+        >>> torch.randn(1), np.random.randn(), random.randint(0, 100)
+        (tensor([1.5410]), 1.764052345967664, 49)
+        >>> seed_everything(0)
+        >>> torch.randn(1), np.random.randn(), random.randint(0, 100)
+        (tensor([1.5410]), 1.764052345967664, 49)
     """
     if seed is None:
         seed = random.randint(MIN_SEED_VALUE, MAX_SEED_VALUE)
@@ -110,6 +129,24 @@ def seed_everything_context(
         The seed to use. If ``None``, a random seed will be generated.
     deterministic : bool, default=False
         Whether to configure PyTorch's operations in deterministic mode.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.utils.seed import seed_everything_context
+        import torch
+        import numpy as np
+        import random
+
+    .. code-block::
+
+        >>> with seed_everything_context(0): print(torch.randn(1), np.random.randn(), random.randint(0, 100))
+        tensor([1.5410]) 1.764052345967664 49
+        >>> print(torch.randn(1), np.random.randn(), random.randint(0, 100))
+        tensor([0.8120]) 0.5023488957207493 50
+        >>> with seed_everything_context(0): print(torch.randn(1), np.random.randn(), random.randint(0, 100))
+        tensor([1.5410]) 1.764052345967664 49
     """
     prev_env = {
         PYTHON_HASH_SEED: os.environ.get(PYTHON_HASH_SEED),
