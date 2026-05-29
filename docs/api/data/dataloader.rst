@@ -23,7 +23,7 @@ Collate functions
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/collate.rst
+    :template: autosummary/callable.rst
 
     CollateFn
     ToBatchCollate

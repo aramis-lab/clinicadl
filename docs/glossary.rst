@@ -21,3 +21,6 @@ Glossary
     **RAS+**
         `<https://nipy.org/nibabel/coordinate_systems.html#naming-reference-spaces>`_
 
+    **AMP**
+        Automatic Mixed Precision
+

@@ -29,9 +29,6 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
     Splits a 3D volume into 2D slices, passes them in a 2D neural network, and merges
     the outputs in a 3D output volume.
 
-    See :py:class:`clinicadl.infer.Inferer` and :py:class:`clinicadl.infer.SimpleInferer`
-    for more details and examples on ``Inferers``.
-
     Adapted from :py:class:`monai.inferers.SliceInferer`.
 
     Parameters
@@ -43,21 +40,18 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
         The size of the batch passed to the neural network. If you pass a batch of images to
         the inferer, this batch will be rearranged to match ``batch_size``.
 
-        E.g. if a batch of :math:`2` images is passed, with `3` slices in each image, and ``batch_size=4``, then
-        the first batch passed to the neural network will contain the three slices of the first image,
+        E.g., if a batch of 2` images is passed, with 3 slices in each image, and ``batch_size=4``, then
+        the first batch passed to the neural network will contain the three slices of the first image
         and the first slice of the second.
 
     postprocessing : Optional[Sequence[TransformOrConfig]], default=None
         To apply postprocessing transformations (e.g. activations) after the pass forward
-        in the neural network.
+        in the neural network. Accepted transforms are functions that take as input a ``DataPoint`` and return
+        a ``DataPoint``, or :py:mod:`configuration classes <clinicadl.transforms.config>`.
 
     postprocessing_on_cpu : bool, default=False
         Whether to necessarily apply postprocessing on CPU. If ``False``, postprocessing will
         be applied on the device where are the data and the neural network.
-
-        .. important::
-            ``postprocessing_on_cpu=True`` may potentially change the device on which
-            are your input data.
 
     output_name : str, default="output"
         The name the give to the output in the ``DataPoint``.
@@ -70,10 +64,9 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
     output_type : OutputType, default="tensor"
         Determines the data type of the output:
 
-        - if ``"image"``, the output will be converted to a :py:class:`torchio.ScalarImage`;
-        - if ``"mask"``, the output will be converted to a :py:class:`torchio.LabeMap`;
-        - if ``"tensor"``, the output will remain a :py:class:`torch.Tensor`.
-
+        - ``"image"``: the output will be converted to a :py:class:`torchio.ScalarImage`;
+        - ``"mask"``: the output will be converted to a :py:class:`torchio.LabelMap`;
+        - ``"tensor"``: the output will remain a :py:class:`torch.Tensor`.
     Examples
     --------
 
@@ -107,7 +100,7 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
 
     def __init__(
         self,
-        slice_direction: SliceDirection,
+        slice_direction: str | SliceDirection,
         batch_size: int = 1,
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
