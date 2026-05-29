@@ -141,8 +141,8 @@ class BidsDataset(
 
         If ``None``, all (participant, session) pairs in ``bids`` that have the right ``file_type`` will be considered.
 
-        .. important
-            Be very careful if you pass a DataFrame with a column named ``"n_samples"``. ``BidsDataset`` will understand it as the
+        .. warning::
+            Be careful if you pass a DataFrame with a column named ``"n_samples"``. ``BidsDataset`` will understand it as the
             number of samples for each (participant, session) pair.
 
     transforms : TransformsHandler, default=TransformsHandler()
@@ -319,6 +319,8 @@ class BidsDataset(
             )
         >>> dataset[0]
         Sample(Keys: ('head', 'brain', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 4)
+        >>> len(dataset)
+        60    # all the (participant, session) that have T1w images. Not only the ones in metadata.tsv
 
     See Also
     --------

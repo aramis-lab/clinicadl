@@ -93,24 +93,24 @@ class SampleConfig(DataPointConfig):
 
 class Sample(DataPoint, ABC):
     """
-    The output of :py:class:`~clinicadl.data.datasets.Dataset`.
+    The output of a :py:class:`~clinicadl.data.datasets.Dataset`.
 
     It is a :py:class:`DataPoint <clinicadl.data.structures.DataPoint>`, with additional attributes.
 
     Attributes
     ----------
     image : torchio.ScalarImage
-        The image, as a :py:class:`torchio.ScalarImage`.
+        The image, in a :py:class:`torchio.ScalarImage`.
     participant : str
         The id of the participant.
     session : str
         The id of the session.
     file_type : tuple[BidsFileType, ...]
-        The :py:class:`~clinicadl.data.datatypes.BidsFileType`. If they are multiple images in ``image``
+        The :py:class:`~clinicadl.io.bids.BidsFileType`. If they are multiple images in ``image``
         (i.e. multiple channels), the :py:class:`~clinicadl.data.datatypes.BidsFileType` of each of them
         is expected.
     image_path : tuple[Path, ...]
-        The path to the image. If they are multiple images in ``image``
+        The :pathlib.Path:`path <>` to the image. If they are multiple images in ``image``
         (i.e. multiple channels), the path of each of them
         is expected.
     sample_type : SampleType
@@ -174,10 +174,11 @@ class Sample2DConfig(SampleConfig):
 
 class Sample2D(Sample):
     """
-    A slice :py:class:`Sample`. Here ``sample_type="slice"`` and ``sample_position`` is the position
-    of the slice in the original image.
+    A :py:class:`Sample` corresponding to a 2D slice.
 
-    Besides, there are two additional attribute:
+    Here ``sample_type="slice"`` and ``sample_position`` is the position of the slice in the original image.
+
+    Besides, there are two additional attributes:
 
     slice_direction : int
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal)
@@ -225,7 +226,7 @@ class Sample2D(Sample):
         Parameters
         ----------
         image_name : str
-            The name of the image in the ``DataPoint``.
+            The name of the image in the ``Sample2D``.
 
         Returns
         -------
@@ -250,11 +251,11 @@ class Sample2D(Sample):
         Parameters
         ----------
         image : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The image to add, as a :py:class:`torchio.ScalarImage``, a path to the file containing the image,
+            The image to add, as a :py:class:`torchio.ScalarImage``, a path to the NIfTI file containing the image,
             or a :py:class:`torch.Tensor`. In the latter case, it is expected to be a 4D ``Tensor`` (including one channel dimension)
             if ``squeeze=False``, or a 3D ``Tensor`` if ``squeeze=True``.
 
-            If a ``Tensor`` is passed, the same affine matrix as ``"image"`` will be used.
+            If a ``Tensor`` is passed, the same affine matrix as ``self.image`` will be used.
         image_name : str
             The name that the image will take in the ``Sample``.
 
@@ -274,11 +275,11 @@ class Sample2D(Sample):
         Parameters
         ----------
         mask : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the file containing the image,
+            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the NIfTI file containing the mask,
             or a :py:class:`torch.Tensor`. In the latter case, it is expected to be a 4D ``Tensor`` (including one channel dimension)
             if ``squeeze=False``, or a 3D ``Tensor`` if ``squeeze=True``.
 
-            If a ``Tensor`` is passed, the same affine matrix as ``"image"`` will be used.
+            If a ``Tensor`` is passed, the same affine matrix as ``self.image`` will be used.
         mask_name : str
             The name that the image will take in the ``Sample``.
 

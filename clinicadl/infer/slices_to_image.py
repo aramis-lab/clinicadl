@@ -81,11 +81,11 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
 
         import torch
         from clinicadl.infer import SlicesToImageInferer
-        from clinicadl.data.structures.examples import ColinDataPoint
+        from clinicadl.data.structures.examples import Colin27DataPoint
         from clinicadl.networks.nn import ConvEncoder
 
         net = ConvEncoder(spatial_dims=2, in_channels=1, channels=[2, 4], kernel_size=7)
-        datapoint = ColinDataPoint()
+        datapoint = Colin27DataPoint()
         inferer = SlicesToImageInferer(slice_direction=1, batch_size=16)
 
     .. code-block::

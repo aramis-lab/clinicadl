@@ -128,8 +128,8 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
     @abstractmethod
     def get_sample_info(self, idx: int, column: str) -> Any:
         """
-        Retrieves information on a given sample in the metadata DataFrame. The information will
-        correspond to the information on the image the sample was extracted
+        Retrieves information on a given sample in the metadata DataFrame. The information
+        corresponds to the information on the image the sample was extracted
         from.
 
         Parameters

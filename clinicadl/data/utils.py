@@ -23,16 +23,16 @@ if TYPE_CHECKING:
     from .structures import DataPoint, Sample
 
 
-def remove_tensors(json_path: PathType) -> None:
+def remove_tensors(description_json: PathType) -> None:
     """
     To delete tensors in a dataset.
 
-    Will remove all the tensors saved with :py:meth:`clinicadl.data.datasets.BidsDataset.to_tensors`
+    It will remove all the tensors saved with :py:meth:`BidsDataset.to_tensors <clinicadl.data.datasets.BidsDataset.to_tensors>`
     associated with the input ``.json`` file.
 
     Parameters
     ----------
-    json_path : PathType
+    description_json : PathType
         Path to the ``.json`` file associated to the tensor conversion you want to delete.
 
     Examples
@@ -46,7 +46,7 @@ def remove_tensors(json_path: PathType) -> None:
         from pathlib import Path
 
         dataset = BidsDataset(
-            bids="bids_path", file_type=BIDSFileType(data_type="anat", suffix="T1w")
+            bids="bids_path", file_type=BidsFileType(data_type="anat", suffix="T1w")
         )
         dataset.to_tensors()  # the json file is "bids_path/derivatives/tensors/src-T1w_conv-raw_description.json"
 
@@ -66,24 +66,24 @@ def remove_tensors(json_path: PathType) -> None:
     """
     from .tensors.utils import ConversionRow, TensorDescription
 
-    json_path = Path(json_path)
+    description_json = Path(description_json)
 
-    tensors_dir = Bids(json_path.parent)
-    tensor_conversion = TensorDescription.read(json_path)
+    tensors_dir = Bids(description_json.parent)
+    tensor_conversion = TensorDescription.read(description_json)
 
     pattern = tensors_dir.build_path(tensor_conversion.tensor_type).stem
     for path in tensors_dir.path.rglob("*" + pattern + "*"):
         path.unlink()
 
     tensor_conversion.get_tsv_path(tensors_dir.path).unlink()
-    json_path.unlink()
+    description_json.unlink()
 
     conversions_tsv_path = tensor_conversion.get_conversions_tsv_path(tensors_dir.path)
     df = pd.read_csv(conversions_tsv_path, sep=SEP)
     col_name = next(f for f in fields(ConversionRow) if "json" in f.name).name
-    print(json_path.name)
-    print(df[col_name] != json_path.name)
-    df = df[df[col_name] != json_path.name]
+    print(description_json.name)
+    print(df[col_name] != description_json.name)
+    df = df[df[col_name] != description_json.name]
     df.to_csv(conversions_tsv_path, sep=SEP, index=False)
 
 

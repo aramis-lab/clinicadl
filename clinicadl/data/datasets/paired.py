@@ -71,30 +71,24 @@ class PairedDatasetConfig(CollectionDatasetConfig):
 
 class PairedDataset(CollectionDataset):
     """
-    A useful class to pair multiple :py:class:`~clinicadl.data.datasets.MultiSamplesDataset`
-    (e.g. different modalities). Pairing datasets means uniquely associating images across the datasets.
+    For pairing multiple :py:class:`~clinicadl.data.datasets.Dataset` (e.g., different modalities).
 
-    The keys of this association are the (participant, session) pairs present in the underlying datasets. So, **all
-    datasets must contain the same (participant, session) pairs**.
+    Pairing datasets means uniquely associating images across the datasets. The keys of this association
+    are the (participant, session) pairs present in the underlying datasets. So, **all datasets must
+    contain the same (participant, session) pairs**.
 
     Furthermore, for a (participant, session) pair, **all the datasets must have the same number of samples**:
     if one of your dataset contains whole images and a second one contains a single slice of the images, it's ok;
     but if the second dataset now contains two slices of the images, this will raise an error because the second dataset
     will thus be two times bigger than the first one, and the two datasets cannot be paired.
 
-    Make sure that keys match, but does not modify.
-
-
-    A ``PairedDataset`` will return a tuple of :py:class:`~clinicadl.data.structures.DataPoint` (one for each underlying
+    A ``PairedDataset`` returns a tuple of :py:class:`~clinicadl.data.structures.Sample` (one for each underlying
     dataset).
-
-    .. note::
-        ``PairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset`.
 
     Parameters
     ----------
-    datasets : Iterable[Union[MultiSamplesDataset, ConcatDataset]]
-        List of :py:class:`~clinicadl.data.datasets.MultiSamplesDataset` to be paired.
+    datasets : Iterable[Dataset]
+        The ``Datasets`` to pair.
 
     Raises
     ------
@@ -110,63 +104,41 @@ class PairedDataset(CollectionDataset):
     --------
     .. code-block:: text
 
-        Data look like:
-
-        mycaps
-        ├── tensor_conversion
-        │   ├── default_pet-linear_18FAV45_pons2.json
-        │   └── default_t1-linear.json
-        └── subjects
-            ├── sub-001
-            │   └── ses-M000
-            │       ├── pet_linear
-            │       │   ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-            │       │   └── tensors
-            │       │       └── default
-            │       │           └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-            │       └── t1_linear
-            │           ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
-            │           └── tensors
-            │               └── default
-            │                   └── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
-                ...
+        bids
+        ├── sub-001
+        │   └── ses-M000
+        │   │   ├── pet
+        │   │   │   └── sub-001_ses-M000_trc-18FAV45_pet.nii.gz
+        │   │   └── anat
+        │   │       └── sub-001_ses-M000_T1w.nii.gz
             ...
+        ...
 
     .. code-block:: python
 
-        from clinicadl.data.datasets import CapsDataset, PairedDataset
-        from clinicadl.data.datatypes import PETLinear, T1Linear
+        from clinicadl.data.datasets import BidsDataset, PairedDataset
+        from clinicadl.io.bids import BidsFileType
 
-        caps_t1 = CapsDataset(
-            "mycaps", datatype=T1Linear(use_uncropped_image=True), data=participants_sessions
-        )
-        caps_pet = CapsDataset(
-            "mycaps",
-            datatype=PETLinear(
-                use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-            ),
-        )
+        bids_t1 = BidsDataset("bids", file_type=BidsFileType(data_type="anat", suffix="T1w"))
+        bids_pet = BidsDataset("bids", file_type=BidsFileType(data_type="pet", suffix="pet"))
 
-        caps_t1.read_tensor_conversion()
-        caps_pet.read_tensor_conversion()
-
-        paired_dataset = PairedDataset([caps_t1, caps_pet])
+        multimodal_dataset = PairedDataset([bids_t1, bids_pet])
 
     .. code-block:: python
 
-        >>> len(caps_t1)
+        >>> len(bids_t1)
         4
-        >>> len(caps_pet)
+        >>> len(bids_pet)
         4
-        >>> len(paired_dataset)
+        >>> len(multimodal_dataset)
         4
-        >>> sample = paired_dataset[0]
+        >>> sample = multimodal_dataset[0]
         >>> len(sample)
         2
-        >>> sample[0].participant, sample[0].session
-        ('sub-001', 'ses-M000')
-        >>> sample[1].participant, sample[1].session
-        ('sub-001', 'ses-M000')
+        >>> sample[0].file_type
+        BidsFileType(suffix=re.compile('T1w'), data_type=re.compile('anat'), extension=re.compile('.nii.*'), with_entities=None, without_entities=None, description=None)
+        >>> sample[1].file_type
+        BidsFileType(suffix=re.compile('pet'), data_type=re.compile('pet'), extension=re.compile('.nii.*'), with_entities=None, without_entities=None, description=None)
     """
 
     _config_type = PairedDatasetConfig
@@ -177,6 +149,11 @@ class PairedDataset(CollectionDataset):
     ):
         super().__init__(datasets=datasets)
         self._check_datasets_conistency()
+
+    @property
+    def df(self):
+        "The output of the merger of the metadata DataFrames of the underlying datasets."
+        return super().df
 
     def __len__(self) -> int:
         return len(self.datasets[0])
@@ -194,12 +171,35 @@ class PairedDataset(CollectionDataset):
         -------
         tuple[Sample, ...]
             A structured output containing the processed data and metadata
-            from each dataset of the ``PairedDataset``, as a ``tuple`` of
-            :py:class:`~clinicadl.transforms.extraction.Sample`.
+            from each dataset of the ``PairedDataset``, in a ``tuple`` of
+            :py:class:`~clinicadl.data.structures.Sample`.
         """
         return tuple(dataset[idx] for dataset in self.datasets)
 
     def get_sample_info(self, idx: int, column: str) -> Any:
+        """
+        Retrieves information on a given sample.
+
+        It will look for ``column`` in the DataFrame of each underlying
+        dataset. If several values are found, it will raise an error.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the sample in the dataset.
+        column : str
+            The information to look for, i.e. a column of :py:attr:`df`.
+
+        Returns
+        -------
+        Any
+            The value for this sample.
+
+        Raises
+        ------
+        RuntimeError
+            If different values are found across the datasets.
+        """
         values = set()
         for dataset in self.datasets:
             try:

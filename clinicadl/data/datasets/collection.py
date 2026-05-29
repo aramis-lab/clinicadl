@@ -67,10 +67,16 @@ class CollectionDataset(HasConfig[CollectionDatasetConfig], Dataset, Generic[D])
         self.datasets = self.config.datasets
 
     def eval(self) -> None:
+        """
+        Sets all the underlying datasets in evaluation mode.
+        """
         for dataset in self.datasets:
             dataset.eval()
 
     def train(self) -> None:
+        """
+        Sets all the underlying datasets in training mode.
+        """
         for dataset in self.datasets:
             dataset.train()
 

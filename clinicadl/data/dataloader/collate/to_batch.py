@@ -28,7 +28,7 @@ class ToBatchCollate(ImplementedCollateFn, HasConfig[ToBatchCollateConfig]):
     """
     To simply collate a sequence of samples in a single batch.
 
-    This is the default collating mode when the :py:mod:`dataset <clinicadl.data.datasets` returns a single sample.
+    This is the default collating mode when the :py:class:`~clinicadl.data.datasets.Dataset` returns a single :py:class:`~clinicadl.data.structures.Sample`.
 
     Examples
     --------
@@ -36,17 +36,17 @@ class ToBatchCollate(ImplementedCollateFn, HasConfig[ToBatchCollateConfig]):
     .. code-block::
 
         from clinicadl.data.dataloader import ToBatchCollate
-        from clinicadl.data.structures.examples import ColinSample
+        from clinicadl.data.structures.examples import Colin27Sample
 
-        sample_1 = ColinSample(participant="sub-001")
-        sample_2 = ColinSample(participant="sub-002")
+        sample_1 = Colin27Sample(participant="sub-001")
+        sample_2 = Colin27Sample(participant="sub-002")
         batch = ToBatchCollate()([sample_1, sample_2])
 
     .. code-block::
 
         >>> batch
-        [ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 3),
-         ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 3)]
+        [Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 3),
+         Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 3)]
         >>> batch[0].participant
         'sub-001'
         >>> batch[1].participant
@@ -58,12 +58,12 @@ class ToBatchCollate(ImplementedCollateFn, HasConfig[ToBatchCollateConfig]):
 
     def __call__(self, samples: Sequence[T]) -> Batch[T]:
         """
-        Puts a sequence of :py:class:`~clinicadl.data.datasets.Sample` in a :py:class:`~clinicadl.data.dataloader.Batch`.
+        Puts a sequence of :py:class:`~clinicadl.data.structures.Sample` in a :py:class:`~clinicadl.data.dataloader.Batch`.
 
         Parameters
         ----------
         samples : Sequence[T]
-            A sequence :py:class:`~clinicadl.data.datasets.Sample`.
+            A sequence of :py:class:`~clinicadl.data.structures.Sample`.
 
         Returns
         -------

@@ -1,4 +1,4 @@
-"""To build a :py:class:`PyTorch Dataset <torch.utils.data.Dataset>`
+"""For building a :py:class:`PyTorch Dataset <torch.utils.data.Dataset>`
 with your neuroimaging data."""
 
 from .base import Dataset

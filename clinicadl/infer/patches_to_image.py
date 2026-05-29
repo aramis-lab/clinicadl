@@ -134,11 +134,11 @@ class PatchesToImageInferer(
 
         import torch
         from clinicadl.infer import SlicesToImageInferer
-        from clinicadl.data.structures.examples import ColinDataPoint
+        from clinicadl.data.structures.examples import Colin27DataPoint
         from clinicadl.networks.nn import ConvEncoder
 
         net = AutoEncoder(in_shape=(1, 64, 64, 64), latent_size=16, conv_args={"channels": [2]})
-        datapoint = ColinDataPoint()
+        datapoint = Colin27DataPoint()
         inferer = PatchesToImageInferer(patch_size=64, batch_size=16, overlap=1/5)
 
 

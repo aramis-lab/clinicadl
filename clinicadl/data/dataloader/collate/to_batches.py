@@ -28,7 +28,8 @@ class ToBatchesCollate(ImplementedCollateFn, HasConfig[ToBatchesCollateConfig]):
     """
     To return a sequence of batches.
 
-    This is the default collating mode when the :py:mod:`dataset <clinicadl.data.datasets` returns a sequence of samples.
+    This is the default collating mode when the :py:class:`~clinicadl.data.datasets.Dataset` returns a sequence of
+    :py:class:`~clinicadl.data.structures.Sample`.
 
     Examples
     --------
@@ -36,19 +37,19 @@ class ToBatchesCollate(ImplementedCollateFn, HasConfig[ToBatchesCollateConfig]):
     .. code-block::
 
         from clinicadl.data.dataloader import ToBatchesCollate
-        from clinicadl.data.structures.examples import ColinSample
+        from clinicadl.data.structures.examples import Colin27Sample
 
-        sample_1 = ColinSample(participant="sub-001")
-        sample_2 = ColinSample(participant="sub-002")
-        sample_3 = ColinSample(participant="sub-003")
-        sample_4 = ColinSample(participant="sub-004")
+        sample_1 = Colin27Sample(participant="sub-001")
+        sample_2 = Colin27Sample(participant="sub-002")
+        sample_3 = Colin27Sample(participant="sub-003")
+        sample_4 = Colin27Sample(participant="sub-004")
         batch = ToBatchesCollate()([(sample_1, sample_2), (sample_3, sample_4)])
 
     .. code-block::
 
         >>> batch[0]
-        [ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2),
-         ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
+        [Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2),
+         Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
         >>> batch[0][0].participant
         'sub-001'
         >>> batch[0][1].participant
@@ -65,16 +66,15 @@ class ToBatchesCollate(ImplementedCollateFn, HasConfig[ToBatchesCollateConfig]):
 
     def __call__(self, samples: Sequence[Sequence[T]]) -> tuple[Batch[T], ...]:
         """
-        Puts a batch of sequences of :py:class:`~clinicadl.data.datasets.Sample`
+        Puts a sequence of sequences of :py:class:`~clinicadl.data.structures.Sample`
         in a tuple of :py:class:`~clinicadl.data.dataloader.Batch`.
 
-        E.g. if a dataset returns two samples, the output here will be a tuple of two batches.
+        E.g., if the dataset returns two samples, the output here will be a tuple of two batches.
 
         Parameters
         ----------
         samples : Sequence[Sequence[T]]
-            A sequence of sequences of :py:class:`~clinicadl.data.datasets.Sample`, e.g. a batch
-            of outputs of a :py:class:`~clinicadl.data.datasets.PairedDataset`.
+            A sequence of sequences of :py:class:`~clinicadl.data.structures.Sample`.
 
         Returns
         -------

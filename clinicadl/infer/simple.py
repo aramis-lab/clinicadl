@@ -62,13 +62,13 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
 
         import torch
         from clinicadl.infer import SimpleInferer
-        from clinicadl.data.structures.examples import ColinDataPoint
+        from clinicadl.data.structures.examples import Colin27DataPoint
         from clinicadl.data.dataloader import Batch
         from clinicadl.networks.nn import ConvEncoder
         from clinicadl.transforms.config import ActivationsConfig
 
         net = ConvEncoder(spatial_dims=3, in_channels=1, channels=[2, 4])
-        datapoint = ColinDataPoint()
+        datapoint = Colin27DataPoint()
 
     .. code-block::
 

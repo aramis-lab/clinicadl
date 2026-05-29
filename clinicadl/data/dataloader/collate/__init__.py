@@ -1,5 +1,5 @@
 """
-To define how the ``DataLoader`` will collate the collections of samples.
+To define how the :py:class:`~clinicadl.data.dataloader.DataLoader` will collate the collections of samples.
 """
 
 from .base import CollateFn
