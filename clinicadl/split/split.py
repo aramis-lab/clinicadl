@@ -59,16 +59,13 @@ class SplitConfig(ObjectConfig["Split"]):
 
 class Split(HasConfig[SplitConfig]):
     """
-    An object containing the relevant information on a split.
+    An object containing the data associated to a split.
 
-    More precisely, the dataclass contain the training and validation datasets, as well as
+    More precisely, the dataclass contains the training and validation :py:class:`~clinicadl.data.datasets.Dataset`, as well as
     the split index and the split directory used to split the dataset.
 
-    Then, when :py:meth:`~Split.build_train_loader` and :py:meth:`build_val_loader` will be called,
-    the training and validation :py:class:`~torch.utils.data.DataLoader` can be accessed.
-
-    Finally, to instantiate Data Parallelism, that will distribute the training and validation sets
-    across devices, the user can use :py:meth:`parallelism`.
+    Then, when :py:meth:`~Split.build_train_loader` and :py:meth:`build_val_loader` has been called,
+    the training and validation :py:class:`~clinicadl.data.dataloader.DataLoader` can be accessed.
     """
 
     _config_type = SplitConfig
@@ -101,17 +98,17 @@ class Split(HasConfig[SplitConfig]):
 
     @property
     def train_dataset(self) -> Dataset:
-        """The training set."""
+        """The training dataset."""
         return self.config.train_dataset
 
     @property
     def val_dataset(self) -> Dataset:
-        """The validation set."""
+        """The validation dataset."""
         return self.config.val_dataset
 
     @property
     def train_loader(self) -> DataLoader:
-        """To access the training :py:class:`torch.utils.data.DataLoader`."""
+        """The training dataloader."""
         if not self.config.train_loader_config:
             raise RuntimeError(
                 "The split has no training dataloader defined. Please run 'build_train_loader'"
@@ -120,7 +117,7 @@ class Split(HasConfig[SplitConfig]):
 
     @property
     def val_loader(self) -> DataLoader:
-        """To access the validation :py:class:`torch.utils.data.DataLoader`."""
+        """The validation dataloader."""
         if not self.config.val_loader_config:
             raise RuntimeError(
                 "The split has no validation dataloader defined. Please run 'build_val_loader'"
@@ -141,62 +138,9 @@ class Split(HasConfig[SplitConfig]):
         collate_fn: Optional[CollateFn] = None,
     ) -> None:
         """
-        Builds a :py:class:`~torch.utils.data.DataLoader` for the training set of the split.
+        Builds a :py:class:`~clinicadl.data.dataloader.DataLoader` for the training set of the split.
 
-        Parameters
-        ----------
-        dataloader_config : Optional[DataLoaderConfig] (optional, default=None)
-            A pre-configured :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`.
-            If passed, the arguments in this configuration object will prevail, otherwise
-            the following arguments will be used.
-        batch_size : int (optional, default=1)
-            Batch size for the DataLoader. Used if ``dataloader_config`` is not provided.
-        sampling_weights : Optional[str] (optional, default=None)
-            Name of the column in the dataframe of the dataset where to find the sampling
-            weights. The column must contain ``float`` values.
-
-            The probability of sampling a certain sample is proportional to the associated value
-            in this column of the dataframe.
-
-            Used if ``dataloader_config`` is not provided.
-        shuffle : bool (optional, default=True)
-            Whether to shuffle the data.
-
-            .. note::
-
-                If ``sampling_weights`` is passed, the data will be fetched randomly with
-                replacement, no matter the value of ``shuffle``.
-
-            Used if ``dataloader_config`` is not provided.
-        num_workers : int (optional, default=0)
-            Number of workers for data loading. Used if ``dataloader_config`` is not provided.
-        pin_memory : bool (optional, default=True)
-            Whether to copy Tensors into device/CUDA pinned memory before returning them.
-            Used if ``dataloader_config`` is not provided.
-        drop_last : bool (optional, default=False)
-            Whether to drop the last incomplete batch. Used if ``dataloader_config`` is not provided.
-        prefetch_factor : Optional[int] (optional, default=None)
-            Number of batches loaded in advance by each worker. Can't be passed if ``num_workers=0``.
-            Used if ``dataloader_config`` is not provided.
-        persistent_workers : bool (optional, default=False)
-            Whether to maintain the worker processes alive at the end of an epoch.
-            Can't be passed if ``num_workers=0``. Used if ``dataloader_config`` is not provided.
-        collate_fn : Optional[CollateFn], default=None
-            To customize the way samples are collated into batches. See :py:mod:`clinicadl.data.dataloader.collate`.
-
-        Raises
-        ------
-        ValueError
-            If ``prefetch_factor`` or ``persistent_workers`` is passed, but ``num_workers=0``.
-        ValueError
-            If the dataset is an :py:class:`~clinicadl.data.datasets.UnpairedDataset`,
-            and ``sampling_weights`` is not ``None``.
-        KeyError
-            If ``sampling_weights`` is not ``None``, but there is no column named like
-            ``sampling_weights`` in the dataframe of the dataset.
-        ValueError
-            If ``sampling_weights`` is not ``None`` and the associated column cannot
-            be converted to float values.
+        See :py:class:`~clinicadl.data.dataloader.DataLoader` for a description of the parameters.
         """
         self.config.train_loader_config = DataLoaderConfig(
             batch_size=batch_size,
@@ -224,62 +168,9 @@ class Split(HasConfig[SplitConfig]):
         collate_fn: Optional[CollateFn] = None,
     ) -> None:
         """
-        Builds a :py:class:`~torch.utils.data.DataLoader` for the validation set of the split.
+        Builds a :py:class:`~clinicadl.data.dataloader.DataLoader` for the validation set of the split.
 
-        Parameters
-        ----------
-        dataloader_config : Optional[DataLoaderConfig] (optional, default=None)
-            A pre-configured :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`.
-            If passed, the arguments in this configuration object will prevail, otherwise
-            the following arguments will be used.
-        batch_size : int (optional, default=1)
-            Batch size for the DataLoader. Used if ``dataloader_config`` is not provided.
-        sampling_weights : Optional[str] (optional, default=None)
-            Name of the column in the dataframe of the dataset where to find the sampling
-            weights. The column must contain ``float`` values.
-
-            The probability of sampling a certain sample is proportional to the associated value
-            in this column of the dataframe.
-
-            Used if ``dataloader_config`` is not provided.
-        shuffle : bool (optional, default=False)
-            Whether to shuffle the data.
-
-            .. note::
-
-                If ``sampling_weights`` is passed, the data will be fetched randomly with
-                replacement, no matter the value of ``shuffle``.
-
-            Used if ``dataloader_config`` is not provided.
-        num_workers : int (optional, default=0)
-            Number of workers for data loading. Used if ``dataloader_config`` is not provided.
-        pin_memory : bool (optional, default=True)
-            Whether to copy Tensors into device/CUDA pinned memory before returning them.
-            Used if ``dataloader_config`` is not provided.
-        drop_last : bool (optional, default=False)
-            Whether to drop the last incomplete batch. Used if ``dataloader_config`` is not provided.
-        prefetch_factor : Optional[int] (optional, default=None)
-            Number of batches loaded in advance by each worker. Can't be passed if ``num_workers=0``.
-            Used if ``dataloader_config`` is not provided.
-        persistent_workers : bool (optional, default=False)
-            Whether to maintain the worker processes alive at the end of an epoch.
-            Can't be passed if ``num_workers=0``. Used if ``dataloader_config`` is not provided.
-        collate_fn : Optional[CollateFn], default=None
-            To customize the way samples are collated into batches. See :py:mod:`clinicadl.data.dataloader.collate`.
-
-        Raises
-        ------
-        ValueError
-            If ``prefetch_factor`` or ``persistent_workers`` is passed, but ``num_workers=0``.
-        ValueError
-            If the dataset is an :py:class:`~clinicadl.data.datasets.UnpairedDataset`,
-            and ``sampling_weights`` is not ``None``.
-        KeyError
-            If ``sampling_weights`` is not ``None``, but there is no column named like
-            ``sampling_weights`` in the dataframe of the dataset.
-        ValueError
-            If ``sampling_weights`` is not ``None`` and the associated column cannot
-            be converted to float values.
+        See :py:class:`~clinicadl.data.dataloader.DataLoader` for a description of the parameters.
         """
         self.config.val_loader_config = DataLoaderConfig(
             batch_size=batch_size,

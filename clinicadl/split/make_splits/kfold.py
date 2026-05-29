@@ -38,24 +38,24 @@ def make_kfold(
 
     Parameters
     ----------
-    data: Union[pd.DataFrame, Path, str],
+    data: Union[DataFrameType]
         A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
         pairs to split.
-    n_splits : int, (optional, default=5)
+    n_splits : int, default=5
         Number of folds. Must be at least 2.
-    output_dir : Optional[Path, str], (optional, default=None)
+    output_dir : Optional[Path, str], default=None
         Directory where to save the output files of the split, passed as a ``str`` or a :pathlib.Path:`pathlib.Path <>`.
-        If ``data`` is a path and ``output_dir`` is not passed, the parent directory of the TSV file will be used.
-    subset_name : str, (optional, default="validation")
+        If ``data`` is a path and ``output_dir`` is not passed, the parent directory of the ``TSV`` file will be used.
+    subset_name : str, default="validation"
         Name for the validation subset.
-    stratification : Union[str, bool], (optional, default=False)
+    stratification : Union[str, bool], default=False
         Whether to perform stratification. If ``True``, the columns ``"sex"`` will be used for stratification.
         If a ``str`` is passed, this column will be used. The variable associated to the column must be
         **categorical**.
-    longitudinal : bool, (optional, default=False)
+    longitudinal : bool, default=False
         Whether to include only the baseline sessions in the validation set (``longitudinal=False``). If ``True``, all the sessions
         of the validation participants will be included. No matter this argument, all sessions are always kept in the training set.
-    seed : Optional[int], (optional, default=None)
+    seed : Optional[int], default=None
         Seed to control the randomness of the split. Useful for reproducibility.
 
     Returns
@@ -67,7 +67,7 @@ def make_kfold(
     ------
     ValueError
         If ``data`` is a :py:class:`pandas.DataFrame` and no ``output_dir`` is passed.
-    ClinicaDLTSVError
+    DataFrameError
         If the DataFrame does not contain the columns ``"participant_id"`` and ``"session_id"``.
     KeyError
         If the stratification column mentioned via ``stratification`` cannot be found in the DataFrame.

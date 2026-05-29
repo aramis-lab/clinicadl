@@ -63,7 +63,7 @@ class KFold(Splitter):
     """
     To handle a K-Fold cross-validator.
 
-    This object will read a split directory returned by :py:func:`~clinicadl.split.make_kfold`,
+    This object will read a split directory returned by :py:func:`~clinicadl.split.make_kfold`
     and can then be used to split any :py:class:`~clinicadl.data.datasets.Dataset` using :py:meth:`~KFold.get_splits`,
     provided that all the (participant, session) pairs in the dataset are mentioned in the split directory.
 
@@ -97,7 +97,7 @@ class KFold(Splitter):
         Parameters
         ----------
         dataset : Dataset
-            The :py:class:`~clinicadl.data.datasets.CapsDataset` to split.
+            The dataset to split.
         eval_dataset : Optional[Dataset], default=None
             If not ``None``, it will be understood as the dataset from which the validation dataset should be created, and
             ``dataset`` will be the dataset from which the training dataset will be created (see examples). If ``None``, both
@@ -120,7 +120,7 @@ class KFold(Splitter):
         --------
         .. code-block::
 
-            >>> df  # quick look at the data
+            >>> df  # a quick look at the data
                 participant_id	session_id
             0	sub-000	        ses-M000
             1	sub-000	        ses-M003
@@ -132,16 +132,14 @@ class KFold(Splitter):
         .. code-block::
 
             from clinicadl.split import KFold
-            from clinicadl.data import datasets, datatypes
+            from clinicadl.data.datasets import BidsDataset
             from clinicadl.transforms import TransformsHandler, extraction
 
-            dataset = datasets.CapsDataset(
-                "caps_dir",
+            dataset = BidsDataset(
+                "bids_dir",
                 data=df,
-                file_type=datatypes.PETLinear(
-                    tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
-                ),
-                transforms=TransformsHandler(extraction=extraction.Patch()),
+                transforms=TransformsHandler(extraction=extraction.Patch(patch_size=64)),
+                ...
             )
             splitter = KFold("split_dir/3_fold")
 
@@ -166,12 +164,11 @@ class KFold(Splitter):
 
         .. code-block::
 
-            eval_dataset = datasets.CapsDataset(
-                "caps_dir",
+            eval_dataset = BidsDataset(
+                "bids_dir",
                 data=df,
-                file_type=datatypes.PETLinear(
-                    tracer="18FAV45", suvr_reference_region="pons2", use_uncropped_image=True
-                ),
+                transforms=TransformsHandler(),
+                ...
             )
 
             splits_iterator = splitter.get_splits(dataset, eval_dataset=eval_dataset)
@@ -179,10 +176,10 @@ class KFold(Splitter):
 
         .. code-block::
 
-            >>> split.train_dataset.extraction
-                Patch(patch_size=(50, 50, 50), stride=(50, 50, 50), extract_method='patch')
-            >>> split.val_dataset.extraction
-                Image(extract_method='image')
+            >>> split.train_dataset[0].spatial_shape
+            (64, 64, 64)
+            >>> split.val_dataset[0].spatial_shape
+            (181, 217, 181)
 
         """
         if splits is None:
