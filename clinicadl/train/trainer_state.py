@@ -12,11 +12,11 @@ class TrainerState(ClinicaDLConfig):
     Attributes
     ----------
     called : Optional[TrainerCall]
-        The method the ``Trainer`` that has been called. One of ``"train"``, ``"validate"``, ``"test"``, or ``"predict"``.
-        ``None`` if no method has been called so far..
+        The method of the ``Trainer`` that has been called. One of ``"train"``, ``"validate"`` or ``"test"``.
+        ``None`` if no method has been called so far.
     stage : Optional[TrainerStage]
         Current action performed by the ``Trainer``.
-        One of ``"training"``, ``"evaluation"`` or ``"prediction"``.
+        One of ``"training"`` or ``"evaluation"``.
     should_stop : bool
         Whether the training should be stopped at the end of the
         current epoch during :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
@@ -34,10 +34,6 @@ class TrainerState(ClinicaDLConfig):
         Index of the current test batch :py:meth:`Trainer.test <clinicadl.train.Trainer.test>`.
     num_test_batches : int
         Total number of test batches in :py:meth:`Trainer.test <clinicadl.train.Trainer.test>`.
-    current_pred_batch : int
-        Index of the current prediction batch in :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`.
-    num_pred_batches : int
-        Total number of prediction batches :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`.
     current_epoch : int
         Index of the current epoch in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
     num_epochs : int
@@ -47,8 +43,6 @@ class TrainerState(ClinicaDLConfig):
     split_idx : Optional[int]
         Index of the split on which training/validation is currently performed in :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`
         or :py:meth:`Trainer.validate <clinicadl.train.Trainer.validate>`.
-
-        ``None`` if in :py:meth:`Trainer.test <clinicadl.train.Trainer.test>` or :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`.
     """
 
     called: Optional[TrainerCall] = None
