@@ -1,11 +1,7 @@
-import enum
 import inspect
-import typing
 from datetime import date
-from pathlib import Path
-from typing import Annotated, Union, get_args, get_origin
-
-from pydantic import BaseModel
+from typing import Annotated as AnnotatedAlias
+from typing import get_args, get_origin
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -37,7 +33,10 @@ extensions = [
     "sphinx_design",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
+    "sphinxcontrib.autodoc_pydantic",
 ]
+
+autodoc_pydantic_model_show_json = False
 
 napoleon_use_admonition_for_references = True
 napoleon_use_admonition_for_notes = True
@@ -157,118 +156,27 @@ def skip_overload_members(app, what, name, obj, skip, options):
     return None
 
 
-# def skip_private_members(app, what, name, obj, skip, options):
-#     if name.startswith("_"):
-#         return True
-#     return skip
-
-
 # -- Simplify type hints for Pydantic models --------------------------------
-
-
-ReversePydanticTypes = {
-    "int ≥ 0": "PositiveInt",
-    "int > 0": "NonNegativeInt",
-    "int ≤ 0": "NegativeInt",
-    "int < 0": "NonPositiveInt",
-    "float ≥ 0": "PositiveFloat",
-    "float > 0": "NonNegativeFloat",
-    "float ≤ 0": "NegativeFloat",
-    "float < 0": "NonPositiveFloat",
-    # you can add other types here
+_PYDANTIC_TYPE_NAMES = {
+    (float, "gt", 0): "PositiveFloat",
+    (float, "ge", 0): "NonNegativeFloat",
+    (int, "gt", 0): "PositiveInt",
+    (int, "ge", 0): "NonNegativeInt",
+    (float, "lt", 0): "NegativeFloat",
+    (float, "le", 0): "NonPositiveFloat",
 }
 
 
-def simplify_type(tp):
-    origin = get_origin(tp)
-
-    # Handle Union
-    if origin is Union:
-        return " | ".join(simplify_type(arg) for arg in get_args(tp))
-
-    # Handle Annotated (Pydantic constraints)
-    if origin is Annotated:
-        base, *constraints = get_args(tp)
-        # otherwise, fallback with explicit constraints
-        parts = base.__name__ if hasattr(base, "__name__") else str(base)
-        for constraint in constraints:
-            if hasattr(constraint, "ge"):
-                parts += f" ≥ {constraint.ge}"
-            if hasattr(constraint, "gt"):
-                parts += f" > {constraint.gt}"
-            if hasattr(constraint, "le"):
-                parts += f" ≤ {constraint.le}"
-            if hasattr(constraint, "lt"):
-                parts += f" < {constraint.lt}"
-
-        if parts in ReversePydanticTypes:
-            type_ = ReversePydanticTypes.get(parts, parts)
-            return type_
-        return parts
-
-    # Handle Literal
-    if origin is typing.Literal:
-        values = get_args(tp)
-        return f"Literal[{', '.join(repr(v) for v in values)}]"
-
-    # Handle Tuple
-    if origin in (tuple, typing.Tuple):
-        inner = ", ".join(simplify_type(arg) for arg in get_args(tp))
-        return f"tuple[{inner}]"
-
-    # Handle Tuple
-    if origin in (dict, typing.Dict):
-        inner = ", ".join(simplify_type(arg) for arg in get_args(tp))
-        return f"dict[{inner}]"
-
-    # Handle Enum
-    if inspect.isclass(tp) and issubclass(tp, enum.Enum):
-        values = ", ".join([f'"{e.value}"' for e in tp])
-        return f"{tp.__name__} ({values})"
-
-    # Handle List
-    if origin in (list, typing.List):
-        inner = ", ".join(simplify_type(arg) for arg in get_args(tp))
-        return f"list[{inner}]"
-
-    # Base case
-    if hasattr(tp, "__name__"):
-        return tp.__name__
-
-    return str(tp)
-
-
-def rewrite_class_signature(
-    app, what, name: str, obj, options, signature, return_annotation
-):
-    if not isinstance(obj, type) or not issubclass(obj, BaseModel):
-        return
-
-    try:
-        annots = typing.get_type_hints(obj, include_extras=True)
-    except Exception as e:
-        print(f"[ERROR] Failed to get type hints for {name}: {e}")
-        return
-
-    parts = []
-
-    for field_name, field_type in annots.items():
-        if field_name.startswith("_"):
-            continue
-        simplified = simplify_type(field_type)
-        field = obj.model_fields[field_name]
-        if field.default is not None and field.default != ...:
-            default = repr(field.default)
-            part = f"{field_name}: {simplified} = {default}"
-        else:
-            part = f"{field_name}: {simplified}"
-        parts.append(part)
-
-    new_sig = f"({', '.join(parts)})"
-    return new_sig, None
+def typehints_formatter(annotation, config):
+    """Replace verbose Pydantic Annotated types with readable names."""
+    if get_origin(annotation) is AnnotatedAlias:
+        base, *metadata = get_args(annotation)
+        for m in metadata:
+            for (base_type, attr, value), name in _PYDANTIC_TYPE_NAMES.items():
+                if base is base_type and getattr(m, attr, None) == value:
+                    return f":py:data:`~pydantic.{name}`"
+    return None  # fall back to default
 
 
 def setup(app):
     app.connect("autodoc-skip-member", skip_overload_members)
-    # app.connect("autodoc-skip-member", skip_private_members)
-    app.connect("autodoc-process-signature", rewrite_class_signature)

@@ -19,7 +19,7 @@ Classification / Segmentation
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/pydantic.rst
 
    BCELossConfig
    BCEWithLogitsLossConfig
@@ -34,7 +34,7 @@ Regression / Reconstruction
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/pydantic.rst
 
    MSELossConfig
    L1LossConfig
