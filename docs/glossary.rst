@@ -24,3 +24,7 @@ Glossary
     **AMP**
         Automatic Mixed Precision
 
+    **data leakage**
+        A problem in cross validation where generalization performance can be over-estimated since knowledge of the test data was
+        inadvertently included in training a model.
+

@@ -62,25 +62,26 @@ T = TypeVar("T")
 
 class Trainer:
     """
-    The core class to manage model **training**, **evaluation**, and **prediction**.
+    The core class to manage model **training** and **evaluation**.
 
     This class makes all ``ClinicaDL`` objects work together in order to have
-    functional training, evaluation,  and prediction pipelines. It hides the logic
+    functional training and evaluation pipelines. It hides the logic
     common to most PyTorch workflow, while allowing the user to customize the essential
     logic in the :py:class:`~clinicadl.models.Model`, or the non-essential logic via
-    :py:class:`callbacks clinicadl.callbacks.Callbacks`.
+    :py:mod:`callbacks <clinicadl.callbacks>`.
 
     ``Trainer`` also offers high-performance computing options, configured via
-    :py:class:`clinicadl.train.ComputationalConfig`.
+    :py:class:`~clinicadl.train.ComputationalConfig`.
 
     ``Trainer`` will record all outputs and results in a :term:`Maps`
     directory, as well as the configurations used in order to reproduce the experiment.
 
     Main methods:
-    - :py:meth:`train`: to train your model;
-    - :py:meth:`resume`: to resume an interrupted training;
-    - :py:meth:`validate`: to compute new metrics on your validation data;
-    - :py:meth:`test`: to evaluate your model on test data.
+
+    - :py:meth:`train`: for training your model;
+    - :py:meth:`resume`: for resuming an interrupted training;
+    - :py:meth:`validate`: for computing new metrics on your validation data;
+    - :py:meth:`test`: for evaluating your model on test data.
 
     Parameters
     ----------
@@ -88,18 +89,18 @@ class Trainer:
         Directory where outputs, results and configurations will be saved.
 
     model : Model
-        The :py:class:`clinicadl.models.Model` to train or evaluate.
+        The model to train or evaluate.
 
     metrics : Union[dict[str, MetricOrConfig], MetricsHandler], default={"loss": LossMetricConfig(loss_name="loss")}
         Dictionary of metric names and metric instances for monitoring model performance.
-        Metric instances can be passed via a :py:class:`clinicadl.metrics.config.MetricsConfig` or
-        a :py:class:`clinicadl.metrics.Metric`.\n
+        Metric instances can be passed via a :py:class:`clinicadl.metrics.Metric` or a
+        :py:mod:`configuration class <clinicadl.metrics.config>`.
         A :py:class:`~clinicadl.metrics.MetricsHandler` containing the metrics can also be passed directly.
 
         .. note::
             - Here you define the metrics useful within the scope of your ``Trainer``,
-             but it doesn't mean that they will be all always computed. The list of the metrics to compute
-             will be given to the method of the trainer.
+              but it doesn't mean that they will all always be computed. The list of the metrics to compute
+              will be given to the relevant methods of the trainer.
             - You can still add metrics later via :py:meth:`add_metrics`.
 
         By default, only the loss returned by :py:meth:`Model.get_loss_functions <clinicadl.models.Model.get_loss_functions>`
@@ -107,7 +108,7 @@ class Trainer:
 
     optimization : OptimizationConfig, default=OptimizationConfig()
         Configuration for the optimization of the neural network during training
-        (e.g. the number of epochs), passed via a :py:class:`~clinicadl.optim.OptimizationConfig`.
+        (e.g., the number of epochs).
 
     callbacks : Optional[Union[list[Callback], CallbacksHandler]], default=None
         List of :py:class:`~clinicadl.callbacks.Callback` to customize the trainer.
@@ -116,7 +117,7 @@ class Trainer:
         be applied.\n
 
     overwrite : bool, default=False
-        Whether to overwrite the :term:`MAPS` if it exists.
+        Whether to overwrite the :term:`MAPS` if it already exists.
 
     """
 
@@ -140,43 +141,42 @@ class Trainer:
     @property
     def maps(self) -> Maps:
         """
-        The py:class:`clinicadl.io.Maps` associated to the ``Trainer``.
+        The :term:`MAPS` associated to the ``Trainer``.
         """
         return self._maps
 
     @property
     def model(self) -> Model:
         """
-        The py:class:`clinicadl.models.Model` associated to the ``Trainer``.
+        The model associated to the ``Trainer``.
         """
         return self._model
 
     @property
     def metrics(self) -> MetricsHandler:
         """
-        The py:class:`metrics clinicadl.metrics` computed by ``Trainer``.
+        The metrics computed by ``Trainer``.
         """
         return self._metrics
 
     @property
     def callbacks(self) -> CallbacksHandler:
         """
-        The py:class:`callbacks clinicadl.callbacks` called by ``Trainer``.
+        The callbacks called by ``Trainer``.
         """
         return self._callbacks
 
     @property
     def optimization(self) -> OptimizationConfig:
         """
-        The py:class:`optimization configuration clinicadl.optim.OptimizationConfig`
-        of the ``Trainer``.
+        The optimization configuration of the ``Trainer``.
         """
         return self._optim_config
 
     @property
     def state(self) -> TrainerState:
         """
-        The current py:class:`state clinicadl.state.TrainerState` of the ``Trainer``.
+        The current state of the ``Trainer``.
         """
         return self._state
 
@@ -226,13 +226,13 @@ class Trainer:
         To restore a ``Trainer`` from a :term:`MAPS` directory.
 
         This classmethod will try to restore the ``Trainer`` that
-        created this :term:`MAPS` by reading the ``json`` configuration
+        created the :term:`MAPS` by reading the ``json`` configuration
         files saved inside.
 
         If errors happen when restoring a component of the ``Trainer``
-        (e.g. you use your own :py:class:`~clinicadl.models.Model`, so the ``Trainer`` cannot read it),
-        you can restore the associated objects on your own and pass them via keyword arguments
-        (e.g. ``Trainer.train(..., model=...))``.
+        (e.g., you used your own :py:class:`~clinicadl.models.Model`, so the ``Trainer`` cannot read it),
+        you can restore the problematic objects on your own and pass them via keyword arguments
+        (e.g., ``Trainer.train(..., model=...))``.
 
         Parameters
         ----------
@@ -249,14 +249,16 @@ class Trainer:
         Examples
         --------
         .. code-block::
+
             trainer = Trainer(
-            maps="maps",
-            model=MyModel()
-            ...
+                maps="maps",
+                model=MyModel()
+                ...
             )
-        ...
+            ...
 
         .. code-block::
+
             >>> Trainer.from_maps("maps")
             CannotReadJsonError: Cannot read the model [...]    # if MyModel is not a model supported natively by ClinicaDL
             >>> Trainer.from_maps("maps", model=MyModel())
@@ -297,25 +299,25 @@ class Trainer:
 
     def add_metrics(self, **metrics: MetricOrConfig) -> None:
         """
-        To add new metrics to compute to the `py:class:`clinicadl.metrics.MetricsHandler`.
+        To add new metrics to compute to :py:attr:`metrics`.
 
         Parameters
         ----------
-        **metrics : MetricConfig
-            The metrics, passed as a :py:class:`clinicadl.metrics.config.MetricConfig`
-            or a :py:class:`clinicadl.metrics.Metric`.
+        **metrics : MetricOrConfig
+            The metrics to add, passed via a :py:class:`clinicadl.metrics.Metric` or a
+            :py:mod:`configuration class <clinicadl.metrics.config>`.
         """
         self.metrics.add_metrics(**metrics)
         self.metrics.to_json(self._maps.metrics_json, overwrite=True)
 
     def add_callbacks(self, callbacks: Sequence[Callback]) -> None:
         """
-        To add new callbacks to the `py:class:`clinicadl.callbacks.CallbacksHandler`.
+        To add new callbacks to :py:attr:`callbacks`.
 
         Parameters
         ----------
         callbacks : Sequence[Callback]
-            The :py:class:`Callbacks <clinicadl.callbacks.Callback` to add.
+            The callbacks to add.
         """
         self._callbacks.add_callbacks(callbacks)
         self._callbacks.to_json(self._maps.callbacks_json, overwrite=True)
@@ -332,28 +334,22 @@ class Trainer:
         Parameters
         ----------
         split : Split
-            The :py:class:`clinicadl.split.Split` containing the training and validation data.
+            The split containing the training and validation data.
 
         computational : Optional[ComputationalConfig], default=None
-            Computational configuration, passed via a :py:class:`clinicadl.train.ComputationalConfig`.
-            This is where you can setup high-performance computing features or a seed to make
-            your training reproducible.\n
-
-            - If ``resume=True``, the user **cannot pass a computational configuration**, because the previous
-              one will be used.
-
-            - If ``resume=False`` and ``computational=None``, the default parameters defined in
-              :py:class:`~clinicadl.train.ComputationalConfig` will be used.
+            Computational configuration.
+            This is where you can setup high-performance computing features, or a seed to make
+            your training reproducible.
 
         metrics : Optional[Sequence[str]], default=None
             The names of the metric to compute on the validation data. The metrics mentioned
-            here must have been defined beforehand when instantiating the ``Trainer`` or via
-            :py:meth:`add_metrics`.\n
+            here must be in :py:attr:`metrics`, so they must have been defined beforehand when
+            instantiating the ``Trainer`` or via :py:meth:`add_metrics`.\n
             By default, all the defined metrics will be computed.
 
         See Also
         --------
-        - :py:meth:`resume`
+        :py:meth:`resume`
             To resume an interrupted training.
         """
         self.maps.read()
@@ -375,25 +371,23 @@ class Trainer:
         and restart training from there.
 
         ``Trainer`` will attempt to load your training and validation data from the :term:`MAPS`
-        directory, so typically providing the split index is sufficient. However, it it fails, you can
+        directory, so, typically, providing the split index is sufficient. However, it it fails, you can
         manually supply the split.
 
         .. important::
             Here, the computational setup will be the same as the one used when training
             the model before the interruption. So, if the model was first trained on a GPU,
-            make sure a GPU is available when calling ``validate``.
+            make sure a GPU is available when calling ``resume``.
 
         Parameters
         ----------
         split_idx : int
             The index of the split to resume training on.
 
-        dataloader : Optional[Split], default=None
-            The :py:class:`clinicadl.split.Split` containing the training and validation data.\n
-
+        split : Optional[Split], default=None
+            The split containing the training and validation data.\n
             If you pass a split here, it will be used; otherwise, ``Trainer``
             will attempt to load the  split from the :term:`MAPS`.
-
         """
         self.maps.read()
         self._check_split_exists(split_idx)
@@ -576,7 +570,7 @@ class Trainer:
         metrics once the training phase is complete.
 
         ``Trainer`` attempts to load your validation data from the :term:`MAPS`
-        directory, so typically providing the split index is sufficient. However, it it fails, you can
+        directory, so, typically, providing the split index is sufficient. However, it it fails, you can
         manually supply the validation dataloader.
 
         .. important::
@@ -590,13 +584,13 @@ class Trainer:
             The index of the split on which the model to validate has been trained.
 
         metrics : Sequence[str]
-            The names of the metric to compute on the validation data. The metrics mentioned
-            here must have been defined beforehand when instantiating the ``Trainer`` or via
-            :py:meth:`add_metrics`.
+            The names of the metrics to compute on the validation data. The metrics mentioned
+            here must be in :py:attr:`metrics`, so they must have been defined beforehand when
+            instantiating the ``Trainer`` or via :py:meth:`add_metrics`.
 
         dataloader : Optional[DataLoader], default=None
             The dataloader containing the validation data on which the model will be evaluated.
-            If you pass a dataloader, it will be your validation data, otherwise, ``Trainer```
+            If you pass a dataloader, it will be your validation data, otherwise, ``Trainer``
             will attempt to load the validation data from the :term:`MAPS`.
 
         model_checkpoint: Optional[str], default=None
@@ -612,7 +606,7 @@ class Trainer:
         Examples
         --------
         .. code-block::
-            ...
+
             from clinicadl.train import Trainer
             from clinicadl.metrics.config import (
                 LossMetricConfig,
@@ -634,14 +628,17 @@ class Trainer:
             )  # define a new metric named "nsd"
 
         .. code-block::
+
             trainer.validate(
                 split_idx=1, metrics=["nsd"], model_checkpoint="best-loss"
-            )  # validation with metric "nsd"
+            )  # validation of a specific model checkpoint with the new metric "nsd"
 
         .. code-block::
+
             trainer.validate(split_idx=1, metrics=["nsd"])  # validation of all checkpoints
 
         .. code-block::
+
             >>> trainer.validate(split_idx=1, metrics=["nsd"])
             CannotReadJsonError: ClinicaDL could not read the dataloader in ...
             >>> trainer.validate(
@@ -741,27 +738,27 @@ class Trainer:
         group_name : str
             The name given to these test data. If the group name was already used, ``Trainer``
             will attempt to restore the data from the :term:`MAPS`; otherwise, you must pass
-            a dataloader containing your test data.
+            a ``dataloader`` containing your test data.
 
         metrics : Optional[Sequence[str]], default=None
             The names of the metric to compute on the test data. The metrics mentioned
-            here must have been defined beforehand when instantiating the ``Trainer`` or via
-            :py:meth:`add_metrics`.\n
+            here must be in :py:attr:`metrics`, so they must have been defined beforehand when
+            instantiating the ``Trainer`` or via :py:meth:`add_metrics`.\n
             By default, all the defined metrics will be computed.
 
         dataloader : Optional[DataLoader], default=None
             The dataloader containing the test data on which the model will be evaluated.
-            If you pass a dataloader, it will be your test data; otherwise, ``Trainer```
+            If you pass a dataloader, it will be your test data; otherwise, ``Trainer``
             will attempt to load the test data from the :term:`MAPS`.
 
         computational : ComputationalConfig, default=ComputationalConfig()
-            Computational configuration, passed via a :py:class:`clinicadl.train.ComputationalConfig`.
+            Computational configuration.
             This is where you can setup high-performance computing features.
 
         Examples
         --------
         .. code-block::
-            ...
+
             from clinicadl.train import Trainer
             from clinicadl.metrics.config import (
                 LossMetricConfig,
@@ -780,16 +777,19 @@ class Trainer:
             trainer.train(...)  # training on split 1
 
         .. code-block::
+
             trainer.test(
                 model_checkpoint="split-1_best-loss", group_name="adni"
             )  # compute all the metrics
 
         .. code-block::
+
             trainer.test(
                 model_checkpoint="split-1_best-loss", group_name="adni", metrics=["dice"]
             )  # compute only "dice"
 
         .. code-block::
+
             >>> trainer.test(model_checkpoint="split-1_best-loss", group_name="adni")
             CannotReadJsonError: ClinicaDL could not read the dataloader in ...
             >>> trainer.test(
@@ -861,22 +861,22 @@ class Trainer:
             metrics=metrics_handler,
         )
 
-    def predict(
-        self,
-        model_checkpoint: str,
-        group_name: str,
-        dataloader: Optional[DataLoader] = None,
-        computational: ComputationalConfig = ComputationalConfig(),
-    ) -> None:
-        """
-        .. admonition:: Not Implemented
-            :class: warning
+    # def predict(
+    #     self,
+    #     model_checkpoint: str,
+    #     group_name: str,
+    #     dataloader: Optional[DataLoader] = None,
+    #     computational: ComputationalConfig = ComputationalConfig(),
+    # ) -> None:
+    #     """
+    #     .. admonition:: Not Implemented
+    #         :class: warning
 
-            ``Trainer.predict`` will be implemented in a future release.
-        """
-        raise NotImplementedError(
-            "Trainer.predict will be implemented in a future release"
-        )
+    #         ``Trainer.predict`` will be implemented in a future release.
+    #     """
+    #     raise NotImplementedError(
+    #         "Trainer.predict will be implemented in a future release"
+    #     )
 
     def _validation(
         self,
