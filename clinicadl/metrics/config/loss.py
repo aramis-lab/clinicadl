@@ -5,6 +5,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 from clinicadl.losses.types import Loss
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.factories import get_defaults_from
 
@@ -12,7 +13,7 @@ from ..base import Metric
 from ..enum import Optimum
 from ..loss import LossMetric
 from ..monai_wrapper import MonaiMetricWrapper
-from .base import MetricConfig
+from .base import DOCUMENT_EXTRA_PARAMETERS, MetricConfig
 
 if TYPE_CHECKING:
     from clinicadl.models import Model
@@ -22,10 +23,13 @@ logger = getLogger(__name__)
 LOSS_METRIC_MONAI_DEFAULTS = get_defaults_from(LossMetric)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class LossMetricConfig(MetricConfig):
     """
     Special config class to use a loss function as a metric. Useful to compute
     your training losses on your validation set.
+
+    ``loss_name`` is the name given to the loss in :py:meth:`clinicadl.models.Model.get_loss_functions`.
     """
 
     loss_name: str = "loss"

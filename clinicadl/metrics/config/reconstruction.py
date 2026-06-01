@@ -11,10 +11,11 @@ from pydantic import (
 )
 
 from clinicadl.losses.config.enum import Reduction
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
 from ..enum import Optimum
-from .base import MetricConfig, _GetNotNansConfig
+from .base import DOCUMENT_EXTRA_PARAMETERS, MetricConfig, _GetNotNansConfig
 from .enum import Kernel
 
 __all__ = [
@@ -30,6 +31,7 @@ MULTI_SCALE_SSIM_MONAI_DEFAULTS = get_defaults_from(
 )
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class PSNRMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.PSNRMetric`.
@@ -79,6 +81,7 @@ class _BaseSSIMConfig(_GetNotNansConfig):
             ), f"If you pass a sequence for {attribute}, it must be of size {self.spatial_dims}. You passed: {value}."
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     """
     Config class for :py:class:`monai.metrics.regression.SSIMMetric`.
@@ -112,6 +115,7 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
         return self
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     """
     Config class for :py:class:`monai.metrics.MultiScaleSSIMMetric`.

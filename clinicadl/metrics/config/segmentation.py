@@ -5,10 +5,12 @@ import monai.metrics
 from pydantic import NonNegativeFloat, PositiveInt, field_validator
 
 from clinicadl.losses.config.enum import Reduction
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
 from ..enum import Optimum
 from .base import (
+    DOCUMENT_EXTRA_PARAMETERS,
     MetricConfig,
     _GetNotNansConfig,
 )
@@ -40,6 +42,7 @@ HAUSDORFF_DISTANCE_METRIC_MONAI_DEFAULTS = get_defaults_from(
 SURFACE_DICE_METRIC_MONAI_DEFAULTS = get_defaults_from(monai.metrics.SurfaceDiceMetric)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class DiceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.DiceMetric`.
@@ -68,6 +71,7 @@ class DiceMetricConfig(MetricConfig, _GetNotNansConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class MeanIoUConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MeanIoU`.
@@ -85,6 +89,7 @@ class MeanIoUConfig(MetricConfig, _GetNotNansConfig):
         return Optimum.MAX
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class GeneralizedDiceScoreConfig(MetricConfig):
     """
     Config class for :py:class:`monai.metrics.GeneralizedDiceScore`.
@@ -102,6 +107,7 @@ class GeneralizedDiceScoreConfig(MetricConfig):
         return Optimum.MAX
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class SurfaceDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.SurfaceDistanceMetric`.
@@ -124,6 +130,7 @@ class SurfaceDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
         return Optimum.MIN
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class HausdorffDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.HausdorffDistanceMetric`.
@@ -159,6 +166,7 @@ class HausdorffDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class SurfaceDiceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.SurfaceDiceMetric`.

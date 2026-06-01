@@ -2,10 +2,12 @@ import monai
 import monai.metrics
 
 from clinicadl.losses.config.enum import Reduction
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
 from ..enum import Optimum
 from .base import (
+    DOCUMENT_EXTRA_PARAMETERS,
     MetricConfig,
     _GetNotNansConfig,
 )
@@ -26,6 +28,7 @@ AVERAGE_PRECISION_MONAI_DEFAULTS = get_defaults_from(
 )
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class ROCAUCMetricConfig(MetricConfig):
     """
     Config class for :py:class:`monai.metrics.ROCAUCMetric`.
@@ -39,6 +42,7 @@ class ROCAUCMetricConfig(MetricConfig):
         return Optimum.MAX
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class ConfusionMatrixMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.ConfusionMatrixMetric`.
@@ -73,6 +77,7 @@ class ConfusionMatrixMetricConfig(MetricConfig, _GetNotNansConfig):
         return Optimum.MAX
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class AveragePrecisionMetricConfig(MetricConfig):
     """
     Config class for :py:class:`monai.metrics.AveragePrecisionMetric`.
