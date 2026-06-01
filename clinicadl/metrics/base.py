@@ -26,17 +26,50 @@ TensorOrList = Union[torch.Tensor, Sequence[torch.Tensor]]
 
 class Metric(CumulativeIterationMetric, ABC):
     """
-    TransformsHandler must inherit from this class to work with ``ClinicaDL``.
+    To define metrics to evaluate a model.
 
-    The user must override :py:meth:`_aggregate`, and :py:meth:`_accumulate`.
+    Adapted from :py:class:`monai.metrics.CumulativeIterationMetric`.
+
+    A metric must inherit from this class to work with ``ClinicaDL``.
+
+    :py:meth:`_aggregate` and :py:meth:`_accumulate` must be implemented.
 
     The user must also define the attribute ``_optimum``:
 
-    - use "min" when a lower metric value indicates better performance.
+    - use "min" when a lower metric value indicates better performance;
     - use "max" when a higher metric value indicates better performance.
 
-    Finally, ``__init__`` can be overwrite, but don't forget to call
+    Finally, ``__init__`` can be overwritten, but don't forget to call
     ``super().__init__()`` inside.
+
+    Examples
+    --------
+
+    .. code-block::
+
+        from clinicadl.metrics import Metric
+
+        class MyMetric(Metric):
+            def __init__(self, ...):
+                ...
+
+            def _aggregate(self, data: TensorOrList) -> float:
+                ...
+
+            def _accumulate(self, batch: Batch) -> TensorOrList:
+                ...
+
+        metric = Metric(...)
+
+    .. code-block::
+
+        >>> loader_iterator = iter(dataloader)
+        >>> metric(next(loader_iterator))
+        tensor([0., 1., 0.])    # metric value for the 3 images of the batch
+        >>> metric(next(loader_iterator))
+        tensor([0., 1., 0.])
+        >>> metric.aggregate()
+        0.3333333333333333      # here it is the average on all the images
     """
 
     _optimum: Literal["min", "max"]
@@ -90,7 +123,7 @@ class Metric(CumulativeIterationMetric, ABC):
     # pylint: disable=arguments-differ
     def aggregate(self) -> float:
         """
-        See :py:meth:`monai.metrics.metric.Cumulative.aggregate`.
+        See :py:meth:`monai.metrics.Cumulative.aggregate`.
         """
         data = self.get_buffer()
         return self._aggregate(data)
@@ -98,7 +131,7 @@ class Metric(CumulativeIterationMetric, ABC):
     # pylint: disable=signature-differs
     def __call__(self, batch: Batch) -> torch.Tensor:
         """
-        See :py:meth:`monai.metrics.metric.CumulativeIterationMetric.__call__`.
+        See :py:meth:`monai.metrics.CumulativeIterationMetric.__call__`.
 
         It is modified to accept a batch of :py:class:`~clinicadl.data.structures.DataPoint`,
         and to get the metric for each element of the batch, whereas the

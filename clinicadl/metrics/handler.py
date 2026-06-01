@@ -116,14 +116,10 @@ class MetricsHandlerConfig(ObjectConfig["MetricsHandler"]):
 
 class MetricsHandler(HasConfig[MetricsHandlerConfig]):
     """
-    To handle the metrics during a validation phase.
+    To handle all the :py:class:`~clinicadl.metrics.Metric` computed during an evaluation phase.
 
-    This object accepts as inputs raw metrics (i.e. objects that inherits from
-    :py:class:`clinicadl.metrics.Metric`) or config classes. ``MetricsHandler`` will
-    convert config classes to obtain the associated callable.
-
-    ``MetricsHandler`` is itself a callable that works like :py:class:`monai.metricsCumulativeIterationMetric`,
-    with :py:meth:`reset` and :py:meth:`aggregate` methods. So, it can be used like a :py:class:`clinicadl.metrics.Metric`
+    ``MetricsHandler`` is itself a callable that works like :py:class:`monai.metrics.CumulativeIterationMetric`,
+    with :py:meth:`reset` and :py:meth:`aggregate` methods. So, it can be used like a raw :py:class:`~clinicadl.metrics.Metric`
     object.
 
     The results are stored in DataFrames (:py:attr:`df` and :py:attr:`detailed_df`), that can be saved with
@@ -131,9 +127,52 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
 
     Parameters
     ----------
-    **metrics : MetricConfig
-        Metrics to add to the ``MetricsHandler``. They must be passed as
-        :py:class:`clinicadl.metrics.config.MetricConfig` or :py:class:`clinicadl.metrics.Metric`.
+    metrics_on_cpu : boo, True
+        Whether to necessarily apply metrics computation on CPU. If ``False``, postprocessing will
+        be applied on the device where are currently the data
+    **metrics : MetricOrConfig
+        Metrics to add to the ``MetricsHandler``. They must be passed as :py:class:`~clinicadl.metrics.Metric`
+        or :py:mod:`configuration classes <clinicadl.metrics.config>`.
+
+    Examples
+    --------
+
+    .. code-block::
+
+        from clinicadl.metrics import MetricsHandler, config
+        from clinicadl.data.structures.examples import Colin27DataPoint
+        from clinicadl.data.dataloader import Batch
+        import torch
+
+        metrics = MetricsHandler(
+            mse=config.MSEMetricConfig(label_key="ground_truth"),
+            mae=config.MAEMetricConfig(label_key="ground_truth"),
+        )
+        metrics.init_metrics()
+
+        torch.manual_seed(0)
+        batch = Batch(
+            [
+                Colin27DataPoint(output=torch.randn(1, 10), ground_truth=torch.randn(1, 10)),
+                Colin27DataPoint(output=torch.randn(1, 10), ground_truth=torch.randn(1, 10)),
+            ]
+        )
+
+    .. code-block::
+
+        >>> metrics(batch)
+           epoch participant_id session_id       mse       mae
+        0      1        sub-000   ses-M000  1.155020  0.871509
+        1      1        sub-001   ses-M000  1.540214  0.835756
+        >>> metrics.detailed_df
+           epoch participant_id session_id       mse       mae
+        0      1        sub-000   ses-M000  1.155020  0.871509
+        1      1        sub-001   ses-M000  1.540214  0.835756
+        >>> metrics.aggregate(epoch=1)
+        >>> metrics.df
+           epoch       mse       mae
+        0      1  1.347617  0.853633
+
     """
 
     _config_type = MetricsHandlerConfig
@@ -157,13 +196,13 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
 
     def init_metrics(self, model: Optional[Model] = None) -> None:
         """
-        Instantiates the metrics from their config classes.
+        Instantiates the metrics from their configuration classes.
 
         Parameters
         ----------
         model : Optional[Model], default=None
             The model that contains the potential losses to compute
-            on the validation set.
+            on the validation set (defined in :py:meth:`Model.get_loss_functions <clinicadl.models.Model.get_loss_functions>`).
         """
         self._metrics = self.config.metrics.get_object(model=model)
         self._model = model
@@ -171,7 +210,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
     @property
     def metrics(self) -> Optional[dict[str, Metric]]:
         """
-        The metrics currently in the MetricsHandler.
+        The metrics currently in the ``MetricsHandler``.
         If ``None``, it means that :py:meth:`init_metrics` must be called.
         """
         return self._metrics
@@ -212,7 +251,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         **metrics: MetricOrConfig,
     ) -> None:
         """
-        Add metrics to the MetricsHandler instance.
+        Adds metrics to the ``MetricsHandler`` instance.
 
         .. warning::
             To be sure that all the metrics are computed on the
@@ -222,8 +261,8 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         Parameters
         ----------
         **metrics : MetricConfig
-            Metrics to add to the MetricsHandler. They must be passed as
-            :py:class:`clinicadl.metrics.config.MetricConfig` or :py:class:`clinicadl.metrics.Metric`.
+            Metrics to add to the ``MetricsHandler``. They must be passed as :py:class:`~clinicadl.metrics.Metric`
+            or :py:mod:`configuration classes <clinicadl.metrics.config>`.
         """
         self.config.add_metrics(metrics)
         self.reset(reset_df=False)
@@ -244,7 +283,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         metrics: Union[str, Sequence[str]],
     ) -> None:
         """
-        Removes metrics from the MetricsHandler instance.
+        Removes metrics from the ``MetricsHandler`` instance.
 
         Parameters
         ----------
@@ -288,17 +327,12 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         epoch: Optional[int] = None,
     ) -> None:
         """
-        Aggregate and store metric results.
+        Aggregates and stores metric results.
 
         Parameters
         ----------
         epoch : Optional[int], default=None
             Current epoch. This information will be added in the DataFrame.
-
-        Raises
-        ------
-        ValueError
-            If a metric mentioned in ``metrics`` does not match any metric in the ``MetricsHandler``.
 
         See Also
         --------
@@ -347,11 +381,6 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         -------
         pd.DataFrame
             The metrics for all the images in the batch.
-
-        Raises
-        ------
-        ValueError
-            If a metric mentioned in ``metrics`` does not match any metric in the ``MetricsHandler``.
         """
         if self.metrics is None:
             raise ClinicaDLConfigurationError(
@@ -420,7 +449,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
 
     def get_metric_values(self, epoch: Optional[int] = None) -> pd.DataFrame:
         """
-        To get the (aggregated) values of a all the computed metrics.
+        To get the (aggregated) values of all the computed metrics.
 
         Parameters
         ----------
@@ -475,9 +504,9 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         Parameters
         ----------
         path : Path
-            The path for the DataFrame with the aggregated results.
+            The path where to save :py:attr:`df`.
         details_path: Optional[Path], default=None
-            The path for the DataFrame with the detailed results.
+            The path where to save :py:attr:`detailed_df`.
             If ``None``, this DataFrame will not be saved.
         """
         self._df.to_csv(path, sep=SEP, index=False)
@@ -492,10 +521,9 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         Parameters
         ----------
         path : Path
-            The path for the DataFrame with the aggregated results.
+            The path to the DataFrame to merge with :py:attr:`df.
         details_path: Optional[Path], default=None
-            The path for the DataFrame with the detailed results.
-            If ``None``, this DataFrame will not be saved.
+            The path to the DataFrame to merge with :py:attr:`detailed_df`.
         """
         old_df = pd.read_csv(path, sep=SEP)
         try:
@@ -511,7 +539,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
 
     def load(self, path: Path, details_path: Optional[Path] = None) -> None:
         """
-        Loads a checkpoint DataFrame saved with :py:meth:`save`.
+        Loads checkpoint DataFrames saved with :py:meth:`save`.
 
         Parameters
         ----------

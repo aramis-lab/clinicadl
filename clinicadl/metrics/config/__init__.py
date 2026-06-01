@@ -1,5 +1,4 @@
-"""Config classes metrics natively supported in ``ClinicaDL``. Based on
-:monai:`MONAI metrics <metrics.html>`."""
+"""Config classes for metrics natively supported in ``ClinicaDL``."""
 
 from .base import MetricConfig
 from .classification import *

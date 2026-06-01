@@ -42,6 +42,8 @@ class ROCAUCMetricConfig(MetricConfig):
 class ConfusionMatrixMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.ConfusionMatrixMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     metric_name: ConfusionMatrixMetricName = CONFUSION_METRICS_MONAI_DEFAULTS[

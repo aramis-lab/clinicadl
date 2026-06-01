@@ -33,6 +33,8 @@ MULTI_SCALE_SSIM_MONAI_DEFAULTS = get_defaults_from(
 class PSNRMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.PSNRMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     max_val: PositiveFloat
@@ -80,6 +82,8 @@ class _BaseSSIMConfig(_GetNotNansConfig):
 class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     """
     Config class for :py:class:`monai.metrics.regression.SSIMMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     spatial_dims: PositiveInt
@@ -111,6 +115,8 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
 class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
     """
     Config class for :py:class:`monai.metrics.MultiScaleSSIMMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     spatial_dims: PositiveInt

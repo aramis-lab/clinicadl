@@ -43,6 +43,8 @@ SURFACE_DICE_METRIC_MONAI_DEFAULTS = get_defaults_from(monai.metrics.SurfaceDice
 class DiceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.DiceMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     include_background: bool = DICE_MONAI_DEFAULTS["include_background"]
@@ -69,6 +71,8 @@ class DiceMetricConfig(MetricConfig, _GetNotNansConfig):
 class MeanIoUConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MeanIoU`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     include_background: bool = MEAN_IOU_MONAI_DEFAULTS["include_background"]
@@ -101,6 +105,8 @@ class GeneralizedDiceScoreConfig(MetricConfig):
 class SurfaceDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.SurfaceDistanceMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     include_background: bool = SURFACE_DISTANCE_METRIC_MONAI_DEFAULTS[
@@ -121,6 +127,8 @@ class SurfaceDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
 class HausdorffDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.HausdorffDistanceMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     include_background: bool = HAUSDORFF_DISTANCE_METRIC_MONAI_DEFAULTS[
@@ -154,6 +162,8 @@ class HausdorffDistanceMetricConfig(MetricConfig, _GetNotNansConfig):
 class SurfaceDiceMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.SurfaceDiceMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     class_thresholds: Tuple[NonNegativeFloat, ...]

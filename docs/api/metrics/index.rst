@@ -10,10 +10,10 @@
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/class.rst
+   :template: autosummary/metric.rst
 
-   MetricsHandler
    Metric
+   MetricsHandler
 
 .. autosummary::
    :nosignatures:

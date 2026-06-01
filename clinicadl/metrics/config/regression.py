@@ -21,6 +21,8 @@ RMSE_MONAI_DEFAULTS = get_defaults_from(monai.metrics.regression.RMSEMetric)
 class MSEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MSEMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     reduction: Reduction = MSE_MONAI_DEFAULTS["reduction"]
@@ -34,6 +36,8 @@ class MSEMetricConfig(MetricConfig, _GetNotNansConfig):
 class MAEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MAEMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     reduction: Reduction = MAE_MONAI_DEFAULTS["reduction"]
@@ -47,6 +51,8 @@ class MAEMetricConfig(MetricConfig, _GetNotNansConfig):
 class RMSEMetricConfig(MetricConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.RMSEMetric`.
+
+    ``get_not_nans`` is not supported currently.
     """
 
     reduction: Reduction = RMSE_MONAI_DEFAULTS["reduction"]

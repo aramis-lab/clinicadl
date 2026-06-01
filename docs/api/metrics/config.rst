@@ -56,7 +56,7 @@ Segmentation
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/pydantic.rst
 
     MeanIoUConfig
     DiceMetricConfig
