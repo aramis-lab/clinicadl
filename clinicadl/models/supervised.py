@@ -41,17 +41,17 @@ class SupervisedModel(VanillaModel, HasConfig[SupervisedModelConfig]):
     ----------
     network : NetworkOrConfig
         The neural network, passed as a :py:class:`torch.nn.Module` or
-        a :py:mod:`config class <clinicadl.networks.config>`.
+        a :py:mod:`configuration object <clinicadl.networks.config>`.
     loss : LossOrConfig
-        The loss function, passed as a ``callable``, that returns a **1-item** :py:class:`~torch.Tensor`,
-        or a :py:mod:`config class <clinicadl.losses.config>`.
+        The loss function, passed as a ``callable`` that returns a **1-item** :py:class:`~torch.Tensor`,
+        or a :py:mod:`configuration object <clinicadl.losses.config>`.
 
         .. important::
             The loss function must have a :torch:`PyTorch style <nn.html#loss-functions>`,
             with an attribute named ``reduction`` that can be set to ``none``.
 
     optimizer : OptimizerConfig
-        The optimizer, passed as a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
+        The optimizer, passed as a :py:mod:`configuration object <clinicadl.optim.optimizers.config>`.
 
     label_key: str, default="label"
         The key of the label in the training :py:class:`samples <clinicadl.data.structures.Sample>`.

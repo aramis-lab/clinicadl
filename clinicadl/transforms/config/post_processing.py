@@ -15,12 +15,12 @@ from pydantic import (
 )
 
 from clinicadl.transforms.monai_wrapper import MonaiTransformWrapper
-from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.dictionary.words import COPY_, EXCLUDE, INCLUDE
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.dtype import read_dtype
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import TransformConfig
+from .base import DOCUMENT_EXTRA_PARAMETERS, TransformConfig
 from .enum import Rounding, SobelPaddingMode
 
 if TYPE_CHECKING:
@@ -47,6 +47,7 @@ FILL_HOLES_MONAI_DEFAULTS = get_defaults_from(transforms.FillHoles)
 SOBEL_MONAI_DEFAULTS = get_defaults_from(transforms.SobelGradients)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class MonaiTransformConfig(TransformConfig):
     """
     Base config class for MONAI TransformsHandler.
@@ -79,13 +80,8 @@ class MonaiTransformConfig(TransformConfig):
         return getattr(transforms, cls._get_name())
 
 
-class _DimConfig(ClinicaDLConfig):
-    """Config class for 'dim' parameter."""
-
-    dim: NonNegativeInt = 0
-
-
-class ActivationsConfig(MonaiTransformConfig, _DimConfig):
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
+class ActivationsConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.Activations`.
     """
@@ -95,6 +91,7 @@ class ActivationsConfig(MonaiTransformConfig, _DimConfig):
     other: Optional[
         Callable[[torch.Tensor], torch.Tensor]
     ] = ACTIVATIONS_MONAI_DEFAULTS["other"]
+    dim: NonNegativeInt = 0
 
     @model_validator(mode="after")
     def exclude_multiple_arguments(self):
@@ -111,7 +108,8 @@ class ActivationsConfig(MonaiTransformConfig, _DimConfig):
         return self
 
 
-class AsDiscreteConfig(MonaiTransformConfig, _DimConfig):
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
+class AsDiscreteConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.AsDiscrete`.
     """
@@ -121,6 +119,7 @@ class AsDiscreteConfig(MonaiTransformConfig, _DimConfig):
     threshold: Optional[float] = AS_DISCRETE_MONAI_DEFAULTS["threshold"]
     rounding: Optional[Rounding] = AS_DISCRETE_MONAI_DEFAULTS["rounding"]
     dtype: torch.dtype = Field(default=torch.float, reader=read_dtype)
+    dim: NonNegativeInt = 0
 
     @model_validator(mode="after")
     def exclude_multiple_arguments(self):
@@ -137,6 +136,7 @@ class AsDiscreteConfig(MonaiTransformConfig, _DimConfig):
         return self
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class KeepLargestConnectedComponentConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.KeepLargestConnectedComponent`.
@@ -151,6 +151,7 @@ class KeepLargestConnectedComponentConfig(MonaiTransformConfig):
     num_components: Optional[PositiveInt] = KLCC_MONAI_DEFAULTS["num_components"]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class DistanceTransformEDTConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.DistanceTransformEDT`.
@@ -159,6 +160,7 @@ class DistanceTransformEDTConfig(MonaiTransformConfig):
     sampling: Optional[Union[float, list[float]]] = EDT_MONAI_DEFAULTS["sampling"]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RemoveSmallObjectsConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.RemoveSmallObjects`.
@@ -173,6 +175,7 @@ class RemoveSmallObjectsConfig(MonaiTransformConfig):
     ] = SMALL_OBJECTS_MONAI_DEFAULTS["pixdim"]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class LabelFilterConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.LabelFilter`.
@@ -181,6 +184,7 @@ class LabelFilterConfig(MonaiTransformConfig):
     applied_labels: Union[int, list[int]]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class FillHolesConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.FillHoles`.
@@ -192,6 +196,7 @@ class FillHolesConfig(MonaiTransformConfig):
     connectivity: Optional[PositiveInt] = FILL_HOLES_MONAI_DEFAULTS["connectivity"]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class SobelGradientsConfig(MonaiTransformConfig):
     """
     Config class for :py:class:`monai.transforms.SobelGradients`.

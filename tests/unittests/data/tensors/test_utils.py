@@ -6,7 +6,7 @@ import pytest
 import torchio as tio
 
 from clinicadl.data.tensors import TensorDescription
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.transforms.config import CropConfig, PadConfig
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.tsvtools import read_data

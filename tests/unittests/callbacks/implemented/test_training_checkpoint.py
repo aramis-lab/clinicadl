@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pandas as pd
 
 from clinicadl.callbacks import TrainingCheckpointCallback
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 
 MAPS_PATH = Path(__file__).parents[2] / "resources" / "maps_example"
 

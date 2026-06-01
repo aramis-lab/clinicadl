@@ -37,18 +37,18 @@ class ReconstructionModel(VanillaModel, HasConfig[ReconstructionModelConfig]):
     Parameters
     ----------
     network : NetworkOrConfig
-        The autoencoder, passed as a :py:class:`torch.nn.Module` or
-        a :py:mod:`config class <clinicadl.networks.config>`.
+        The neural network, passed as a :py:class:`torch.nn.Module` or
+        a :py:mod:`configuration object <clinicadl.networks.config>`.
     loss : LossOrConfig
-        The reconstruction loss function, passed as a ``callable``, that returns a **1-item** :py:class:`~torch.Tensor`,
-        or a :py:mod:`config class <clinicadl.losses.config>`.
+        The reconstruction loss function, passed as a ``callable`` that returns a **1-item** :py:class:`~torch.Tensor`,
+        or a :py:mod:`configuration object <clinicadl.losses.config>`.
 
         .. important::
             The loss function must have a :torch:`PyTorch style <nn.html#loss-functions>`,
             with an attribute named ``reduction`` that can be set to ``none``.
 
     optimizer : OptimizerConfig
-        The optimizer, passed as a :py:mod:`config class <clinicadl.optim.optimizers.config>`.
+        The optimizer, passed as a :py:mod:`configuration object <clinicadl.optim.optimizers.config>`.
 
     See Also
     --------
@@ -61,14 +61,12 @@ class ReconstructionModel(VanillaModel, HasConfig[ReconstructionModelConfig]):
 
     def forward_step(self, batch: Batch) -> torch.Tensor:
         """
-        Performs a pass forward in the autoencoder and a comparison with the input image.
+        Performs a pass forward in the neural network and a comparison with the input image.
 
         Parameters
         ----------
         batch : Batch
-            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`. It can either a
-            :py:class:`~clinicadl.data.dataloader.Batch`, or a ``tuple`` of ``Batch``
-            (e.g. if you use :py:class:`~clinicadl.data.datasets.PairedDataset`).
+            The batch of :py:class:`DataPoints <clinicadl.data.structures.DataPoint>`.
 
         Returns
         -------

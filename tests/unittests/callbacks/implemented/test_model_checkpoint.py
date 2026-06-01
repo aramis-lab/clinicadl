@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from clinicadl.callbacks import ModelCheckpointCallback
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import (
     MAEMetricConfig,

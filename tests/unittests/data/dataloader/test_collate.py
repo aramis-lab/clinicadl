@@ -14,7 +14,7 @@ from clinicadl.data.dataloader import (
 )
 from clinicadl.data.dataloader.collate.factory import get_collate_from_dict
 from clinicadl.data.structures import Sample, Sample2D
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.utils.json import read_json
 from clinicadl.utils.numerics import merge_numerics
 

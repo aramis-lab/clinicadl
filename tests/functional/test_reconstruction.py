@@ -21,7 +21,7 @@ import pytest
 from clinicadl.callbacks import MonitorCallback, TrainingCheckpointCallback
 from clinicadl.data.datasets import BidsDataset
 from clinicadl.infer import PatchesToImageInferer
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.losses.config import MSELossConfig
 from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import LossMetricConfig

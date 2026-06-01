@@ -12,7 +12,7 @@ Build your own neural network
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/config_object.rst
    :toctree: ../generated/
 
    MLPConfig
@@ -28,7 +28,7 @@ Common neural networks
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/config_object.rst
    :toctree: ../generated/
 
    UNetConfig
@@ -46,7 +46,7 @@ DenseNets
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/config_object.rst
    :toctree: ../generated/
 
    DenseNet121Config
@@ -59,7 +59,7 @@ ResNets
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/config_object.rst
    :toctree: ../generated/
 
    ResNet18Config
@@ -73,7 +73,7 @@ Squeeze-and-Excitation ResNets
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/config_object.rst
    :toctree: ../generated/
 
    SEResNet50Config
@@ -85,7 +85,7 @@ Vision Transformers
 
 .. autosummary::
    :nosignatures:
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/config_object.rst
    :toctree: ../generated/
 
    ViTB16Config

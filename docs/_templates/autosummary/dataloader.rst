@@ -4,6 +4,5 @@
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
-   :members: get_object
-
-.. include:: {{module}}.{{objname}}.examples
+   :members:
+   :exclude-members: to_dict, to_json, from_dict, from_json

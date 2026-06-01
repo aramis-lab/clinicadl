@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from clinicadl.io import (
+from clinicadl.io.bids import (
     BidsFileType,
     DwiDti,
     FlairLinear,
@@ -62,8 +62,8 @@ class TestBidsFileType:
     )
     def test_2(self, path, match):
         file_type = BidsFileType(
-            data_type=".*abc.*",
-            suffix=".*abc.*",
+            data_type=r".*abc.*",
+            suffix=r".*abc.*",
             extension=".nii.gz",
             with_entities={"trc": "FDG", "res": "1x.*"},
         )

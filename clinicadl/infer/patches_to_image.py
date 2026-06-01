@@ -70,9 +70,6 @@ class PatchesToImageInferer(
     Splits a 3D volume into 3D patches, passes them in a 3D neural network, and merges
     the outputs in a 3D output volume.
 
-    See :py:class:`clinicadl.infer.Inferer` and :py:class:`clinicadl.infer.SimpleInferer`
-    for more details and examples on ``Inferers``.
-
     Adapted from :py:class:`monai.inferers.SlidingWindowInferer`.
 
     Parameters
@@ -89,28 +86,25 @@ class PatchesToImageInferer(
         - ``"constant"``: gives equal weight to all predictions;
         - ``"gaussian"``: gives less weight to the prediction on edges of patches.
 
-    sigma_scale: float, default=0.125,
+    sigma_scale: float, default=0.125
         The standard deviation coefficient of the Gaussian window when ``avg_mode`` is ``"gaussian"``.
         The actual sigma is ``sigma_scale * patch_size``.
     batch_size : int, default=1
         The size of the batch passed to the neural network. If you pass a batch of images to
         the inferer, this batch will be rearranged to match ``batch_size``.
 
-        E.g. if a batch of :math:`2` images is passed, with `3` patches in each image, and ``batch_size=4``, then
+        E.g., if a batch of 2 images is passed, with 3 patches in each image, and ``batch_size=4``, then
         the first batch passed to the neural network will contain the three patches of the first image,
         and the first patch of the second.
 
     postprocessing : Optional[Sequence[TransformOrConfig]], default=None
         To apply postprocessing transformations (e.g. activations) after the pass forward
-        in the neural network and output fusion.
+        in the neural network. Accepted transforms are functions that take as input a ``DataPoint`` and return
+        a ``DataPoint``, or :py:mod:`configuration classes <clinicadl.transforms.config>`.
 
     postprocessing_on_cpu : bool, default=False
         Whether to necessarily apply postprocessing on CPU. If ``False``, postprocessing will
         be applied on the device where are the data and the neural network.
-
-        .. important::
-            ``postprocessing_on_cpu=True`` may potentially change the device on which
-            are your input data.
 
     output_name : str, default="output"
         The name the give to the output in the ``DataPoint``.
@@ -123,9 +117,9 @@ class PatchesToImageInferer(
     output_type : OutputType, default="tensor"
         Determines the data type of the output:
 
-        - if ``"image"``, the output will be converted to a :py:class:`torchio.ScalarImage`;
-        - if ``"mask"``, the output will be converted to a :py:class:`torchio.LabeMap`;
-        - if ``"tensor"``, the output will remain a :py:class:`torch.Tensor`.
+        - ``"image"``: the output will be converted to a :py:class:`torchio.ScalarImage`;
+        - ``"mask"``: the output will be converted to a :py:class:`torchio.LabelMap`;
+        - ``"tensor"``: the output will remain a :py:class:`torch.Tensor`.
 
     Examples
     --------
@@ -133,12 +127,12 @@ class PatchesToImageInferer(
     .. code-block::
 
         import torch
-        from clinicadl.infer import SlicesToImageInferer
-        from clinicadl.data.structures.examples import ColinDataPoint
+        from clinicadl.infer import PatchesToImageInferer
+        from clinicadl.data.structures.examples import Colin27DataPoint
         from clinicadl.networks.nn import ConvEncoder
 
         net = AutoEncoder(in_shape=(1, 64, 64, 64), latent_size=16, conv_args={"channels": [2]})
-        datapoint = ColinDataPoint()
+        datapoint = Colin27DataPoint()
         inferer = PatchesToImageInferer(patch_size=64, batch_size=16, overlap=1/5)
 
 
@@ -161,15 +155,15 @@ class PatchesToImageInferer(
 
     def __init__(
         self,
-        patch_size: Union[int, tuple[PositiveInt, PositiveInt, int]],
+        patch_size: Union[int, tuple[int, int, int]],
         overlap: Union[float, tuple[float, float, float]] = 0.25,
-        avg_mode: AveragingMode = AveragingMode.CONSTANT,
+        avg_mode: str | AveragingMode = AveragingMode.CONSTANT,
         sigma_scale: float = 0.125,
         batch_size: int = 1,
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
         output_name: str = OUTPUT,
-        output_type: OutputType = OutputType.TENSOR,
+        output_type: str | OutputType = OutputType.TENSOR,
     ):
         super().__init__(
             patch_size=patch_size,

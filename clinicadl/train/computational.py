@@ -11,7 +11,7 @@ from clinicadl.utils.seed import DETERMINISTIC, GLOBAL_SEED
 
 class ComputationalConfig(ClinicaDLConfig):
     """
-    Config class to define computational parameters.
+    Configuration class to define computational parameters.
 
     Parameters
     ----------
@@ -30,10 +30,10 @@ class ComputationalConfig(ClinicaDLConfig):
         when possible.
     seed : Optional[NonNegativeInt], default=None
         Global seed to control the randomness. If ``None``, ``ComputationalConfig`` will look for a global seed set
-        with :py:func:`clinicadl.utils.seed.seed_everything`. If passed, it will override any global seed.
+        with :py:func:`clinicadl.utils.seed.seed_everything`. If a seed is passed here, it will override any global seed.
     deterministic : Optional[bool], default=None
         Whether to configure PyTorch's operations in deterministic mode. If ``None``, ``ComputationalConfig`` will look for a global configuration set
-        with :py:func:`clinicadl.utils.seed.seed_everything`. If passed, it will override any global configuration.
+        with :py:func:`clinicadl.utils.seed.seed_everything`. If passed here, it will override any global configuration.
     """
 
     gpu: bool = True

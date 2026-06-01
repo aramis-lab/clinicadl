@@ -7,7 +7,7 @@ import pandas as pd
 from pydantic import Field, PositiveFloat, PositiveInt, field_validator
 from typing_extensions import Self
 
-from clinicadl.io import Bids, BidsFileType
+from clinicadl.io.bids import Bids, BidsFileType
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.transforms.factory import get_transform_from_dict
 from clinicadl.transforms.types import Transform

@@ -7,25 +7,27 @@ from .datapoint import DataPoint
 from .sample import Sample, Sample2D
 
 
-class ColinDataPoint(DataPoint):
+class Colin27DataPoint(DataPoint):
     """
     Example of a :py:class:`~clinicadl.data.structures.DataPoint`.
 
     It contains a T1 image and a mask called "head".
 
-    The default fields can be overwritten.
+    The default fields can be overwritten and additional fields can be added.
 
     Examples
     --------
-    >>> from clinicadl.data.structures.examples import ColinDataPoint
-    >>> colin = ColinDataPoint()
+    >>> from clinicadl.data.structures.examples import Colin27DataPoint
+    >>> colin = Colin27DataPoint()
     >>> colin
-    ColinDataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
+    Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
     >>> colin.participant
     'sub-colin'
-    >>> colin = ColinDataPoint(participant="sub-000")
+    >>> colin = Colin27DataPoint(participant="sub-000", new_field="x")
     >>> colin.participant
     'sub-000'
+    >>> colin["new_field"]
+    'x'
     """
 
     def __init__(self, **kwargs):
@@ -41,29 +43,31 @@ class ColinDataPoint(DataPoint):
         super().__init__(**args)
 
 
-class ColinSample(Sample):
+class Colin27Sample(Sample):
     """
     Example of a :py:class:`~clinicadl.data.structures.Sample`.
 
     It contains a T1 image and an mask called "head".
 
-    The default fields can be overwritten.
+    The default fields can be overwritten and additional fields can be added.
 
     Examples
     --------
-    >>> from clinicadl.data.structures.examples import ColinSample
-    >>> colin = ColinSample()
+    >>> from clinicadl.data.structures.examples import Colin27Sample
+    >>> colin = Colin27Sample()
     >>> colin
-    ColinSample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
+    Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
     >>> colin.participant
     'sub-colin'
-    >>> colin = ColinSample(participant="sub-000")
+    >>> colin = Colin27Sample(participant="sub-000", new_field="x")
     >>> colin.participant
     'sub-000'
+    >>> colin["new_field"]
+    'x'
     """
 
     def __init__(self, **kwargs):
-        from clinicadl.io import BidsFileType
+        from clinicadl.io.bids import BidsFileType
 
         tio_colin = Colin27()
         # pylint: disable=no-member
@@ -84,29 +88,31 @@ class ColinSample(Sample):
         super().__init__(**args)
 
 
-class ColinSample2D(Sample2D):
+class Colin27Sample2D(Sample2D):
     """
     Example of a :py:class:`~clinicadl.data.structures.Sample2D`.
 
     It contains a T1 image and an additional mask called "head".
 
-    The default fields can be overwritten.
+    The default fields can be overwritten and additional fields can be added.
 
     Examples
     --------
-    >>> from clinicadl.data.structures.examples import ColinSample2D
-    >>> colin = ColinSample2D()
+    >>> from clinicadl.data.structures.examples import Colin27Sample2D
+    >>> colin = Colin27Sample2D()
     >>> colin
-    ColinSample2D(Keys: ('head', 'slice_direction', 'squeeze', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
+    Colin27Sample2D(Keys: ('head', 'slice_direction', 'squeeze', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
     >>> colin.participant
     'sub-colin'
-    >>> colin = ColinSample2D(participant="sub-000")
+    >>> colin = Colin27Sample2D(participant="sub-000", new_field="x")
     >>> colin.participant
     'sub-000'
+    >>> colin["new_field"]
+    'x'
     """
 
     def __init__(self, **kwargs):
-        from clinicadl.io import BidsFileType
+        from clinicadl.io.bids import BidsFileType
 
         tio_colin = Colin27()
         tio_colin = tio.CropOrPad(target_shape=(181, 1, 181))(tio_colin)

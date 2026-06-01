@@ -4,8 +4,7 @@ API Reference
 =============
 
 This is the class and function reference of ClinicaDL.
-Please refer to the :doc:`user guide <../user_guide/index>` and the :doc:`example gallery <../auto_examples/index>`
-for more information and usage examples, as the raw specifications of classes and
+Please refer to the :doc:`user guide <../user_guide/index>` for more information and usage examples, as the raw specifications of classes and
 functions may not be enough to give full guidelines on their use.
 
 -----
@@ -35,7 +34,8 @@ functions may not be enough to give full guidelines on their use.
    
    callbacks
    data/index
-   io
+   infer
+   io/index
    losses
    metrics/index
    models

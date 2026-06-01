@@ -25,7 +25,7 @@ from clinicadl.utils.objects import HasConfig
 from ..base import Callback
 
 if TYPE_CHECKING:
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.train import TrainerState
 
 logger = getLogger(__name__)
@@ -83,21 +83,21 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
     ----------
     scheduler : Union[torch.optim.lr_scheduler.LRScheduler, LRSchedulerConfig]
         The learning rate scheduler passed as a raw :py:class:`torch.optim.lr_scheduler.LRScheduler` or via
-        a :py:class:`~clinicadl.optim.lr_schedulers.config.LRSchedulerConfig`.
+        a :py:class:`LRSchedulerConfig <clinicadl.optim.lr_schedulers.config>`.
     optimizer_name : str, default="optimizer"
-        The optimizer whose learning rate should be scheduled. It must be a name of one of the optimizers
+        The optimizer whose learning rate have to be scheduled. It must be a name of one of the optimizers
         returned by the :py:meth:`Model.build_optimizers <clinicadl.models.Model.build_optimizers>`.
-    scheduler_type : Optional[LRSchedulerMode], default=None
+    scheduler_type : Optional[str | LRSchedulerMode], default=None
         The type of LR scheduler, among:
 
         - ``"epoch-based"``: learning rate is updated at the end of the epoch (e.g. :py:class:`~torch.optim.lr_scheduler.LinearLR`);
-        - ``"metric-based"``: learning rate is updated at the end of the epoch according
+        - ``"metric-based"``: learning rate is updated after evaluation according
           to a validation metric (e.g. :py:class:`~torch.optim.lr_scheduler.ReduceLROnPlateau`);
         - ``"step-based"``: learning rate is updated after each optimization step
           (e.g. :py:class:`~torch.optim.lr_scheduler.OneCycleLR`).
 
         **Mandatory if a raw LRScheduler is passed** to ``scheduler``. It will be ignore if a
-        config class is passed.
+        :py:class:`LRSchedulerConfig <clinicadl.optim.lr_schedulers.config>` is passed.
     metric_name : Optional[str], default=None
         If ``scheduler_type="metric-based"``, it is the name of the metric to monitor.
 
@@ -123,7 +123,13 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
 
         trainer = Trainer(
             metrics={"loss": LossMetricConfig(), "mse": MSEMetricConfig()},
-            callbacks=[LRSchedulerCallback(scheduler=ReduceLROnPlateauConfig(mode="min"), metric_name="mse", optimizer_name="optimizer")],
+            callbacks=[
+                LRSchedulerCallback(
+                    scheduler=ReduceLROnPlateauConfig(mode="min"),
+                    metric_name="mse",
+                    optimizer_name="optimizer",
+                )
+            ],
             ...
         )
 
@@ -135,7 +141,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         self,
         scheduler: LRSchedulerOrConfig,
         optimizer_name: str = OPTIMIZER,
-        scheduler_type: Optional[LRSchedulerType] = None,
+        scheduler_type: Optional[str | LRSchedulerType] = None,
         metric_name: Optional[str] = None,
     ):
         self.config: LRSchedulerCallbackConfig = self._config_type(

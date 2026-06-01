@@ -10,9 +10,11 @@
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/config_class.rst
+   :template: autosummary/class.rst
 
-   Transforms
+   TransformsHandler
+   MergeFields
+   Format
 
 .. autosummary::
    :nosignatures:

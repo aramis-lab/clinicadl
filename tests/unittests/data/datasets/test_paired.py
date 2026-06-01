@@ -15,7 +15,7 @@ from clinicadl.data.datasets import (
     TensorDataset,
 )
 from clinicadl.data.structures import Sample
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.extraction import Slice
 

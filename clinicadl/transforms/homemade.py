@@ -52,10 +52,10 @@ class Format(tio.Transform):
     .. code-block::
 
         from clinicadl.transforms import Format
-        from clinicadl.data.structures.examples import ColinDataPoint
+        from clinicadl.data.structures.examples import Colin27DataPoint
         import numpy as np
 
-        data = ColinDataPoint(age=55.0, array=np.array([1, 2]))
+        data = Colin27DataPoint(age=55.0, array=np.array([1, 2]))
 
     .. code-block::
 
@@ -138,10 +138,10 @@ class MergeFields(tio.Transform):
     .. code-block::
 
         from clinicadl.transforms import MergeFields
-        from clinicadl.data.structures.examples import ColinDataPoint
+        from clinicadl.data.structures.examples import Colin27DataPoint
         import numpy as np
 
-        data = ColinDataPoint(age=55, sex="M", array_1=np.zeros(2), array_2=np.ones(2))
+        data = Colin27DataPoint(age=55, sex="M", array_1=np.zeros(2), array_2=np.ones(2))
 
     .. code-block::
 

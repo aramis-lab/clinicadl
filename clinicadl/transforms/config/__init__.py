@@ -1,5 +1,4 @@
-"""Config classes for transforms supported natively in ``ClinicaDL``, for preprocessing and augmentation. Based
-on :torchio:`TorchIO transforms <transforms/transforms.html>`."""
+"""Config classes for transforms supported natively in ``ClinicaDL``."""
 
 from .base import OneOfConfig, TransformConfig
 from .enum import ImplementedTransform

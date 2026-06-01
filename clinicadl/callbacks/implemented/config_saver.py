@@ -12,7 +12,7 @@ from ..base import Callback
 
 if TYPE_CHECKING:
     from clinicadl.data.dataloader import DataLoader
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.io.maps.inference import InferenceDirType
     from clinicadl.models import Model
     from clinicadl.optim import OptimizationConfig

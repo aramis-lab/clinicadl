@@ -1,2 +1,5 @@
+"""
+To read a :term:`MAPS` directory.
+"""
+
 from .maps import Maps
-from .summary import MapsSummary

@@ -19,7 +19,7 @@ from clinicadl.callbacks.implemented import (
     MetricsSaverCallback,
     TrainingLossCallback,
 )
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 
 MAPS_PATH = Path(__file__).parents[1] / "resources" / "maps_example"
 

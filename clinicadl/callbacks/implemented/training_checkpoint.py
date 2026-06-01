@@ -18,7 +18,7 @@ from clinicadl.utils.objects import HasConfig
 from ..base import Callback
 
 if TYPE_CHECKING:
-    from clinicadl.io import Maps
+    from clinicadl.io.maps import Maps
     from clinicadl.io.maps.training.splits.tmp import EpochTmpDir
     from clinicadl.metrics import MetricsHandler
     from clinicadl.models import Model
@@ -42,10 +42,10 @@ class TrainingCheckpointCallbackConfig(ObjectConfig["TrainingCheckpointCallback"
 
 class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackConfig]):
     """
-    To save checkpoints during a training phase.
+    To save checkpoints of a training phase.
 
     The user can then resume a training from the last saved checkpoint when calling
-    :py:meth:`Trainer.train <clinicadl.train.Trainer.train>`.
+    :py:meth:`Trainer.resume <clinicadl.train.Trainer.resume>`.
 
     The checkpoints will be **deleted when the training is completed**. To save permanently
     checkpoints of your neural network, use instead :py:class:`~clinicadl.callbacks.ModelCheckpointCallback`.

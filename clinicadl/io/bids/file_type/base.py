@@ -27,7 +27,7 @@ class BidsFileType(ClinicaDLConfig):
     Parameters
     ----------
     suffix : str | Pattern
-        The :bids:`BIDS suffix <common-principles.html#definitions>` of the relevant files.
+        The :bids:`BIDS suffix <common-principles.html#filenames>` of the relevant files.
         Regular expressions are accepted.
 
     data_type : Optional[str | Pattern], default=None
@@ -41,20 +41,23 @@ class BidsFileType(ClinicaDLConfig):
         The file extension of the relevant files. Regular expressions are accepted.
 
     with_entities : Optional[dict[AlphanumericStr, str | Pattern]], default=None
-        The :bids:`BIDS entities <common-principles.html#entities>` that must contain the relevant files.
-        More concretely, if ``with_entities={"trc": "18FFDG"}``, all the files with ``trc-18FFDG`` in their
+        The :bids:`BIDS entities <common-principles.html#entities>` that the relevant files must contain .
+        For example, if ``with_entities={"trc": "18FFDG"}``, all the files with ``trc-18FFDG`` in their
         filenames are candidate. Regular expressions are accepted for the entity values.
 
         .. important::
             - No need to mention the entities ``"sub"`` and ``"ses"`` here.
 
     without_entities : Optional[dict[AlphanumericStr, str | Pattern]], default=None
-        The :bids:`BIDS entities <common-principles.html#entities>` that must not contain the relevant files.
-        More concretely, if ``without_entities={"trc": "18FFDG"}``, all the files with ``trc-18FFDG`` are excluded.
+        The :bids:`BIDS entities <common-principles.html#entities>` that the files must not contain.
+        For example, if ``without_entities={"trc": "18FFDG"}``, all the files with ``trc-18FFDG`` are excluded.
         Regular expressions are accepted for the entity values.
 
     description : Union[str], default=None
         A potential description of the files.
+
+        .. note::
+            This description is not used; it is provided for information purposes only.
     """
 
     suffix: Pattern
@@ -85,7 +88,7 @@ class BidsFileType(ClinicaDLConfig):
         Checks whether the input path matches the current ``BidsFileType``, for the
         (participant, session) pair if specified.
 
-        The path is the not the path relative to the term:`BIDS` directory, but the path relative
+        The path is not the path relative to the :term:`BIDS` directory, but the path relative
         to the direct parent of the ``data_type`` folder (see examples).
 
         Parameters
@@ -113,7 +116,7 @@ class BidsFileType(ClinicaDLConfig):
                     data_type="anat",
                     suffix="T1w",
                     extension=".nii.gz",
-                    with_entities={"space": "MNI152.*", "res": "1x1x1"},
+                    with_entities={"space": r"MNI152.*", "res": "1x1x1"},
                     without_entities={"desc": "Crop"},
                 )
             >>> file_type.match("anat/sub-000_ses-M000_space-MNI152_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
@@ -133,7 +136,7 @@ class BidsFileType(ClinicaDLConfig):
             >>> file_type.match("sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
             False   # not the right data_type
             >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii", participant="sub-000", session="ses-M000")
-            False   # not the right suffix
+            False   # not the right extension
             >>> file_type.match("anat/sub-000_ses-M000_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
             False   # 'space' is missing
             >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-2x2x2_T1w.nii.gz", participant="sub-000", session="ses-M000")

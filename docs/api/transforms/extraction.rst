@@ -10,7 +10,7 @@
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/config_class.rst
+   :template: autosummary/extraction.rst
 
    Image
    Patch

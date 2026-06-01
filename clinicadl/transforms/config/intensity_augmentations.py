@@ -10,9 +10,10 @@ from pydantic import (
     field_validator,
 )
 
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import TorchioTransformConfig
+from .base import DOCUMENT_EXTRA_PARAMETERS, TorchioTransformConfig
 from .enum import InterpolationMode, NumericalAxis
 
 __all__ = [
@@ -37,6 +38,7 @@ RANDOOM_GAMMA_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomGamma)
 RANOM_SWAP_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomSwap)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomMotionConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomMotion`.
@@ -62,6 +64,7 @@ class RandomMotionConfig(TorchioTransformConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomGhostingConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomGhosting`.
@@ -108,6 +111,7 @@ class RandomGhostingConfig(TorchioTransformConfig):
             )
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomSpikeConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomSpike`.
@@ -129,6 +133,7 @@ class RandomSpikeConfig(TorchioTransformConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomBiasFieldConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomBiasField`.
@@ -163,6 +168,7 @@ Std = Union[
 ]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomBlurConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomBlur`.
@@ -179,6 +185,7 @@ class RandomBlurConfig(TorchioTransformConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomNoiseConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomNoise`.
@@ -200,6 +207,7 @@ class RandomNoiseConfig(TorchioTransformConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomSwapConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomSwap`.
@@ -211,6 +219,7 @@ class RandomSwapConfig(TorchioTransformConfig):
     num_iterations: NonNegativeInt = RANOM_SWAP_TORCHIO_DEFAULTS["num_iterations"]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomGammaConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomGamma`.

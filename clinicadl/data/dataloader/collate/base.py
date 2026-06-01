@@ -17,13 +17,13 @@ BatchType = Union[Batch[T], Sequence[Batch[T]], dict[Any, Batch[T]]]
 
 class CollateFn(JsonReaderWriter, ABC):
     """
-    Abstract class to define how list of :py:class:`~clinicadl.data.datasets.Sample`
+    Abstract class to define how sequences of :py:class:`~clinicadl.data.structures.Sample`
     are collated into batches.
 
     See :torch:`PyTorch's documentation <data.html#loading-batched-and-non-batched-data>`.
 
     The only function to override is :py:meth:`__call__`, which defines how
-    the samples are collated, and thus what will be the output of the ``DataLoader``.
+    the samples are collated, and thus what will be the output of the :py:class:`~clinicadl.data.dataloader.DataLoader`.
     """
 
     @abstractmethod
@@ -34,8 +34,8 @@ class CollateFn(JsonReaderWriter, ABC):
         Parameters
         ----------
         samples : Sequence[SampleLike]
-            A sequence :py:class:`~clinicadl.data.datasets.Sample`, a sequence of sequences ``Samples``, or
-            a sequence of dictionaries of ``Samples``.
+            A sequence of :py:class:`Samples <clinicadl.data.structures.Sample>`, sequences of ``Samples``, or
+            dictionaries of ``Samples``.
 
         Returns
         -------

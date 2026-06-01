@@ -10,22 +10,20 @@
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/class.rst
+    :template: autosummary/dataloader.rst
 
-    DataLoader
     Batch
+    DataLoader
 
 Collate functions
 -----------------
 
 .. automodule:: clinicadl.data.dataloader.collate
 
-.. currentmodule:: clinicadl.data.dataloader.collate
-
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/class.rst
+    :template: autosummary/callable.rst
 
     CollateFn
     ToBatchCollate

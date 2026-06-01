@@ -69,7 +69,7 @@ class _BidsTypeDataset(MultimodalSamplerDataset, CheckableDataset):
         if data is not None:
             return data
 
-        participants_sessions = self.image.bids.get_participants_sessions(
+        participants_sessions = self.image.bids.get_participants_sessions_with(
             self.image.file_type
         )
         if len(participants_sessions) == 0:

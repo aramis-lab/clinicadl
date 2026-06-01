@@ -15,13 +15,14 @@ CROP = "Crop"
 
 class T1Linear(BidsFileType):
     """
-    :py:class:`~clinicadl.io.BidsFileType` to select T1-weighted MRI images
+    :py:class:`~clinicadl.io.bids.BidsFileType` to select T1-weighted MRI images
     preprocessed with :clinica:`Clinica t1-linear <Pipelines/T1_Linear/>` pipeline.
 
     Parameters
     ----------
     use_uncropped_image : bool, default=False
-        Whether to use the uncropped images returned by ``Clinica``:\n
+        Whether to use the uncropped images returned by ``Clinica``:
+
         - if ``use_uncropped_image=True``: only the files that match the pattern
           ``t1_linear/sub-*_ses-*_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii*``
           will be selected.
@@ -62,7 +63,7 @@ class T1Linear(BidsFileType):
 
 class FlairLinear(BidsFileType):
     """
-    :py:class:`~clinicadl.io.BidsFileType` to select Fluid-Attenuated Inversion Recovery (FLAIR) MRI images
+    :py:class:`~clinicadl.io.bids.BidsFileType` to select Fluid-Attenuated Inversion Recovery (FLAIR) MRI images
     preprocessed with :clinica:`Clinica flair-linear <Pipelines/FLAIR_Linear/>` pipeline.
 
     Parameters
@@ -159,7 +160,7 @@ class SUVRReferenceRegion(str, Enum):
 
 class PetLinear(BidsFileType):
     """
-    :py:class:`~clinicadl.io.BidsFileType` to select Positron Emission Tomography (PET) images
+    :py:class:`~clinicadl.io.bids.BidsFileType` to select Positron Emission Tomography (PET) images
     preprocessed with :clinica:`Clinica pet-linear <Pipelines/PET_Linear/>` pipeline.
 
     Parameters
@@ -186,7 +187,7 @@ class PetLinear(BidsFileType):
 
         .. note::
             If ``reconstruction`` is specified, the pattern will be modified as follows:
-            ``pet_linear/sub-*_ses-*_trc-{tracer}_rec-{reconstruction}_space-MNI152NLin2009cSym_{desc-Crop}_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*``
+            ``pet_linear/sub-*_ses-*_trc-{tracer}_rec-{reconstruction}_space-MNI152NLin2009cSym_(desc-Crop)_res-1x1x1_suvr-{suvr_reference_region}_pet.nii*``
     """
 
     def __init__(
@@ -256,7 +257,7 @@ class DTISpace(str, Enum):
 
 class DwiDti(BidsFileType):
     """
-    :py:class:`~clinicadl.io.BidsFileType` to select Diffusion-Weighted MRI (DWI) images
+    :py:class:`~clinicadl.io.bids.BidsFileType` to select Diffusion-Weighted MRI (DWI) images
     preprocessed with :clinica:`Clinica dwi-dti <Pipelines/DWI_DTI/>` pipeline.
 
     Parameters

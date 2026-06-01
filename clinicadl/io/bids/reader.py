@@ -93,24 +93,23 @@ class Bids(HasConfig[BidsConfig]):
     A class to read :term:`BIDS` datasets or :term:`BIDS derivatives` (including :term:`CAPS`).
 
     The directory is expected to contain the mandatory :bids:`dataset_description.json <modality-agnostic-files/dataset-description.html#dataset_descriptionjson>`
-    file, with the key ``"DatasetType"`` (whose value can be either ``"raw"``, `"`derivative"`` or ``"study"``).
-    Depending on the value of ``"DatasetType"``, the expected organisation is different:
+    file, with the key ``"DatasetType"`` (whose value can be either ``"raw"``, ``"derivative"`` or ``"study"``).
+    Depending on the value of ``DatasetType``, the expected organisation is different:
 
     - ``"raw"``: default organisation, the subject-specific folders are in the root directory. The tensors saved
       by ``ClinicaDL`` will be in ``derivatives/tensors``.
     - ``"study"``: :bids:`study organisation <common-principles.html#study-dataset>`, the subject-specific folders are in ``sourcedata/raw``. The tensors
       will be saved in ``derivatives/tensors``.
     - ``"derivative"``:
-
         - if ``"CAPSVersion"`` is in ``dataset_description.json``, the directory will be understood as a :term:`CAPS`. The subject-specific folders are
-        expected in ``subjects``, and the tensors will be saved in ``../tensors``.
-        - otherwise, it is interpreted as a classical BIDS derivative. The subject-specific folders are
-        expected in the root directory, and the tensors will be saved in ``../tensors``.
+          expected in ``subjects``, and the tensors will be saved in ``../tensors``.
+        - otherwise, it is interpreted as a BIDS derivative. The subject-specific folders are
+          expected in the root directory, and the tensors will be saved in ``../tensors``.
 
     Parameters
     ----------
     directory : str | Path
-        The path to the :term:`BIDS-like` directory.
+        The path to the BIDS-like directory.
 
     Examples
     --------
@@ -118,7 +117,7 @@ class Bids(HasConfig[BidsConfig]):
 
     .. code-block:: bash
 
-        bids
+        bids                                <- this path is passed to the Bids object
         ├── dataset_description.json        <- contains "DatasetType": "raw"
         ├── sub-...
         ...
@@ -129,21 +128,23 @@ class Bids(HasConfig[BidsConfig]):
 
     .. code-block:: bash
 
-        study
+        study                               <- this path is passed to the Bids object
         ├── dataset_description.json        <- contains "DatasetType": "study"
         ├── derivatives
-        │   └── tensors
+        │   └── tensors                     <- where tensors will be saved
         └── sourcedata
             └── raw
-                └── sub-...
+                ├── sub-...
 
     A BIDS derivative:
 
-        ├── derivative                      <- this path is passed to the Bids object
+    .. code-block:: bash
+
+        ├── bids_derivative                 <- this path is passed to the Bids object
         │   ├── dataset_description.json    <- contains "DatasetType": "derivative"
         │   ├── sub-...
         │   ...
-        └── tensors
+        └── tensors                         <- where tensors will be saved
 
     A CAPS:
 
@@ -154,7 +155,7 @@ class Bids(HasConfig[BidsConfig]):
         │   └── subjects
         │       ├── sub-...
         │       ...
-        └── tensors
+        └── tensors                         <- where tensors will be saved
 
     """
 
@@ -207,20 +208,19 @@ class Bids(HasConfig[BidsConfig]):
         """
         To get the path of a file in the BIDS-like directory.
 
-        The specifications of the file to found are given via a :py:class:`~clinicadl.io.BidsFileType`.
+        The specifications of the file to find are given via a :py:class:`~clinicadl.io.bids.BidsFileType`.
 
-        The user can also give participant id and session id if the wanted file is
+        The user can also give a participant id and a session id if the wanted file is
         subject- and session- specific.
 
         Parameters
         ----------
         file_type : BidsFileType
-            The :py:class:`~clinicadl.io.BidsFileType` containing the specifications of the file the user
-            is looking for.
+            The specifications of the file to find.
         participant : Optional[str], default=None
             The participant id (e.g., ``"sub-xxx"``), if the file is subject-specific.
         session : Optional[str], default=None
-            The session id (e.g., ``"ses-xxx"``), if the file is subject-specific.
+            The session id (e.g., ``"ses-xxx"``), if the file is session-specific.
 
         Returns
         -------
@@ -230,7 +230,7 @@ class Bids(HasConfig[BidsConfig]):
         Raises
         ------
         RuntimeError
-            If no correspond file is found, or if several corresponding files are found.
+            If no corresponding file is found, or if several corresponding files are found.
 
         Examples
         --------
@@ -248,7 +248,7 @@ class Bids(HasConfig[BidsConfig]):
 
         .. code-block:: python
 
-            >>> from clinicadl.io import Bids, BidsFileType
+            >>> from clinicadl.io.bids import Bids, BidsFileType
             >>> bids = Bids("bids")
             >>> bids.get_path(
                     file_type=BidsFileType(
@@ -341,6 +341,51 @@ class Bids(HasConfig[BidsConfig]):
         ------
         RuntimeError
             If several corresponding files are found.
+
+        Examples
+        --------
+        .. code-block:: bash
+
+            bids
+            ├── sub-001
+            │   ├── ses-M000
+            │   │   └── anat
+            │   │       ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii
+            │   │       └── sub-001_ses-M000_T1w.nii
+            ...
+
+        .. code-block:: python
+
+            >>> from clinicadl.io.bids import Bids, BidsFileType
+            >>> bids = Bids("bids")
+            >>> bids.has_file_type(
+                    file_type=BidsFileType(
+                        suffix="T1w",
+                        data_type="anat",
+                        with_entities={"space": "MNI152NLin2009cSym"},
+                    ),
+                    participant="sub-001",
+                    session="ses-M000",
+                )
+            True
+            >>> bids.has_file_type(
+                    file_type=BidsFileType(
+                        suffix="T1w",
+                        data_type="anat",
+                    ),
+                    participant="sub-001",
+                    session="ses-M000",
+                )
+            RuntimeError
+            >>> bids.has_file_type(
+                    file_type=BidsFileType(
+                        suffix="FLAIR",
+                        data_type="anat",
+                    ),
+                    participant="sub-001",
+                    session="ses-M000",
+                )
+            False
         """
         try:
             self.get_path(file_type, participant, session)
@@ -358,7 +403,7 @@ class Bids(HasConfig[BidsConfig]):
         session: Optional[str] = None,
     ) -> Path:
         """
-        Builds the path to the file associated with the input file type,
+        Builds the path to the file associated to the input file type
         and the potential participant and session ids.
 
         Parameters
@@ -383,7 +428,7 @@ class Bids(HasConfig[BidsConfig]):
         --------
         .. code-block:: python
 
-            >>> from clinicadl.io import Bids, BidsFileType
+            >>> from clinicadl.io.bids import Bids, BidsFileType
             >>> bids = Bids("bids")
             >>> bids.build_path(
                     file_type=BidsFileType(
@@ -444,13 +489,13 @@ class Bids(HasConfig[BidsConfig]):
 
         return (dir_ / folder / filename).with_suffix(file_type.extension.pattern)
 
-    def get_participants_sessions(
+    def get_participants_sessions_with(
         self,
         file_type: BidsFileType,
     ) -> set[tuple[str, str]]:
         """
         Finds all the (participant, session) pairs which have a file matching a
-        :py:class:`~clinicadl.io.BidsFileType`.
+        specified file type.
 
         In practice, it will get all the (participant, session) pairs for which
         :py:meth:`has_file_type` returns ``True``.
@@ -482,7 +527,7 @@ class Bids(HasConfig[BidsConfig]):
         Returns
         -------
         set[tuple[str, str]]
-            All the (participant, session) pairs.
+            The (participant, session) pairs.
         """
         participant_pattern = re.compile(Subject.pattern)
         session_pattern = re.compile(Session.pattern)

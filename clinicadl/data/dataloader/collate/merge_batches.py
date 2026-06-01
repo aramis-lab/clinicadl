@@ -45,16 +45,16 @@ class MergeBatchesCollate(ImplementedCollateFn, HasConfig[MergeBatchesCollateCon
     To merge several batches into a single batch.
 
     This collating mode is typically to get a single batch from the outputs
-    of a :py:mod:`dataset <clinicadl.data.datasets>` returning a sequence of samples.
+    of a :py:class:`~clinicadl.data.datasets.Dataset` returning a sequence of samples.
     ``MergeBatchesCollate`` will try to merge this sequence of samples by merging each field
-    of the samples, except those in ``ignore``.
+    of the :py:class:`~clinicadl.data.structures.Sample`, except those in ``ignore``.
 
     More precisely:
         - :py:class:`torchio.Images <torchio.Image>` will be concatenated along the channel dimension;
-        - :py:class:`numpy.ndarrays <numpy.ndarray>` and :py:class:`torch.Tensors <torch.Tensors>`
-            will be stacked along a new dimension;
+        - :py:class:`numpy.ndarrays <numpy.ndarray>` and :py:class:`torch.Tensors <torch.Tensor>`
+          will be stacked along a new dimension;
         - otherwise, the values will be merged in a tuple. If this tuple contains only one unique
-          element (i.e. the value is the same in all the input samples), a single value will be returned.
+          element (i.e. the value is the same in all the samples), a single value will be returned.
 
     Parameters
     ----------
@@ -63,7 +63,7 @@ class MergeBatchesCollate(ImplementedCollateFn, HasConfig[MergeBatchesCollateCon
         have these fields.
 
         .. important::
-            The mandatory arguments of :py:class:`~clinicadl.data.datasets.Sample` cannot be
+            The mandatory arguments of :py:class:`~clinicadl.data.structures.Sample` cannot be
             ignored.
 
     Examples
@@ -72,18 +72,18 @@ class MergeBatchesCollate(ImplementedCollateFn, HasConfig[MergeBatchesCollateCon
     .. code-block::
 
         from clinicadl.data.dataloader import MergeBatchesCollate
-        from clinicadl.data.structures.examples import ColinSample
+        from clinicadl.data.structures.examples import Colin27Sample
         import numpy as np
 
-        sample = ColinSample(participant="sub-001", label=np.array([0, 1]), age=55, sex="M")
-        sample_bis = ColinSample(participant="sub-001", label=np.array([1, 2]), age=56, to_ignore="abc")
+        sample = Colin27Sample(participant="sub-001", label=np.array([0, 1]), age=55, sex="M")
+        sample_bis = Colin27Sample(participant="sub-001", label=np.array([1, 2]), age=56, to_ignore="abc")
 
         batch = MergeBatchesCollate(ignore=["to_ignore"])([(sample, sample_bis)])
 
     .. code-block::
 
         >>> batch
-        [ColinSample(Keys: ('head', 'sex', 'age', 'label', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
+        [Colin27Sample(Keys: ('head', 'sex', 'age', 'label', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
         >>> batch[0].participant  # same value in the two samples
         'sub-001'
         >>> batch[0].age
@@ -109,19 +109,19 @@ class MergeBatchesCollate(ImplementedCollateFn, HasConfig[MergeBatchesCollateCon
 
     def __call__(self, samples: Sequence[Sequence[T]]) -> Batch[T]:
         """
-        Merges a batch of sequences of :py:class:`~clinicadl.data.datasets.Sample`
+        Merges a sequence of sequences of :py:class:`~clinicadl.data.structures.Sample`
         in a single :py:class:`~clinicadl.data.dataloader.Batch`.
 
         Parameters
         ----------
         samples : Sequence[Sequence[T]]
-            A sequence of sequences of :py:class:`~clinicadl.data.datasets.Sample`, e.g. a sequence
+            A sequence of sequences of :py:class:`~clinicadl.data.structures.Sample`, e.g. a sequence
             of outputs of a :py:class:`~clinicadl.data.datasets.PairedDataset`.
 
         Returns
         -------
         Batch[T]
-            A :py:class:`~clinicadl.data.dataloader.Batch`, whose :py:class:`Samples <clinicadl.data.datasets.Sample>`
+            A :py:class:`~clinicadl.data.dataloader.Batch`, whose samples
             are the results of the merger of the inner input sequences.
         """
         mergers = []

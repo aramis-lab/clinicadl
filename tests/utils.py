@@ -10,7 +10,7 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from clinicadl.io import Maps
+from clinicadl.io.maps import Maps
 from clinicadl.utils.dictionary.suffixes import TSV
 from clinicadl.utils.exceptions import add_note
 

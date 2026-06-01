@@ -61,7 +61,7 @@ class Maps(Directory):
             :icon: file
             :color: light
 
-            Details on the neural network architecture, provided by :py:meth:`Model.get_architecture <clinicadl.models.Model.get_architecture>`.
+            Details on the neural network architecture.
 
         .. dropdown:: environment.txt → ``maps.environment_txt``
             :icon: file
@@ -79,7 +79,7 @@ class Maps(Directory):
             :icon: file
             :color: light
 
-            Details on all the :py:mod:`~clinicadl.metrics` mentioned in the ``.tsv`` DataFrames of the ``Maps`` directory.
+            Details on all the :py:mod:`~clinicadl.metrics` computed.
 
         .. dropdown:: model.json → ``maps.model_json``
             :icon: file
@@ -87,17 +87,17 @@ class Maps(Directory):
 
             Details on the :py:meth:`~clinicadl.models.Model`.
 
-        .. dropdown:: summary.log → ``maps.summary_log``
-            :icon: file
-            :color: light
-
-            Summary of the ``Maps`` directory.
-
         .. dropdown:: nn_summary.txt → ``maps.nn_summary_txt``
             :icon: file
             :color: light
 
             Summary of the neural network provided by :py:meth:`Model.get_summary <clinicadl.models.Model.get_summary>`.
+
+        .. dropdown:: summary.log → ``maps.summary_log``
+            :icon: file
+            :color: light
+
+            Summary of the ``Maps`` directory.
 
         .. dropdown:: **training**
             :icon: file-directory
@@ -204,14 +204,14 @@ class Maps(Directory):
                     :icon: file
                     :color: light
 
-                    Summary of the training of split ``0``, with computational metrics provided by
+                    Summary of the training of split ``0``, along with computational metrics provided by
                     :py:mod:`~clinicadl.callbacks.MonitorCallback`.
 
                 .. dropdown:: warning.log → ``maps.training.splits[0].warning_log``
                     :icon: file
                     :color: light
 
-                    Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                    Potential warning logs saved by :py:class:`~clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
                     have been raised when training.
 
                 .. dropdown:: **logs**
@@ -257,6 +257,13 @@ class Maps(Directory):
 
                             Results for the best model obtained with respect to the metric ``"mse"``.
 
+                            .. dropdown:: warning.log → ``maps.training.splits[0].models.best_models.metrics["mse"].warning_log``
+                                :icon: file
+                                :color: light
+
+                                Potential warning logs saved by :py:class:`~clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                                have been raised when evaluating this model.
+
                             .. dropdown:: model.pt → ``maps.training.splits[0].models.best_models.metrics["mse"].model_pt``
                                 :icon: file
                                 :color: light
@@ -293,7 +300,14 @@ class Maps(Directory):
 
                             Results for the model at epoch ``10``.
 
-                            .. dropdown:: model.pt → ``maps.training.splits[0].models.checkpoints.epochs[10]_pt``
+                            .. dropdown:: warning.log → ``maps.training.splits[0].models.checkpoints.epochs[10].warning_log``
+                                :icon: file
+                                :color: light
+
+                                Potential warning logs saved by :py:class:`~clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                                have been raised when evaluating this model.
+
+                            .. dropdown:: model.pt → ``maps.training.splits[0].models.checkpoints.epochs[10].model_pt``
                                 :icon: file
                                 :color: light
 
@@ -327,7 +341,7 @@ class Maps(Directory):
                             :icon: file
                             :color: light
 
-                            Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                            Potential warning logs saved by :py:class:`~clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
                             have been raised when evaluating this model.
 
                         .. dropdown:: model.pt → ``maps.training.splits[0].models.final.model_pt``
@@ -358,7 +372,7 @@ class Maps(Directory):
                     :icon: file-directory
                     :color: muted
 
-                    Checkpoints saved by :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback`, in order to resume training in case of failure.
+                    Checkpoints saved by :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback` in order to resume training in case of failure.
                     **This directory will be emptied at the end of training.**
 
                     .. dropdown:: **epoch-15**
@@ -383,14 +397,13 @@ class Maps(Directory):
                             :icon: file
                             :color: light
 
-                            The state of the `Gradient Scaler <https://docs.pytorch.org/docs/stable/amp.html#gradient-scaling>`_
-                            at epoch ``15``.
+                            The state of the `Gradient Scaler <https://docs.pytorch.org/docs/stable/amp.html#gradient-scaling>`_.
 
                         .. dropdown:: state.json → ``maps.training.splits[0].tmp.epochs[15].state_json``
                             :icon: file
                             :color: light
 
-                            The :py:class:`state of the Trainer <clinicadl.train.TrainerState>` at epoch ``15``.
+                            The :py:class:`state of the Trainer <clinicadl.train.TrainerState>`.
 
                         .. dropdown:: **callbacks** → maps.training.splits[0].tmp.epochs[15].callbacks
                             :icon: file-directory
@@ -456,7 +469,7 @@ class Maps(Directory):
                     :icon: file
                     :color: light
 
-                    Details on the :py:class:`dataset <clinicadl.data.dataloader.DataLoader>` used
+                    Details on the :py:class:`dataloader <clinicadl.data.dataloader.DataLoader>` used
                     for the group ``"X"``.
 
                 .. dropdown:: dataset.json → ``maps.test.groups["X"].dataset_json``
@@ -488,10 +501,10 @@ class Maps(Directory):
                                 :icon: file
                                 :color: light
 
-                                Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
-                                have been raised when evaluating this model.
+                                Potential warning logs saved by :py:class:`~clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                                have been raised when testing with this model.
 
-                            .. dropdown:: computational.json → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].computational_json`
+                            .. dropdown:: computational.json → ``maps.test.groups["X"].results.splits[0].models["epoch-10"].computational_json``
                                 :icon: file
                                 :color: light
 
@@ -524,6 +537,20 @@ class Maps(Directory):
                             Results obtained with the final model trained on the split ``0``
                             (i.e. the model in ``maps_dir/training/split-0/models/final``).
 
+                            .. dropdown:: warning.log → ``maps.test.groups["X"].results.splits[0].models["final"].warning_log``
+                                :icon: file
+                                :color: light
+
+                                Potential warning logs saved by :py:class:`~clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                                have been raised when testing with this model.
+
+                            .. dropdown:: computational.json → ``maps.test.groups["X"].results.splits[0].models["final"].computational_json``
+                                :icon: file
+                                :color: light
+
+                                Details on the :py:class:`computational parameters <clinicadl.train.ComputationalConfig>` used
+                                when testing.
+
                             .. dropdown:: **metrics**
                                 :icon: file-directory
                                 :color: muted
@@ -549,6 +576,20 @@ class Maps(Directory):
                             Results obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
                             (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
 
+                            .. dropdown:: warning.log → ``maps.test.groups["X"].results.splits[0].models["best-mse"].warning_log``
+                                :icon: file
+                                :color: light
+
+                                Potential warning logs saved by :py:class:`~clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
+                                have been raised when testing with this model.
+
+                            .. dropdown:: computational.json → ``maps.test.groups["X"].results.splits[0].models["best-mse"].computational_json``
+                                :icon: file
+                                :color: light
+
+                                Details on the :py:class:`computational parameters <clinicadl.train.ComputationalConfig>` used
+                                when testing.
+
                             .. dropdown:: **metrics**
                                 :icon: file-directory
                                 :color: muted
@@ -567,126 +608,11 @@ class Maps(Directory):
 
                                     Metrics for each image.
 
-        .. dropdown:: **prediction**
-            :icon: file-directory
-            :color: muted
-
-            Results of :py:meth:`Trainer.predict <clinicadl.train.Trainer.predict>`.
-
-            .. dropdown:: **group-X**
-                :icon: file-directory
-                :color: muted
-
-                Inferences on the group ``"X"``.
-
-                .. dropdown:: data.tsv → ``maps.prediction.groups["X"].data_tsv``
-                    :icon: file
-                    :color: light
-
-                    List of all (participant, session) pairs in the group ``"X"``.
-
-                .. dropdown:: dataset.json → ``maps.prediction.groups["X"].dataset_json``
-                    :icon: file
-                    :color: light
-
-                    Details on the :py:class:`dataset <clinicadl.data.datasets>` used
-                    for the group ``"X"``.
-
-                .. dropdown:: dataloader.json → ``maps.prediction.groups["X"].dataloader_json``
-                    :icon: file
-                    :color: light
-
-                    Details on the :py:class:`dataset <clinicadl.data.dataloader.DataLoader>` used
-                    for the group ``"X"``.
-
-                .. dropdown:: **results**
-                    :icon: file-directory
-                    :color: muted
-
-                    .. dropdown:: **split-0**
-                        :icon: file-directory
-                        :color: muted
-
-                        Inferences on the group ``"X"`` obtained with models trained on split ``0``
-                        (i.e. the models in ``maps_dir/training/split-0/models``).
-
-                        .. dropdown:: **epoch-10**
-                            :icon: file-directory
-                            :color: muted
-
-                            Inferences obtained with the model at epoch ``10``, trained on split ``0``
-                            (i.e. the model in ``maps_dir/training/split-0/models/checkpoints/epoch-10``).
-
-                            .. dropdown:: output.tsv → ``maps.prediction.groups["X"].results.splits[0].models["epoch-10"].output_tsv``
-                                :icon: file
-                                :color: light
-
-                                If outputs of the model are scalars, they will be stored in this DataFrame.
-
-                            .. dropdown:: **caps_output** → maps.prediction.groups["X"].results.splits[0].models["epoch-10"].caps_output
-                                :icon: file-directory
-                                :color: muted
-
-                                If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
-
-
-                        .. dropdown:: **final**
-                            :icon: file-directory
-                            :color: muted
-
-                            Inferences obtained with the final model trained on the split ``0``
-                            (i.e. the model in ``maps_dir/training/split-0/models/final``).
-
-                            .. dropdown:: output.tsv → ``maps.prediction.groups["X"].results.splits[0].models["final"].output_tsv``
-                                :icon: file
-                                :color: light
-
-                                If outputs of the model are scalars, they will be stored in this DataFrame.
-
-                            .. dropdown:: **caps_output** → maps.prediction.groups["X"].results.splits[0].models["final"].caps_output
-                                :icon: file-directory
-                                :color: muted
-
-                                If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
-
-                        .. dropdown:: **best-mse**
-                            :icon: file-directory
-                            :color: muted
-
-                            Inferences obtained with the best model with respect to the metric ``"mse"``, trained on the split ``0``
-                            (i.e. the model in ``maps_dir/training/split-0/models/best_models/best-mse``).
-
-                            .. dropdown:: warning.log → ``maps.prediction.groups["X"].results.splits[0].models["best-mse"].warning_log``
-                                :icon: file
-                                :color: light
-
-                                Potential warning logs saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``) that
-                                have been raised when evaluating this model.
-
-                            .. dropdown:: computational.json → ``maps.prediction.groups["X"].results.splits[0].models["epoch-10"].computational_json`
-                                :icon: file
-                                :color: light
-
-                                Details on the :py:class:`computational parameters <clinicadl.train.ComputationalConfig>` used
-                                when predicting.
-
-                            .. dropdown:: output.tsv → ``maps.prediction.groups["X"].results.splits[0].models["best-mse"].output_tsv``
-                                :icon: file
-                                :color: light
-
-                                If outputs of the model are scalars, they will be stored in this DataFrame.
-
-                            .. dropdown:: **caps_output** → maps.prediction.groups["X"].results.splits[0].models["best-mse"].caps_output
-                                :icon: file-directory
-                                :color: muted
-
-                                If outputs of the model are images, they will be stored in a :term:`CAPS` directory here.
-
         .. dropdown:: **exec**
             :icon: file-directory
             :color: muted
 
-            Logging messages saved by :py:class:`clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``).
+            Logging messages saved by :py:class:`~clinicadl.callbacks.LoggerCallback` (if ``save_logs=True``).
 
             .. dropdown:: **run-train_2025_12_31_23_59_59**
                 :icon: file-directory
@@ -699,7 +625,7 @@ class Maps(Directory):
                     :icon: file
                     :color: light
 
-                    Debug logs (if ``debug=True`` in :py:class:`clinicadl.callbacks.LoggerCallback`).
+                    Debug logs (if ``debug=True`` in :py:class:`~clinicadl.callbacks.LoggerCallback`).
 
                 .. dropdown:: error.log → ``maps.exec.runs["train_2025_12_31_23_59_59"].error_log``
                     :icon: file
@@ -720,7 +646,7 @@ class Maps(Directory):
 
     .. code-block:: python
 
-        from clinicadl.io import Maps
+        from clinicadl.io.maps import Maps
 
         maps = Maps("maps_dir")
         maps.read()
@@ -730,7 +656,7 @@ class Maps(Directory):
 
     .. code-block:: python
 
-        >>> maps.training.splits[0].models.checkpoints.epochs[10]_pt
+        >>> maps.training.splits[0].models.checkpoints.epochs[10].model_pt
         PosixPath('maps_dir/training/split-0/models/checkpoints/epoch-10/model.pt')
 
     To get the list of all saved checkpoints:
@@ -837,7 +763,7 @@ class Maps(Directory):
 
         .. code-block:: python
 
-            from clinicadl.io import Maps
+            from clinicadl.io.maps import Maps
 
             maps = Maps("maps_dir")
             maps.read()
@@ -919,7 +845,7 @@ class Maps(Directory):
 
         .. code-block:: python
 
-            from clinicadl.io import Maps
+            from clinicadl.io.maps import Maps
 
             maps = Maps("maps_dir")
             maps.read()
@@ -970,11 +896,11 @@ class Maps(Directory):
 
     def delete_split(self, split_idx: int) -> None:
         """
-        To properly remove a split from the :term:`MAPS` directory.
+        To properly remove a split from the ``MAPS`` directory.
 
         This function will delete the directory ``<maps>/training/split-<split_idx>``, will update
         ``<maps>/training/data``, and will delete all the results associated to models trained on
-        this split in ``<maps>/test`` and ``<maps>/prediction``.
+        this split in ``<maps>/test``.
 
         Parameters
         ----------
@@ -1043,7 +969,7 @@ Maps.read.__doc__ = """
 To read an existing ``MAPS`` directory.
 
 ``Maps`` will scan the entire directory to identify all files and subdirectories.
-It first checks that all required elements are present, meaning the ``MAPS`` directory must be complete in order to be read.
+It first checks that all required elements are present, meaning that the ``MAPS`` directory must be complete in order to be read.
 ``Maps`` also identifies "optional" files and directories, and keeps track of them.
 
 For example, if you call ``maps.training.splits[1].summary_log`` before calling

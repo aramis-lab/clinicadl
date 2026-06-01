@@ -1,1 +1,3 @@
-"""For manipulating neuroimaging data."""
+"""
+For building PyTorch objects able to manipulate neuroimaging data.
+"""

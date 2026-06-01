@@ -73,6 +73,8 @@ class LossConfig(ObjectConfig[torch.nn.Module]):
 class NLLLossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.NLLLoss`.
+
+    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     weight: Optional[List[NonNegativeFloat]] = NLL_TORCH_DEFAULTS["weight"]
@@ -92,6 +94,8 @@ class NLLLossConfig(LossConfig):
 class CrossEntropyLossConfig(NLLLossConfig):
     """
     Config class for :py:class:`torch.nn.CrossEntropyLoss`.
+
+    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     weight: Optional[List[NonNegativeFloat]] = CROSS_ENTROPY_TORCH_DEFAULTS["weight"]
@@ -112,9 +116,11 @@ class CrossEntropyLossConfig(NLLLossConfig):
 class BCELossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.BCELoss`.
+
+    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
-    weight: Optional[List[NonNegativeFloat]] = BCE_TORCH_DEFAULTS["weight"]
+    weight: Optional[list[NonNegativeFloat]] = BCE_TORCH_DEFAULTS["weight"]
     reduction: Reduction = BCE_TORCH_DEFAULTS["reduction"]
 
     @field_validator("weight")
@@ -130,6 +136,8 @@ class BCELossConfig(LossConfig):
 class BCEWithLogitsLossConfig(BCELossConfig):
     """
     Config class for :py:class:`torch.nn.BCEWithLogitsLoss`.
+
+    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     weight: Optional[List[NonNegativeFloat]] = BCE_LOGITS_TORCH_DEFAULTS["weight"]
@@ -158,6 +166,8 @@ class BCEWithLogitsLossConfig(BCELossConfig):
 class MultiMarginLossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.MultiMarginLoss`.
+
+    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     p: Order = MULTI_MARGIN_LOSS_TORCH_DEFAULTS["p"]

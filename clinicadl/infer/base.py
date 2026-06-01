@@ -15,11 +15,10 @@ from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import CPU
 from clinicadl.utils.objects import HasConfig
 
-from .abstract import Inferer
+from .abstract import DataT, Inferer
 
 logger = getLogger(__name__)
 
-T = TypeVar("T", DataPoint, Batch)
 DataPointT = TypeVar("DataPointT", bound=DataPoint)
 
 
@@ -80,11 +79,11 @@ class BaseInferer(Inferer, HasConfig[BaseInfererConfig]):
 
     def __call__(
         self,
-        x: Union[DataPoint, Batch],
-        network: Callable[..., torch.Tensor],
+        x: DataT,
+        network: nn.Module,
         input_dtype: Optional[torch.dtype] = None,
         **kwargs: Any,
-    ) -> Union[DataPoint, Batch]:
+    ) -> DataT:
         tensor = self._get_input_tensor(x, input_dtype=input_dtype)
 
         output = self._forward_pass(tensor, network, **kwargs)

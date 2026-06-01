@@ -26,7 +26,7 @@ from clinicadl.data.datasets import (
     UnpairedDataset,
 )
 from clinicadl.data.structures import Sample
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.utils.seed import pl_worker_init_function
 
 BAD_INPUTS = [

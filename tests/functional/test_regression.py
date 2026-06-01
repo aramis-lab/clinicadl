@@ -36,7 +36,8 @@ from clinicadl.callbacks import (
 from clinicadl.data.dataloader import MergeBatchesCollate
 from clinicadl.data.datasets import BidsDataset, PairedDataset
 from clinicadl.infer import SimpleInferer
-from clinicadl.io import BidsFileType, Maps
+from clinicadl.io.bids import BidsFileType
+from clinicadl.io.maps import Maps
 from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import LossMetricConfig, MAEMetricConfig
 from clinicadl.models import Model

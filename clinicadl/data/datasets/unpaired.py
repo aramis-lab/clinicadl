@@ -4,6 +4,7 @@ from typing import Any, Iterable, Sequence
 
 import pandas as pd
 from pydantic import field_validator
+from torch.nn import UninitializedParameter
 
 from clinicadl.utils.dictionary.words import DATASET_ID
 
@@ -41,7 +42,7 @@ class UnpairedDatasetConfig(CollectionDatasetConfig):
 
 class UnpairedDataset(CollectionDataset):
     """
-    ``UnpairedDataset`` is a useful class to stack multiple :py:class:`~clinicadl.data.datasets.MultiSamplesDataset`
+    For stacking multiple :py:class:`~clinicadl.data.datasets.Dataset`
     (e.g. different modalities from different datasets). By "stacking", we mean **randomly** associating images across datasets.
 
     So, ``UnpairedDataset`` differs from :py:class:`~clinicadl.data.datasets.PairedDataset` in that ``PairedDataset``
@@ -58,16 +59,14 @@ class UnpairedDataset(CollectionDataset):
     size of the smallest dataset if ``oversample=False``. This randomness is also controlled via
     :py:meth:`~UnpairedDataset.set_epoch`.
 
-    An ``UnpairedDataset`` will return a tuple of :py:class:`~clinicadl.data.structures.DataPoint` (one for each underlying
+    An ``UnpairedDataset`` will return a tuple of :py:class:`~clinicadl.data.structures.Sample` (one for each underlying
     dataset).
-
-    .. note::
-        ``UnpairedDataset`` also accepts :py:class:`~clinicadl.data.datasets.ConcatDataset`.
 
     Parameters
     ----------
-    datasets : Iterable[MultiSamplesDataset]
-        List of :py:class:`~clinicadl.data.datasets.MultiSamplesDataset` to be stacked.
+    datasets : Iterable[Dataset]
+        The ``Datasets`` to stack.
+
     oversample: bool, default=False
         Strategy to adopt when the datasets have different sizes:
 
@@ -80,62 +79,40 @@ class UnpairedDataset(CollectionDataset):
     --------
     .. code-block:: text
 
-        Data look like:
-
-        caps_t1
-        ├── tensor_conversion
-        │   └── default_t1-linear.json
-        └── subjects
-            ├── sub-001
-            │   └── ses-M000
-            │       └── t1_linear
-            │           ├── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz
-            │           └── tensors
-            │               └── default
-            │                   └── sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
-                ...
+        bids_t1
+        ├── sub-001
+        │   └── ses-M000
+        │   │   └── anat
+        │   │       └── sub-001_ses-M000_T1w.nii.gz
             ...
+        ...
 
-        caps_pet
-        ├── tensor_conversion
-        │   └── default_pet-linear_18FAV45_pons2.json
-        └── subjects
-            ├── sub-A
-            │   └── ses-M000
-            │       ├── pet_linear
-            │       │   ├── sub-A_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-            │       │   └── tensors
-            │       │       └── default
-            │       │           └── sub-A_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-                ...
+        bids_pet
+        ├── sub-A
+        │   └── ses-M003
+        │   │   └── pet
+        │   │       └── sub-A_ses-M000_trc-18FAV45_pet.nii.gz
             ...
+        ...
 
     .. code-block:: python
 
-        from clinicadl.data.datasets import CapsDataset, UnpairedDataset
-        from clinicadl.data.datatypes import PETLinear, T1Linear
+        from clinicadl.data.datasets import BidsDataset, UnpairedDataset
+        from clinicadl.io.bids import BidsFileType
 
-        caps_t1 = CapsDataset("caps_t1", datatype=T1Linear(use_uncropped_image=True))
-        caps_pet = CapsDataset(
-            "caps_pet",
-            datatype=PETLinear(
-                use_uncropped_image=True, tracer="18FAV45", suvr_reference_region="pons2"
-            ),
-        )
+        bids_t1 = BidsDataset("bids_t1", file_type=BidsFileType(data_type="anat", suffix="T1w"))
+        bids_pet = BidsDataset("bids_pet", file_type=BidsFileType(data_type="pet", suffix="pet"))
 
-        caps_pet.read_tensor_conversion()
-        caps_t1.read_tensor_conversion()
-
-        stacked = UnpairedDataset([caps_t1, caps_pet], oversample=True)
+        multimodal_dataset = UnpairedDataset([bids_t1, bids_pet], oversample=True)
 
     .. code-block:: python
 
-        >>> len(caps_t1)
+        >>> len(bids_t1)
         4
-        >>> len(caps_pet)
+        >>> len(bids_pet)
         2
         >>> len(stacked)
-        4   # = length of the biggest dataset
+        4   # length of the biggest dataset
 
     We can access the random mapping made between the datasets via ``.mapping``:
 
@@ -150,15 +127,15 @@ class UnpairedDataset(CollectionDataset):
                 3	0	1
 
     ``idx`` is the index of the sample in the ``UnpairedDataset``. In column ``0``, you have the
-    associated sample in the first dataset (``caps_t1``), and in column ``1``, the associated
-    sample in the second dataset (``caps_pet``).
+    associated sample in the first dataset (``bids_t1``), and in column ``1``, the associated
+    sample in the second dataset (``bids_pet``).
 
     .. code-block:: python
 
-        >>> caps_t1[2].participant, caps_t1[2].session,
+        >>> bids_t1[2].participant, bids_t1[2].session,
         ('sub-002', 'ses-M000')
 
-        >>> caps_pet[0].participant, caps_pet[0].session
+        >>> bids_pet[0].participant, bids_pet[0].session
         ('sub-A', 'ses-M000')
 
         >>> sample = stacked[0]
@@ -190,7 +167,7 @@ class UnpairedDataset(CollectionDataset):
 
     .. code-block:: python
 
-        >>> stacked = UnpairedDataset([caps_t1, caps_pet], oversample=False)
+        >>> stacked = UnpairedDataset([bids_t1, bids_pet], oversample=False)
         >>> len(stacked)
         2   # = length of the smallest dataset
         >>> stacked.mapping
@@ -211,6 +188,11 @@ class UnpairedDataset(CollectionDataset):
         super().__init__(datasets=datasets, oversample=oversample)
         self.epoch = 0
         self._mapping = self._map_datasets()
+
+    @property
+    def df(self):
+        "The output of the merger of the metadata DataFrames of the underlying datasets."
+        return super().df
 
     @property
     def mapping(self) -> pd.DataFrame:
@@ -236,7 +218,7 @@ class UnpairedDataset(CollectionDataset):
         idx : int
             The index of the sample in the ``UnpairedDataset``.
         column : str
-            The information to look for, i.e. a column present in the DataFrame of at least one of the
+            The information to look for, i.e. a column present in the metadata DataFrame of at least one of the
             dataset forming the ``UnpairedDataset``.
 
         Returns
@@ -311,7 +293,7 @@ class UnpairedDataset(CollectionDataset):
         tuple[Sample, ...]
             A structured output containing the processed data and metadata
             from each dataset of the ``UnpairedDataset``, as a ``tuple`` of
-            :py:class:`~clinicadl.transforms.extraction.Sample`.
+            :py:class:`~clinicadl.data.structures.Sample`.
         """
         self._check_idx(idx)
         indices = self._mapping.iloc[idx]

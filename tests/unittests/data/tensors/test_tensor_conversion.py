@@ -17,7 +17,7 @@ from clinicadl.data.tensors import (
     TensorConversion,
     TensorDescription,
 )
-from clinicadl.io import Bids, BidsFileType
+from clinicadl.io.bids import Bids, BidsFileType
 from clinicadl.transforms import TransformsHandler
 from clinicadl.transforms.config import (
     CropConfig,

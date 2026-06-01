@@ -8,9 +8,9 @@
 .. currentmodule:: clinicadl.infer
 
 .. autosummary::
-   :nosignatures:
-   :toctree: ../generated/
-   :template: autosummary/class.rst
+    :toctree: ../generated/
+    :nosignatures:
+    :template: autosummary/callable.rst
 
     Inferer
     SimpleInferer

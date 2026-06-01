@@ -14,6 +14,7 @@ from torchio import Transform as TorchioTransform
 
 from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 from clinicadl.utils.dictionary.words import NAME_
+from clinicadl.utils.doc import add_suffix_to_doc
 
 from .enum import AnatomicalLabel
 
@@ -25,9 +26,21 @@ __all__ = [
     "OneOfConfig",
 ]
 
+DOCUMENT_EXTRA_PARAMETERS = """
+The keys of the input :py:class:`~clinicadl.data.structures.DataPoint`
+on which the transforms will be applied can be specified via
+``include`` (only these keys will be transformed) or ``exclude`` (all the
+keys except these ones will be transformed).
+
+``copy`` argument determines if the raw input ``DataPoint``
+will be returned (``False``), or a copy (``True``).
+"""
+
 
 class TransformConfig(ObjectConfig["Transform"]):
-    """Base config class for the transforms."""
+    """
+    Base config class for the transforms.
+    """
 
     include: Optional[Sequence[str]] = None
     exclude: Optional[Sequence[str]] = None
@@ -92,10 +105,14 @@ class TorchioTransformConfig(TransformConfig):
             cls._is_six_tuple_sorted(tup, field_name)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class OneOfConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.OneOf`.
-    TODO: Explain why 2 lists are used for transforms and probabilities instead of a dictionary
+
+    Instead of a dictionary with transforms as keys and probabilities as values,
+    this class accepts transforms and probabilities separately. The two sequences given
+    must have the same length.
     """
 
     transforms: List[Union[TransformConfig, List[TransformConfig]]]

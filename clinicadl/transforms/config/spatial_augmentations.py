@@ -8,9 +8,10 @@ from pydantic import (
     field_validator,
 )
 
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import TorchioTransformConfig
+from .base import DOCUMENT_EXTRA_PARAMETERS, TorchioTransformConfig
 from .enum import (
     AnatomicalAxis,
     CenterMode,
@@ -35,6 +36,7 @@ RANDOM_ELASTIC_DEFORMATION_TORCHIO_DEFAULTS = get_defaults_from(
 RANDOM_ANISOTROPY_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.RandomAnisotropy)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomFlipConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomFlip`.
@@ -65,6 +67,7 @@ SpatialRange = Union[
 ]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomAffineConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomAffine`.
@@ -96,6 +99,7 @@ class RandomAffineConfig(TorchioTransformConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomElasticDeformationConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomElasticDeformation`.
@@ -133,6 +137,7 @@ class RandomElasticDeformationConfig(TorchioTransformConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RandomAnisotropyConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.RandomAnisotropy`.

@@ -91,7 +91,8 @@ class Slice(Extraction[SliceConfig]):
 
     Adds the following keys to the input :py:class:`~clinicadl.data.structures.DataPoint`:
 
-    - ``slice_position``: int
+    - ``sample_type`` : ``"slice"``
+    - ``sample_position``: int
         The position of the slice in the original image.
     - ``slice_direction``: 0, 1 or 2
         The slicing direction.
@@ -103,33 +104,54 @@ class Slice(Extraction[SliceConfig]):
         ``borders``.
 
         - If none of these parameters is passed, all slices will be kept.
-        - ``slices`` and ``tsv_path`` cannot be used in conjunction another slice selection
+        - ``slices`` and ``tsv_path`` cannot be used in conjunction with another slice selection
           parameter, but ``discarded_slices`` and ``borders`` can be passed together.
 
     Parameters
     ----------
-    slices : Optional[list[NonNegativeInt]], default=None
+    slices : Optional[list[int]], default=None
         The slices to select. The slices selected will be the same for all images; if you
         want a different selection for each image, use ``tsv_path``.
     tsv_path : Optional[PathType], default=None
         Path to a ``TSV`` file containing slice indices for each image.
         The ``TSV`` table must have the columns: ``participant_id``, ``session_id``, and ``slice_idx``.
-    discarded_slices : Optional[list[NonNegativeInt]], default=None
+    discarded_slices : Optional[list[int]], default=None
         Indices of the slices to discard. Cannot be used with ``slices`` or ``tsv_path``.
-    borders : Optional[Union[PositiveInt, Tuple[PositiveInt, PositiveInt]]], default=None
+    borders : Optional[Union[int, Tuple[int, int]]], default=None
         The number of border slices that will be filtered out. If an integer ``a`` is passed, the first
         ``a`` slices and the last ``a`` slices will be filtered out. If a tuple ``(a, b)`` is passed, the first
         ``a`` slices and the last ``b`` slices will be filtered out.\n
         Cannot be used with ``slices`` or ``tsv_path``.
-    slice_direction : SliceDirection, default=0
+    slice_direction : int | SliceDirection, default=0
         The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
     squeeze : bool, default=True
-        Whether to squeeze slices to have images with 2 spatial dimensions.
+        Whether to later squeeze slices to have images with 2 spatial dimensions.
         If ``False``, slices will still have 3 spatial dimensions.
 
         .. note::
             Squeezing will be performed by ``ClinicaDL`` just before putting the images in the neural
             network. This is because most of ``ClinicaDL`` tools work with 3D images.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.transforms.extraction import Slice
+        from clinicadl.data.structures.examples import Colin27DataPoint
+
+        data = Colin27DataPoint()
+        slices = Slice(borders=10, slice_direction=1)
+
+    .. code-block::
+
+        >>> data.spatial_shape
+        (181, 217, 181)
+        >>> patch.num_samples_per_image(data)
+        197
+        >>> slices(data, sample_index=0).spatial_shape
+        (181, 1, 181)
+        >>> next(iter(patch(data))).sample_position
+        10      # because of 'borders' the 10 first slices are ignored
     """
 
     config: SliceConfig
@@ -141,7 +163,7 @@ class Slice(Extraction[SliceConfig]):
         tsv_path: Optional[PathType] = None,
         discarded_slices: Optional[list[int]] = None,
         borders: Optional[Union[int, Tuple[int, int]]] = None,
-        slice_direction: SliceDirection = SliceDirection.SAGITTAL,
+        slice_direction: int | SliceDirection = SliceDirection.SAGITTAL,
         squeeze: bool = True,
     ) -> None:
         self.config = SliceConfig(

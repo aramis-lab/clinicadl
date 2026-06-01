@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from clinicadl.data.dataloader import Batch
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
 from clinicadl.infer import PatchesToImageInferer
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 from clinicadl.transforms.config import ActivationsConfig
 
 from .utils import NnWrapper

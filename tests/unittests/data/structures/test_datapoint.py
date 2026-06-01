@@ -88,16 +88,15 @@ def test_DataPoint():
         data_point.shape
 
     # get images
-    assert len(data_point.get_images()) == 4
     assert set(data_point.get_images_dict().keys()) == {
         "image",
         "image_2",
         "image_3",
         "image_4",
     }
-    assert len(data_point.get_images(intensity_only=False)) == 8
-    assert len(data_point.get_images(intensity_only=False, include=["image"])) == 1
-    assert len(data_point.get_images(intensity_only=False, exclude=["image"])) == 7
+    assert len(data_point.get_images_dict(intensity_only=False)) == 8
+    assert len(data_point.get_images_dict(intensity_only=False, include=["image"])) == 1
+    assert len(data_point.get_images_dict(intensity_only=False, exclude=["image"])) == 7
 
     # get masks
     assert set(data_point.get_masks_dict(include=["mask_1", "mask_2"]).keys()) == {

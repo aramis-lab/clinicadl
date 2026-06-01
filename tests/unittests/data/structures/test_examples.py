@@ -1,30 +1,30 @@
 from clinicadl.data.structures import DataPoint, Sample, Sample2D
 from clinicadl.data.structures.examples import (
-    ColinDataPoint,
-    ColinSample,
-    ColinSample2D,
+    Colin27DataPoint,
+    Colin27Sample,
+    Colin27Sample2D,
 )
 
 
 def test_ColinDataPoint():
-    colin = ColinDataPoint()
+    colin = Colin27DataPoint()
     assert isinstance(colin, DataPoint)
     assert colin.shape == (1, 181, 217, 181)
-    colin = ColinDataPoint(participant="sub-abc")
+    colin = Colin27DataPoint(participant="sub-abc")
     assert colin.participant == "sub-abc"
 
 
 def test_ColinSample():
-    colin = ColinSample()
+    colin = Colin27Sample()
     assert isinstance(colin, Sample)
     assert colin.shape == (1, 181, 217, 181)
-    colin = ColinSample(participant="sub-abc")
+    colin = Colin27Sample(participant="sub-abc")
     assert colin.participant == "sub-abc"
 
 
 def test_ColinSample2D():
-    colin = ColinSample2D()
+    colin = Colin27Sample2D()
     assert isinstance(colin, Sample2D)
     assert colin.shape == (1, 181, 1, 181)
-    colin = ColinSample2D(participant="sub-abc")
+    colin = Colin27Sample2D(participant="sub-abc")
     assert colin.participant == "sub-abc"

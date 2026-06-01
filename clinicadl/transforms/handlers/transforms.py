@@ -55,13 +55,12 @@ class TransformsHandlerConfig(ObjectConfig["TransformsHandler"]):
 @equal_if_config_equal
 class TransformsHandler(HasConfig[TransformsHandlerConfig]):
     """
-    Configuration class to define all the transforms applied to images in
-    a :py:mod:`dataset <clinicadl.data.datasets>` (extraction, preprocessing, and augmentation).
+    Handles the transformation pipeline applied to images.
 
     ``ClinicaDL`` defines 4 types of transforms:\n
-    - ``extraction``: defines on what type of elements of the image we want to work
+    - ``extraction``: defines on what type of elements of the image one wants to work
       (the whole image, patches or slices).
-    - ``image_transforms``: transforms applied on the whole image, **before
+    - ``image_transforms``: transforms applied on the whole image, **before the
       potential extraction** is applied. This is typically where you want to
       do normalization (to normalize on the whole image and not only on a patch
       or a slice).
@@ -69,43 +68,29 @@ class TransformsHandler(HasConfig[TransformsHandlerConfig]):
       **after extraction**. This is typically where you want to
       resize your sample so that it fits in your network.
     - ``augmentations``: transforms applied after ``image_transforms``, ``extraction``
-      and ``sample_transforms``, only during training.
-
-    .. note::
-        :py:mod:`Extraction objects <clinicadl.transforms.extraction>` are not exactly transforms since
-        they modify the size of the datasets: if you have 10 images with 100 slices each and you want to work on slices
-        (so you passed ``extraction=Slice()``), the effective length of your dataset will be :math:`10\\times100=1,000`.
+      and ``sample_transforms``, **only during training**.
 
     For ``image_transforms``, ``sample_transforms`` and ``augmentations``, the transforms must be passed as sequences.
-    ``TransformsHandler`` will compose the transforms in these sequences, so **the order in the sequences is important**.
-
-    Finally, ``TransformsHandler`` accepts preferably configuration classes (see :py:mod:`clinicadl.transforms.config`), but also
-    any custom transform created by the user (see examples). The only requirement is that this custom transform
-    is a callable that takes as input and returns a :py:class:`~clinicadl.data.structures.DataPoint`.
+    ``TransformsHandler`` will compose the transforms in these sequences. So, **the order in the sequences is important**.
 
     Parameters
     ----------
     extraction : Extraction, default=Image()
         The extraction applied. See :py:mod:`clinicadl.transforms.extraction`. Default is
-        that no extraction is applied, and thus the :py:mod:`dataset <clinicadl.data.datasets>`
-        will output full images.
+        that no extraction is applied.
     image_transforms : Sequence[TransformOrConfig], default=[]
         A sequence of transforms to apply on the whole image, **before extraction**.
-        Passed as configuration classes from :py:mod:`clinicadl.transforms.config`, or
-        as custom transforms.
+        Passed as callables that take as input and return a :py:class:`~clinicadl.data.structures.DataPoint`,
+        or :py:mod:`configuration class <clinicadl.transforms.config>`.
     sample_transforms : Sequence[TransformOrConfig], default=[]
         A sequence of transforms to apply on samples (patches or slices).
-        Passed as configuration classes from :py:mod:`clinicadl.transforms.config`, or
-        as custom transforms.
-
-        .. note::
-            If ``extraction=Image()``, ``image_transforms`` and ``sample_transforms`` are the same.
-            They will therefore be merged in ``image_transforms``.
+        Passed as callables that take as input and return a :py:class:`~clinicadl.data.structures.DataPoint`,
+        or :py:mod:`configuration class <clinicadl.transforms.config>`.
 
     augmentations : Sequence[TransformOrConfig], default=[]
         A sequence of augmentation transforms, to apply on samples, only during training.
-        Passed as configuration classes from :py:mod:`clinicadl.transforms.config`, or
-        as custom transforms.
+        Passed as callables that take as input and return a :py:class:`~clinicadl.data.structures.DataPoint`,
+        or :py:mod:`configuration class <clinicadl.transforms.config>`.
 
     Examples
     --------
@@ -117,7 +102,7 @@ class TransformsHandler(HasConfig[TransformsHandlerConfig]):
         >>> import torchio
         >>> transforms = TransformsHandler(
                 extraction=Patch(patch_size=32, stride=32),
-                image_transforms=[ZNormalizationConfig(), torchio.CropOrPad(64)],  # torchio.CropOrPad is not a config class, so it is a custom transform
+                image_transforms=[ZNormalizationConfig(), torchio.CropOrPad(64)],
                 sample_transforms=[],
                 augmentations=[RandomFlipConfig(flip_probability=0.3)],
             )
@@ -199,7 +184,7 @@ class TransformsHandler(HasConfig[TransformsHandlerConfig]):
         Parameters
         ----------
         datapoint : DataPoint
-            A :py:class:`~clinicadl.data.structures.DataPoint`.
+            The input ``DataPoint``.
 
         Returns
         -------
@@ -217,7 +202,9 @@ class TransformsHandler(HasConfig[TransformsHandlerConfig]):
         Parameters
         ----------
         datapoint : DataPoint
-            A :py:class:`~clinicadl.data.structures.DataPoint`.
+            The input ``DataPoint``.
+        sample_index : int
+            Index of the sample to extract.
 
         Returns
         -------
@@ -234,7 +221,7 @@ class TransformsHandler(HasConfig[TransformsHandlerConfig]):
         Parameters
         ----------
         datapoint : DataPoint
-            A :py:class:`~clinicadl.data.structures.DataPoint`.
+            The input ``DataPoint``.
 
         Returns
         -------
@@ -251,7 +238,7 @@ class TransformsHandler(HasConfig[TransformsHandlerConfig]):
         Parameters
         ----------
         datapoint : DataPoint
-            A :py:class:`~clinicadl.data.structures.DataPoint`.
+            The input ``DataPoint``.
 
         Returns
         -------

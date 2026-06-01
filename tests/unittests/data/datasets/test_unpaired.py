@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from clinicadl.data.datasets import Dataset, TensorDataset, UnpairedDataset
 from clinicadl.data.structures import Sample
-from clinicadl.io import BidsFileType
+from clinicadl.io.bids import BidsFileType
 
 TENSORS = Path(__file__).parents[2] / "resources" / "bids" / "derivatives" / "tensors"
 

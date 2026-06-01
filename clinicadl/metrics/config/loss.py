@@ -12,7 +12,7 @@ from ..base import Metric
 from ..enum import Optimum
 from ..loss import LossMetric
 from ..monai_wrapper import MonaiMetricWrapper
-from .base import MetricConfig, _GetNotNansConfig
+from .base import MetricConfig
 
 if TYPE_CHECKING:
     from clinicadl.models import Model
@@ -22,7 +22,7 @@ logger = getLogger(__name__)
 LOSS_METRIC_MONAI_DEFAULTS = get_defaults_from(LossMetric)
 
 
-class LossMetricConfig(MetricConfig, _GetNotNansConfig):
+class LossMetricConfig(MetricConfig):
     """
     Special config class to use a loss function as a metric. Useful to compute
     your training losses on your validation set.

@@ -12,7 +12,7 @@ import torchio as tio
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-from clinicadl.io import Bids, TensorType
+from clinicadl.io.bids import Bids, TensorType
 from clinicadl.io.bids.reader import DatasetDescription
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.utils.dictionary.words import (
@@ -31,7 +31,7 @@ from ..utils import DatasetChecker, SpatialCheck
 from .utils import TensorDescription
 
 if TYPE_CHECKING:
-    from clinicadl.io import BidsFileType
+    from clinicadl.io.bids import BidsFileType
 
     from ..datasets import BidsDataset
 

@@ -84,20 +84,18 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
     """
     To load data in batches.
 
-    It inherits from :py:class:`torch.utils.data.DataLoader`. **Only dataloaders inheriting from this class are guaranteed to work with ``ClinicaDL``.**
+    It inherits from :py:class:`torch.utils.data.DataLoader`. **Only this dataloader is guaranteed to work with ClinicaDL.**
 
-    The output of the iterator is a :py:class:`~clinicadl.data.dataloader.Batch`, or a tuple
-    :py:class:`~clinicadl.data.dataloader.Batch` if the dataset is a
-    :py:class:`~clinicadl.data.datasets.PairedDataset` or an :py:class:`~clinicadl.data.datasets.UnpairedDataset`.
+    The format of the output of the iterator can be specified via ``collate_fn``.
 
     Parameters
     ----------
     dataset : Dataset
         Dataset from which to load the data.
     batch_size : PositiveInt, default=1
-        Batch size for the ``DataLoader``.
+        Batch size..
     sampling_weights : Optional[str], default=None
-        Name of the column in the DataFrame of the :py:mod:`ClinicaDL dataset <clinicadl.data.datasets>` where to find the sampling
+        Name of the column in the :py:attr:`Dataset.df <clinicadl.data.datasets.Dataset.df>` where to find the sampling
         weights. The column must contain ``float`` values.
 
         The probability of sampling a certain sample is proportional to the associated value
@@ -133,7 +131,7 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
     ValueError
         If ``prefetch_factor`` or ``persistent_workers`` is passed, but ``num_workers=0``.
     ValueError
-        If the dataset is an :py:class:`~clinicadl.data.datasets.UnpairedDataset`,
+        If the dataset is an :py:class:`~clinicadl.data.datasets.UnpairedDataset`
         and ``sampling_weights`` is not ``None``.
     KeyError
         If ``sampling_weights`` is not ``None``, but there is no column named like
@@ -148,76 +146,59 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
 
         Data look like:
 
-        mycaps
-        ├── data.tsv
-        ├── tensor_conversion
-        │   └── default_pet-linear_18FAV45_pons2.json
-        └── subjects
-            ├── sub-001
-            │   └── ses-M000
-            │       └── pet_linear
-            │           ├── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.nii.gz
-            │           └── tensors
-            │               └── default
-            │                   └── sub-001_ses-M000_trc-18FAV45_space-MNI152NLin2009cSym_res-1x1x1_suvr-pons2_pet.pt
-                ...
+        bids
+        ├── metadata.tsv
+        ├── sub-001
+        │   ├── ses-M000
+        │   │   ├── pet
+        │   │       └── sub-001_ses-M000_trc-18FAV45_pet.nii.gz
             ...
+        ...
 
-        The "data.tsv" file looks like:
+        The "metadata.tsv" file looks like:
 
-        participant_id  session_id   age   sex   diagnosis
-        sub-001         ses-M000     55.0  M     CN
-        sub-001         ses-M003     55.0  M     AD
-        sub-002         ses-M000     62.0  F     MCI
-        sub-002         ses-M003     62.0  F     AD
-        sub-003         ses-M000     67.0  F     CN
+        participant_id  session_id   age   sex
+        sub-001         ses-M000     55.0  M
         ...
 
     .. code-block:: python
 
-        from clinicadl.data.datasets import CapsDataset, PairedDataset
-        from clinicadl.data.file_types import PETLinear
-        from clinicadl.data.dataloader import DataLoaderConfig
+        from clinicadl.data.datasets import BidsDataset, PairedDataset
+        from clinicadl.io.bids import BidsFileType
+        from clinicadl.data.dataloader import DataLoader
 
-        caps_dataset = CapsDataset(
-            directory="mycaps",
-            file_type=PETLinear(
-                tracer="18FAV45", use_uncropped_image=True, suvr_reference_region="pons2"
-            ),
-            data="mycaps/data.tsv",
-            columns=["age"],
+        bids = BidsDataset(
+            "bids",
+            file_type=BidsFileType(data_type="pet", suffix="pet"),
+            data="bids/metadata.tsv",
         )
-        caps_dataset.read_tensor_conversion()
-
-        dataloader_config = DataLoaderConfig(batch_size=3, shuffle=False)
-        dataloader = dataloader_config.get_object(caps_dataset)
+        dataloader = DataLoader(bids, batch_size=3, shuffle=False)
 
     .. code-block:: python
 
         >>> batch = next(iter(dataloader))
         >>> batch
-        [Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)]
+        [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)]
 
     Now, let's see what happens with a :py:class:`~clinicadl.data.datasets.PairedDataset`:
 
     .. code-block:: python
 
-        paired_dataset = PairedDataset([caps_dataset, caps_dataset])
-
-        dataloader = dataloader_config.get_object(paired_dataset)
+        paired_dataset = PairedDataset([bids, bids])
+        dataloader = DataLoader(paired_dataset, batch_size=3, shuffle=False)
 
     .. code-block:: python
 
         >>> batch = next(iter(dataloader))
         >>> batch
-        ([Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)],
-            [Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)])
+        ([Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)],
+            [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)])
 
     Because, the default behavior is to use :py:class:`~clinicadl.data.dataloader.ToBatchesCollate` to collate batches,
     we obtain here a tuple of :math:`n` batches, where :math:`n` is the number of datasets that we paired.

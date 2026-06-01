@@ -10,7 +10,7 @@
 .. autosummary::
    :nosignatures:
    :toctree: ../generated/
-   :template: autosummary/object_config_class.rst
+   :template: autosummary/config_object.rst
 
     AdadeltaConfig
     AdagradConfig

@@ -1,6 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -39,7 +39,7 @@ def make_split(
     n_test: float = 0.2,
     output_dir: Optional[PathType] = None,
     subset_name: str = TEST,
-    stratification: Union[List[str], bool] = False,
+    stratification: Union[Sequence[str], bool] = False,
     p_categorical_threshold: float = 0.80,
     p_continuous_threshold: float = 0.80,
     longitudinal: bool = False,
@@ -52,58 +52,58 @@ def make_split(
     Stratification can be performed based on one or several variables present in the DataFrame:
 
     - If a variable is **categorical**, a `chi-squared test <https://en.wikipedia.org/wiki/Chi-squared_test>`_
-      is performed to check that the train and test sets have the same distribution.
+      is performed to check that the train and test sets have the same distribution;
     - If a variable is **continuous**, a `t-test <https://en.wikipedia.org/wiki/Student%27s_t-test>`_ is performed.
 
     ``make_split`` will try random splits until one split shows a p-values greater than ``p_categorical_threshold`` for all
     categorical variables used for stratification, and greater than ``p_continuous_threshold`` for all continuous variables.
     So, ``p_categorical_threshold`` and ``p_continuous_threshold`` controls the required level of similarity between the train
-    and the test distributions. The higher the threshold, the more demanding the similarity test. So, too high a threshold may
+    and the test distributions. The higher the threshold, the more demanding the similarity test. Therefore, a too high a threshold may
     prevent you from finding a valid split.
 
     Parameters
     ----------
-    data: Union[pd.DataFrame, Path, str],
+    data: DataFrameType
         A :py:class:`pandas.DataFrame` (or a path to a ``TSV`` file containing the dataframe) with the list of participant/session
         pairs to split.
-    n_test : PositiveFloat, (optional, default=0.2)
-        A positive float. If ``>=1``, it specifies the number of test participants. If ``>1``, it is treated as a proportion of all
+    n_test : float, default=0.2
+        A positive float. If ``>=1``, it specifies the number of test participants. If ``<1``, it is treated as a proportion of the input
         participants to have in the test data.
 
         .. note::
             Here, we are talking about number of **participants**. So, if ``n_test=0.2``, it doesn't mean that you have 80%
             of your data in the training set, but rather that you have 80% of you participants in the training set.
 
-    output_dir : Optional[Union[Path, str]], (optional, default=None)
+    output_dir : Optional[PathType], default=None
         Directory where to save the output files of the split, passed as a ``str`` or a :pathlib.Path:`pathlib.Path <>`.
-        If ``data`` is a path and ``output_dir`` is not passed, the parent directory of the TSV file will be used.
-    subset_name : str, (optional, default="test")
+        If ``data`` is a path and ``output_dir`` is not passed, the parent directory of the ``TSV`` file will be used.
+    subset_name : str, default="test"
         Name for the test subset.
-    stratification : Union[List[str], bool], (optional, default=False)
+    stratification : Union[Sequence[str], bool], default=False
         Whether to perform stratification. If ``True``, the columns ``"age"`` and ``"sex"`` will be used for stratification.
         If a list of ``str`` is passed, these columns will be used.
-    p_categorical_threshold : float, (optional, default=0.80)
+    p_categorical_threshold : float, default=0.80
         Threshold for acceptable categorical stratification. Must be **between 0 and 1**.
-    p_continuous_threshold : float, (optional, default=0.80)
+    p_continuous_threshold : float, default=0.80
         Threshold for acceptable continuous stratification. Must be **between 0 and 1**.
-    longitudinal : bool, (optional, default=False)
+    longitudinal : bool, default=False
         Whether to include only the baseline sessions in the test set (``longitudinal=False``). If ``True``, all the sessions
         of the test participants will be included. No matter this argument, all sessions are always kept in the training set.
-    n_try_max : int, (optional, default=1000)
+    n_try_max : int, default=1000
         Maximum number of attempts to find a valid split.
-    seed : Optional[int], (optional, default=None)
+    seed : Optional[int], default=None
         Seed to control the randomness of the split. Useful for reproducibility.
 
     Returns
     -------
     Path
-        Directory containing the split files.
+        Directory containing the split files, including some statistics on the stratification variables.
 
     Raises
     ------
     ValueError
         If ``data`` is a :py:class:`pandas.DataFrame` and no ``output_dir`` is passed.
-    ClinicaDLTSVError
+    DataFrameError
         If the DataFrame does not contain the columns ``"participant_id"`` and ``"session_id"``.
     KeyError
         If the stratification columns mentioned via ``stratification`` cannot be found in the DataFrame.
@@ -112,7 +112,7 @@ def make_split(
 
     See Also
     --------
-    - :py:func:`~clinicadl.split.make_kfold`
+    :py:func:`~clinicadl.split.make_kfold`
 
     Examples
     --------

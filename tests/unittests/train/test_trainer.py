@@ -14,7 +14,8 @@ import torchio as tio
 from clinicadl.callbacks import Callback, CallbacksHandler
 from clinicadl.data.dataloader import Batch, CollateFn, DataLoader
 from clinicadl.data.datasets import BidsDataset
-from clinicadl.io import Maps, T1Linear
+from clinicadl.io.bids import T1Linear
+from clinicadl.io.maps import Maps
 from clinicadl.metrics import MetricsHandler
 from clinicadl.metrics.config import MetricConfig, MSEMetricConfig
 from clinicadl.train import ComputationalConfig, Trainer

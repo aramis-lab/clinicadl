@@ -3,11 +3,12 @@ from typing import Optional, Sequence, Union
 from pydantic import Field, NonNegativeInt
 
 from clinicadl.utils.dictionary.words import NAME_
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.dtype import DtypeLike, read_dtype
 from clinicadl.utils.factories import get_defaults_from
 
 from ..homemade import Format, MergeFields
-from .base import TransformConfig
+from .base import DOCUMENT_EXTRA_PARAMETERS, TransformConfig
 
 __all__ = [
     "FormatConfig",
@@ -17,6 +18,7 @@ __all__ = [
 FORMAT_DEFAULTS = get_defaults_from(Format)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class FormatConfig(TransformConfig):
     """
     Config class for :py:class:`clinicadl.transforms.Format`.
@@ -35,6 +37,7 @@ class FormatConfig(TransformConfig):
         return Format
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class MergeFieldsConfig(TransformConfig):
     """
     Config class for :py:class:`clinicadl.transforms.MergeFields`.

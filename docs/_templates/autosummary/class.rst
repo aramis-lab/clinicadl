@@ -5,5 +5,3 @@
 
 .. autoclass:: {{ objname }}
    :members:
-
-.. include:: {{module}}.{{objname}}.examples

@@ -117,7 +117,7 @@ class VanillaModel(Model):
         Parameters
         ----------
         optimizers : dict[str, torch.optim.Optimizer]
-            The optimizers, as defined in :py:meth:`build_optimizers`.
+            The optimizer, as defined in :py:meth:`build_optimizers`.
         grad_scaler : GradScaler, default=GradScaler(enabled=False)
             A potential :torch:`torch.amp.GradScaler <amp.html#gradient-scaling>` used to scale gradients.
         """
@@ -158,8 +158,7 @@ class VanillaModel(Model):
 
     def get_loss_functions(self) -> dict[str, Loss]:
         """
-        Returns the loss function, that will be computed
-        on the validation set.
+        Returns the loss function.
 
         Returns
         -------
@@ -181,7 +180,7 @@ class VanillaModel(Model):
 
     def get_summary(
         self,
-        input_data: Batch[Sample],
+        input_data: Batch,
     ) -> str:
         """
         Returns a summary of the neural network, produced by
@@ -189,7 +188,7 @@ class VanillaModel(Model):
 
         Parameters
         ----------
-        input_data : Batch[Sample]
+        input_data : Batch
             Input data to pass to the neural network to build the summary.
 
         Returns

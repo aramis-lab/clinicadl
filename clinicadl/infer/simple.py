@@ -19,8 +19,8 @@ class SimpleInfererConfig(BaseInfererConfig):
 
 class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
     """
-    An :py:class:`clinicadl.infer.Inferer` for classical inference, i.e. when the whole image is passed
-    in the neural network and the raw output is returned (with a potential
+    An :py:class:`~clinicadl.infer.Inferer` for classical inference, i.e. when the whole image is passed
+    in the neural network and the output is returned (with a potential
     postprocessing).
 
     The inference output will be added to the input :py:class:`~clinicadl.data.structures.DataPoint`
@@ -30,15 +30,12 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
     ----------
     postprocessing : Optional[Sequence[TransformOrConfig]], default=None
         To apply postprocessing transformations (e.g. activations) after the pass forward
-        in the neural network.
+        in the neural network. Accepted transforms are functions that take as input a ``DataPoint`` and return
+        a ``DataPoint``, or :py:mod:`configuration classes <clinicadl.transforms.config>`.
 
     postprocessing_on_cpu : bool, default=False
         Whether to necessarily apply postprocessing on CPU. If ``False``, postprocessing will
         be applied on the device where are the data and the neural network.
-
-        .. important::
-            ``postprocessing_on_cpu=True`` may potentially change the device on which
-            are your input data.
 
     output_name : str, default="output"
         The name the give to the output in the ``DataPoint``.
@@ -51,9 +48,9 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
     output_type : OutputType, default="tensor"
         Determines the data type of the output:
 
-        - if ``"image"``, the output will be converted to a :py:class:`torchio.ScalarImage`;
-        - if ``"mask"``, the output will be converted to a :py:class:`torchio.LabeMap`;
-        - if ``"tensor"``, the output will remain a :py:class:`torch.Tensor`.
+        - ``"image"``: the output will be converted to a :py:class:`torchio.ScalarImage`;
+        - ``"mask"``: the output will be converted to a :py:class:`torchio.LabelMap`;
+        - ``"tensor"``: the output will remain a :py:class:`torch.Tensor`.
 
     Examples
     --------
@@ -62,13 +59,13 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
 
         import torch
         from clinicadl.infer import SimpleInferer
-        from clinicadl.data.structures.examples import ColinDataPoint
+        from clinicadl.data.structures.examples import Colin27DataPoint
         from clinicadl.data.dataloader import Batch
         from clinicadl.networks.nn import ConvEncoder
         from clinicadl.transforms.config import ActivationsConfig
 
         net = ConvEncoder(spatial_dims=3, in_channels=1, channels=[2, 4])
-        datapoint = ColinDataPoint()
+        datapoint = Colin27DataPoint()
 
     .. code-block::
 
@@ -121,7 +118,7 @@ class SimpleInferer(BaseInferer, HasConfig[SimpleInfererConfig]):
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
         output_name: str = OUTPUT,
-        output_type: OutputType = OutputType.TENSOR,
+        output_type: str | OutputType = OutputType.TENSOR,
     ):
         super().__init__(
             postprocessing=postprocessing,
