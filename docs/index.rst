@@ -1,8 +1,7 @@
 ClinicaDL
 =========
 
-ClinicaDL is a Python library for training and evaluating Deep Learning models on
-neuroimaging data.
+ClinicaDL is an open-source Python library for reproducible deep learning in neuroimaging.
 
 .. grid::
 
