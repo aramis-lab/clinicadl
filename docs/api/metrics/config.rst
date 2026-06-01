@@ -1,4 +1,4 @@
-.. _api_metrics:
+.. _api_metrics_config:
 
 :mod:`clinicadl.metrics.config`
 ===============================

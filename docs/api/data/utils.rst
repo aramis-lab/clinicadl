@@ -1,4 +1,4 @@
-.. _api_utils:
+.. _api_data_utils:
 
 :mod:`clinicadl.data.utils`
 ===========================

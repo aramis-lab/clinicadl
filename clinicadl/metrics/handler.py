@@ -521,7 +521,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         Parameters
         ----------
         path : Path
-            The path to the DataFrame to merge with :py:attr:`df.
+            The path to the DataFrame to merge with :py:attr:`df`.
         details_path: Optional[Path], default=None
             The path to the DataFrame to merge with :py:attr:`detailed_df`.
         """

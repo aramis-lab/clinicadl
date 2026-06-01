@@ -90,7 +90,7 @@ class DatasetDescription(ClinicaDLConfig):
 @equal_if_config_equal
 class Bids(HasConfig[BidsConfig]):
     """
-    A class to read :term:`BIDS` datasets or :term:`BIDS derivatives` (including :term:`CAPS`).
+    A class to read :term:`BIDS` datasets or :term:`BIDS derivatives <BIDS derivative>` (including :term:`CAPS`).
 
     The directory is expected to contain the mandatory :bids:`dataset_description.json <modality-agnostic-files/dataset-description.html#dataset_descriptionjson>`
     file, with the key ``"DatasetType"`` (whose value can be either ``"raw"``, ``"derivative"`` or ``"study"``).
