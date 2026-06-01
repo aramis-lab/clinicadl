@@ -1,5 +1,4 @@
-"""Config classes for optimizers supported natively in ``ClinicaDL``. Based
-on :torch:`PyTorch optimizers <optim.html#algorithms>`."""
+"""Config classes for optimizers supported natively in ``ClinicaDL``."""
 
 from .base import OptimizerConfig
 from .configs import *

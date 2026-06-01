@@ -264,10 +264,10 @@ class EarlyStoppingCallback(Callback, HasConfig[EarlyStoppingCallbackConfig]):
     Examples
     --------
     .. code-block::
+
         from clinicadl.callbacks import EarlyStoppingCallback
         from clinicadl.train import Trainer
         from clinicadl.metrics.config import MSEMetricConfig, LossMetricConfig
-        ...
 
         trainer = Trainer(
             metrics={"loss": LossMetricConfig(), "mse": MSEMetricConfig()},

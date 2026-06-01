@@ -103,7 +103,7 @@ class OptimizerConfig(ObjectConfig[optim.Optimizer]):
         return v
 
     @classmethod
-    def validator_proba(cls, v, ctx):
+    def _validator_proba(cls, v, ctx):
         """To validate probabilities."""
         name = ctx.field_name
         if isinstance(v, dict):

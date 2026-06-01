@@ -14,6 +14,10 @@ from clinicadl.utils.config import ClinicaDLConfig, ObjectConfig
 from .enum import LRSchedulerType
 from .utils import is_dict_type
 
+ADDITIONAL_DOC = """
+The optimizer is not passed here.
+"""
+
 
 class LRSchedulerConfig(ObjectConfig[LRScheduler]):
     """Base config class for the LR scheduler."""
@@ -24,7 +28,7 @@ class LRSchedulerConfig(ObjectConfig[LRScheduler]):
         """The type of LR scheduler (epoch-based, step-based, or metric-based)."""
 
     @classmethod
-    def group_validator(cls, v, field_name: str):
+    def _group_validator(cls, v, field_name: str):
         """Checks that 'ELSE' is always in a field if it is a dict (i.e. if parameter groups are passed)."""
         if isinstance(v, dict) and "ELSE" not in v:
             raise ValueError(
