@@ -16,3 +16,4 @@
    :field-signature-prefix: parameter
    :model-signature-prefix:
    :member-order: bysource
+   :inherited-members: ObjectConfig

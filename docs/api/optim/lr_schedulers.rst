@@ -10,7 +10,7 @@
 .. autosummary::
    :nosignatures:
    :toctree: ../generated/
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
     ConstantLRConfig
     ExponentialLRConfig

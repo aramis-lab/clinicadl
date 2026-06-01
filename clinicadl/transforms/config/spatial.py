@@ -11,9 +11,10 @@ from pydantic import (
 )
 from torchio import Image
 
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import Bounds, TorchioTransformConfig
+from .base import DOCUMENT_EXTRA_PARAMETERS, Bounds, TorchioTransformConfig
 from .enum import EnsureShapeMultipleMode, InterpolationMode, PaddingMode
 
 __all__ = [
@@ -37,6 +38,7 @@ CROP_TORCHIO_DEFAULT = get_defaults_from(tio.transforms.Crop)
 PAD_TORCHIO_DEFAULT = get_defaults_from(tio.transforms.Pad)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class CropOrPadConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.CropOrPad`.
@@ -68,12 +70,14 @@ class CropOrPadConfig(TorchioTransformConfig):
         return self
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class ToCanonicalConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.ToCanonical`.
     """
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class ResizeConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Resize`.
@@ -108,6 +112,7 @@ class ResizeConfig(TorchioTransformConfig):
             )
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class ResampleConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Resample`.
@@ -161,6 +166,7 @@ class ResampleConfig(TorchioTransformConfig):
         return v
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class EnsureShapeMultipleConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.EnsureShapeMultiple`.
@@ -170,6 +176,7 @@ class EnsureShapeMultipleConfig(TorchioTransformConfig):
     method: EnsureShapeMultipleMode = ENSURE_SHAPE_MULTIPLE_TORCHIO_DEFAULTS["method"]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class CropConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Crop`.
@@ -178,6 +185,7 @@ class CropConfig(TorchioTransformConfig):
     cropping: Bounds
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class PadConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Pad`.

@@ -72,7 +72,8 @@ class Patch(Extraction[ObjectConfig]):
 
     Adds the following keys to the input :py:class:`~clinicadl.data.structures.DataPoint`:
 
-    - ``patch_location``: tuple[int, int, int]
+    - ``sample_type`` : ``"patch"``
+    - ``sample_position``: tuple[int, int, int]
         The position of the patch in the image, which is defined as the position of its upper left voxel.
         The origin is defined at the upper left voxel of the image.
 
@@ -84,11 +85,33 @@ class Patch(Extraction[ObjectConfig]):
     overlap: Union[float, tuple[float, float, float]], default=0.0
         A ``float`` in :math:`[0.0, 1.0)` that defines relative patch overlap in each dimension.
         If a single value is passed, the same overlap will be used for the three spatial dimensions.
-    pad_mode : Optional[PadMode], default="constant"
+    pad_mode : Optional[str | PadMode], default="constant"
         A padding mode accepted by :py:func:`torch.nn.functional.pad`, i.e. one of ``"constant"``, ``"reflect"``, ``"replicate"`` or ``"circular"``.
         If ``None``, no padding will be applied, so the patches that cross the border of the image will be dropped.
     pad_value : float, default=0.0
         The value for ``"constant"`` padding.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.transforms.extraction import Patch
+        from clinicadl.data.structures.examples import Colin27DataPoint
+
+        data = Colin27DataPoint()
+        patch = Patch(patch_size=64)
+
+    .. code-block::
+
+        >>> data.spatial_shape
+        (181, 217, 181)
+        >>> patch.num_samples_per_image(data)
+        36
+        >>> patch(data, sample_index=0).spatial_shape
+        (64, 64, 64)
+        >>> next(iter(patch(data))).sample_position
+        (0, 0, 0)
+
     """
 
     config: PatchConfig
@@ -101,7 +124,7 @@ class Patch(Extraction[ObjectConfig]):
             float,
             tuple[float, float, float],
         ] = 0.0,
-        pad_mode: Optional[PadMode] = PadMode.CONSTANT,
+        pad_mode: Optional[str | PadMode] = PadMode.CONSTANT,
         pad_value: float = 0.0,
     ) -> None:
         self.config = PatchConfig(

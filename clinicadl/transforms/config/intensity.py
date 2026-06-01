@@ -7,9 +7,15 @@ from pydantic import (
     model_validator,
 )
 
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
-from .base import Bounds, MaskingMethodConfig, TorchioTransformConfig
+from .base import (
+    DOCUMENT_EXTRA_PARAMETERS,
+    Bounds,
+    MaskingMethodConfig,
+    TorchioTransformConfig,
+)
 from .enum import AnatomicalLabel
 
 __all__ = [
@@ -25,9 +31,12 @@ MASK_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Mask)
 CLAMP_TORCHIO_DEFAULTS = get_defaults_from(tio.transforms.Clamp)
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class RescaleIntensityConfig(TorchioTransformConfig, MaskingMethodConfig):
     """
     Config class for :py:class:`torchio.transforms.RescaleIntensity`.
+
+    A function for ``masking_method`` is not supported currently.
     """
 
     out_min_max: Union[
@@ -72,9 +81,12 @@ class RescaleIntensityConfig(TorchioTransformConfig, MaskingMethodConfig):
             )
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class ZNormalizationConfig(TorchioTransformConfig, MaskingMethodConfig):
     """
     Config class for :py:class:`torchio.transforms.ZNormalization`.
+
+    A function for ``masking_method`` is not supported currently.
     """
 
     masking_method: Optional[
@@ -82,15 +94,18 @@ class ZNormalizationConfig(TorchioTransformConfig, MaskingMethodConfig):
     ] = Z_NORMALIZATION_TORCHIO_DEFAULTS["masking_method"]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class MaskConfig(TorchioTransformConfig, MaskingMethodConfig):
     """
     Config class for :py:class:`torchio.transforms.Mask`.
     """
 
+    masking_method: Optional[Union[str, AnatomicalLabel, Bounds]]
     outside_value: float = MASK_TORCHIO_DEFAULTS["outside_value"]
     labels: Optional[Tuple[int, ...]] = MASK_TORCHIO_DEFAULTS["labels"]
 
 
+@add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
 class ClampConfig(TorchioTransformConfig):
     """
     Config class for :py:class:`torchio.transforms.Clamp`.

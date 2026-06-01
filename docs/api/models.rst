@@ -8,7 +8,7 @@
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/models.rst
+   :template: autosummary/model.rst
 
     Model
     SupervisedModel

@@ -34,6 +34,12 @@ class Image(Extraction[ImageConfig]):
     """
     Transform class for full image extraction, which is equivalent to
     no extraction.
+
+    Adds the following keys to the input :py:class:`~clinicadl.data.structures.DataPoint`:
+
+    - ``sample_type`` : ``"image"``
+    - ``sample_position``: ``None``
+        Not relevant here. Only for consistency.
     """
 
     _config_type = ImageConfig

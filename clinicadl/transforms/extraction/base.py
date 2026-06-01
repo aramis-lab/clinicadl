@@ -62,7 +62,7 @@ class Extraction(HasConfig[Config], ABC):
         Parameters
         ----------
         data_point : DataPoint
-            The :py:class:`~clinicadl.data.structures.DataPoint` to perform extraction on.
+            The images to perform extraction on.
         sample_index : Optional[int], default=None
             Potential index indicating the sample to extract. If ``None``, a generator of
             all the samples will be returned.
@@ -71,7 +71,7 @@ class Extraction(HasConfig[Config], ABC):
         -------
         Union[DataPoint, Generator[DataPoint, None, None]]
             A new ``DataPoint``, with the extracted sample, and some new information about the extraction
-            (e.g. the sample position), or a generator of such ``DataPoints``.
+            (e.g., the sample position), or a generator of such ``DataPoints``.
 
         Raises
         ------
@@ -89,7 +89,7 @@ class Extraction(HasConfig[Config], ABC):
         Parameters
         ----------
         data_point : DataPoint
-            The :py:class:`~clinicadl.data.structures.DataPoint` containing the image to perform extraction on.
+            The data containing the images to perform extraction on.
 
         Returns
         -------

@@ -10,7 +10,7 @@
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
    LossMetricConfig
 
@@ -20,7 +20,7 @@ Classification
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
     ConfusionMatrixMetricConfig
     ROCAUCMetricConfig
@@ -32,7 +32,7 @@ Regression
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
     MSEMetricConfig
     MAEMetricConfig
@@ -44,7 +44,7 @@ Reconstruction
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
     PSNRMetricConfig
     SSIMMetricConfig
@@ -56,7 +56,7 @@ Segmentation
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
     MeanIoUConfig
     DiceMetricConfig

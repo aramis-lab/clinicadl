@@ -13,6 +13,8 @@
    :template: autosummary/class.rst
 
    TransformsHandler
+   MergeFields
+   Format
 
 .. autosummary::
    :nosignatures:

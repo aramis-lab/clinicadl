@@ -15,7 +15,7 @@ Pre-processing
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
    RescaleIntensityConfig
    ZNormalizationConfig
@@ -41,7 +41,7 @@ Augmentation
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
    OneOfConfig
    RandomMotionConfig
@@ -66,7 +66,7 @@ Post-processing
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/pydantic.rst
+   :template: autosummary/config_object.rst
 
    ActivationsConfig
    AsDiscreteConfig
