@@ -124,7 +124,7 @@ html_static_path = ["_static"]
 html_favicon = "_static/logos/black_logo.png"
 html_copy_source = False
 html_show_sourcelink = False
-html_title = f"{project} {version}"
+html_title = f"{project}"
 
 autodoc_typehints = "signature"
 
