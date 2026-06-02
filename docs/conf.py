@@ -85,7 +85,7 @@ extlinks = {
     "torchio": ("https://torchio.readthedocs.io/%s", None),
     "torch": ("https://pytorch.org/docs/stable/%s", None),
     "torchvision": ("https://docs.pytorch.org/vision/main/%s", None),
-    "monai": ("https://docs.monai.io/en/stable/%s", None),
+    "monai": ("https://monai.readthedocs.io/en/stable/%s", None),
     "github": ("https://github.com/aramis-lab/clinicadl/%s", None),
     "wikipedia": ("https://en.wikipedia.org/wiki/%s", None),
     "bids": ("https://bids-specification.readthedocs.io/en/stable/%s", None),
