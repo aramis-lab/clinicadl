@@ -49,7 +49,7 @@ resulting TSV files to a directory, which they return.
     split_dir = make_split("bids/metadata.tsv", n_test=0.2)
 
     # a 5-fold partition
-    kfold_dir = make_kfold("bids/metadata.tsv", n_splits=5)
+    kfold_dir = make_kfold(split_dir / "training.tsv", n_splits=5)
 
 Both functions support two important options:
 
@@ -137,12 +137,18 @@ A :py:class:`~clinicadl.split.Split` simply bundles the two resulting datasets:
     >>> split.val_dataset
     <clinicadl.data.datasets.BidsDataset object ...>
 
+.. note::
+
+    The :py:class:`~clinicadl.split.Split` object also knows how to build the
+    :py:class:`~clinicadl.data.dataloader.DataLoader` of each set. We look at
+    dataloaders in the :doc:`next section <dataloader>`.
+
 Evaluating on a different view of the data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Both ``get_split`` and ``get_splits`` accept an ``eval_dataset`` argument. This is
-handy when you want to **train on patches but evaluate on whole images**: pass the
-patch dataset as the main argument and the image dataset as ``eval_dataset``.
+Both :py:class:`SingleSplit.get_split <clinicadl.split.SingleSplit.get_split>` and :py:class:`KFold.get_splits <clinicadl.split.KFold.get_splits>`
+accept an ``eval_dataset`` argument. This is handy when you want to **train on patches but evaluate on whole images**:
+pass the patch dataset as the main argument and the image dataset as ``eval_dataset``.
 
 .. code-block:: python
 
@@ -167,15 +173,8 @@ patch dataset as the main argument and the image dataset as ``eval_dataset``.
     >>> split.train_dataset[0].spatial_shape
     (64, 64, 64)              # patches for training
     >>> split.val_dataset[0].spatial_shape
-    (181, 217, 181)          # whole images for evaluation
-
-.. note::
-
-    The :py:class:`~clinicadl.split.Split` object also knows how to build the
-    :py:class:`~clinicadl.data.dataloader.DataLoader` of each set. We look at
-    dataloaders in the :doc:`next section <dataloader>`.
+    (181, 217, 181)          # entire images for evaluation
 
 ----
 
-With your data split into training and validation sets, the last step before
-training is to iterate over them in batches.
+Once your data is divided into training and validation sets, the final step before starting training is to specify how it will be batched.

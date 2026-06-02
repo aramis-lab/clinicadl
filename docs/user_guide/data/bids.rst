@@ -10,10 +10,10 @@ involves three objects:
 
 - a :py:class:`~clinicadl.io.bids.Bids`, which knows how to navigate a BIDS-like
   directory;
-- a :py:class:`~clinicadl.io.bids.BidsFileType`, which describes *which* files you
+- a :py:class:`~clinicadl.io.bids.BidsFileType`, which describes which files you
   want;
 - a :py:class:`~clinicadl.data.datasets.BidsDataset`, which ties the two together
-  and turns the selected files into :py:class:`Samples <clinicadl.data.structures.Sample>`.
+  and loads the selected files into :py:class:`Samples <clinicadl.data.structures.Sample>`.
 
 Navigating a BIDS directory
 ---------------------------
@@ -22,8 +22,7 @@ A :py:class:`~clinicadl.io.bids.Bids` is created from the path to a BIDS-like
 directory. The directory must contain the mandatory
 :bids:`dataset_description.json <modality-agnostic-files/dataset-description.html#dataset_descriptionjson>`
 file, whose ``"DatasetType"`` key (``"raw"``, ``"derivative"`` or ``"study"``) tells
-ClinicaDL how the directory is organised — and, in particular, where the tensors it
-produces will be stored.
+ClinicaDL how the directory is organised.
 
 .. code-block:: python
 
@@ -44,11 +43,12 @@ Describing the files to load
 A :py:class:`~clinicadl.io.bids.BidsFileType` defines the files you are interested
 in. It is expressed in the vocabulary of the BIDS specification — a
 :bids:`suffix <common-principles.html#filenames>`, a
-:bids:`data type <common-principles.html#definitions>` (the modality folder, e.g.
+:bids:`data type <common-principles.html#definitions>` (the folder, e.g.
 ``"anat"``), a file extension, and the :bids:`entities <common-principles.html#entities>`
-the files must (or must not) contain. Regular expressions are accepted everywhere.
+the files must (or must not) contain. `Regular expressions <https://www.w3schools.com/python/python_regex.asp>`_
+are accepted everywhere.
 
-For example, to select cropped T1-weighted images registered to the MNI space:
+For example, to select all the isotropic T1-weighted images registered to the MNI space:
 
 .. code-block:: python
 
@@ -59,13 +59,7 @@ For example, to select cropped T1-weighted images registered to the MNI space:
         suffix="T1w",
         extension=".nii.gz",
         with_entities={"space": r"MNI152.*", "res": "1x1x1"},
-        without_entities={"desc": "Crop"},
     )
-
-.. note::
-
-    You never need to mention the ``sub`` and ``ses`` entities: ClinicaDL handles
-    the participant and session matching for you.
 
 Clinica preprocessing pipelines
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,14 +87,14 @@ match the output of the most common Clinica pipelines.
 
     from clinicadl.io.bids import T1Linear, PetLinear
 
-    t1 = T1Linear()                                       # cropped T1-linear images
+    t1 = T1Linear()
     pet = PetLinear(tracer="18FFDG", suvr_reference_region="pons")
 
 The BidsDataset
 ---------------
 
 A :py:class:`~clinicadl.data.datasets.BidsDataset` is the object you will use most.
-It reads a BIDS directory, loads the files described by a ``file_type``, and returns
+It reads a BIDS directory, loads the files described by a ``BidsFileType``, and returns
 one :py:class:`~clinicadl.data.structures.Sample` per element of the data.
 
 Consider a dataset whose metadata are stored in a TSV file:
@@ -140,13 +134,13 @@ file:
 .. code-block:: python
 
     >>> len(dataset)
-    50                       # one sample per line of metadata.tsv
+    50  # one sample per line of metadata.tsv
     >>> dataset[0]
     Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)
     >>> dataset[0].participant, dataset[0].session
     ('sub-001', 'ses-M000')
 
-A few arguments shape what a ``BidsDataset`` contains:
+A few arguments shape what a ``BidsDataset`` contains and will output:
 
 ``data``
     A :py:class:`pandas.DataFrame` (or a path to a TSV file) listing the
@@ -180,13 +174,48 @@ A few arguments shape what a ``BidsDataset`` contains:
 ``masks``
     Masks to load alongside each image, passed as a dictionary. The keys become the
     mask names in the ``Sample``; the values describe where to find each mask — a
-    single shared NIfTI file, a :py:class:`~clinicadl.io.bids.BidsFileType` (for a
-    subject- and session-specific mask in the same BIDS), or a
-    ``(bids, file_type)`` tuple (for a mask located in another directory).
+    single shared NIfTI file or a :py:class:`~clinicadl.io.bids.BidsFileType` (for a
+    subject- and session-specific mask in the same BIDS).
+
+    .. code-block:: text
+
+        bids
+        ├── dataset_description.json
+        ├── metadata.tsv
+        ├── sub-001
+        ...
+        └── derivatives
+            ├── registration
+            │   ├── space-MNI152NLin2009cSym_mask.nii.gz
+            │   ...
+            └── masks
+                ├── dataset_description.json
+                ├── sub-001
+                │   ├── ses-M000
+                │   │   └── anat
+                │   │       └── sub-001_ses-M000_label-brain_mask.nii.gz
+                │   ...
+                ...
+
+    .. code-block::
+
+        dataset = BidsDataset(
+            bids="bids",
+            file_type=BidsFileType(data_type="anat", suffix="T1w"),
+            masks={
+                "brain": (                                                                   # subject- and session-specific mask that is in another BIDS
+                    "bids/derivatives/masks",
+                    BidsFileType(
+                        data_type="anat", suffix="mask", with_entities={"label": "brain"}
+                    ),
+                ),
+                "mni": "bids/derivatives/registration/space-MNI152NLin2009cSym_mask.nii.gz",  # same mask for all (subject, session)
+            },
+        )
 
 ``transforms``
     A :py:class:`~clinicadl.transforms.TransformsHandler` describing the transforms
-    to apply and whether you work on whole images, patches or slices. This is the
+    to apply and whether you work on entire images, patches or slices. This is the
     subject of the :doc:`next section <transforms>`. For example, switching to
     patches changes the number of samples in the dataset:
 
@@ -204,7 +233,9 @@ A few arguments shape what a ``BidsDataset`` contains:
     .. code-block:: python
 
         >>> dataset[0].spatial_shape
-        (64, 64, 64)         # a patch, not the full image
+        (64, 64, 64)    # a patch, not the full image
+        >>> len(dataset)
+        1800
 
 .. note::
 
@@ -212,7 +243,7 @@ A few arguments shape what a ``BidsDataset`` contains:
     of samples extracted per image. With 50 images and 36 patches each, the dataset
     has :math:`50\times36 = 1800` samples.
 
-Like any ClinicaDL dataset, a ``BidsDataset`` exposes its metadata as a DataFrame
+A ``BidsDataset`` exposes its metadata as a DataFrame
 through :py:attr:`~clinicadl.data.datasets.Dataset.df`, and can be restricted to a
 subset of ``(participant, session)`` pairs with
 :py:meth:`~clinicadl.data.datasets.Dataset.subset`.
@@ -223,7 +254,7 @@ subset of ``(participant, session)`` pairs with
 -----------------------------------------
 
 Opening a NIfTI file is comparatively slow. When you iterate over a dataset many
-times — which is exactly what training does — it pays off to convert your images to
+times — which is exactly what is done during training phase — it pays off to convert your images to
 PyTorch tensors once and read from the ``.pt`` files afterwards. This is what
 :py:meth:`BidsDataset.to_tensors <clinicadl.data.datasets.BidsDataset.to_tensors>`
 does:
@@ -237,7 +268,7 @@ does:
 
     tensor_dataset = dataset.to_tensors(conversion_name="T1")
 
-The tensors are written to a ``tensors`` BIDS derivative, together with a ``.json``
+The tensors are written to a :term:`BIDS derivative` named `"tensors"``, together with a ``.json``
 file describing the conversion. ``to_tensors`` returns a
 :py:class:`~clinicadl.data.datasets.TensorDataset` that you can use exactly like the
 original ``BidsDataset`` — only faster to load.
@@ -257,7 +288,6 @@ To reopen a previously converted dataset, point a
     tensor_dataset = TensorDataset(
         description_json="bids/derivatives/tensors/src-T1w_conv-T1_description.json",
         data="bids/metadata.tsv",
-        columns=["age"],
     )
 
 .. warning::
@@ -271,14 +301,14 @@ To reopen a previously converted dataset, point a
 1.2.2 Joining multiple datasets
 -------------------------------
 
-You often need to combine several datasets — images coming from different cohorts,
+You may need to combine several datasets — images coming from different cohorts,
 or different modalities of the same participants. ClinicaDL offers three ways to do
 so.
 
 Concatenating
 ~~~~~~~~~~~~~~
 
-:py:class:`~clinicadl.data.datasets.ConcatDataset` stacks datasets end to end. The
+:py:class:`~clinicadl.data.datasets.ConcatDataset` concatenates datasets end to end. The
 length of the result is the sum of the lengths of its parts. Use it to gather images
 of the **same nature** coming from **different sources**.
 
@@ -332,6 +362,12 @@ example, to feed a generative model with images that should *not* be paired. The
 random association can be re-drawn for each epoch with
 :py:meth:`~clinicadl.data.datasets.UnpairedDataset.set_epoch`, and the ``oversample``
 argument controls how datasets of different sizes are reconciled.
+
+1.2.3 Non-BIDS dataset?
+-----------------------
+
+If for some reasons, any of the previous dataset class is able to read your data,
+you can still write your own dataset by inheriting from :py:class:`clinicadl.data.datasets.Dataset`.
 
 ----
 

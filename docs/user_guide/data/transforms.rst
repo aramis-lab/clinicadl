@@ -15,11 +15,11 @@ The TransformsHandler
 A :py:class:`~clinicadl.transforms.TransformsHandler` organises transforms into
 **four** stages, applied in this order:
 
-#. ``extraction`` — what you work on: the whole image, patches, or slices.
 #. ``image_transforms`` — transforms applied to the **whole image, before
    extraction**. This is where normalisation belongs, so that statistics are
    computed on the full image and not on a single patch or slice.
-#. ``sample_transforms`` — transforms applied to a sample (a patch or a slice),
+#. ``extraction`` — what you work on: the whole image, patches, or slices.
+#. ``sample_transforms`` — transforms applied to a sample (an image, a patch or a slice),
    **after extraction**. This is typically where you resize a sample to fit your
    network.
 #. ``augmentations`` — transforms applied last, **only during training**.
@@ -30,8 +30,8 @@ A :py:class:`~clinicadl.transforms.TransformsHandler` organises transforms into
     import torchio as tio
 
     transforms = TransformsHandler(
-        extraction=extraction.Patch(patch_size=64),
         image_transforms=[tio.ZNormalization()],
+        extraction=extraction.Patch(patch_size=64),
         sample_transforms=[tio.CropOrPad(64)],
         augmentations=[tio.RandomFlip()],
     )
@@ -61,7 +61,7 @@ provides three extractions, in :py:mod:`clinicadl.transforms.extraction`:
 :py:class:`~clinicadl.transforms.extraction.Slice`
     Each sample is a 2D slice taken along ``slice_direction`` (``0`` sagittal, ``1``
     coronal, ``2`` axial). Which slices to keep can be chosen with ``slices``,
-    ``discarded_slices``, ``borders`` or a per-image ``tsv_path``.
+    ``discarded_slices``, ``borders`` or ``tsv_path``.
 
 The extraction also determines how many samples an image yields, which you can check
 on a single :py:class:`~clinicadl.data.structures.DataPoint`:
@@ -94,7 +94,7 @@ Slicing works the same way:
 .. code-block:: python
 
     >>> slices.num_samples_per_image(data)
-    197                       # 217 coronal slices minus 2 × 10 borders
+    197     # 217 coronal slices minus 2 × 10 borders
     >>> slices(data, sample_index=0).spatial_shape
     (181, 1, 181)
 
@@ -138,43 +138,29 @@ raw TorchIO transforms:
         ],
     )
 
-A custom transform is just a function. Here is one that adds a binary brain mask
+A custom transform is just a function. Here is one that adds a binary head mask
 derived from the image:
 
 .. code-block:: python
 
     import torch
     from clinicadl.data.structures import DataPoint
+    from clinicadl.data.structures.examples import Colin27DataPoint
 
     def add_foreground_mask(datapoint: DataPoint) -> DataPoint:
         mask = (datapoint.get_image_tensor("image") > 0).to(torch.int)
         datapoint.add_mask(mask, "foreground")
         return datapoint
 
-    transforms = TransformsHandler(image_transforms=[add_foreground_mask])
+    data = Colin27DataPoint()
 
-ClinicaDL's own transforms cover two common needs:
+.. code-block:: python
 
-:py:class:`~clinicadl.transforms.Format`
-    Changes the **type or shape** of selected fields of a ``DataPoint`` — for
-    example casting a label to ``int64``, or squeezing/unsqueezing an array. Like all
-    TorchIO transforms, it accepts ``include`` / ``exclude`` to target specific keys.
+    >>> add_foreground_mask(data)
+    Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session', 'foreground'); images: 3)
 
-    .. code-block:: python
-
-        from clinicadl.transforms import Format
-        from clinicadl.data.structures.examples import Colin27DataPoint
-
-        data = Colin27DataPoint(age=55.0)
-
-    .. code-block:: python
-
-        >>> Format(dtype="int64", include=["age"])(data)["age"]
-        55
-
-:py:class:`~clinicadl.transforms.MergeFields`
-    **Merges** several fields of a ``DataPoint`` into a new one — stacking tensors,
-    concatenating images along the channel dimension, or grouping values into a list.
+However, it is advised to inherit from :py:class:`torchio.Transform` to create
+your own transforms.
 
 .. admonition:: Where do the transforms apply?
     :class: tip

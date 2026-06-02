@@ -3,7 +3,8 @@
 1.5 Batching data for training
 ==============================
 
-Training a network means feeding it data in **batches**. ClinicaDL provides a
+When training a neural network, you typically feed it multiple images together,
+known as a **batch**. ClinicaDL provides a
 :py:class:`~clinicadl.data.dataloader.DataLoader` that iterates over a
 :py:class:`~clinicadl.data.datasets.Dataset` and groups its samples into a
 :py:class:`~clinicadl.data.dataloader.Batch`, ready to be turned into tensors.
@@ -13,8 +14,8 @@ The DataLoader
 
 :py:class:`~clinicadl.data.dataloader.DataLoader` is a subclass of
 :py:class:`torch.utils.data.DataLoader`, so it behaves like the PyTorch dataloader
-you may already know — with the same parameters (``batch_size``, ``shuffle``,
-``num_workers``, ``pin_memory``, …).
+you may already know — with many common parameters (``batch_size``, ``shuffle``,
+``num_workers``, ``pin_memory``, etc.).
 
 .. important::
 
@@ -30,7 +31,6 @@ you may already know — with the same parameters (``batch_size``, ``shuffle``,
     dataset = BidsDataset(
         "bids",
         file_type=BidsFileType(data_type="anat", suffix="T1w"),
-        data="bids/metadata.tsv",
     )
     loader = DataLoader(dataset, batch_size=3, shuffle=True)
 
@@ -103,12 +103,26 @@ tuple of batches by default:
 
     from clinicadl.data.datasets import PairedDataset
 
-    paired = PairedDataset([dataset, dataset])
+    paired = PairedDataset([dataset_t1, dataset_pet])
     loader = DataLoader(paired, batch_size=3, shuffle=False)
 
 .. code-block:: python
 
     >>> batch_t1, batch_pet = next(iter(loader))     # one Batch per modality
+
+But a single batch with ``MergeBatchesCollate``:
+
+.. code-block:: python
+
+    from clinicadl.data.dataloader import MergeBatchesCollate
+
+    loader = DataLoader(paired, batch_size=3, shuffle=False, collate_fn=MergeBatchesCollate())
+
+.. code-block:: python
+
+    >>> batch = next(iter(loader))
+    >>> batch.get_field("image").shape
+    torch.Size([3, 2, 181, 217, 181])   # 2 channels because the two images were merged
 
 To define your own collating behaviour, subclass
 :py:class:`~clinicadl.data.dataloader.CollateFn` and implement its ``__call__``
@@ -119,19 +133,19 @@ Building loaders from a split
 
 In practice you build one loader for the training set and one for the validation
 set. The :py:class:`~clinicadl.split.Split` returned by a splitter (see
-:doc:`Splitting data <splitting>`) does this for you, with sensible defaults
-(shuffling on for training, off for validation):
+:doc:`Splitting data <splitting>`) provides methods to do so:
 
 .. code-block:: python
 
-    split.build_train_loader(batch_size=8)
+    split.build_train_loader(batch_size=8, shuffle=True)
     split.build_val_loader(batch_size=8)
 
+    # now you can access the dataloaders
     train_loader = split.train_loader
     val_loader = split.val_loader
 
 ----
 
 This closes Chapter 1: you can now load your data, transform it, split it without
-leakage, and iterate over it in batches. The :doc:`next chapter <../workflow/index>`
-puts these batches to use, building and training a model.
+leakage, and iterate over it in batches.  The :doc:`next chapter <../workflow/index>`
+demonstrates how these batches are used to train a model

@@ -4,11 +4,10 @@
 ====================
 
 In neuroimaging, an image rarely travels alone: it comes with a participant and a
-session identifier, sometimes with one or several masks (a brain mask, a
-segmentation, …), and with metadata such as the age of the participant or a
-diagnosis label. Keeping all this information **in a single object** avoids many
-bookkeeping mistakes — for instance applying a spatial transform to an image but
-forgetting to apply it to its mask.
+session identifier, sometimes with one or several masks (for instance, marking specific anatomical regions),
+and with metadata such as the age of the participant or a
+diagnosis label. Storing all of these elements within one unified object helps prevent common errors —
+for instance applying a spatial transform to an image but forgetting to apply it to its mask.
 
 This is the role of the :py:class:`~clinicadl.data.structures.DataPoint`, the
 central data structure of ClinicaDL, and of its child the
@@ -66,8 +65,8 @@ add or modify a field:
 
 Throughout this guide we use the bundled
 :py:class:`~clinicadl.data.structures.examples.Colin27DataPoint`, a ready-to-use
-``DataPoint`` wrapping the Colin 27 average brain. It contains a T1 image and a
-mask named ``"head"``, and requires no external data:
+``DataPoint`` wrapping the `Colin 27 average brain <https://www.bic.mni.mcgill.ca/ServicesAtlases/Colin27Highres>`.
+It contains a T1 image and a mask named ``"head"``, and requires no external data:
 
 .. code-block:: python
 
@@ -133,8 +132,8 @@ its images with :py:meth:`~clinicadl.data.structures.DataPoint.plot`.
 
 .. tip::
 
-    Because a ``DataPoint`` is a dictionary, you can store anything in it — a label,
-    an array, a path. This is what makes it a convenient container to move data
+    Because a ``DataPoint`` is a dictionary, you can store anything in it.
+    This is what makes it a convenient container to move data
     through the whole ClinicaDL pipeline.
 
 The Sample
@@ -169,14 +168,14 @@ The 2D Sample
 -------------
 
 When you work on 2D slices rather than 3D volumes, a dataset returns a
-:py:class:`~clinicadl.data.structures.Sample2D`, a ``Sample`` with two additional
+:py:class:`~clinicadl.data.structures.Sample2D`, which is a ``Sample`` with two additional
 fields:
 
 - ``slice_direction``: the slicing direction — ``0`` (sagittal), ``1`` (coronal) or
   ``2`` (axial);
 - ``squeeze``: whether the slice tensor should be squeezed to two spatial dimensions
   (most ClinicaDL operations work internally with 3D tensors, so the dummy dimension
-  is only removed when needed, e.g. just before a 2D network).
+  is only removed when needed, e.g. right before the data is passed to a 2D neural network).
 
 .. code-block:: python
 
