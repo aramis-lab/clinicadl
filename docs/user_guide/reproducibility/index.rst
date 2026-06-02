@@ -3,9 +3,20 @@
 3. Experiment management and reproducibility
 =============================================
 
-.. note::
+Two of ClinicaDL's guiding principles are **experiment management** — keeping every
+output of an experiment together — and **reproducibility** — being able to run the
+same experiment again and obtain the same result. This chapter presents the two
+features that make this possible.
 
-    This chapter is being written and will be available soon. In the meantime,
-    have a look at :doc:`Chapter 1 <../data/index>` to learn how to prepare your
-    data, and at the :doc:`Quickstart <../quickstart/index>` for a condensed tour
-    of a full ClinicaDL workflow.
+#. :doc:`Configuration classes <config>` — serialisable objects that record the
+   parameters of the objects you use, so that an experiment can be saved and rebuilt.
+#. :doc:`MAPS <maps>` — the single folder in which a
+   :py:class:`~clinicadl.train.Trainer` gathers all the outputs and hyperparameters of
+   an experiment.
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   config
+   maps
