@@ -36,6 +36,12 @@ class SEResNet(GeneralResNet):
     kwargs : Any
         Any optional argument accepted by :py:class:`~clinicadl.networks.nn.ResNet`.
 
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
+    :py:class:`~clinicadl.networks.nn.ResNet`
+
     Examples
     --------
 
@@ -101,10 +107,6 @@ class SEResNet(GeneralResNet):
             )
         )
 
-    See Also
-    --------
-    :py:class:`~clinicadl.networks.nn.ResNet`
-
     """
 
     def __init__(
@@ -129,7 +131,7 @@ class SEResNet(GeneralResNet):
 
 class SEResNet50(ResNet):
     """
-    SEResNet-50, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`_.
+    SEResNet-50, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -144,13 +146,15 @@ class SEResNet50(ResNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.SEResNet`
 
     """
@@ -174,7 +178,7 @@ class SEResNet50(ResNet):
 
 class SEResNet101(ResNet):
     """
-    SEResNet-101, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`_.
+    SEResNet-101, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -189,13 +193,15 @@ class SEResNet101(ResNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.SEResNet`
 
     """
@@ -219,7 +225,7 @@ class SEResNet101(ResNet):
 
 class SEResNet152(ResNet):
     """
-    SEResNet-152, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`_.
+    SEResNet-152, from `Squeeze-and-Excitation Networks <https://arxiv.org/abs/1709.01507>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -234,13 +240,15 @@ class SEResNet152(ResNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.SEResNet`
 
     """

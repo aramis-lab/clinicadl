@@ -62,8 +62,8 @@ class DenseNet(nn.Sequential):
     act : ActivationParameters, default=("relu", {"inplace": True})
         The activation function used after a convolutional layer, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.\n
         Default is ``relu``, as in the original paper.
@@ -72,6 +72,11 @@ class DenseNet(nn.Sequential):
         If ``None``, no last activation will be applied.
     dropout : Optional[float], default=None
         Dropout ratio. If ``None``, no dropout.
+
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
 
     Examples
     --------
@@ -228,7 +233,7 @@ class DenseNet(nn.Sequential):
 
 class DenseNet121(DenseNet):
     """
-    DenseNet-121, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
+    DenseNet-121, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -246,8 +251,8 @@ class DenseNet121(DenseNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -256,6 +261,8 @@ class DenseNet121(DenseNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.DenseNet`
 
     """
@@ -284,7 +291,7 @@ class DenseNet121(DenseNet):
 
 class DenseNet161(DenseNet):
     """
-    DenseNet-161, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
+    DenseNet-161, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -302,8 +309,8 @@ class DenseNet161(DenseNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -312,6 +319,8 @@ class DenseNet161(DenseNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.DenseNet`
 
     """
@@ -340,7 +349,7 @@ class DenseNet161(DenseNet):
 
 class DenseNet169(DenseNet):
     """
-    DenseNet-161, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
+    DenseNet-169, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -358,8 +367,8 @@ class DenseNet169(DenseNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -368,6 +377,8 @@ class DenseNet169(DenseNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.DenseNet`
 
     """
@@ -396,7 +407,7 @@ class DenseNet169(DenseNet):
 
 class DenseNet201(DenseNet):
     """
-    DenseNet-201, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`_.
+    DenseNet-201, from `Densely Connected Convolutional Networks <https://arxiv.org/abs/1608.06993>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -414,8 +425,8 @@ class DenseNet201(DenseNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -424,6 +435,8 @@ class DenseNet201(DenseNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.DenseNet`
 
     """

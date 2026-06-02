@@ -54,6 +54,13 @@ class Generator(nn.Sequential):
     ValueError
         If ``mlp_args`` is not ``None`` and doesn't contain the key ``hidden_dims``.
 
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
+    :py:class:`~clinicadl.networks.nn.ConvDecoder`
+    :py:class:`~clinicadl.networks.nn.MLP`
+
     Examples
     --------
 
@@ -109,10 +116,6 @@ class Generator(nn.Sequential):
             )
         )
 
-    See Also
-    --------
-    :py:class:`~clinicadl.networks.nn.ConvDecoder`
-    :py:class:`~clinicadl.networks.nn.MLP`
     """
 
     def __init__(

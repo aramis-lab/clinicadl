@@ -85,8 +85,8 @@ class ConvDecoder(nn.Sequential):
         The activation function used after a transposed convolution, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     output_act : Optional[ActivationParameters], default=None
@@ -96,7 +96,7 @@ class ConvDecoder(nn.Sequential):
         The normalization layer used after a transposed convolution, and optionally its arguments.
         Must be passed as ``norm_type`` or ``(norm_type, arguments)`` where ``arguments`` is a dictionary.
         If ``None``, no normalization will be performed.\n
-        ``norm_type`` can be any value in {``batch``, ``group``, ``instance``, ``syncbatch``}. Please refer to
+        ``norm_type`` can be any value in {``"batch"``, ``"group"``, ``"instance"``, ``"syncbatch"``}. Please refer to
         :torch:`PyTorch normalization layers <nn.html#normalization-layers>` to know the arguments for each of them.
 
         .. note::
@@ -128,6 +128,12 @@ class ConvDecoder(nn.Sequential):
     ValueError
         If the activation or normalization layer requires a mandatory argument, which is not passed by the user (via a dictionary
         in ``act`` or ``norm``).
+
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
+    :py:class:`~clinicadl.networks.nn.ConvEncoder`
 
     Examples
     --------
@@ -177,9 +183,6 @@ class ConvDecoder(nn.Sequential):
             (output_act): ReLU()
         )
 
-    See Also
-    --------
-    :py:class:`~clinicadl.networks.nn.ConvEncoder`
     """
 
     def __init__(

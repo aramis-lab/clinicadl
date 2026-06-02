@@ -35,8 +35,8 @@ class AttentionUNet(UNet):
     act : ActivationParameters, default="relu"
         The activation function used, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.\n
         Default is ``relu``, as in the original paper.
@@ -45,6 +45,12 @@ class AttentionUNet(UNet):
         If ``None``, no last activation will be applied.
     dropout : Optional[float], default=None
         Dropout ratio. If ``None``, no dropout.
+
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
+    :py:class:`~clinicadl.networks.nn.UNet`
 
     Examples
     --------
@@ -159,10 +165,6 @@ class AttentionUNet(UNet):
             )
             (output_act): Softmax(dim=1)
         )
-
-    See Also
-    --------
-    :py:class:`~clinicadl.networks.nn.UNet`
 
     References
     ----------

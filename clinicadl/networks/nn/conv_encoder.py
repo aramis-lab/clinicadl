@@ -74,7 +74,7 @@ class ConvEncoder(nn.Sequential):
     pooling : Optional[PoolingParameters], default=("max", {"kernel_size": 2})
         The pooling mode and the arguments of the pooling layer, passed as ``(pooling_mode, arguments)``,  where ``arguments`` is a dictionary.
         If ``None``, no pooling will be performed in the network.\n
-        ``pooling_mode`` can be any value in {``max``, ``avg``, ``adaptivemax``, ``adaptiveavg``}. Please refer to
+        ``pooling_mode`` can be any value in {``"max"``, ``"avg"``, ``"adaptivemax"``, ``"adaptiveavg"``}. Please refer to
         :torch:`PyTorch pooling layers <nn.html#pooling-layers>` to know the arguments for each of them.\n
         If a ``list`` is passed, it will be understood as the pooling for each pooling layer.
     pooling_indices : Optional[Sequence[int]], default=None
@@ -85,8 +85,8 @@ class ConvEncoder(nn.Sequential):
         The activation function used after a convolutional layer, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     output_act : Optional[ActivationParameters], default=None
@@ -96,7 +96,7 @@ class ConvEncoder(nn.Sequential):
         The normalization layer used after a convolutional layer, and optionally its arguments.
         Must be passed as ``norm_type`` or ``(norm_type, arguments)`` where ``arguments`` is a dictionary.
         If ``None``, no normalization will be performed.\n
-        ``norm_type`` can be any value in {``batch``, ``group``, ``instance``, ``syncbatch``}. Please refer to
+        ``norm_type`` can be any value in {``"batch"``, ``"group"``, ``"instance"``, ``"syncbatch"``}. Please refer to
         :torch:`PyTorch normalization layers <nn.html#normalization-layers>` to know the arguments for each of them.
 
         .. note::
@@ -128,6 +128,12 @@ class ConvEncoder(nn.Sequential):
     ValueError
         If the activation or normalization layer requires a mandatory argument, which is not passed by the user (via a dictionary
         in ``act`` or ``norm``).
+
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
+    :py:class:`~clinicadl.networks.nn.ConvDecoder`
 
     Examples
     --------
@@ -176,9 +182,6 @@ class ConvEncoder(nn.Sequential):
             (output_act): ReLU()
         )
 
-    See Also
-    --------
-    :py:class:`~clinicadl.networks.nn.ConvDecoder`
     """
 
     def __init__(
