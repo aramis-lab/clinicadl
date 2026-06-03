@@ -89,6 +89,7 @@ extlinks = {
     "github": ("https://github.com/aramis-lab/clinicadl/%s", None),
     "wikipedia": ("https://en.wikipedia.org/wiki/%s", None),
     "bids": ("https://bids-specification.readthedocs.io/en/stable/%s", None),
+    "nibabel": ("https://nipy.org/nibabel/%s", None),
     "clinica": ("https://aramislab.paris.inria.fr/clinica/docs/public/latest/%s", None),
 }
 language = "en"
