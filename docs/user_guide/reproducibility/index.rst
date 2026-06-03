@@ -3,9 +3,9 @@
 3. Experiment management and reproducibility
 =============================================
 
-Two of ClinicaDL's guiding principles are **experiment management** — keeping every
-output of an experiment together — and **reproducibility** — being able to run the
-same experiment again and obtain the same result. This chapter presents the two
+Two of ClinicaDL's guiding principles are **experiment management** — keeping track of experimental
+conditions and results — and **reproducibility** — being able to run the
+same experiment again and obtain the same results. This chapter presents the two
 features that make this possible.
 
 #. :doc:`Configuration classes <config>` — serialisable objects that record the

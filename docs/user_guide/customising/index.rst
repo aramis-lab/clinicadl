@@ -3,13 +3,44 @@
 4. Customising your ClinicaDL experiment
 =========================================
 
-ClinicaDL ships many ready-to-use objects, but no library can anticipate every need.
-Its second guiding principle — **flexibility** — means that almost every object can be
-*extended*. This short chapter points to the main extension points so that you can
-tailor ClinicaDL to your own experiments.
+ClinicaDL comes with a range of ready-to-use components, but no library can cover every possible use case.
+One of its core principles — **flexibility** — ensures that most built-in objects can be
+*extended* to meet specific or unforeseen needs. This short chapter highlights the main extension points
+so you can adapt ClinicaDL to your own experiments.
 
-There are two complementary ways to customise ClinicaDL: plugging in **callbacks**,
-and **subclassing** its objects.
+Using external objects
+----------------------
+
+Before extending ClinicaDL, it is worth remembering that at
+many points ClinicaDL accepts objects coming from the wider ecosystem —
+:torch:`PyTorch <>`, :monai:`MONAI <>`, :torchio:`TorchIO <>` — or objects you wrote
+yourself, as long as they follow the expected interface.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Object
+      - What you can pass
+    * - Neural networks
+      - any :py:class:`torch.nn.Module` — from :torchvision:`torchvision <models.html>`, :monai:`MONAI <networks.html>`, or
+        your own — given to a :py:class:`~clinicadl.models.Model` (if you work with 3D images, make sure that your neural
+        network is 3D!).
+    * - Losses
+      - any PyTorch-style loss — from :torch:`PyTorch <nn.html#loss-functions>`,
+        :monai:`MONAI <losses.html#loss-functions>`, or your own — given to a
+        :py:class:`~clinicadl.models.Model`.
+    * - Optimizers
+      - any :py:class:`torch.optim.Optimizer`, given to a
+        :py:class:`~clinicadl.models.Model`.
+    * - Learning-rate schedulers
+      - any :py:class:`torch.optim.lr_scheduler.LRScheduler`, given to an
+        :py:class:`~clinicadl.callbacks.LRSchedulerCallback`.
+    * - Transforms
+      - any callable taking and returning a
+        :py:class:`~clinicadl.data.structures.DataPoint` (e.g. a
+        :torchio:`TorchIO transform <transforms>`), given to a
+        :py:class:`~clinicadl.transforms.TransformsHandler`.
 
 Callbacks
 ---------
@@ -39,16 +70,15 @@ The most common extension points are:
       - Subclass it to …
     * - :py:class:`~clinicadl.models.Model`
       - define your own training/evaluation logic (custom forward step, several
-        networks, custom optimization, …).
+        networks, custom optimization, etc.).
     * - :py:class:`~clinicadl.data.datasets.Dataset`
-      - read data that does not fit the built-in datasets (see
-        :ref:`Section 1.2 <user_guide_data_bids>`).
+      - read data that does not fit the built-in datasets.
+    * - :py:class:`~clinicadl.data.dataloader.CollateFn`
+      - control how samples are assembled into batches.
     * - :py:class:`~clinicadl.metrics.Metric`
       - implement a metric that ClinicaDL does not provide.
     * - :py:class:`~clinicadl.infer.Inferer`
       - define a custom inference strategy.
-    * - :py:class:`~clinicadl.data.dataloader.CollateFn`
-      - control how samples are assembled into a :py:class:`~clinicadl.data.dataloader.Batch`.
     * - :py:class:`~clinicadl.callbacks.Callback`
       - add custom actions during training and evaluation.
 
@@ -70,22 +100,20 @@ and override only the method you need:
             outputs = self.network(images)
             return self.loss(outputs, labels)
 
-The simplest extension point of all needs no subclassing: a **transform** is just a
-callable that takes and returns a :py:class:`~clinicadl.data.structures.DataPoint`, so
-any function of yours can join a :py:class:`~clinicadl.transforms.TransformsHandler`
-(see :ref:`Section 1.3.2 <user_guide_data_transforms_pipeline>`).
-
 .. tip::
 
     Whenever you write a custom object, remember the trade-off from
     :doc:`Chapter 3 <../reproducibility/index>`: objects without a
     :doc:`configuration class <../reproducibility/config>` are not automatically
-    reproducible. If reproducibility matters for your custom object, consider giving it
-    a configuration class as well.
+    reproducible.
+
+    If you believe your object could benefit community, consider
+    :doc:`contributing <../../contributing>` to have it added to the list of
+    objects natively supported by ClinicaDL.
 
 ----
 
-This is the end of the User Guide. You now have an overview of the whole library, from
+This concludes the User Guide. You now have an overview of the whole library, from
 manipulating data to building, training and managing a reproducible deep learning
 experiment. For the precise signature of any object, head to the
 :doc:`API Reference <../../api/index>`.

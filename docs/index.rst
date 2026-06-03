@@ -83,6 +83,6 @@ An open-source Python library for reproducible deep learning in neuroimaging.
    :caption: development
    :hidden:
 
+   contributing
    whats_new
    GitHub <https://github.com/aramis-lab/clinicadl>
-..    contributing

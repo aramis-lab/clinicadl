@@ -57,7 +57,7 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable", None),
     "pandas": ("https://pandas.pydata.org/docs", None),
     "pydantic": ("https://docs.pydantic.dev/latest/", None),
-    "torchvision": ("https://pytorch.org/vision/main", None),
+    "torchvision": ("https://pytorch.org/vision/stable", None),
     "nibabel": ("https://nipy.org/nibabel", None),
     "numpy": ("https://numpy.org/doc/stable", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),

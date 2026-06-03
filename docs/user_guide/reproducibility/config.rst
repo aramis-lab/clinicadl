@@ -3,8 +3,8 @@
 3.1 Configuration classes
 =========================
 
-Throughout this guide we have passed raw objects to ClinicaDL — TorchIO transforms,
-PyTorch losses and networks. This is convenient, but raw objects have a drawback for
+Throughout this guide we have mostly passed raw objects to ClinicaDL (e.g; TorchIO transforms,
+PyTorch losses and networks). This is convenient, but raw objects have a drawback for
 reproducibility: ClinicaDL cannot always inspect them to know exactly how they were
 parametrised, nor rebuild them later from a saved experiment.
 
@@ -54,7 +54,7 @@ library:
     * - Module
       - Covers
     * - :py:mod:`clinicadl.networks.config`
-      - Neural networks (e.g. :py:class:`~clinicadl.networks.config.ResNet18Config`)
+      - Neural networks (e.g. :py:class:`~clinicadl.networks.config.VAEConfig`)
     * - :py:mod:`clinicadl.losses.config`
       - Loss functions (e.g. :py:class:`~clinicadl.losses.config.CrossEntropyLossConfig`)
     * - :py:mod:`clinicadl.optim.optimizers.config`
@@ -62,7 +62,7 @@ library:
     * - :py:mod:`clinicadl.optim.lr_schedulers.config`
       - Learning-rate schedulers (e.g. :py:class:`~clinicadl.optim.lr_schedulers.config.OneCycleLRConfig`)
     * - :py:mod:`clinicadl.transforms.config`
-      - Transforms — preprocessing, augmentation, post-processing
+      - Transforms — preprocessing, augmentation, post-processing (e.g. :py:class:`~clinicadl.transforms.config.CropOrPadConfig`)
     * - :py:mod:`clinicadl.metrics.config`
       - Metrics (e.g. :py:class:`~clinicadl.metrics.config.DiceMetricConfig`)
 
@@ -90,7 +90,7 @@ but only the second is fully reproducible:
 .. note::
 
     The list of available configuration classes is **not exhaustive** — it covers
-    mostly the objects coming from :monai:`MONAI <>` and :torchio:`TorchIO <>` — but it
+    mostly the objects coming from :torch:`PyTorch <>`, :monai:`MONAI <>` and :torchio:`TorchIO <>` — but it
     keeps growing. When no configuration class exists for an object, you can still use
     the raw object; only that object will not be reproducible by ClinicaDL.
 
