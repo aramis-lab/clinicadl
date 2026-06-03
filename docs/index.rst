@@ -9,14 +9,14 @@ An open-source Python library for reproducible deep learning in neuroimaging.
         :columns: 12 12 6 6
         :margin: 2 2 0 0
 
-        .. card:: :fas:`rocket` Getting Started
-            :link: getting_started
+        .. card:: :fas:`rocket` Quickstart
+            :link: quickstart
             :link-type: doc
             :class-card: sd-shadow-md
             :class-title: sd-text-primary
             :text-align: center
 
-            Overview of ClinicaDL's main features
+            Quick overview of ClinicaDL
 
     .. grid-item::
         :columns: 12 12 6 6
@@ -71,7 +71,7 @@ An open-source Python library for reproducible deep learning in neuroimaging.
    :maxdepth: 1
    :hidden:
 
-   getting_started
+   quickstart
    user_guide/index
    installation
    api/index

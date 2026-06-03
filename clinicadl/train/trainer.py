@@ -65,7 +65,7 @@ class Trainer:
     The core class to manage model **training** and **evaluation**.
 
     This class makes all ``ClinicaDL`` objects work together in order to have
-    functional training and evaluation pipelines. It hides the logic
+    functional training and evaluation pipelines. It handles the logic
     common to most PyTorch workflow, while allowing the user to customize the essential
     logic in the :py:class:`~clinicadl.models.Model`, or the non-essential logic via
     :py:mod:`callbacks <clinicadl.callbacks>`.

@@ -12,33 +12,33 @@ It is built around four ideas:
 .. grid:: 1 1 2 2
     :gutter: 3
 
-    .. grid-item-card:: :fas:`door-open` Accessible
+    .. grid-item-card:: :fas:`door-open` Accessibility
 
         ClinicaDL offers a **high-level** entry point to deep learning in
-        neuroimaging. Common operations — reading a dataset, extracting patches or
-        slices, building a longitudinal split, training a model — are available out
+        neuroimaging. Common operations such as reading a dataset, extracting patches or
+        slices, building a longitudinal split, and training a model, are available out
         of the box, so that you can easily build a functional deep learning workflow
         without confronting the full complexity of native PyTorch.
 
-    .. grid-item-card:: :fas:`sliders` Flexible
+    .. grid-item-card:: :fas:`sliders` Flexibility
 
         ClinicaDL is a **Python API**, not a black box. It provides a broad range of ready-to-use
         Python objects, while also allowing advanced users to leverage object-oriented programming
-        to design custom objects and tailor their workflows.
+        to design new objects to tailor their workflows.
 
-    .. grid-item-card:: :fas:`box-archive` Reproducible
+    .. grid-item-card:: :fas:`box-archive` Reproducibility
 
         ClinicaDL puts a strong emphasis on **experiment management** and
         **reproducibility**. All the outputs and hyperparameters of an experiment
         are gathered in a single folder, which makes ClinicaDL well suited to
         **benchmarking**.
 
-    .. grid-item-card:: :fas:`puzzle-piece` Integrated
+    .. grid-item-card:: :fas:`puzzle-piece` Integration
 
         ClinicaDL builds on the existing **ecosystem**. It is developed on top of :torchio:`TorchIO <>` and
         :monai:`MONAI <>`, and interoperates seamlessly with these libraries. It also relies on the neuroimaging
         community standard :term:`BIDS` and is compatible with :clinica:`Clinica <>`, enabling end-to-end pipelines
-        from preprocessing to model training and evaluation.
+        from pre-processing to model training and evaluation.
 
 Prerequisites
 -------------
@@ -47,33 +47,33 @@ To work with ClinicaDL, you should:
 
 - **Organise your data following BIDS standard**. The Brain Imaging Data Structure
   (`BIDS <https://bids.neuroimaging.io/index.html>`_) is a community standard that
-  prescribes how neuroimaging files should be named and arranged on disk. This standardized
+  describes how neuroimaging files should be named and arranged on disk. This standardized
   layout makes it easy for tools to automatically locate and query data within a BIDS dataset.
   ClinicaDL also supports :term:`BIDS derivatives <BIDS derivative>` and the :term:`CAPS` directories
   produced by :clinica:`Clinica <>`.
-- **BE familiar with the basics of** :torch:`PyTorch <>`. ClinicaDL is built on top of
-  PyTorch (datasets, dataloaders, modules, losses and optimizers all follow the
-  PyTorch conventions), and you are free to use raw PyTorch objects throughout.
-  Although ClinicaDL saves you from writing your pipeline from scratch, it’s still a good idea
+- **Be familiar with the basics of** :torch:`PyTorch <>`. ClinicaDL is built on top of
+  PyTorch (datasets, dataloaders, modules, losses and optimizers all wrap standard
+  PyTorch tools), and you are free to use raw PyTorch objects throughout.
+  Although ClinicaDL saves you from writing your pipeline from scratch, it is still a good idea
   to understand the typical steps of a PyTorch deep learning workflow.
 - Optionally, **have a look at** :torchio:`TorchIO <>` **and** :monai:`MONAI <>`. ClinicaDL builds
   upon these libraries and provides seamless access to their objects.
 
 For installation instructions, see the :doc:`installation page <../../installation>`.
 
-10 Minutes to ClinicaDL
+10 minutes to ClinicaDL
 -----------------------
 
 The rest of this page is a condensed, end-to-end tour of a typical ClinicaDL
-experiment: reading and transforming data, splitting it, training a model,
+experiment: reading and preprocessing data, splitting it, training a model,
 evaluating it, and managing the results.
 
 Manipulating neuroimaging data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Read your images straight from a :term:`BIDS` dataset, picking exactly the files you
-need. Each image is loaded together with its metadata and potential masks, so everything
-stays in one object and travels together through the rest of the pipeline.
+Read your images straight from a :term:`BIDS` dataset, selecting exactly the files you
+need. Each image is loaded together with its metadata and any associated masks, keeping everything
+together in a single object that moves consistently through the rest of the pipeline
 
 .. code-block:: python
 
@@ -87,7 +87,7 @@ stays in one object and travels together through the rest of the pipeline.
         ),                                      # type of data to consider in your BIDS
         data="bids/metadata.tsv",               # (participant, session) pairs + metadata
         columns=["gender", "age"],              # metadata to carry along the images
-        masks={                                                                     
+        masks={
             "csf": BidsFileType(
                 data_type="anat", suffix="mask", with_entities={"label": "csf"}
             )
@@ -107,14 +107,14 @@ stays in one object and travels together through the rest of the pipeline.
 Patches and slices extraction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If computational issues prevent you from training your model on the entire 3D images,
-extract 3D patches or 2D slices.
+It is also possible to extract 3D patches or 2D slices from the 3D images.
 
 .. code-block:: python
 
     import torchio as tio
     from clinicadl.transforms import TransformsHandler, extraction
 
+    # a dataset that loads images and extracts 64x64x64 patches
     dataset = BidsDataset(
         bids="bids",
         file_type=BidsFileType(
@@ -123,12 +123,13 @@ extract 3D patches or 2D slices.
         transforms=TransformsHandler(
             extraction=extraction.Patch(patch_size=64)
         ),
-    )       # a dataset that loads images and extracts 64x64x64 patches
+    )
 
 Transforms
 ^^^^^^^^^^
 
-Normalise your images and augment them on the fly. You can decide where each one applies.
+Transform your images and augment them on the fly. You can decide to apply your transform
+at the image or the sample level (i.e. on patches or slices).
 
 .. code-block:: python
 
@@ -148,8 +149,8 @@ Normalise your images and augment them on the fly. You can decide where each one
 Data splitting
 ^^^^^^^^^^^^^^
 
-Separate your **participants** into training, validation and test sets. All the
-sessions of a participant stay in the same set, which avoids :term:`data leakage`.
+Separate your **participants** into training, validation and test sets. The split is done at the participant-level,
+meaning that all the sessions of a participant stay in the same set, avoiding :term:`data leakage`.
 
 .. code-block:: python
 
@@ -172,8 +173,8 @@ Training a neural network
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Assemble a model from a neural network, a loss and an optimizer, then train it.
-ClinicaDL comes with a trainer that hides most of the PyTorch complexity and provides some
-acceleration features. The trainer can be customised via callbacks, which are objects
+ClinicaDL comes with a **trainer** that handles most of the PyTorch complexity and provides some
+acceleration features. The trainer can be customised via **callbacks**, which are objects
 that modifies the non-essential logic of the training (e.g., learning rate scheduling, early stopping).
 
 .. code-block:: python
@@ -191,8 +192,8 @@ that modifies the non-essential logic of the training (e.g., learning rate sched
         network=AttentionUNet(spatial_dims=3, in_channels=1, out_channels=1),
         loss=DiceLoss(),
         optimizer=AdamConfig(),
-        inferer=PatchesToImageInferer(patch_size=64, overlap=0.25),   # pass all the patches to the neural network and then merge the outputs in a single image
-        label_key="csf",                                              # the label is here a mask (segmentation)
+        inferer=PatchesToImageInferer(patch_size=64, overlap=0.25),
+        label_key="csf",
     )
 
     trainer = Trainer(
@@ -205,16 +206,21 @@ that modifies the non-essential logic of the training (e.g., learning rate sched
         metrics={"dice": DiceMetricConfig(), "ap": AveragePrecisionMetricConfig()},
         optimization=OptimizationConfig(epochs=100),
     )
+
     trainer.train(
         split=split,
         computational=ComputationalConfig(gpu=True, amp=True, seed=42, deterministic=True),
     )
 
+Note in the above example the convenient ``PatchesToImageInferer``, which splits a 3D image into patches,
+passes them through the neural network, and merges the resulting segmentation masks in a single
+3D output.
+
 Model evaluation
 ~~~~~~~~~~~~~~~~
 
 Evaluate a trained model on held-out data and record the metrics. You point to a
-saved checkpoint and provide the data to evaluate on.
+saved checkpoint, provide the data to evaluate on, and the metrics to compute.
 
 .. code-block:: python
 
@@ -223,17 +229,18 @@ saved checkpoint and provide the data to evaluate on.
     test_dataset = dataset.subset(split_dir / "test_baseline.tsv")
     test_loader = DataLoader(test_dataset)
 
+   # evaluates the final model trained on split 0
     trainer.test(
         model_checkpoint="split-0_final", group_name="test", dataloader=test_loader, metrics=["dice"]
-    )   # evaluates the final model trained on split 0
+    )
 
 Experiment management
 ~~~~~~~~~~~~~~~~~~~~~
 
-Every outputs — trained weights, metrics, logs and the
-configuration used — are gathered into a single folder, which fully describes your
+Every outputs, trained weights, metrics, logs and the
+configuration used, are gathered into a single folder, which fully describes your
 experiment. So your results are **easy to share** and your experiments **easy to
-reproduce**. You can reopen a past experiment at any time, for example to
+reproduce**. You can re-open a past experiment at any time, for example to
 resume an interrupted training:
 
 .. code-block:: python
@@ -249,7 +256,7 @@ libraries such as **PyTorch**, **MONAI**, or **TorchIO**. However, since these a
 guarantee reproducibility when they are used (e.g., :py:meth:`clinicadl.train.Trainer.from_maps` will
 not be able to read these objects).
 
-When available, you can instead use the corresponding configuration classes, which store the parameters of the raw objects
+When available, you can instead use the corresponding **configuration classes**, which store the parameters of the raw objects
 and can be easily saved, shared, and reloaded by ClinicaDL. For example,
 
 .. code-block:: python
