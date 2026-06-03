@@ -72,8 +72,8 @@ An open-source Python library for reproducible deep learning in neuroimaging.
    :hidden:
 
    quickstart
-   user_guide/index
    installation
+   user_guide/index
    api/index
    glossary
 ..    auto_examples/index
