@@ -6,12 +6,34 @@
 In ClinicaDL, a **model** is more than a neural network. A
 :py:class:`~clinicadl.models.Model` bundles together everything needed to train and
 evaluate a network: the network itself, a loss function, an optimizer, and the logic
-that defines how a batch flows forward, how gradients are computed, and how the model
-is evaluated. By gathering this logic in one object, ClinicaDL can offer a generic
+that defines how a batch flows forward, how gradients are computed, how the weights
+are optimized, and how the model is evaluated. By gathering this logic in one object, ClinicaDL can offer a generic
 :py:class:`~clinicadl.train.Trainer` that works with any model.
 
-Most of the time you will not write a model from scratch: ClinicaDL ships two
-ready-to-use models that cover the common cases.
+The Model class
+---------------
+
+Every model in ClinicaDL inherits from the base :py:class:`~clinicadl.models.Model`,
+which is itself a :py:class:`torch.nn.Module`. ``Model`` defines the interface that the
+:py:class:`~clinicadl.train.Trainer` relies on — a handful of methods that capture the
+**essential logic** of an experiment:
+
+- :py:meth:`~clinicadl.models.Model.forward_step` — how a batch is passed forward and
+  the loss computed;
+- :py:meth:`~clinicadl.models.Model.backward_step` and
+  :py:meth:`~clinicadl.models.Model.optimization_step` — how gradients are computed and
+  applied;
+- :py:meth:`~clinicadl.models.Model.evaluation_step` — how inference is performed during model evaluation;
+- :py:meth:`~clinicadl.models.Model.build_optimizers` and
+  :py:meth:`~clinicadl.models.Model.get_loss_functions` — how the optimizers and loss
+  functions are built.
+
+You will rarely implement all of this yourself. ClinicaDL ships two ready-to-use
+models that already define this logic for the most common cases —
+:py:class:`~clinicadl.models.SupervisedModel` and
+:py:class:`~clinicadl.models.ReconstructionModel`, described below. When you need a
+different behaviour, you can subclass one of them (or ``Model`` itself) and override only
+the relevant method, as covered in :doc:`Chapter 4 <../customising/index>`.
 
 The SupervisedModel
 -------------------
@@ -50,7 +72,7 @@ Three ingredients deserve a closer look:
     The loss function. Any **PyTorch-style** loss works: a callable returning a
     one-item :py:class:`torch.Tensor` and exposing a ``reduction`` attribute that can
     be set to ``"none"``. This includes the losses of :py:mod:`torch.nn`, the losses of
-    :monai:`MONAI <>`, your own, or a :py:mod:`loss configuration object <clinicadl.losses.config>`.
+    :monai:`MONAI <losses.html#loss-functions>`, your own, or a :py:mod:`loss configuration object <clinicadl.losses.config>`.
 
 ``optimizer``
     The optimizer, passed as a
@@ -61,11 +83,11 @@ Three ingredients deserve a closer look:
 .. note::
 
     Losses and networks can be passed as raw objects, but the optimizer is always
-    passed as a *configuration object*. Configuration classes — which record an
+    passed as a *configuration object* here. Configuration classes — which record an
     object's parameters in a serialisable, reproducible form — are the subject of
     :doc:`Chapter 3 <../reproducibility/index>`.
 
-By default, a ``SupervisedModel`` passes the whole image through the network. To run
+By default, a ``SupervisedModel`` passes the whole image through the network during inference. To run
 inference patch-by-patch or slice-by-slice instead, pass an
 :py:class:`~clinicadl.infer.Inferer` via the ``inferer`` argument — this is covered
 in :doc:`Evaluating <evaluating>`.
@@ -111,7 +133,7 @@ specifications:
   — convolutional encoders and decoders;
 - :py:class:`~clinicadl.networks.nn.CNN` — a convolutional network for prediction
   (encoder + MLP);
-- :py:class:`~clinicadl.networks.nn.Generator` — an MLP followed by a decoder;
+- :py:class:`~clinicadl.networks.nn.Generator` — an MLP followed by a decoder (the symmetric of ``CNN``);
 - :py:class:`~clinicadl.networks.nn.AutoEncoder` and :py:class:`~clinicadl.networks.nn.VAE`.
 
 **Common architectures** — well-known networks, configurable in their depth and width:

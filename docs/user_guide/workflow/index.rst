@@ -4,21 +4,16 @@
 ====================================
 
 Once your data is ready (see :doc:`Chapter 1 <../data/index>`), you can build the
-actual deep learning workflow: define a model, train it, evaluate it, and customise
-the training loop. ClinicaDL hides the repetitive PyTorch plumbing while leaving the
-essential logic — the one that defines your experiment — in your hands.
+actual deep learning workflow: define a model, train it, and evaluate it.
+ClinicaDL abstracts away most of PyTorch's complexity while providing tools to modify
+the default behavior and customise your training and validation logic.
 
-This chapter follows the life cycle of a model:
-
-#. :doc:`Defining a model <model>` — wrap a neural network, a loss and an optimizer
-   into a :py:class:`~clinicadl.models.Model`, and pick an architecture from
-   :py:mod:`clinicadl.networks.nn`.
-#. :doc:`Training <training>` — run the training loop with a
-   :py:class:`~clinicadl.train.Trainer`, and resume it if it gets interrupted.
-#. :doc:`Evaluating <evaluating>` — compute metrics on validation and test data, and
-   customise the inference step.
+#. :doc:`Defining a model <model>` — define a neural network, a loss and an optimizer,
+   as well as your training and evaluation logic.
+#. :doc:`Training <training>` — run the training loop, and resume it if it gets interrupted.
+#. :doc:`Evaluating <evaluating>` — compute metrics on validation and test data.
 #. :doc:`Callbacks <callbacks>` — plug non-essential logic (logging, early stopping,
-   checkpointing, …) into the training loop.
+   checkpointing, etc.) into the training loop.
 
 .. toctree::
    :maxdepth: 2

@@ -7,7 +7,7 @@ Training is orchestrated by the :py:class:`~clinicadl.train.Trainer`. It ties
 together a :py:class:`~clinicadl.models.Model`, the data of a
 :py:class:`~clinicadl.split.Split`, the metrics to monitor and the callbacks to run,
 and takes care of the training loop — moving data to the GPU, mixed precision,
-gradient accumulation, evaluation, checkpointing — so that you only provide the
+gradient accumulation, evaluation, checkpointing, etc. — so that you only provide the
 pieces specific to your experiment.
 
 A first training
@@ -21,16 +21,12 @@ Putting together what we built in :doc:`Chapter 1 <../data/index>` and in
     from clinicadl.train import Trainer
 
     # `model` is a Model and `split` a Split (see the previous sections)
-    split.build_train_loader(batch_size=8, shuffle=True)
-    split.build_val_loader(batch_size=8)
-
     trainer = Trainer(maps="maps", model=model)
     trainer.train(split)
 
 The ``Trainer`` writes everything it produces — trained weights, metrics, logs and
 the configuration used — into the ``maps`` directory (the :term:`MAPS`, see
-:doc:`Chapter 3 <../reproducibility/index>`). Pass ``overwrite=True`` to reuse an
-existing one.
+:doc:`Chapter 3 <../reproducibility/index>`).
 
 :py:meth:`~clinicadl.train.Trainer.train` runs the training on a single split. To
 train on every fold of a :py:class:`~clinicadl.split.KFold`, simply loop over the
@@ -86,11 +82,13 @@ reproducibility — are set per training run through a
 
     Setting ``seed`` and ``deterministic=True`` makes a training run reproducible.
     A global seed can also be set once with
-    :py:func:`clinicadl.utils.seed.seed_everything`.
+    :py:func:`clinicadl.utils.seed.seed_everything` or :py:func:`clinicadl.utils.seed.seed_everything_context`.
 
-Monitoring the training is done through **metrics** (described by
-:py:class:`~clinicadl.metrics.Metric`) and **callbacks** (logging, early stopping,
-…). By default only the loss is monitored; we cover metrics in
+Monitoring the training
+-----------------------
+
+Monitoring the training is done through **metrics** and **callbacks** (logging, early stopping,
+etc.). We cover metrics in
 :doc:`Evaluating <evaluating>` and callbacks in :doc:`Callbacks <callbacks>`.
 
 .. _user_guide_workflow_resuming:
@@ -98,7 +96,7 @@ Monitoring the training is done through **metrics** (described by
 2.2.1 Resuming an interrupted training
 --------------------------------------
 
-Long trainings can be interrupted — a crash, a pre-empted job, a power cut. As long
+Long trainings can be interrupted — a bug, a power cut. As long
 as a :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback` was active (it is one
 of the default callbacks), the ``Trainer`` periodically saves a checkpoint of the
 training state in the :term:`MAPS`, and you can pick up where it stopped with
@@ -109,7 +107,7 @@ training state in the :term:`MAPS`, and you can pick up where it stopped with
     trainer.resume(split_idx=0)
 
 If the ``Trainer`` object is no longer in memory — typically in a fresh Python
-session — rebuild it from the MAPS first, then resume:
+session — rebuild it from the :term:`MAPS` first, then resume:
 
 .. code-block:: python
 
@@ -125,4 +123,4 @@ session — rebuild it from the MAPS first, then resume:
 
 ----
 
-Your model is trained. The :doc:`next section <evaluating>` shows how to evaluate it.
+Now you know how to setup the training of a model. The :doc:`next section <evaluating>` shows how to evaluate it.
