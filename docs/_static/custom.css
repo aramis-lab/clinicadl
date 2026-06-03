@@ -1,0 +1,4 @@
+/* Shrink the sidebar logo (Furo theme) */
+.sidebar-logo {
+    max-width: 80%;
+}
