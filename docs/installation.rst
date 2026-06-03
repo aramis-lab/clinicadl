@@ -41,7 +41,7 @@ Execute the following command in the in the proper Python environment:
 
 .. code-block:: bash
 
-    python -m pip install -U clinicadl
+    pip install clinicadl
 
 Install in development mode
 ---------------------------
