@@ -9,6 +9,8 @@ Installation
 Install a released version
 --------------------------
 
+.. _setup_virtual_env:
+
 1. Setup a virtual environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
