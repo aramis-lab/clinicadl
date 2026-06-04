@@ -16,4 +16,5 @@
    :field-signature-prefix: parameter
    :model-signature-prefix:
    :member-order: bysource
-   :inherited-members: ObjectConfig
+   :inherited-members: BaseModel
+   :exclude-members: name_

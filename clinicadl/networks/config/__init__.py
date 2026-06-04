@@ -3,8 +3,8 @@
 from ..nn.att_unet import AttentionUNetConfig
 from ..nn.autoencoder import AutoEncoderConfig
 from ..nn.cnn import CNNConfig
-from ..nn.conv_decoder import ConvDecoderConfig
-from ..nn.conv_encoder import ConvEncoderConfig
+from ..nn.conv_decoder import ConvDecoderConfig, ConvDecoderOptions
+from ..nn.conv_encoder import ConvEncoderConfig, ConvEncoderOptions
 from ..nn.densenet import (
     DenseNet121Config,
     DenseNet161Config,
@@ -13,7 +13,7 @@ from ..nn.densenet import (
     DenseNetConfig,
 )
 from ..nn.generator import GeneratorConfig
-from ..nn.mlp import MLPConfig
+from ..nn.mlp import MLPConfig, MLPOptions
 from ..nn.resnet import (
     ResNet18Config,
     ResNet34Config,

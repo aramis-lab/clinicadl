@@ -1,4 +1,5 @@
 import inspect
+import sys
 from datetime import date
 from typing import Annotated as AnnotatedAlias
 from typing import get_args, get_origin
@@ -157,6 +158,37 @@ def skip_overload_members(app, what, name, obj, skip, options):
     return None
 
 
+# -- Hide methods/validators on Pydantic models -------------------------
+# Config pages use `:inherited-members: BaseModel` to surface inherited
+# *fields* (e.g. `channels` on ConvEncoderConfig, defined in a mix-in).
+# That option also drags in inherited methods and validators, which we
+# don't want on config pages. Fields are not routines, so we only need to
+# drop members that are functions/methods defined on a Pydantic model.
+def _owner_class(obj):
+    """Return the class on which a routine is defined, else None."""
+    func = getattr(obj, "__func__", obj)  # unwrap classmethod/staticmethod
+    if not (inspect.isfunction(func) or inspect.ismethod(func)):
+        return None
+    qualname = getattr(func, "__qualname__", "")
+    if "." not in qualname:
+        return None
+    owner = sys.modules.get(func.__module__)
+    for part in qualname.split(".")[:-1]:
+        owner = getattr(owner, part, None)
+        if owner is None:
+            return None
+    return owner if inspect.isclass(owner) else None
+
+
+def skip_pydantic_methods(app, what, name, obj, skip, options):
+    from pydantic import BaseModel
+
+    owner = _owner_class(obj)
+    if owner is not None and issubclass(owner, BaseModel):
+        return True  # drop methods and validators, keep fields
+    return None
+
+
 # -- Simplify type hints for Pydantic models --------------------------------
 _PYDANTIC_TYPE_NAMES = {
     (float, "gt", 0): "PositiveFloat",
@@ -181,3 +213,4 @@ def typehints_formatter(annotation, config):
 
 def setup(app):
     app.connect("autodoc-skip-member", skip_overload_members)
+    app.connect("autodoc-skip-member", skip_pydantic_methods)

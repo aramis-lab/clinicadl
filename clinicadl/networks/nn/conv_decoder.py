@@ -349,8 +349,7 @@ CONV_DECODER_DEFAULTS = get_defaults_from(ConvDecoder)
 
 class ConvDecoderOptions(_BaseConvOptions):
     """
-    Config class for ConvDecoder when it is a submodule.
-    See for example: :py:class:`clinicadl.networks.nn.Generator`
+    Config class for ``conv_args`` of :py:class:`~clinicadl.networks.config.GeneratorConfig`.
     """
 
     channels: Sequence[PositiveInt]

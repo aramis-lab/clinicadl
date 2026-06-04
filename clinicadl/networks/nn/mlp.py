@@ -205,8 +205,10 @@ MLP_DEFAULTS = get_defaults_from(MLP)
 
 class MLPOptions(_DropoutConfig):
     """
-    Config class for MLP when it is a submodule.
-    See for example: :py:class:`clinicadl.networks.nn.CNN`
+    Config class for ``mlp_args`` of :py:class:`~clinicadl.networks.config.CNNConfig`,
+    :py:class:`~clinicadl.networks.config.GeneratorConfig`,
+    :py:class:`~clinicadl.networks.config.AutoEncoderConfig`,
+    and :py:class:`~clinicadl.networks.config.VAEConfig`.
     """
 
     hidden_dims: Sequence[PositiveInt]

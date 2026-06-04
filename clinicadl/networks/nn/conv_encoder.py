@@ -391,8 +391,9 @@ class _BaseConvOptions(_DropoutConfig):
 
 class ConvEncoderOptions(_BaseConvOptions):
     """
-    Config class for ConvEncoder when it is a submodule.
-    See for example: :py:class:`clinicadl.networks.nn.CNN`
+    Config class for ``conv_args`` of :py:class:`~clinicadl.networks.config.CNNConfig`,
+    :py:class:`~clinicadl.networks.config.AutoEncoderConfig`,
+    and :py:class:`~clinicadl.networks.config.VAEConfig`.
     """
 
     channels: Sequence[PositiveInt]
