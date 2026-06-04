@@ -95,13 +95,18 @@ class ViT(nn.Module):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.\n
         Default is ``tanh``, as in the original paper.
     dropout : Optional[float], default=None
         Dropout ratio. If ``None``, no dropout.
+
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
 
     Examples
     --------
@@ -316,7 +321,7 @@ class ViT(nn.Module):
 
 class ViTB16(ViT):
     """
-    ViT-B/16, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
+    ViT-B/16, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -334,8 +339,8 @@ class ViTB16(ViT):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -344,6 +349,8 @@ class ViTB16(ViT):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ViT`
 
     """
@@ -373,7 +380,7 @@ class ViTB16(ViT):
 
 class ViTB32(ViT):
     """
-    ViT-B/32, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
+    ViT-B/32, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -391,8 +398,8 @@ class ViTB32(ViT):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -401,6 +408,8 @@ class ViTB32(ViT):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ViT`
 
     """
@@ -430,7 +439,7 @@ class ViTB32(ViT):
 
 class ViTL16(ViT):
     """
-    ViT-L/16, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
+    ViT-L/16, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -448,8 +457,8 @@ class ViTL16(ViT):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -458,6 +467,8 @@ class ViTL16(ViT):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ViT`
 
     """
@@ -487,7 +498,7 @@ class ViTL16(ViT):
 
 class ViTL32(ViT):
     """
-    ViT-L/32, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
+    ViT-L/32, from `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -505,8 +516,8 @@ class ViTL32(ViT):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -515,6 +526,8 @@ class ViTL32(ViT):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ViT`
 
     """

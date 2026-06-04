@@ -306,8 +306,8 @@ class ResNet(GeneralResNet):
     act : ActivationParameters, default=("relu", {"inplace": True})
         The activation function used after a convolutional layer, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.\n
         Default is ``relu``, as in the original paper.
@@ -321,6 +321,12 @@ class ResNet(GeneralResNet):
         If ``len(n_features)!=len(n_res_blocks)``.
     ValueError
         If some elements of ``n_features`` are not divisible by ``bottleneck_reduction``.
+
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
+    :py:class:`~clinicadl.networks.nn.SEResNet`
 
     Examples
     --------
@@ -407,10 +413,6 @@ class ResNet(GeneralResNet):
             )
         )
 
-    See Also
-    --------
-    :py:class:`~clinicadl.networks.nn.SEResNet`
-
     """
 
     def __init__(
@@ -456,7 +458,7 @@ class ResNet(GeneralResNet):
 
 class ResNet18(ResNet):
     """
-    ResNet-18, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+    ResNet-18, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -474,8 +476,8 @@ class ResNet18(ResNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -484,6 +486,8 @@ class ResNet18(ResNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ResNet`
 
     """
@@ -512,7 +516,7 @@ class ResNet18(ResNet):
 
 class ResNet34(ResNet):
     """
-    ResNet-34, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+    ResNet-34, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -530,8 +534,8 @@ class ResNet34(ResNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -540,6 +544,8 @@ class ResNet34(ResNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ResNet`
 
     """
@@ -568,7 +574,7 @@ class ResNet34(ResNet):
 
 class ResNet50(ResNet):
     """
-    ResNet-50, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+    ResNet-50, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -586,8 +592,8 @@ class ResNet50(ResNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -596,6 +602,8 @@ class ResNet50(ResNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ResNet`
 
     """
@@ -624,7 +632,7 @@ class ResNet50(ResNet):
 
 class ResNet101(ResNet):
     """
-    ResNet-101, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+    ResNet-101, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -642,8 +650,8 @@ class ResNet101(ResNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -652,6 +660,8 @@ class ResNet101(ResNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ResNet`
 
     """
@@ -680,7 +690,7 @@ class ResNet101(ResNet):
 
 class ResNet152(ResNet):
     """
-    ResNet-152, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`_.
+    ResNet-152, from `Deep Residual Learning for Image Recognition <https://arxiv.org/abs/1512.03385>`__.
 
     Only the last fully connected layer will be changed to match ``num_outputs``.
 
@@ -698,8 +708,8 @@ class ResNet152(ResNet):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     pretrained : bool, default=False
@@ -708,6 +718,8 @@ class ResNet152(ResNet):
 
     See Also
     --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
     :py:class:`~clinicadl.networks.nn.ResNet`
 
     """

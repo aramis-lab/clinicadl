@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 import torch.nn as nn
 from monai.networks.blocks import ADN
@@ -36,7 +36,7 @@ class MLP(BaseMLP):
     Parameters
     ----------
     num_inputs : int
-        Number of input features.
+        Number of input features (after flattening).
     num_outputs : int
         Number of outputs.
     hidden_dims : Sequence[int]
@@ -46,8 +46,8 @@ class MLP(BaseMLP):
         The activation function used after a linear layer, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions<nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     output_act : Optional[ActivationParameters], default=None
@@ -57,7 +57,7 @@ class MLP(BaseMLP):
         The normalization layer used after a linear layer, and optionally its arguments.
         Must be passed as ``norm_type`` or ``(norm_type, parameters)``. If ``None``, no normalization will be
         performed.\n
-        ``norm_type`` can be any value in {``batch``, ``group``, ``instance``, ``layer``, ``syncbatch``}. Please refer to
+        ``norm_type`` can be any value in {``"batch"``, ``"group"``, ``"instance"``, ``"syncbatch"``}. Please refer to
         :torch:`PyTorch normalization layers <nn.html#normalization-layers>` to know the arguments for each of them.
 
         .. note::
@@ -81,6 +81,11 @@ class MLP(BaseMLP):
     ValueError
         If the activation or normalization layer requires a mandatory argument, which is not passed by the user (via a dictionary
         in ``act`` or ``norm``).
+
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
 
     Examples
     --------
@@ -200,8 +205,10 @@ MLP_DEFAULTS = get_defaults_from(MLP)
 
 class MLPOptions(_DropoutConfig):
     """
-    Config class for MLP when it is a submodule.
-    See for example: :py:class:`clinicadl.networks.nn.CNN`
+    Config class for ``mlp_args`` of :py:class:`~clinicadl.networks.config.CNNConfig`,
+    :py:class:`~clinicadl.networks.config.GeneratorConfig`,
+    :py:class:`~clinicadl.networks.config.AutoEncoderConfig`,
+    and :py:class:`~clinicadl.networks.config.VAEConfig`.
     """
 
     hidden_dims: Sequence[PositiveInt]

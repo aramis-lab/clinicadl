@@ -159,7 +159,7 @@ class TensorDescription(ClinicaDLConfig):
         Parameters
         ----------
         tensors_dir : Path
-            The :BIDS derivative where the tensors are saved.
+            The BIDS derivative where the tensors are saved.
         """
         self.to_json(
             json_file := self.get_json_path(tensors_dir),

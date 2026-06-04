@@ -22,6 +22,9 @@ Build your own neural network
    GeneratorConfig
    AutoEncoderConfig
    VAEConfig
+   MLPOptions
+   ConvEncoderOptions
+   ConvDecoderOptions
 
 Common neural networks
 ----------------------

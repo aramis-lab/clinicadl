@@ -10,7 +10,7 @@
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/callable.rst
+    :template: autosummary/inferer.rst
 
     Inferer
     SimpleInferer

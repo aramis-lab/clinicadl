@@ -1,4 +1,4 @@
-.. _api_io:
+.. _api_maps:
 
 :mod:`clinicadl.io.maps`
 ========================

@@ -8,7 +8,7 @@
 .. autosummary::
    :toctree: ../generated/
    :nosignatures:
-   :template: autosummary/callbacks.rst
+   :template: autosummary/callback.rst
 
     CallbacksHandler
     Callback

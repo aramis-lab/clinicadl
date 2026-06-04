@@ -18,6 +18,16 @@ __all__ = ["MetricConfig"]
 
 logger = getLogger(__name__)
 
+DOCUMENT_EXTRA_PARAMETERS = """
+``pred_key`` corresponds to the key of the model output to evaluate
+in the :py:class:`~clinicadl.data.structures.DataPoint`; ``label_key`` is
+the key of the potential label to which the model output must be compared.
+
+Potential postprocessing to apply to the model output before computing the metric
+can be specified via ``postprocessing``. Accepted transforms are functions that take as input a ``DataPoint`` and return
+a ``DataPoint``, or :py:mod:`configuration classes <clinicadl.transforms.config>`.
+"""
+
 
 class MetricConfig(ObjectConfig[Metric]):
     """Base config class to configure metrics."""

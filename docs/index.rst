@@ -5,49 +5,57 @@ An open-source Python library for reproducible deep learning in neuroimaging.
 
 .. grid::
 
-    .. grid-item-card:: :fas:`rocket` Getting Started
-        :link: getting_started
-        :link-type: doc
+    .. grid-item::
         :columns: 12 12 6 6
-        :class-card: sd-shadow-md
-        :class-title: sd-text-primary
         :margin: 2 2 0 0
-        :text-align: center
 
-        Overview of ClinicaDL's main features
+        .. card:: :fas:`rocket` Quickstart
+            :link: quickstart
+            :link-type: doc
+            :class-card: sd-shadow-md
+            :class-title: sd-text-primary
+            :text-align: center
 
-    .. grid-item-card:: :fas:`download` Installation
-        :link: installation
-        :link-type: doc
+            Quick overview of ClinicaDL
+
+    .. grid-item::
         :columns: 12 12 6 6
-        :class-card: sd-shadow-md
-        :class-title: sd-text-primary
         :margin: 2 2 0 0
-        :text-align: center
 
-        Install ClinicaDL
+        .. card:: :fas:`download` Installation
+            :link: installation
+            :link-type: doc
+            :class-card: sd-shadow-md
+            :class-title: sd-text-primary
+            :text-align: center
 
-    .. grid-item-card:: :fas:`book` User Guide
-        :link: user_guide/index
-        :link-type: doc
+            Install ClinicaDL
+
+    .. grid-item::
         :columns: 12 12 6 6
-        :class-card: sd-shadow-md
-        :class-title: sd-text-primary
         :margin: 2 2 0 0
-        :text-align: center
 
-        More details on ClinicaDL's features
+        .. card:: :fas:`book` User Guide
+            :link: user_guide/index
+            :link-type: doc
+            :class-card: sd-shadow-md
+            :class-title: sd-text-primary
+            :text-align: center
 
-    .. grid-item-card:: :fas:`magnifying-glass` API Reference
-        :link: api/index
-        :link-type: doc
+            More details on ClinicaDL's features
+
+    .. grid-item::
         :columns: 12 12 6 6
-        :class-card: sd-shadow-md
-        :class-title: sd-text-primary
         :margin: 2 2 0 0
-        :text-align: center
 
-        Code with ClinicaDL
+        .. card:: :fas:`magnifying-glass` API Reference
+            :link: api/index
+            :link-type: doc
+            :class-card: sd-shadow-md
+            :class-title: sd-text-primary
+            :text-align: center
+
+            Code with ClinicaDL
     
     .. .. grid-item-card:: :fas:`laptop-code` Examples
     ..     :link: auto_examples/index
@@ -63,9 +71,9 @@ An open-source Python library for reproducible deep learning in neuroimaging.
    :maxdepth: 1
    :hidden:
 
-   getting_started
-   user_guide/index
+   quickstart
    installation
+   user_guide/index
    api/index
    glossary
 ..    auto_examples/index
@@ -75,6 +83,6 @@ An open-source Python library for reproducible deep learning in neuroimaging.
    :caption: development
    :hidden:
 
+   contributing
    whats_new
    GitHub <https://github.com/aramis-lab/clinicadl>
-..    contributing

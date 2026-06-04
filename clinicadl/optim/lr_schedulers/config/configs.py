@@ -11,9 +11,11 @@ from pydantic import (
 )
 from torch.optim import Optimizer
 
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
 from .base import (
+    ADDITIONAL_DOC,
     LRSchedulerConfig,
     _LastEpochConfig,
 )
@@ -42,6 +44,7 @@ REDUCE_LR_ON_PLATEAU_DEFAULTS = get_defaults_from(
 ONE_CYCLE_LR_DEFAULTS = get_defaults_from(torch.optim.lr_scheduler.OneCycleLR)
 
 
+@add_suffix_to_doc(ADDITIONAL_DOC)
 class ConstantLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.ConstantLR`.
@@ -57,6 +60,7 @@ class ConstantLRConfig(LRSchedulerConfig, _LastEpochConfig):
         return LRSchedulerType.EPOCH
 
 
+@add_suffix_to_doc(ADDITIONAL_DOC)
 class ExponentialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.ExponentialLR`.
@@ -71,6 +75,7 @@ class ExponentialLRConfig(LRSchedulerConfig, _LastEpochConfig):
         return LRSchedulerType.EPOCH
 
 
+@add_suffix_to_doc(ADDITIONAL_DOC)
 class LinearLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.LinearLR`.
@@ -87,6 +92,7 @@ class LinearLRConfig(LRSchedulerConfig, _LastEpochConfig):
         return LRSchedulerType.EPOCH
 
 
+@add_suffix_to_doc(ADDITIONAL_DOC)
 class StepLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.StepLR`.
@@ -102,6 +108,7 @@ class StepLRConfig(LRSchedulerConfig, _LastEpochConfig):
         return LRSchedulerType.EPOCH
 
 
+@add_suffix_to_doc(ADDITIONAL_DOC)
 class MultiStepLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.MultiStepLR`.
@@ -125,6 +132,7 @@ class MultiStepLRConfig(LRSchedulerConfig, _LastEpochConfig):
         return LRSchedulerType.EPOCH
 
 
+@add_suffix_to_doc(ADDITIONAL_DOC)
 class PolynomialLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.PolynomialLR`.
@@ -140,9 +148,57 @@ class PolynomialLRConfig(LRSchedulerConfig, _LastEpochConfig):
         return LRSchedulerType.EPOCH
 
 
+@add_suffix_to_doc(ADDITIONAL_DOC)
 class ReduceLROnPlateauConfig(LRSchedulerConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.ReduceLROnPlateau`.
+
+    ``min_lr`` accepts a dictionary in case you defined several parameter groups in
+    your :py:meth:`optimizer configuration class <clinicadl.optim.optimizers.config>`. Use the
+    same group names as the ones passed to the optimizer to specify different values for
+    each group.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.networks.nn import CNN
+
+        network = CNN(
+            in_shape=(1, 16, 16, 16),
+            num_outputs=1,
+            conv_args={"channels": [2, 4]},
+        )
+
+    .. code-block::
+
+        >>> network
+        CNN(
+            (convolutions): ConvEncoder(
+                (layer0): Convolution(
+                    (conv): Conv3d(1, 2, kernel_size=(3, 3, 3), stride=(1, 1, 1))
+                )
+            )
+            (mlp): MLP(
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (output): Sequential(
+                    (linear): Linear(in_features=5488, out_features=1, bias=True)
+                )
+            )
+        )
+
+    .. code-block::
+
+        from clinicadl.optim.optimizers.config import AdamConfig
+        from clinicadl.optim.lr_schedulers.config import ReduceLROnPlateauConfig
+
+        optimizer_config = AdamConfig(
+            rho={"convolutions.layer0": 0.99, "ELSE": 0.9}
+        )
+        lr_scheduler_config = ReduceLROnPlateauConfig(
+            min_lr={"convolutions.layer0": 1e-2, "ELSE": 1e-3}
+        )
+
     """
 
     mode: Mode = REDUCE_LR_ON_PLATEAU_DEFAULTS["mode"]
@@ -160,7 +216,7 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig):
     @classmethod
     def min_lr_validator(cls, v):
         """Checks that 'ELSE' is always in 'min_lr' if it is a dict."""
-        return cls.group_validator(v, field_name="min_lr")
+        return cls._group_validator(v, field_name="min_lr")
 
     @classmethod
     def scheduler_type(cls) -> LRSchedulerType:
@@ -168,9 +224,56 @@ class ReduceLROnPlateauConfig(LRSchedulerConfig):
         return LRSchedulerType.METRIC
 
 
+@add_suffix_to_doc(ADDITIONAL_DOC)
 class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
     """
     Config class for :py:class:`torch.optim.lr_scheduler.OneCycleLR`.
+
+    Some parameters accept a dictionary in case you defined several parameter groups in
+    your :py:meth:`optimizer configuration class <clinicadl.optim.optimizers.config>`. Use the
+    same group names as the ones passed to the optimizer to specify different values for
+    each group.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.networks.nn import CNN
+
+        network = CNN(
+            in_shape=(1, 16, 16, 16),
+            num_outputs=1,
+            conv_args={"channels": [2, 4]},
+        )
+
+    .. code-block::
+
+        >>> network
+        CNN(
+            (convolutions): ConvEncoder(
+                (layer0): Convolution(
+                    (conv): Conv3d(1, 2, kernel_size=(3, 3, 3), stride=(1, 1, 1))
+                )
+            )
+            (mlp): MLP(
+                (flatten): Flatten(start_dim=1, end_dim=-1)
+                (output): Sequential(
+                    (linear): Linear(in_features=5488, out_features=1, bias=True)
+                )
+            )
+        )
+
+    .. code-block::
+
+        from clinicadl.optim.optimizers.config import AdamConfig
+        from clinicadl.optim.lr_schedulers.config import OneCycleLRConfig
+
+        optimizer_config = AdamConfig(
+            rho={"convolutions.layer0": 0.99, "ELSE": 0.9}
+        )
+        lr_scheduler_config = OneCycleLRConfig(
+            max_lr={"convolutions.layer0": 1e-2, "ELSE": 1e-3}
+        )
     """
 
     max_lr: Union[PositiveFloat, Sequence[PositiveFloat], Dict[str, PositiveFloat]]
@@ -220,9 +323,9 @@ class OneCycleLRConfig(LRSchedulerConfig, _LastEpochConfig):
 
     @field_validator("max_lr", "base_momentum", "max_momentum", mode="after")
     @classmethod
-    def parameter_group_validator(cls, v, ctx):
+    def parameter__group_validator(cls, v, ctx):
         """Checks that 'ELSE' is always in a field if it is a dict."""
-        return cls.group_validator(v, field_name=ctx.field_name)
+        return cls._group_validator(v, field_name=ctx.field_name)
 
     def _check_optimizer_consistency(self, optimizer: Optimizer) -> None:
         """

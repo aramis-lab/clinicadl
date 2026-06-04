@@ -55,13 +55,13 @@ class VAE(nn.Module):
         A potential activation layer applied to the output of the network, and optionally its arguments.
         Must be passed as ``activation_name`` or ``(activation_name, arguments)``, where ``arguments`` is a dictionary.
         If ``None``, no activation will be used.\n
-        ``activation_name`` can be any value in {``celu``, ``elu``, ``gelu``, ``leakyrelu``, ``logsoftmax``, ``mish``, ``prelu``,
-        ``relu``, ``relu6``, ``selu``, ``sigmoid``, ``softmax``, ``tanh``}. Please refer to
+        ``activation_name`` can be any value in {``"celu"``, ``"elu"``, ``"gelu"``, ``"leakyrelu"``, ``"logsoftmax"``, ``"mish"``, ``"prelu"``,
+        ``"relu"``, ``"relu6"``, ``"selu"``, ``"sigmoid"``, ``"softmax"``, ``"tanh"``}. Please refer to
         :torch:`PyTorch activation functions <nn.html#non-linear-activations-weighted-sum-nonlinearity>` to know the arguments
         for each of them.
     unpooling_mode : Union[str, UnpoolingMode], default=UnpoolingMode.NEAREST
-        Type of unpooling. Can be any value in {``nearest``, ``linear``, ``bilinear``, ``bicubic``, ``trilinear`` or
-        ``convtranspose``}:
+        Type of unpooling. Can be any value in {``"nearest"``, ``"linear"``, ``"bilinear"``, ``"bicubic"``, ``"trilinear"`` or
+        ``"convtranspose"``}:
 
         - ``nearest``: unpooling is performed by upsampling with the `nearest` algorithm (see
           :py:class:`torch.nn.Upsample`);
@@ -72,6 +72,12 @@ class VAE(nn.Module):
         - ``trilinear``: unpooling is performed by upsampling with the `trilinear` algorithm. Only works with 3D images;
         - ``convtranspose``: unpooling is performed with a transposed convolution (see :py:class:`torch.nn.ConvTranspose3d`), whose
           parameters (kernel size, stride, etc.) are computed to reverse the pooling operation.
+
+    See Also
+    --------
+    :py:class:`torch.nn.Module`
+        To see all the methods of this neural network.
+    :py:class:`~clinicadl.networks.nn.AutoEncoder`
 
     Examples
     --------
@@ -139,9 +145,6 @@ class VAE(nn.Module):
             )
         )
 
-    See Also
-    --------
-    :py:class:`~clinicadl.networks.nn.AutoEncoder`
     """
 
     def __init__(

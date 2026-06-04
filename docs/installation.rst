@@ -3,39 +3,49 @@
 Installation
 ============
 
-ClinicaDL 2.0 beta version can be installed by cloning the
-`ClinicaDL project <https://github.com/aramis-lab/clinicadl>`_ and going to the ``clinicadl_v2`` branch. 
-As it is a beta version, you are strongly encouraged to contribute. We thus suggest that you install
-ClinicaDL in "developer mode" by `forking <https://docs.github.com/fr/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo>`_
-the repository.
+.. warning::
+    ClinicaDL requires Python >=3.10, <=3.14
 
-Once it is forked, clone it and checkout to ``clinicadl_v2`` branch::
+Install a released version
+--------------------------
 
-    git clone https://github.com/<your_github_user>/clinicadl.git
-    git checkout clinicadl_v2
+.. _setup_virtual_env:
 
-Then create your conda environment::
+1. Setup a virtual environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    conda create --name clinicadl_beta python=3.12
-    conda activate clinicadl_beta
+We recommend that you install ClinicaDL in a virtual Python environment,
+either managed with the standard library ``venv`` or with ``conda``
+(see `miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ for instance).
+Either way, create and activate a new python environment.
 
-And install the dependencies using ``poetry``::
+With ``venv``:
 
-    cd clinicadl
-    poetry install
+.. code-block:: bash
 
-.. dropdown:: Install ``poetry``
+    python3 -m venv /<path_to_new_env>
+    source /<path_to_new_env>/bin/activate
 
-    To install ``poetry``, use ``pipx``::
+Windows users should change the last line to ``\<path_to_new_env>\Scripts\activate.bat``
+in order to activate their virtual environment.
 
-        pipx install poetry
+With ``conda``:
 
-    To install pipx on ``macOS``::
+.. code-block:: bash
 
-        brew install pipx
-        pipx ensurepath
+    conda create -n clinicadl python=3.12
+    conda activate clinicadl
 
-    Otherwise, install via ``pip``::
+2. Install clinicadl with pip
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-        python3 -m pip install --user pipx
-        python3 -m pipx ensurepath
+Execute the following command in the in the proper Python environment:
+
+.. code-block:: bash
+
+    pip install clinicadl
+
+Install in development mode
+---------------------------
+
+Find development setup instructions in the :doc:`contribution guide <contributing>`.

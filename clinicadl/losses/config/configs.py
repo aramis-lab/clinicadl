@@ -11,6 +11,7 @@ from pydantic import (
 )
 
 from clinicadl.utils.config import ObjectConfig
+from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
 from .enum import Order, Reduction
@@ -70,11 +71,15 @@ class LossConfig(ObjectConfig[torch.nn.Module]):
         return getattr(torch.nn, cls._get_name())
 
 
+DOC_WEIGHT = (
+    "``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`."
+)
+
+
+@add_suffix_to_doc(DOC_WEIGHT)
 class NLLLossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.NLLLoss`.
-
-    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     weight: Optional[List[NonNegativeFloat]] = NLL_TORCH_DEFAULTS["weight"]
@@ -91,11 +96,10 @@ class NLLLossConfig(LossConfig):
         return v
 
 
+@add_suffix_to_doc(DOC_WEIGHT)
 class CrossEntropyLossConfig(NLLLossConfig):
     """
     Config class for :py:class:`torch.nn.CrossEntropyLoss`.
-
-    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     weight: Optional[List[NonNegativeFloat]] = CROSS_ENTROPY_TORCH_DEFAULTS["weight"]
@@ -113,11 +117,10 @@ class CrossEntropyLossConfig(NLLLossConfig):
         return v
 
 
+@add_suffix_to_doc(DOC_WEIGHT)
 class BCELossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.BCELoss`.
-
-    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     weight: Optional[list[NonNegativeFloat]] = BCE_TORCH_DEFAULTS["weight"]
@@ -133,11 +136,10 @@ class BCELossConfig(LossConfig):
         return v
 
 
+@add_suffix_to_doc(DOC_WEIGHT)
 class BCEWithLogitsLossConfig(BCELossConfig):
     """
     Config class for :py:class:`torch.nn.BCEWithLogitsLoss`.
-
-    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     weight: Optional[List[NonNegativeFloat]] = BCE_LOGITS_TORCH_DEFAULTS["weight"]
@@ -163,11 +165,10 @@ class BCEWithLogitsLossConfig(BCELossConfig):
             return (isinstance(item, float) or isinstance(item, int)) and item >= 0
 
 
+@add_suffix_to_doc(DOC_WEIGHT)
 class MultiMarginLossConfig(LossConfig):
     """
     Config class for :py:class:`torch.nn.MultiMarginLoss`.
-
-    ``weight`` must be pass via a ``list`` and not via :py:class:`torch.Tensor`.
     """
 
     p: Order = MULTI_MARGIN_LOSS_TORCH_DEFAULTS["p"]

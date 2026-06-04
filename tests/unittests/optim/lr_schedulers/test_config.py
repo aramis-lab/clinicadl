@@ -234,7 +234,7 @@ def test_good_inputs(args: dict, configs):
             assert getattr(c, arg) == value
 
 
-def test_group_validator():
+def test__group_validator():
     with pytest.raises(ValidationError):
         ReduceLROnPlateauConfig(min_lr={"params1": 0.1})
     ReduceLROnPlateauConfig(min_lr={"params1": 0.1, "ELSE": 0.2})

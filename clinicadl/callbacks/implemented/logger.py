@@ -375,10 +375,7 @@ class LoggerCallback(Callback, HasConfig[LoggerCallbackConfig]):
     def on_batch_start(
         self,
         *,
-        model: Model,
-        maps: Maps,
         state: TrainerState,
-        batch: BatchType,
         **kwargs,
     ) -> None:
         if state.stage == TrainerStage.TRAIN:

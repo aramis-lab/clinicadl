@@ -1,4 +1,5 @@
 import inspect
+import sys
 from datetime import date
 from typing import Annotated as AnnotatedAlias
 from typing import get_args, get_origin
@@ -57,7 +58,7 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable", None),
     "pandas": ("https://pandas.pydata.org/docs", None),
     "pydantic": ("https://docs.pydantic.dev/latest/", None),
-    "torchvision": ("https://pytorch.org/vision/main", None),
+    "torchvision": ("https://pytorch.org/vision/stable", None),
     "nibabel": ("https://nipy.org/nibabel", None),
     "numpy": ("https://numpy.org/doc/stable", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
@@ -85,10 +86,11 @@ extlinks = {
     "torchio": ("https://torchio.readthedocs.io/%s", None),
     "torch": ("https://pytorch.org/docs/stable/%s", None),
     "torchvision": ("https://docs.pytorch.org/vision/main/%s", None),
-    "monai": ("https://docs.monai.io/en/stable/%s", None),
+    "monai": ("https://monai.readthedocs.io/en/stable/%s", None),
     "github": ("https://github.com/aramis-lab/clinicadl/%s", None),
     "wikipedia": ("https://en.wikipedia.org/wiki/%s", None),
     "bids": ("https://bids-specification.readthedocs.io/en/stable/%s", None),
+    "nibabel": ("https://nipy.org/nibabel/%s", None),
     "clinica": ("https://aramislab.paris.inria.fr/clinica/docs/public/latest/%s", None),
 }
 language = "en"
@@ -124,7 +126,7 @@ html_static_path = ["_static"]
 html_favicon = "_static/logos/black_logo.png"
 html_copy_source = False
 html_show_sourcelink = False
-html_title = f"{project} {version}"
+html_title = f"{project}"
 
 autodoc_typehints = "signature"
 
@@ -156,6 +158,37 @@ def skip_overload_members(app, what, name, obj, skip, options):
     return None
 
 
+# -- Hide methods/validators on Pydantic models -------------------------
+# Config pages use `:inherited-members: BaseModel` to surface inherited
+# *fields* (e.g. `channels` on ConvEncoderConfig, defined in a mix-in).
+# That option also drags in inherited methods and validators, which we
+# don't want on config pages. Fields are not routines, so we only need to
+# drop members that are functions/methods defined on a Pydantic model.
+def _owner_class(obj):
+    """Return the class on which a routine is defined, else None."""
+    func = getattr(obj, "__func__", obj)  # unwrap classmethod/staticmethod
+    if not (inspect.isfunction(func) or inspect.ismethod(func)):
+        return None
+    qualname = getattr(func, "__qualname__", "")
+    if "." not in qualname:
+        return None
+    owner = sys.modules.get(func.__module__)
+    for part in qualname.split(".")[:-1]:
+        owner = getattr(owner, part, None)
+        if owner is None:
+            return None
+    return owner if inspect.isclass(owner) else None
+
+
+def skip_pydantic_methods(app, what, name, obj, skip, options):
+    from pydantic import BaseModel
+
+    owner = _owner_class(obj)
+    if owner is not None and issubclass(owner, BaseModel):
+        return True  # drop methods and validators, keep fields
+    return None
+
+
 # -- Simplify type hints for Pydantic models --------------------------------
 _PYDANTIC_TYPE_NAMES = {
     (float, "gt", 0): "PositiveFloat",
@@ -180,3 +213,4 @@ def typehints_formatter(annotation, config):
 
 def setup(app):
     app.connect("autodoc-skip-member", skip_overload_members)
+    app.connect("autodoc-skip-member", skip_pydantic_methods)

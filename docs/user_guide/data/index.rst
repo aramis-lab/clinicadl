@@ -1,42 +1,30 @@
-.. _data:
+.. _user_guide_data:
 
-Data
-====
+1. Manipulating neuroimaging data
+=================================
 
-At the moment, ClinicaDL only works with data organized in a
-`CAPS <https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/>`_
-structure.
+Before training any model, you need to **load**, **organise** and **transform** your
+neuroimaging data. This is precisely what the data tools of ClinicaDL are for, and
+this chapter walks you through them, from the elementary data structures to the
+batches that will feed your network.
 
-To manipulate data organized in a CAPS structure, ClinicaDL introduces
-:py:class:`~clinicadl.data.datasets.CapsDataset`, which is a :py:class:`torch.utils.data.Dataset`
-with some specificities.
-
-A CAPS structure can contain different kinds of data (e.g. different modalities or
-preprocessings). To define the type of data you want to manipulate, you must pass
-to the ``CapsDataset`` a :ref:`CAPS datatype <api_datatypes>`, which is a
-representation of these data. ``CapsDataset`` will use this object to get the
-right images in your CAPS structure.
-
-To handle multiple datasets and/or multiple modalities, you may be interested in
-:py:class:`~clinicadl.data.datasets.ConcatDataset`, :py:class:`~clinicadl.data.datasets.PairedDataset` or
-:py:class:`~clinicadl.data.datasets.UnpairedDataset`.
-
-To transform your data or perform data augmentation, you will use :py:class:`~clinicadl.transforms.Transforms`.
-This object aims to gather all the transforms that will be applied to the images
-when loaded by ``CapsDataset`` (e.g. preprocessing, augmentation, patch/slice extraction).
-
-Once your dataset has been created, you'll probably want to put it in a :py:class:`torch.utils.data.DataLoader`.
-To do this, you can use :py:class:`~clinicadl.data.dataloader.DataLoaderConfig`. This object will help you to
-create a DataLoader suited to ClinicaDL.
-
-Finally, before training a Deep Learning model, you will split your data between training, validation and test sets.
-To do this, you will manipulate our :ref:`splitting tools <api_splitter>`.
+#. :doc:`Data structures <structures>` — the objects ClinicaDL uses to carry an
+   image, its masks and its metadata together.
+#. :doc:`Reading BIDS datasets <bids>` — how to read a :term:`BIDS` directory,
+   how to speed up loading by converting images to tensors, and how to combine several datasets.
+#. :doc:`Transforming data <transforms>` — how to extract patches or slices from images, and how
+   to apply pre-processing, data augmentation and post-processing.
+#. :doc:`Splitting data <splitting>` — how to build training, validation and test
+   sets without :term:`data leakage`.
+#. :doc:`Batching data for training <dataloader>` — how to iterate over a dataset in
+   batches.
 
 .. toctree::
-    :maxdepth: 1
-    
-    dataset
-    stacking_pairing
-    patch_slice
-    transforms
-    split
+   :maxdepth: 2
+   :hidden:
+
+   structures
+   bids
+   transforms
+   splitting
+   dataloader
