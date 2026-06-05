@@ -22,7 +22,7 @@ from clinicadl.utils.dictionary.words import (
     TRAIN,
     VALUE,
 )
-from clinicadl.utils.tsvtools import read_data
+from clinicadl.utils.tsvtools import read_df
 from clinicadl.utils.typing import DataFrameType, PathType
 
 from .utils import (
@@ -184,7 +184,7 @@ def make_split(
     3	sex	    M	    count	19.0	5.0
 
     """
-    df = read_data(data, check_duplicates=False)
+    df = read_df(data, check_duplicates=False)
 
     if isinstance(data, (str, Path)):
         output_dir = output_dir or Path(data).parent

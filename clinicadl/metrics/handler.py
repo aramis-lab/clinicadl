@@ -17,7 +17,7 @@ from clinicadl.utils.dictionary.words import (
     PARTICIPANT_ID,
     SESSION_ID,
 )
-from clinicadl.utils.exceptions import CannotReadFieldError, ClinicaDLConfigurationError
+from clinicadl.utils.exceptions import CannotReadFieldError
 from clinicadl.utils.objects import HasConfig
 
 from .base import Metric
@@ -337,9 +337,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         :py:meth:`monai.metrics.Cumulative.aggregate`
         """
         if self.metrics is None:
-            raise ClinicaDLConfigurationError(
-                "First, call 'init_metrics' to instantiate the metrics."
-            )
+            raise RuntimeError("First, call 'init_metrics' to instantiate the metrics.")
 
         values = {name: metric.aggregate() for name, metric in self.metrics.items()}
 
@@ -381,9 +379,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             The metrics for all the images in the batch.
         """
         if self.metrics is None:
-            raise ClinicaDLConfigurationError(
-                "First, call 'init_metrics' to instantiate the metrics."
-            )
+            raise RuntimeError("First, call 'init_metrics' to instantiate the metrics.")
 
         if self.config.metrics_on_cpu:
             batch.to(device=CPU)

@@ -15,7 +15,7 @@ from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.dictionary.suffixes import JSON, TSV
 from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.names import camel_to_snake, snake_to_camel
-from clinicadl.utils.tsvtools import df_to_tsv, read_data
+from clinicadl.utils.tsvtools import df_to_tsv, read_df
 
 logger = getLogger(__name__)
 
@@ -195,7 +195,7 @@ class TensorDescription(ClinicaDLConfig):
             .replace(JSON, TSV)
             .replace("_description.", "_participantsXsessions.")
         )
-        df = read_data(tsv)
+        df = read_df(tsv)
         return cls.from_json(
             description_json, participants_sessions=df
         )  # transforms may be impossible to read and is not needed

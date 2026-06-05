@@ -11,7 +11,7 @@ from clinicadl.utils.dictionary.words import (
 from clinicadl.utils.exceptions import DataFrameError
 
 from .dictionary.utils import TSV_SEP
-from .typing import DataFrameType, PathType
+from .typing import DataFrameType
 
 
 def df_to_tsv(
@@ -43,7 +43,7 @@ def df_to_tsv(
     df.to_csv(tsv_path, sep=TSV_SEP, index=False)
 
 
-def read_data(
+def read_df(
     data: DataFrameType,
     protected_names: Optional[Iterable[str]] = None,
     check_duplicates: bool = True,

@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction import Slice
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from clinicadl.utils.exceptions import DataFrameError
 
 TSV_DIR = Path(__file__).parents[2] / "resources" / "tsv"
 SLICE_TSV = TSV_DIR / "extract_slices_test.tsv"
@@ -33,7 +33,7 @@ def test_args():
     ):
         Slice(tsv_path=SLICE_TSV, borders=1)
     with pytest.raises(
-        ClinicaDLTSVError,
+        DataFrameError,
         match="TSV must contain columns: 'participant_id', 'session_id', 'slice_idx'",
     ):
         Slice(tsv_path=BAD_SLICE_TSV_1)

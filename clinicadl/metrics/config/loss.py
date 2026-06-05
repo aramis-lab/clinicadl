@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from clinicadl.losses.types import Loss
 from clinicadl.utils.doc import add_suffix_to_doc
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.factories import get_defaults_from
 
 from ..base import Metric
@@ -58,7 +57,7 @@ class LossMetricConfig(MetricConfig):
         try:
             loss = losses[self.loss_name]
         except KeyError as exc:
-            raise ClinicaDLArgumentError(
+            raise ValueError(
                 f"In LossMetricConfig, loss_name='{self.loss_name}' but there is no such loss (returned by the 'get_loss_functions' method of you Model). "
                 f"Losses are: {list(losses.keys())}"
             ) from exc
@@ -80,7 +79,7 @@ class LossMetricConfig(MetricConfig):
         try:
             loss_reduction = getattr(loss, "reduction")
         except AttributeError as exc:
-            raise ClinicaDLArgumentError(
+            raise RuntimeError(
                 f"The loss '{self.loss_name}' (returned by the 'get_loss_functions' method of you Model) "
                 "doesn't have a 'reduction' attribute, so ClinicaDL can't compute the validation loss at the image level."
             ) from exc

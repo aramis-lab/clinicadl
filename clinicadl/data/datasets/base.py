@@ -11,7 +11,7 @@ from typing_extensions import Self
 
 from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
 from clinicadl.utils.objects import JsonReaderWriter
-from clinicadl.utils.tsvtools import read_data
+from clinicadl.utils.tsvtools import read_df
 from clinicadl.utils.typing import DataFrameType
 
 from ..structures import Sample
@@ -104,7 +104,7 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
             A subset of the original dataset, restricted to the (participant, session) pairs mentioned in ``data``.
         """
         if isinstance(particpants_sessions, (str, Path)):
-            new_df = read_data(particpants_sessions)
+            new_df = read_df(particpants_sessions)
         else:
             new_df = pd.DataFrame.from_records(
                 particpants_sessions, columns=[PARTICIPANT_ID, SESSION_ID]

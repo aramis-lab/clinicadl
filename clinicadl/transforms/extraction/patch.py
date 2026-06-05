@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from enum import Enum
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Optional, Union
 
@@ -14,7 +15,6 @@ from pydantic import (
 
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import SAMPLE_POSITION, SAMPLE_TYPE
-from clinicadl.utils.enum import PadMode
 
 from .base import Extraction, ImplementedExtraction
 
@@ -23,6 +23,15 @@ if TYPE_CHECKING:
 
 
 logger = getLogger(__name__)
+
+
+class PadMode(str, Enum):
+    "Padding mode."
+
+    CONSTANT = "constant"
+    REFLECT = "reflect"
+    REPLICATE = "replicate"
+    CIRCULAR = "circular"
 
 
 class PatchConfig(ObjectConfig["Patch"]):

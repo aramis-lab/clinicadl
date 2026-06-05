@@ -17,8 +17,6 @@ from clinicadl.metrics.config import LossMetricConfig, MetricConfig, MSEMetricCo
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.utils.exceptions import (
     CannotReadJsonFieldError,
-    ClinicaDLArgumentError,
-    ClinicaDLConfigurationError,
 )
 
 
@@ -115,7 +113,7 @@ def test_init_metrics():
     )
 
     with pytest.raises(
-        ClinicaDLArgumentError,
+        ValueError,
         match="In LossMetricConfig, loss_name='loss_' but there is no such loss*",
     ):
         metrics.init_metrics(MODEL)
@@ -128,7 +126,7 @@ def test_init_metrics():
     )
 
     with pytest.raises(
-        ClinicaDLConfigurationError,
+        RuntimeError,
         match="First, call 'init_metrics' to instantiate the metrics.",
     ):
         metrics(BATCH_1)

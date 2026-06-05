@@ -25,7 +25,7 @@ from clinicadl.utils.dictionary.words import (
     SESSION_ID,
 )
 from clinicadl.utils.exceptions import add_note
-from clinicadl.utils.tsvtools import read_data
+from clinicadl.utils.tsvtools import read_df
 from clinicadl.utils.typing import DataFrameType
 
 from ..structures.sample import SAMPLE_FIELDS, Sample, Sample2D, SampleType
@@ -322,7 +322,7 @@ class MultimodalSamplerDataset(SamplerDataset):
         """
         Validates the input DataFrame.
         """
-        df = read_data(data)
+        df = read_df(data)
 
         return deepcopy(df)
 

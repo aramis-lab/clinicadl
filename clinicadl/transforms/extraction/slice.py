@@ -24,7 +24,7 @@ from clinicadl.utils.dictionary.words import (
     SQUEEZE,
 )
 from clinicadl.utils.enum import SliceDirection
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from clinicadl.utils.exceptions import DataFrameError
 from clinicadl.utils.typing import PathType
 
 from .base import Extraction, ImplementedExtraction
@@ -282,7 +282,7 @@ class Slice(Extraction[SliceConfig]):
         slice_col = cols.get("slice_idx")
 
         if not subj_col or not sess_col or not slice_col:
-            raise ClinicaDLTSVError(
+            raise DataFrameError(
                 "TSV must contain columns: 'participant_id', 'session_id', 'slice_idx'"
             )
 
