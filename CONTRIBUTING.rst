@@ -4,13 +4,15 @@ Contributing
 ============
 
 There are many ways in which you can contribute to the ongoing development of
-ClinicaDL. For example, you can:
+ClinicaDL. The easiest way is to discuss with the maintainers and other users:
 
 - `Ask a question <https://github.com/aramis-lab/clinicadl/discussions/new?category=q-a>`_
 - `Report a bug <https://github.com/aramis-lab/clinicadl/issues/new>`_
-- `Submit a bug fix <https://github.com/aramis-lab/clinicadl/compare>`_
 - `Propose a new feature <https://github.com/aramis-lab/clinicadl/discussions/new?category=ideas>`_
 - `Discuss the current state of the code <https://github.com/aramis-lab/clinicadl/discussions/new/choose>`_
+
+If you feel comfortable implementing a new feature or fixing a bug yourself, your contribution would be greatly appreciated.
+In that case, please follow these steps:
 
 Making direct contributions
 ---------------------------
@@ -18,7 +20,7 @@ Making direct contributions
 Open an issue on GitHub
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The very first thing to do is to open an issue on GitHub, in which you describe the
+If it is not done yet, the very first thing to do is to open an issue on GitHub, in which you describe the
 bug or the feature you want to work on.
 
 By doing this, you will get immediate feedback from the developer team on the
@@ -27,6 +29,8 @@ is it useful and within the scope of the project, etc.).
 
 This preliminary discussion will save you a lot of time, as the developer team will
 also be able to point you to the right place to modify the code.
+
+.. _setup_dev:
 
 Set up your local environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,7 +82,7 @@ picked up immediately.
   Poetry will automatically create a virtual Python environment. But you can
   also run this command in your dedicated ``conda`` environment if you have created one.
 
-1. Set up the pre-commit hook
+3. Set up the pre-commit hook
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To keep the code style consistent across ClinicaDL, we rely on a set of tools

@@ -48,4 +48,4 @@ Execute the following command in the in the proper Python environment:
 Install in development mode
 ---------------------------
 
-Find development setup instructions in the :doc:`contribution guide <contributing>`.
+Find development setup instructions in the :ref:`contribution guide <setup_dev>`.

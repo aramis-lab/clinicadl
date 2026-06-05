@@ -13,7 +13,7 @@ This is the problem **configuration classes** solve.
 What is a configuration class?
 ------------------------------
 
-A configuration class is a small dataclass associated with a ClinicaDL object. It
+A configuration class is a small dataclass associated with a Python object. It
 holds **only the parameters** of that object, with almost no logic of its own. From a
 configuration object, you obtain the actual object with its ``get_object`` method.
 
@@ -39,6 +39,11 @@ which a raw object generally cannot:
 This is exactly what makes an experiment reproducible: ClinicaDL stores the
 configuration of every object it uses, so the whole setup can be rebuilt later (see
 :doc:`MAPS <maps>`).
+
+.. note::
+  The objects implemented in ClinicaDL have internal configuration classes that are not directly visible to the user.
+  You will mostly manipulate configuration classes associated to objects that come
+  from external libraries (PyTorch, MONAI, etc.).
 
 Where you can use them
 ----------------------

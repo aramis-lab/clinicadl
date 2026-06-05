@@ -131,9 +131,8 @@ specifications:
 - :py:class:`~clinicadl.networks.nn.MLP` — a multilayer perceptron;
 - :py:class:`~clinicadl.networks.nn.ConvEncoder` / :py:class:`~clinicadl.networks.nn.ConvDecoder`
   — convolutional encoders and decoders;
-- :py:class:`~clinicadl.networks.nn.CNN` — a convolutional network for prediction
-  (encoder + MLP);
-- :py:class:`~clinicadl.networks.nn.Generator` — an MLP followed by a decoder (the symmetric of ``CNN``);
+- :py:class:`~clinicadl.networks.nn.CNN` — a convolutional encoder followed by a MLP;
+- :py:class:`~clinicadl.networks.nn.Generator` — an MLP followed by a convolutional decoder (the symmetric of ``CNN``);
 - :py:class:`~clinicadl.networks.nn.AutoEncoder` and :py:class:`~clinicadl.networks.nn.VAE`.
 
 **Common architectures** — well-known networks, configurable in their depth and width:
