@@ -20,11 +20,11 @@ class Colin27DataPoint(DataPoint):
     >>> from clinicadl.data.structures.examples import Colin27DataPoint
     >>> colin = Colin27DataPoint()
     >>> colin
-    Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
-    >>> colin.participant
+    Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id'); images: 2)
+    >>> colin.participant_id
     'sub-colin'
-    >>> colin = Colin27DataPoint(participant="sub-000", new_field="x")
-    >>> colin.participant
+    >>> colin = Colin27DataPoint(participant_id="sub-000", new_field="x")
+    >>> colin.participant_id
     'sub-000'
     >>> colin["new_field"]
     'x'
@@ -36,8 +36,8 @@ class Colin27DataPoint(DataPoint):
         args = {
             "image": tio_colin.t1,
             "head": tio_colin.head,
-            "participant": "sub-colin",
-            "session": "ses-M000",
+            "participant_id": "sub-colin",
+            "session_id": "ses-M000",
         }
         args.update(kwargs)
         super().__init__(**args)
@@ -56,11 +56,11 @@ class Colin27Sample(Sample):
     >>> from clinicadl.data.structures.examples import Colin27Sample
     >>> colin = Colin27Sample()
     >>> colin
-    Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
-    >>> colin.participant
+    Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 2)
+    >>> colin.participant_id
     'sub-colin'
-    >>> colin = Colin27Sample(participant="sub-000", new_field="x")
-    >>> colin.participant
+    >>> colin = Colin27Sample(participant_id="sub-000", new_field="x")
+    >>> colin.participant_id
     'sub-000'
     >>> colin["new_field"]
     'x'
@@ -74,8 +74,8 @@ class Colin27Sample(Sample):
         args = {
             "image": tio_colin.t1,
             "head": tio_colin.head,
-            "participant": "sub-colin",
-            "session": "ses-M000",
+            "participant_id": "sub-colin",
+            "session_id": "ses-M000",
             "file_type": BidsFileType(data_type="t1", suffix="T1w"),
             "image_path": Path("bids")
             / "sub-000"
@@ -101,11 +101,11 @@ class Colin27Sample2D(Sample2D):
     >>> from clinicadl.data.structures.examples import Colin27Sample2D
     >>> colin = Colin27Sample2D()
     >>> colin
-    Colin27Sample2D(Keys: ('head', 'slice_direction', 'squeeze', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
-    >>> colin.participant
+    Colin27Sample2D(Keys: ('head', 'slice_direction', 'squeeze', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 2)
+    >>> colin.participant_id
     'sub-colin'
-    >>> colin = Colin27Sample2D(participant="sub-000", new_field="x")
-    >>> colin.participant
+    >>> colin = Colin27Sample2D(participant_id="sub-000", new_field="x")
+    >>> colin.participant_id
     'sub-000'
     >>> colin["new_field"]
     'x'
@@ -120,8 +120,8 @@ class Colin27Sample2D(Sample2D):
         args = {
             "image": tio_colin.t1,
             "head": tio_colin.head,
-            "participant": "sub-colin",
-            "session": "ses-M000",
+            "participant_id": "sub-colin",
+            "session_id": "ses-M000",
             "file_type": BidsFileType(data_type="t1", suffix="T1w"),
             "image_path": Path("bids")
             / "sub-000"

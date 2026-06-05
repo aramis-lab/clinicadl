@@ -44,8 +44,8 @@ class Sampler(SamplerDataset):
     def _get_data(self, participant, session):
         if participant == "sub-003":
             return DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant,
+                session_id=session,
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
                 mask=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3)),
                 image_path="x",
@@ -56,8 +56,8 @@ class Sampler(SamplerDataset):
             affine_ = affine.copy()
             affine[:, 3] = [1, 1, 1, 1]
             return DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant,
+                session_id=session,
                 image=tio.ScalarImage(tensor=torch.randn(1, 4, 4, 4), affine=affine),
                 mask=tio.LabelMap(tensor=torch.randn(1, 4, 4, 4), affine=affine_),
                 image_path="x",
@@ -65,8 +65,8 @@ class Sampler(SamplerDataset):
             )
         if participant == "sub-005":
             return DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant,
+                session_id=session,
                 image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
                 mask=tio.LabelMap(tensor=torch.randn(1, 1, 1, 1), affine=np.eye(4) * 2),
                 image_path="x",
@@ -74,8 +74,8 @@ class Sampler(SamplerDataset):
             )
         if participant == "sub-006":
             return DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant,
+                session_id=session,
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
                 mask=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3)),
                 image_path="x",
@@ -92,9 +92,9 @@ class TestSamplerDataset:
     def test_sort(self):
         dataset = Sampler(transforms=TransformsHandler())
         dataset._df = dataset.df.iloc[::-1]
-        assert dataset[0].participant == "sub-006"
+        assert dataset[0].participant_id == "sub-006"
         dataset.sort()
-        assert dataset[0].participant == "sub-003"
+        assert dataset[0].participant_id == "sub-003"
 
     def test_train_eval(self):
         dataset = Sampler(
@@ -126,8 +126,8 @@ class TestSamplerDataset:
         assert out_sample.sample_position == 2
         assert out_sample.slice_direction == 0
         assert not out_sample.squeeze
-        assert out_sample.participant == "sub-003"
-        assert out_sample.session == "ses-M000"
+        assert out_sample.participant_id == "sub-003"
+        assert out_sample.session_id == "ses-M000"
         assert out_sample.spatial_shape == (1, 3, 2)
 
         dataset = Sampler(
@@ -140,7 +140,7 @@ class TestSamplerDataset:
         dataset = Sampler(transforms=TransformsHandler())
         out_sample = dataset[1]
         assert isinstance(out_sample, Sample)
-        assert out_sample.participant == "sub-004"
+        assert out_sample.participant_id == "sub-004"
 
     @pytest.mark.parametrize(
         "dataset,len_",
@@ -215,8 +215,8 @@ class TestMulitmodalSamplerDataset:
         pd.testing.assert_frame_equal(dataset.df, DF)
         assert set(dataset[0].keys()) == {
             "image",
-            "participant",
-            "session",
+            "participant_id",
+            "session_id",
             "mask",
             "image_path",
             "file_type",

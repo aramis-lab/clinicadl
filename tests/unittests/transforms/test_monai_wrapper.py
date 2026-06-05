@@ -17,8 +17,8 @@ X = DataPoint(
     image=tio.ScalarImage(tensor=img),
     label=0.2,
     mask=tio.LabelMap(tensor=img),
-    participant="a",
-    session="b",
+    participant_id="a",
+    session_id="b",
 )
 X["array"] = tensor.numpy()
 X["tensor"] = tensor
@@ -111,11 +111,11 @@ def test_monai_wrapper():
         )
 
     transform = MonaiTransformWrapper(
-        Activations(softmax=True), include=["participant"], copy=True
+        Activations(softmax=True), include=["participant_id"], copy=True
     )
     with pytest.raises(
         Exception,
-        match="An error occurred while transforming the field 'participant'.",
+        match="An error occurred while transforming the field 'participant_id'.",
     ):
         transform(X)
 

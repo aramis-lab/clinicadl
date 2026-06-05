@@ -188,7 +188,7 @@ class TestCheckDataFrames:
     SPLIT = deepcopy(SPLIT)
     MAPS = Mock()
     DATALOADER = Mock()
-    BAD_DF = pd.DataFrame({"participant_id": ["sub-000"], "session": ["ses-M000"]})
+    BAD_DF = pd.DataFrame({"participant": ["sub-000"], "session": ["ses-M000"]})
 
     def test_on_train_start(self):
         self._test_train(self.checker.on_train_start)

@@ -32,8 +32,8 @@ MODEL = Model()
 DATAPOINTS = [
     DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
-        participant=f"sub-{i}",
-        session=f"ses-{i}",
+        participant_id=f"sub-{i}",
+        session_id=f"ses-{i}",
         label=float(gt),
         output=float(pred),
     )

@@ -74,7 +74,7 @@ class TestBidsNiftiDataset:
         assert list(dataset.common_masks.keys()) == ["mask2"]
         sample = dataset[3]
         assert sample.sample_position == 0
-        assert sample.participant == "sub-010"
+        assert sample.participant_id == "sub-010"
         assert sample.spatial_shape == (1, 2, 3)
         assert sample["age"] == 1.0
         assert set(sample.get_masks_dict().keys()) == {"mask1", "mask2"}
@@ -334,7 +334,7 @@ class TestBidsTensorDataset:
         sample = dataset[3]
         np.testing.assert_allclose(sample.spacing, (1.1, 1.1, 1.1))
         assert sample.sample_position == 1
-        assert sample.participant == "sub-010"
+        assert sample.participant_id == "sub-010"
         assert sample.spatial_shape == (1, 1, 2)
         assert sample["age"] == 1.0
         assert set(sample.get_images_dict().keys()) == {"image", "other_image"}

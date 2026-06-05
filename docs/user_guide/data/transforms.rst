@@ -157,7 +157,7 @@ derived from the image:
 .. code-block:: python
 
     >>> add_foreground_mask(data)
-    Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session', 'foreground'); images: 3)
+    Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id', 'foreground'); images: 3)
 
 However, it is advised to inherit from :py:class:`torchio.Transform` to create
 your own transforms.

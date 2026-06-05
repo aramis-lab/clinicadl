@@ -64,8 +64,8 @@ class TestTensorContent:
                     / "space-MNI152NLin2009cSym_res-1d3x1d2x1d1_label-leftHippocampus_mask.nii"
                 )
             ),
-            participant="",
-            session="",
+            participant_id="",
+            session_id="",
             other=0,
             other_=1,
         )
@@ -141,8 +141,8 @@ def test_tensor():
         "coefficient",
         "image_path",
         "file_type",
-        "participant",
-        "session",
+        "participant_id",
+        "session_id",
     }
 
     tensor = Tensor(tensors, tensor_type, to_load=["seg", "coefficient"])

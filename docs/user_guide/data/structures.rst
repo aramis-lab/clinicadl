@@ -24,8 +24,8 @@ TorchIO operation that works on a ``Subject`` also works on a ``DataPoint``.
 A ``DataPoint`` always has at least three fields:
 
 - ``image``: the image, as a :py:class:`torchio.ScalarImage`;
-- ``participant``: the participant id, as a ``str``;
-- ``session``: the session id, as a ``str``.
+- ``participant_id``: the participant id, as a ``str``;
+- ``session_id``: the session id, as a ``str``.
 
 .. code-block:: python
 
@@ -36,8 +36,8 @@ A ``DataPoint`` always has at least three fields:
 
     datapoint = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 10, 10, 10), affine=np.eye(4)),
-        participant="sub-001",
-        session="ses-M000",
+        participant_id="sub-001",
+        session_id="ses-M000",
     )
 
 You can pass the ``image`` either as a :py:class:`torchio.ScalarImage` or simply as
@@ -51,7 +51,7 @@ The three core fields are available as attributes:
 
 .. code-block:: python
 
-    >>> datapoint.session
+    >>> datapoint.session_id
     'ses-M000'
 
 Any other field is accessed with the usual dictionary syntax, which you also use to
@@ -73,8 +73,8 @@ It contains a T1 image and a mask named ``"head"``, and requires no external dat
     >>> from clinicadl.data.structures.examples import Colin27DataPoint
     >>> datapoint = Colin27DataPoint()
     >>> datapoint
-    Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
-    >>> datapoint.participant
+    Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id'); images: 2)
+    >>> datapoint.participant_id
     'sub-colin'
 
 Images, masks and other fields
@@ -91,7 +91,7 @@ and everything else (metadata). Dedicated helpers let you retrieve each kind:
     >>> datapoint.get_masks_dict()
     {'head': LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)}
     >>> datapoint.get_non_images_dict()
-    {'participant': 'sub-colin', 'session': 'ses-M000'}
+    {'participant_id': 'sub-colin', 'session_id': 'ses-M000'}
 
 To add an image or a mask, prefer :py:meth:`~clinicadl.data.structures.DataPoint.add_image`
 and :py:meth:`~clinicadl.data.structures.DataPoint.add_mask` over the raw dictionary
@@ -103,7 +103,7 @@ matrix of ``image`` is reused).
 
     >>> datapoint.add_image(datapoint.image, "image_duplicate")
     >>> datapoint
-    Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session', 'image_duplicate'); images: 3)
+    Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id', 'image_duplicate'); images: 3)
 
 To get the raw tensor of an image, use
 :py:meth:`~clinicadl.data.structures.DataPoint.get_image_tensor`.
@@ -162,7 +162,7 @@ A bundled :py:class:`~clinicadl.data.structures.examples.Colin27Sample` illustra
     'image'
     >>> sample.sample_position    # None: a whole image has no position
     >>> sample
-    Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)
+    Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 2)
 
 The 2D Sample
 -------------

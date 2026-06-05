@@ -113,8 +113,8 @@ class TestBidsDataset:
 
         sample = dataset[4]
         assert isinstance(sample, Sample2D)
-        assert sample.participant == "sub-010"
-        assert sample.session == "ses-M003"
+        assert sample.participant_id == "sub-010"
+        assert sample.session_id == "ses-M003"
         assert sample.sample_position == 1
         assert sample.file_type[0] == BidsFileType(suffix="T1w", data_type="anat")
         assert sample["age"] == 20.0
@@ -239,9 +239,9 @@ class TestBidsDataset:
                 }
             ),
         )
-        assert dataset[0].participant == "sub-010"
+        assert dataset[0].participant_id == "sub-010"
         dataset.sort()
-        assert dataset[0].participant == "sub-000"
+        assert dataset[0].participant_id == "sub-000"
 
     def test_from_to_json(self, tmp_path):
         dataset = BidsDataset(

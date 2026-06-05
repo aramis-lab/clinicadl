@@ -99,8 +99,8 @@ class Dataset:
         id_ = self.indices[idx]
         if id_ == 0:
             return DataPoint(
-                participant="sub-000",
-                session="ses-M000",
+                participant_id="sub-000",
+                session_id="ses-M000",
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
                 mask=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3)),
             )
@@ -109,22 +109,22 @@ class Dataset:
             affine_ = affine.copy()
             affine[:, 3] = [1, 1, 1, 1]
             return DataPoint(
-                participant="sub-001",
-                session="ses-M001",
+                participant_id="sub-001",
+                session_id="ses-M001",
                 image=tio.ScalarImage(tensor=torch.randn(1, 4, 4, 4), affine=affine),
                 mask=tio.LabelMap(tensor=torch.randn(1, 4, 4, 4), affine=affine_),
             )
         if id_ == 2:
             return DataPoint(
-                participant="sub-002",
-                session="ses-M000",
+                participant_id="sub-002",
+                session_id="ses-M000",
                 image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
                 mask=tio.LabelMap(tensor=torch.randn(1, 1, 1, 1), affine=np.eye(4) * 2),
             )
         if id_ == 3:
             return DataPoint(
-                participant="sub-003",
-                session="ses-M000",
+                participant_id="sub-003",
+                session_id="ses-M000",
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
                 mask=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3)),
             )

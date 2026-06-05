@@ -144,7 +144,7 @@ class Extraction(HasConfig[Config], ABC):
                 sample = self._extract_tensor_sample(image.tensor, sample_position)
             except IndexError as exc:
                 raise IndexError(
-                    f"An error occurred while extracting sample located at '{sample_position}' from image '{name}' of ({data_point.participant}, {data_point.session})."
+                    f"An error occurred while extracting sample located at '{sample_position}' from image '{name}' of ({data_point.participant_id}, {data_point.session_id})."
                 ) from exc
 
             image.set_data(sample)

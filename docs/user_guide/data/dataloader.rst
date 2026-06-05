@@ -66,7 +66,7 @@ possible (and a plain list otherwise):
 
     >>> batch.get_field("image").shape
     torch.Size([2, 1, 181, 217, 181])
-    >>> batch.get_field("participant")
+    >>> batch.get_field("participant_id")
     ['sub-colin', 'sub-colin']
 
 A ``Batch`` can also move its tensors to a device or memory format via

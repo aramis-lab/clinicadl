@@ -188,17 +188,17 @@ class Batch(list[T]):
         .. code-block:: python
 
             >>> datapoint
-            Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
+            Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id'); images: 2)
             >>> datapoint["head"]
             LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; ...)
-            >>> datapoint["participant"]
+            >>> datapoint["participant_id"]
             'sub-colin'
 
         .. code-block:: python
 
             >>> batch.get_field("head").shape
             torch.Size([2, 1, 181, 217, 181])
-            >>> batch.get_field("participant")
+            >>> batch.get_field("participant_id")
             ['sub-colin', 'sub-colin']
 
         """
@@ -267,14 +267,14 @@ class Batch(list[T]):
         .. code-block:: python
 
             >>> batch[0]
-            Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
+            Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id'); images: 2)
 
         .. code-block:: python
 
             >>> import torch
             >>> batch.add_field(torch.randn(2, 1, 3, 3, 3), "output")
             >>> batch[0]
-            Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session', 'output'); images: 2)
+            Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id', 'output'); images: 2)
             >>> batch[0]["output"].shape
             torch.Size([1, 3, 3, 3])
 

@@ -18,16 +18,16 @@ def test_init():
 def test_typing():
     datapoint = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-        participant="abc",
-        session="abc",
+        participant_id="abc",
+        session_id="abc",
     )
     batch = Batch([datapoint, datapoint])
-    assert batch[0].participant == "abc"
+    assert batch[0].participant_id == "abc"
 
     datapoint = Sample(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-        participant="abc",
-        session="abc",
+        participant_id="abc",
+        session_id="abc",
         image_path="abc.nii.gz",
         file_type=FILE_TYPE,
     )
@@ -41,8 +41,8 @@ def test_get_field():
         DataPoint(
             image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
             mask=tio.LabelMap(tensor=torch.ones(1, 3, 4, 5)),
-            participant=f"sub-{i}",
-            session=f"ses-{i}",
+            participant_id=f"sub-{i}",
+            session_id=f"ses-{i}",
         )
         for i in range(2)
     ]
@@ -56,8 +56,8 @@ def test_get_field():
     batch[1] = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 6)),
         mask=tio.LabelMap(tensor=torch.ones(1, 3, 4, 6)),
-        participant="sub-1",
-        session="ses-1",
+        participant_id="sub-1",
+        session_id="ses-1",
     )
     masks = batch.get_field("mask")
     images = batch.get_field("image")
@@ -114,8 +114,8 @@ def test_get_field():
             Sample2D(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 5)),
                 mask=tio.LabelMap(tensor=torch.ones(1, 3, 1, 5)),
-                participant=f"sub-{i}",
-                session=f"ses-{i}",
+                participant_id=f"sub-{i}",
+                session_id=f"ses-{i}",
                 image_path="abc.nii.gz",
                 file_type=FILE_TYPE,
                 squeeze=False,
@@ -153,8 +153,8 @@ def test_to():
                 mask=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3)),
                 output=1,
                 abc=torch.randn(1, 3, 3, device=torch.device("cuda:0")),
-                participant=f"sub-{i}",
-                session=f"ses-{i}",
+                participant_id=f"sub-{i}",
+                session_id=f"ses-{i}",
             )
             for i in range(2)
         ]
@@ -207,8 +207,8 @@ def test_add_field():
         [
             DataPoint(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-                participant=f"sub-{i}",
-                session=f"ses-{i}",
+                participant_id=f"sub-{i}",
+                session_id=f"ses-{i}",
             )
             for i in range(2)
         ]

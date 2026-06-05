@@ -41,8 +41,8 @@ class MyDataset(Dataset):
 
     def __getitem__(self, idx):
         return Sample(
-            participant=self.df.iloc[idx]["participant_id"],
-            session=self.df.iloc[idx]["session_id"],
+            participant_id=self.df.iloc[idx]["participant_id"],
+            session_id=self.df.iloc[idx]["session_id"],
             image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
             image_path="x",
             file_type=BidsFileType(data_type="anat", suffix="T1w"),

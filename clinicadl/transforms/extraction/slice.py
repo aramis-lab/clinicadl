@@ -301,7 +301,7 @@ class Slice(Extraction[SliceConfig]):
         if self._map is None:
             raise RuntimeError("Called _slices_for but no TSV was provided.")
 
-        key = (data_point.participant, data_point.session)
+        key = (data_point.participant_id, data_point.session_id)
         if key not in self._map:
             raise ValueError(
                 f"No slices found in TSV for participant={key[0]}, session={key[1]}."

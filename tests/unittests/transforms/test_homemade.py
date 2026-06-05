@@ -14,8 +14,8 @@ from clinicadl.utils.numerics import merge_numerics
 def datapoint():
     return DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 1, 1, 1)),
-        participant="sub-000",
-        session="ses-000",
+        participant_id="sub-000",
+        session_id="ses-000",
         float=1,
         array_1=np.array([1, 2]),
         array_2=np.array([[[1], [0]]]),
@@ -42,8 +42,8 @@ class TestFormat:
             squeeze=2,
             exclude=[
                 "image",
-                "participant",
-                "session",
+                "participant_id",
+                "session_id",
                 "array_1",
                 "tensor_1",
                 "mask_1",

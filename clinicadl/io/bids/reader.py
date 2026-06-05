@@ -202,8 +202,8 @@ class Bids(HasConfig[BidsConfig]):
     def get_path(
         self,
         file_type: BidsFileType,
-        participant: Optional[str] = None,
-        session: Optional[str] = None,
+        participant_id: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> Path:
         """
         To get the path of a file in the BIDS-like directory.
@@ -217,9 +217,9 @@ class Bids(HasConfig[BidsConfig]):
         ----------
         file_type : BidsFileType
             The specifications of the file to find.
-        participant : Optional[str], default=None
+        participant_id : Optional[str], default=None
             The participant id (e.g., ``"sub-xxx"``), if the file is subject-specific.
-        session : Optional[str], default=None
+        session_id : Optional[str], default=None
             The session id (e.g., ``"ses-xxx"``), if the file is session-specific.
 
         Returns
@@ -256,8 +256,8 @@ class Bids(HasConfig[BidsConfig]):
                         data_type="anat",
                         with_entities={"space": "MNI152NLin2009cSym"},
                     ),
-                    participant="sub-001",
-                    session="ses-M000",
+                    participant_id="sub-001",
+                    session_id="ses-M000",
                 )
             Path("bids/sub-001/ses-M000/anat/sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii")
             >>> bids.get_path(
@@ -265,8 +265,8 @@ class Bids(HasConfig[BidsConfig]):
                         suffix="scans",
                         extension=".tsv",
                     ),
-                    participant="sub-001",
-                    session="ses-M000",
+                    participant_id="sub-001",
+                    session_id="ses-M000",
                 )
             Path("bids/sub-001/ses-M000/sub-001_ses-M000_scans.tsv")
             >>> bids.get_path(
@@ -274,7 +274,7 @@ class Bids(HasConfig[BidsConfig]):
                         suffix="sessions",
                         extension=".tsv",
                     ),
-                    participant="sub-001",
+                    participant_id="sub-001",
                 )
             Path("bids/sub-001/sub-001_sessions.tsv")
             >>> bids.get_path(
@@ -286,7 +286,7 @@ class Bids(HasConfig[BidsConfig]):
                 )
             Path("bids/space-MNI152NLin2009cSym_participants.tsv")
         """
-        dir_ = self._find_root(participant, session)
+        dir_ = self._find_root(participant_id, session_id)
 
         selected_files = []
         for root, _, files in os.walk(dir_):
@@ -294,12 +294,12 @@ class Bids(HasConfig[BidsConfig]):
                 full_path = os.path.join(root, file)
                 rel_path = os.path.relpath(full_path, dir_)
                 try:
-                    if file_type.match(rel_path, participant, session):
+                    if file_type.match(rel_path, participant_id, session_id):
                         selected_files.append(Path(full_path))
                 except (ValueError, AssertionError):  # not a BIDS file
                     continue
 
-        error_msg = f"For ({participant} | {session}), an error occurred while trying to get {file_type}: "
+        error_msg = f"For ({participant_id} | {session_id}), an error occurred while trying to get {file_type}: "
         if len(selected_files) > 1:
             error_msg += "more than 1 file found:\n"
             for found_file in selected_files:
@@ -314,7 +314,7 @@ class Bids(HasConfig[BidsConfig]):
             return selected_files[0]
 
     def has_file_type(
-        self, participant: str, session: str, file_type: BidsFileType
+        self, participant_id: str, session_id: str, file_type: BidsFileType
     ) -> bool:
         """
         To check if a participant has a file type for a specified session.
@@ -324,9 +324,9 @@ class Bids(HasConfig[BidsConfig]):
 
         Parameters
         ----------
-        participant : str
+        participant_id : str
             The participant id (e.g., ``"sub-xxx"``).
-        session : str
+        session_id : str
             The session id (e.g., ``"ses-xxx"``).
         file_type : BidsFileType
             The :py:class:`~clinicadl.io.BidsFileType` containing the specifications of the file to
@@ -364,8 +364,8 @@ class Bids(HasConfig[BidsConfig]):
                         data_type="anat",
                         with_entities={"space": "MNI152NLin2009cSym"},
                     ),
-                    participant="sub-001",
-                    session="ses-M000",
+                    participant_id="sub-001",
+                    session_id="ses-M000",
                 )
             True
             >>> bids.has_file_type(
@@ -373,8 +373,8 @@ class Bids(HasConfig[BidsConfig]):
                         suffix="T1w",
                         data_type="anat",
                     ),
-                    participant="sub-001",
-                    session="ses-M000",
+                    participant_id="sub-001",
+                    session_id="ses-M000",
                 )
             RuntimeError
             >>> bids.has_file_type(
@@ -382,13 +382,13 @@ class Bids(HasConfig[BidsConfig]):
                         suffix="FLAIR",
                         data_type="anat",
                     ),
-                    participant="sub-001",
-                    session="ses-M000",
+                    participant_id="sub-001",
+                    session_id="ses-M000",
                 )
             False
         """
         try:
-            self.get_path(file_type, participant, session)
+            self.get_path(file_type, participant_id, session_id)
         except RuntimeError as e:
             if NO_FILE_FOUND in str(e):
                 return False
@@ -399,8 +399,8 @@ class Bids(HasConfig[BidsConfig]):
     def build_path(
         self,
         file_type: BidsFileType,
-        participant: Optional[str] = None,
-        session: Optional[str] = None,
+        participant_id: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> Path:
         """
         Builds the path to the file associated to the input file type
@@ -414,9 +414,9 @@ class Bids(HasConfig[BidsConfig]):
             .. note::
                 The entities in the ``without_entities`` attribute of the :py:class:`~clinicadl.io.BidsFileType`
                 are not used here.
-        participant : Optional[str], default=None
+        participant_id : Optional[str], default=None
             The participant id (e.g., ``"sub-xxx"``), if the file must be subject-specific.
-        session : Optional[str], default=None
+        session_id : Optional[str], default=None
             The session id (e.g., ``"ses-xxx"``), if the file must be subject-specific.
 
         Returns
@@ -437,8 +437,8 @@ class Bids(HasConfig[BidsConfig]):
                         with_entities={"space": "MNI152NLin2009cSym", "res": "1x1x1},
                         extension="nii",
                     ),
-                    participant="sub-001",
-                    session="ses-M000",
+                    participant_id="sub-001",
+                    session_id="ses-M000",
                 )
             Path("bids/sub-001/ses-M000/anat/sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii")
             >>> bids.build_path(
@@ -446,8 +446,8 @@ class Bids(HasConfig[BidsConfig]):
                         suffix="scans",
                         extension=".tsv",
                     ),
-                    participant="sub-001",
-                    session="ses-M000",
+                    participant_id="sub-001",
+                    session_id="ses-M000",
                 )
             Path("bids/sub-001/ses-M000/sub-001_ses-M000_scans.tsv")
             >>> bids.build_path(
@@ -455,7 +455,7 @@ class Bids(HasConfig[BidsConfig]):
                         suffix="sessions",
                         extension=".tsv",
                     ),
-                    participant="sub-001",
+                    participant_id="sub-001",
                 )
             Path("bids/sub-001/sub-001_sessions.tsv")
             >>> bids.build_path(
@@ -468,7 +468,7 @@ class Bids(HasConfig[BidsConfig]):
             Path("bids/space-MNI152NLin2009cSym_participants.tsv")
 
         """
-        dir_ = self._find_root(participant, session)
+        dir_ = self._find_root(participant_id, session_id)
 
         filename_components = (
             [
@@ -479,10 +479,10 @@ class Bids(HasConfig[BidsConfig]):
             else []
         )
         filename_components.append(file_type.suffix.pattern)
-        if session:
-            filename_components.insert(0, session)
-        if participant:
-            filename_components.insert(0, participant)
+        if session_id:
+            filename_components.insert(0, session_id)
+        if participant_id:
+            filename_components.insert(0, participant_id)
 
         filename = "_".join(filename_components)
         folder = Path(file_type.data_type.pattern) if file_type.data_type else Path(".")
@@ -550,21 +550,21 @@ class Bids(HasConfig[BidsConfig]):
         return participants_sessions
 
     def _find_root(
-        self, participant: Optional[str] = None, session: Optional[str] = None
+        self, participant_id: Optional[str] = None, session_id: Optional[str] = None
     ) -> Path:
         """
         Depending on the participant and session specifications, find the root directory
         to consider.
         """
-        if participant:
-            sub = Subject(participant)
+        if participant_id:
+            sub = Subject(participant_id)
             root = self.participants_dir / sub
-            if session:
-                ses = Session(session)
+            if session_id:
+                ses = Session(session_id)
                 root /= ses
 
         else:
-            assert session is None, "Cannot pass a session without a participant"
+            assert session_id is None, "Cannot pass a session without a participant"
             root = self.path
 
         return root

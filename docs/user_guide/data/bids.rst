@@ -136,8 +136,8 @@ file:
     >>> len(dataset)
     50  # one sample per line of metadata.tsv
     >>> dataset[0]
-    Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)
-    >>> dataset[0].participant, dataset[0].session
+    Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)
+    >>> dataset[0].participant_id, dataset[0].session_id
     ('sub-001', 'ses-M000')
 
 A few arguments shape what a ``BidsDataset`` contains and will output:

@@ -11,8 +11,8 @@ from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.words import (
     FILE_TYPE,
     IMAGE_PATH,
-    PARTICIPANT,
-    SESSION,
+    PARTICIPANT_ID,
+    SESSION_ID,
     SQUEEZE,
 )
 from clinicadl.utils.numerics import merge_numerics
@@ -75,16 +75,16 @@ class MergeBatchesCollate(ImplementedCollateFn, HasConfig[MergeBatchesCollateCon
         from clinicadl.data.structures.examples import Colin27Sample
         import numpy as np
 
-        sample = Colin27Sample(participant="sub-001", label=np.array([0, 1]), age=55, sex="M")
-        sample_bis = Colin27Sample(participant="sub-001", label=np.array([1, 2]), age=56, to_ignore="abc")
+        sample = Colin27Sample(participant_id="sub-001", label=np.array([0, 1]), age=55, sex="M")
+        sample_bis = Colin27Sample(participant_id="sub-001", label=np.array([1, 2]), age=56, to_ignore="abc")
 
         batch = MergeBatchesCollate(ignore=["to_ignore"])([(sample, sample_bis)])
 
     .. code-block::
 
         >>> batch
-        [Colin27Sample(Keys: ('head', 'sex', 'age', 'label', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
-        >>> batch[0].participant  # same value in the two samples
+        [Colin27Sample(Keys: ('head', 'sex', 'age', 'label', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 2)]
+        >>> batch[0].participant_id  # same value in the two samples
         'sub-001'
         >>> batch[0].age
         (55, 56)
@@ -129,11 +129,11 @@ class MergeBatchesCollate(ImplementedCollateFn, HasConfig[MergeBatchesCollateCon
             args = {}
             type_ = self._check_types(samples_collection)
 
-            args[PARTICIPANT] = self._get_unique_field(
-                [sample.participant for sample in samples_collection], PARTICIPANT
+            args[PARTICIPANT_ID] = self._get_unique_field(
+                [sample.participant_id for sample in samples_collection], PARTICIPANT_ID
             )
-            args[SESSION] = self._get_unique_field(
-                [sample.session for sample in samples_collection], SESSION
+            args[SESSION_ID] = self._get_unique_field(
+                [sample.session_id for sample in samples_collection], SESSION_ID
             )
             if isinstance(samples_collection[0], Sample2D):
                 args[SQUEEZE] = self._get_unique_field(

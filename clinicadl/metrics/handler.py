@@ -14,9 +14,7 @@ from clinicadl.utils.dictionary.words import (
     CPU,
     EPOCH,
     METRICS,
-    PARTICIPANT,
     PARTICIPANT_ID,
-    SESSION,
     SESSION_ID,
 )
 from clinicadl.utils.exceptions import CannotReadFieldError, ClinicaDLConfigurationError
@@ -390,8 +388,8 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         if self.config.metrics_on_cpu:
             batch.to(device=CPU)
 
-        participants = batch.get_field(PARTICIPANT)
-        sessions = batch.get_field(SESSION)
+        participants = batch.get_field(PARTICIPANT_ID)
+        sessions = batch.get_field(SESSION_ID)
         values = {PARTICIPANT_ID: participants, SESSION_ID: sessions}
 
         values.update({name: metric(batch) for name, metric in self.metrics.items()})

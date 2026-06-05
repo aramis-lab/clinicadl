@@ -44,8 +44,8 @@ class MyDataset(Dataset):
 
     def __getitem__(self, idx):
         return Sample(
-            participant=self.df.iloc[idx]["participant_id"],
-            session=self.df.iloc[idx]["session_id"],
+            participant_id=self.df.iloc[idx]["participant_id"],
+            session_id=self.df.iloc[idx]["session_id"],
             image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
             image_path="x",
             file_type=BidsFileType(data_type="anat", suffix=self.suffix),
@@ -193,8 +193,8 @@ def test__getitem__():
             }
         ).rename_axis(columns="dataset_id", index="idx")
     )
-    assert unpaired[1][0].participant == "sub-001"
-    assert unpaired[1][1].participant == "sub-002"
+    assert unpaired[1][0].participant_id == "sub-001"
+    assert unpaired[1][1].participant_id == "sub-002"
 
     unpaired.set_epoch(1)
     assert unpaired.mapping.equals(
@@ -205,8 +205,8 @@ def test__getitem__():
             }
         ).rename_axis(columns="dataset_id", index="idx")
     )
-    assert unpaired[1][0].participant == "sub-000"
-    assert unpaired[1][1].participant == "sub-003"
+    assert unpaired[1][0].participant_id == "sub-000"
+    assert unpaired[1][1].participant_id == "sub-003"
 
     # undersample
     unpaired = UnpairedDataset([dataset_1, dataset_2])
@@ -218,8 +218,8 @@ def test__getitem__():
             }
         ).rename_axis(columns="dataset_id", index="idx")
     )
-    assert unpaired[0][0].participant == "sub-001"
-    assert unpaired[0][1].participant == "sub-003"
+    assert unpaired[0][0].participant_id == "sub-001"
+    assert unpaired[0][1].participant_id == "sub-003"
 
     unpaired.set_epoch(1)
     assert unpaired.mapping.equals(
@@ -289,7 +289,7 @@ def test_from_json_to_json(tmp_path):
     paired = UnpairedDataset.from_json(tmp_path / "dataset.json")
 
     assert len(paired) == 2
-    assert paired[1][0].participant == "sub-000"
+    assert paired[1][0].participant_id == "sub-000"
 
     bids = MyDataset(
         [

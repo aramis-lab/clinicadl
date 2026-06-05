@@ -260,12 +260,12 @@ class BidsDataset(
                 columns=["age"],
             )
         >>> dataset[0]
-        Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)
+        Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)
         >>> dataset[0].spatial_shape
         (169, 208, 179)    # full image
         >>> len(dataset)
         50    # 50 lines in the metadata.tsv
-        >>> dataset[0].participant, dataset[0].session, dataset[0].age
+        >>> dataset[0].participant_id, dataset[0].session_id, dataset[0].age
         'sub-001', 'ses-M000', 55.0
 
     .. code-block:: python
@@ -318,7 +318,7 @@ class BidsDataset(
                 },
             )
         >>> dataset[0]
-        Sample(Keys: ('head', 'brain', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 4)
+        Sample(Keys: ('head', 'brain', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 4)
         >>> len(dataset)
         60    # all the (participant, session) that have T1w images. Not only the ones in metadata.tsv
 
@@ -566,7 +566,7 @@ class BidsDataset(
         .. code-block:: python
 
             >>> tensor_dataset[0]
-            Sample(Keys: ('head', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 3)
+            Sample(Keys: ('head', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 3)
 
 
         """

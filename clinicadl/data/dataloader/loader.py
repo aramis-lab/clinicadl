@@ -178,9 +178,9 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
 
         >>> batch = next(iter(dataloader))
         >>> batch
-        [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)]
+        [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)]
 
     Now, let's see what happens with a :py:class:`~clinicadl.data.datasets.PairedDataset`:
 
@@ -193,12 +193,12 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
 
         >>> batch = next(iter(dataloader))
         >>> batch
-        ([Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)],
-            [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)])
+        ([Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)],
+            [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)])
 
     Because, the default behavior is to use :py:class:`~clinicadl.data.dataloader.ToBatchesCollate` to collate batches,
     we obtain here a tuple of :math:`n` batches, where :math:`n` is the number of datasets that we paired.

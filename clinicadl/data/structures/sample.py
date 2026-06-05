@@ -101,9 +101,9 @@ class Sample(DataPoint, ABC):
     ----------
     image : torchio.ScalarImage
         The image, in a :py:class:`torchio.ScalarImage`.
-    participant : str
-        The id of the participant.
-    session : str
+    participant_id : str
+        The id of the participant_id.
+    session_id : str
         The id of the session.
     file_type : tuple[BidsFileType, ...]
         The :py:class:`~clinicadl.io.bids.BidsFileType`. If they are multiple images in ``image``
@@ -131,8 +131,8 @@ class Sample(DataPoint, ABC):
     def __init__(
         self,
         image: Union[tio.ScalarImage, PathType],
-        participant: str,
-        session: str,
+        participant_id: str,
+        session_id: str,
         file_type: Union[BidsFileType, tuple[BidsFileType, ...]],
         image_path: Union[Path, tuple[Path, ...]],
         sample_type: SampleType = SampleType.IMAGE,
@@ -141,8 +141,8 @@ class Sample(DataPoint, ABC):
     ):
         config = SampleConfig(
             image=image,
-            participant=participant,
-            session=session,
+            participant_id=participant_id,
+            session_id=session_id,
             file_type=file_type,
             image_path=image_path,
             sample_type=sample_type,
@@ -195,8 +195,8 @@ class Sample2D(Sample):
     def __init__(
         self,
         image: Union[tio.ScalarImage, PathType],
-        participant: str,
-        session: str,
+        participant_id: str,
+        session_id: str,
         file_type: BidsFileType,
         image_path: Path,
         sample_position: int,
@@ -206,8 +206,8 @@ class Sample2D(Sample):
     ):
         config = Sample2DConfig(
             image=image,
-            participant=participant,
-            session=session,
+            participant_id=participant_id,
+            session_id=session_id,
             file_type=file_type,
             image_path=image_path,
             sample_position=sample_position,

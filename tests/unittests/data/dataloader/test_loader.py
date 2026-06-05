@@ -75,8 +75,8 @@ BIDS_WITHOUT_LABEL = BidsDataset(
 
 SAMPLE = Sample(
     image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
-    participant="x",
-    session="x",
+    participant_id="x",
+    session_id="x",
     file_type=FILE_TYPE,
     image_path="x",
 )
@@ -93,8 +93,8 @@ class MyDataset(Dataset[Sample]):
     def __getitem__(self, idx: int) -> Any:
         return Sample(
             image=tio.ScalarImage(tensor=torch.randn(1, 1, 1, 1)),
-            participant=str(idx),
-            session="x",
+            participant_id=str(idx),
+            session_id="x",
             file_type=FILE_TYPE,
             image_path="x",
         )
@@ -152,7 +152,7 @@ def test_dataloader():
     assert dataloader.sampler.rank == 0
     batch = next(iter(dataloader))
     assert isinstance(batch, Batch)
-    assert batch[0].participant == "0"
+    assert batch[0].participant_id == "0"
 
     # check sampler
     dataloader = DataLoader(
@@ -170,7 +170,7 @@ def test_dataloader():
     assert dataloader.sampler.replacement
     batch = next(iter(dataloader))
     assert isinstance(batch, Batch)
-    assert batch[0].participant == "6"
+    assert batch[0].participant_id == "6"
 
     # multi batches
     dataloader = DataLoader(
@@ -179,8 +179,8 @@ def test_dataloader():
     )
     batch = next(iter(dataloader))
     assert isinstance(batch, (list, tuple))  # depends on the OS?
-    assert batch[0][0].participant == "0"
-    assert batch[1][0].participant == "0"
+    assert batch[0][0].participant_id == "0"
+    assert batch[1][0].participant_id == "0"
 
     # checks
     with pytest.raises(
@@ -223,12 +223,12 @@ def test_dataloader():
     dataloader.set_epoch(5)
     batch = next(iter(dataloader))
     assert isinstance(batch, (list, tuple))
-    assert batch[0][0].participant == "2"
-    assert batch[0][1].participant == "2"
+    assert batch[0][0].participant_id == "2"
+    assert batch[0][1].participant_id == "2"
     dataloader.set_epoch(6)
     batch = next(iter(dataloader))
-    assert batch[0][0].participant == "6"
-    assert batch[0][1].participant == "5"
+    assert batch[0][0].participant_id == "6"
+    assert batch[0][1].participant_id == "5"
 
 
 def test_dataloader_config():
@@ -277,32 +277,32 @@ def test_workers():
 #     dataloader = iter(dataloader_config.get_object(bids, dp_degree=2, rank=0))
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M000"
-#     assert batch[0].participant == "sub-000"
-#     assert batch[1].session == "ses-M003"
-#     assert batch[1].participant == "sub-010"
+#     assert batch[0].session_id == "ses-M000"
+#     assert batch[0].participant_id == "sub-000"
+#     assert batch[1].session_id == "ses-M003"
+#     assert batch[1].participant_id == "sub-010"
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M000"
-#     assert batch[0].participant == "sub-100"
-#     assert batch[1].session == "ses-M099"
-#     assert batch[1].participant == "sub-999"
+#     assert batch[0].session_id == "ses-M000"
+#     assert batch[0].participant_id == "sub-100"
+#     assert batch[1].session_id == "ses-M099"
+#     assert batch[1].participant_id == "sub-999"
 #     with pytest.raises(StopIteration):
 #         next(dataloader)
 
 #     dataloader = iter(dataloader_config.get_object(bids, dp_degree=2, rank=1))
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M003"
-#     assert batch[0].participant == "sub-000"
-#     assert batch[1].session == "ses-M012"
-#     assert batch[1].participant == "sub-010"
+#     assert batch[0].session_id == "ses-M003"
+#     assert batch[0].participant_id == "sub-000"
+#     assert batch[1].session_id == "ses-M012"
+#     assert batch[1].participant_id == "sub-010"
 #     batch = next(dataloader)
 #     assert len(batch) == 2  # extra indices added
-#     assert batch[0].session == "ses-M012"
-#     assert batch[0].participant == "sub-100"
-#     assert batch[1].session == "ses-M000"
-#     assert batch[1].participant == "sub-000"
+#     assert batch[0].session_id == "ses-M012"
+#     assert batch[0].participant_id == "sub-100"
+#     assert batch[1].session_id == "ses-M000"
+#     assert batch[1].participant_id == "sub-000"
 #     with pytest.raises(StopIteration):
 #         next(dataloader)
 
@@ -317,16 +317,16 @@ def test_workers():
 #     dataloader = iter(dataloader)
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M003"
-#     assert batch[0].participant == "sub-000"
-#     assert batch[1].session == "ses-M000"
-#     assert batch[1].participant == "sub-100"
+#     assert batch[0].session_id == "ses-M003"
+#     assert batch[0].participant_id == "sub-000"
+#     assert batch[1].session_id == "ses-M000"
+#     assert batch[1].participant_id == "sub-100"
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M099"
-#     assert batch[0].participant == "sub-999"
-#     assert batch[1].session == "ses-M012"
-#     assert batch[1].participant == "sub-010"
+#     assert batch[0].session_id == "ses-M099"
+#     assert batch[0].participant_id == "sub-999"
+#     assert batch[1].session_id == "ses-M012"
+#     assert batch[1].participant_id == "sub-010"
 #     with pytest.raises(StopIteration):
 #         next(dataloader)
 
@@ -335,16 +335,16 @@ def test_workers():
 #     dataloader = iter(dataloader)
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M000"
-#     assert batch[0].participant == "sub-000"
-#     assert batch[1].session == "ses-M003"
-#     assert batch[1].participant == "sub-010"
+#     assert batch[0].session_id == "ses-M000"
+#     assert batch[0].participant_id == "sub-000"
+#     assert batch[1].session_id == "ses-M003"
+#     assert batch[1].participant_id == "sub-010"
 #     batch = next(dataloader)
 #     assert len(batch) == 2  # extra indices added
-#     assert batch[0].session == "ses-M012"
-#     assert batch[0].participant == "sub-100"
-#     assert batch[1].session == "ses-M003"
-#     assert batch[1].participant == "sub-000"
+#     assert batch[0].session_id == "ses-M012"
+#     assert batch[0].participant_id == "sub-100"
+#     assert batch[1].session_id == "ses-M003"
+#     assert batch[1].participant_id == "sub-000"
 #     with pytest.raises(StopIteration):
 #         next(dataloader)
 
@@ -360,16 +360,16 @@ def test_workers():
 #     dataloader = iter(dataloader)
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M099"
-#     assert batch[0].participant == "sub-999"
-#     assert batch[1].session == "ses-M012"
-#     assert batch[1].participant == "sub-100"
+#     assert batch[0].session_id == "ses-M099"
+#     assert batch[0].participant_id == "sub-999"
+#     assert batch[1].session_id == "ses-M012"
+#     assert batch[1].participant_id == "sub-100"
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M099"
-#     assert batch[0].participant == "sub-999"
-#     assert batch[1].session == "ses-M099"
-#     assert batch[1].participant == "sub-999"
+#     assert batch[0].session_id == "ses-M099"
+#     assert batch[0].participant_id == "sub-999"
+#     assert batch[1].session_id == "ses-M099"
+#     assert batch[1].participant_id == "sub-999"
 #     with pytest.raises(StopIteration):
 #         next(dataloader)
 
@@ -378,14 +378,14 @@ def test_workers():
 #     dataloader = iter(dataloader)
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M000"
-#     assert batch[0].participant == "sub-100"
-#     assert batch[1].session == "ses-M099"
-#     assert batch[1].participant == "sub-999"
+#     assert batch[0].session_id == "ses-M000"
+#     assert batch[0].participant_id == "sub-100"
+#     assert batch[1].session_id == "ses-M099"
+#     assert batch[1].participant_id == "sub-999"
 #     batch = next(dataloader)
 #     assert len(batch) == 1
-#     assert batch[0].session == "ses-M012"
-#     assert batch[0].participant == "sub-100"
+#     assert batch[0].session_id == "ses-M012"
+#     assert batch[0].participant_id == "sub-100"
 #     with pytest.raises(StopIteration):
 #         next(dataloader)
 
@@ -422,11 +422,11 @@ def test_workers():
 #     dataloader = iter(dataloader)
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M003"
-#     assert batch[0].participant == "sub-010"
+#     assert batch[0].session_id == "ses-M003"
+#     assert batch[0].participant_id == "sub-010"
 #     assert batch[0].sample_position == 1
-#     assert batch[1].session == "ses-M003"
-#     assert batch[1].participant == "sub-010"
+#     assert batch[1].session_id == "ses-M003"
+#     assert batch[1].participant_id == "sub-010"
 #     assert batch[1].sample_position == 0
 #     with pytest.raises(StopIteration):
 #         next(dataloader)
@@ -439,11 +439,11 @@ def test_workers():
 #     dataloader = iter(dataloader)
 #     batch = next(dataloader)
 #     assert len(batch) == 2
-#     assert batch[0].session == "ses-M003"
-#     assert batch[0].participant == "sub-010"
+#     assert batch[0].session_id == "ses-M003"
+#     assert batch[0].participant_id == "sub-010"
 #     assert batch[0].sample_position == 1
-#     assert batch[1].session == "ses-M003"
-#     assert batch[1].participant == "sub-010"
+#     assert batch[1].session_id == "ses-M003"
+#     assert batch[1].participant_id == "sub-010"
 #     assert batch[1].sample_position == 1
 #     with pytest.raises(StopIteration):
 #         next(dataloader)

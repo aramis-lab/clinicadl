@@ -40,8 +40,8 @@ def datapoint():
     return DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
         label=tio.LabelMap(tensor=torch.randint(0, 2, (1, 2, 2, 2))),
-        participant="abc",
-        session="abc",
+        participant_id="abc",
+        session_id="abc",
         array=np.array([1, 2]),
         tensor=torch.tensor([1, 2]),
     )

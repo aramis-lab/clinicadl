@@ -91,54 +91,54 @@ class BidsDataset:
     def get_participant_session_couples(self) -> set[tuple[str, str]]:
         return self.sub_ses
 
-    def _get_images(self, participant: str, session: str) -> DataPoint:
-        if participant == "sub-000":
+    def _get_images(self, participant_id: str, session_id: str) -> DataPoint:
+        if participant_id == "sub-000":
             datapoint = DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant_id,
+                session_id=session_id,
                 image=tio.ScalarImage(
                     tensor=torch.ones(1, 3, 3, 3),
                     affine=np.diag([1.5, 1.5, 1.5, 1]),
                 ),
             )
-        elif participant == "sub-001":
+        elif participant_id == "sub-001":
             datapoint = DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant_id,
+                session_id=session_id,
                 image=tio.ScalarImage(
                     tensor=torch.zeros(1, 3, 3, 3),
                     affine=np.diag([1.5, 1.5, 1.5, 1]),
                 ),
             )
-        elif participant == "sub-002" or participant == "sub-003":
+        elif participant_id == "sub-002" or participant_id == "sub-003":
             datapoint = DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant_id,
+                session_id=session_id,
                 image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
             )
-        elif participant == "sub-004":
+        elif participant_id == "sub-004":
             datapoint = DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant_id,
+                session_id=session_id,
                 image=tio.ScalarImage(
                     tensor=torch.randn(1, 3, 3, 3), affine=np.diag([1.5, 1.5, 1.5, 1])
                 ),
             )
-        elif participant == "sub-005":
+        elif participant_id == "sub-005":
             raise ValueError()
-        elif participant == "sub-006":
+        elif participant_id == "sub-006":
             datapoint = DataPoint(
-                participant=participant,
-                session=session,
+                participant_id=participant_id,
+                session_id=session_id,
                 image=tio.ScalarImage(
                     tensor=torch.randn(1, 2, 2, 2), affine=np.diag([1.5, 1.5, 1.5, 1])
                 ),
             )
 
-        datapoint.image.path = participant + ".nii.gz"
+        datapoint.image.path = participant_id + ".nii.gz"
 
         for i, mask in enumerate(self.individual_masks | self.common_masks):
-            if participant == "sub-004":
+            if participant_id == "sub-004":
                 datapoint.add_mask(
                     tio.LabelMap(
                         tensor=torch.zeros(1, 3, 3, 3) + i, affine=datapoint.affine + 1
@@ -152,7 +152,7 @@ class BidsDataset:
                     ),
                     mask,
                 )
-            datapoint[mask].path = participant + "_" + f"mask{i}" + ".nii.gz"
+            datapoint[mask].path = participant_id + "_" + f"mask{i}" + ".nii.gz"
 
         return datapoint
 
