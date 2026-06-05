@@ -1,1 +1,1 @@
-SEP = "\t"
+TSV_SEP = "\t"

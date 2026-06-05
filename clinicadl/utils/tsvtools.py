@@ -10,7 +10,7 @@ from clinicadl.utils.dictionary.words import (
 )
 from clinicadl.utils.exceptions import DataFrameError
 
-from .dictionary.utils import SEP
+from .dictionary.utils import TSV_SEP
 from .typing import DataFrameType, PathType
 
 
@@ -40,7 +40,7 @@ def df_to_tsv(
         df = df.drop_duplicates(subset=[PARTICIPANT_ID], keep="first")
     elif drop_duplicates:
         df = df.drop_duplicates(subset=[PARTICIPANT_ID, SESSION_ID], keep="first")
-    df.to_csv(tsv_path, sep=SEP, index=False)
+    df.to_csv(tsv_path, sep=TSV_SEP, index=False)
 
 
 def read_data(
@@ -79,7 +79,7 @@ def read_data(
     """
     if isinstance(data, (str, Path)):
         data = Path(data)
-        data = pd.read_csv(data, sep=SEP)
+        data = pd.read_csv(data, sep=TSV_SEP)
 
     elif not isinstance(data, pd.DataFrame):
         raise TypeError(f"'data' must be a path or a DataFrame. Got: {data}")

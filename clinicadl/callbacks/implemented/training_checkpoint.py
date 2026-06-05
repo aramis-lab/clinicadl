@@ -10,7 +10,7 @@ from pydantic import NonNegativeInt
 
 from clinicadl.utils.config import ObjectConfig
 from clinicadl.utils.dictionary.suffixes import PT
-from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.enum import TrainerCall
 from clinicadl.utils.names import camel_to_snake
 from clinicadl.utils.objects import HasConfig
@@ -123,7 +123,7 @@ class TrainingCheckpointCallback(Callback, HasConfig[TrainingCheckpointCallbackC
         grad_scaler.load_state_dict(maps.open_file(chkpt_dir.scaler_pt))
 
         computed_metrics = pd.read_csv(
-            chkpt_dir.validation_metrics.aggregated_tsv, sep=SEP
+            chkpt_dir.validation_metrics.aggregated_tsv, sep=TSV_SEP
         ).columns
         metrics.remove_metrics(set(metrics.metrics.keys()).difference(computed_metrics))
         metrics.load(

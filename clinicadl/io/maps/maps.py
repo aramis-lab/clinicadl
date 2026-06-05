@@ -9,7 +9,7 @@ from torch import load as torch_load
 from torch import save as torch_save
 
 from clinicadl.utils.dictionary.suffixes import JSON, LOG, PT, TSV, TXT
-from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.dictionary.words import (
     ARCHITECTURE,
     CALLBACKS,
@@ -807,7 +807,7 @@ class Maps(Directory):
             return read_json(path)
         elif path.suffix == TSV:
             try:
-                return pd.read_csv(path, sep=SEP)
+                return pd.read_csv(path, sep=TSV_SEP)
             except pd.errors.EmptyDataError:
                 return pd.DataFrame()
         elif path.suffix == PT:
@@ -886,7 +886,7 @@ class Maps(Directory):
                 f.write(str(obj))
         elif path.suffix == TSV:
             assert isinstance(obj, (pd.DataFrame, pd.Series))
-            obj.to_csv(path, sep=SEP, index=False)
+            obj.to_csv(path, sep=TSV_SEP, index=False)
         elif path.suffix == PT:
             torch_save(obj, path)
         else:

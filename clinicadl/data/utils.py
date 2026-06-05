@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from clinicadl.io.bids import Bids
-from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.exceptions import add_note
 from clinicadl.utils.typing import PathType
@@ -79,12 +79,12 @@ def remove_tensors(description_json: PathType) -> None:
     description_json.unlink()
 
     conversions_tsv_path = tensor_conversion.get_conversions_tsv_path(tensors_dir.path)
-    df = pd.read_csv(conversions_tsv_path, sep=SEP)
+    df = pd.read_csv(conversions_tsv_path, sep=TSV_SEP)
     col_name = next(f for f in fields(ConversionRow) if "json" in f.name).name
     print(description_json.name)
     print(df[col_name] != description_json.name)
     df = df[df[col_name] != description_json.name]
-    df.to_csv(conversions_tsv_path, sep=SEP, index=False)
+    df.to_csv(conversions_tsv_path, sep=TSV_SEP, index=False)
 
 
 class SpatialCheck(str, BaseEnum):

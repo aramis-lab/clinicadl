@@ -13,7 +13,7 @@ from clinicadl.transforms.factory import get_transform_from_dict
 from clinicadl.transforms.types import Transform
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.dictionary.suffixes import JSON, TSV
-from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.names import camel_to_snake, snake_to_camel
 from clinicadl.utils.tsvtools import df_to_tsv, read_data
 
@@ -209,7 +209,7 @@ class TensorDescription(ClinicaDLConfig):
         if not tsv_path.exists():
             df = pd.DataFrame()
         else:
-            df = pd.read_csv(tsv_path, sep=SEP)
+            df = pd.read_csv(tsv_path, sep=TSV_SEP)
 
         df = pd.concat(
             [
@@ -227,7 +227,7 @@ class TensorDescription(ClinicaDLConfig):
                 ),
             ]
         )
-        df.to_csv(tsv_path, sep=SEP, index=False)
+        df.to_csv(tsv_path, sep=TSV_SEP, index=False)
 
     @classmethod
     def _check_dict(
