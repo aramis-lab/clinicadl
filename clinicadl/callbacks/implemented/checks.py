@@ -234,7 +234,7 @@ class _CheckDataFrames:
 
 class _CheckDataLeakage:
     """
-    Checks data leakage, i.e. that evaluation subjects were not seen during training.
+    Checks data leakage, i.e. that evaluation participants were not seen during training.
     """
 
     def on_train_start(self, *, split: Split, **kwargs) -> None:

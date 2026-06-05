@@ -171,10 +171,10 @@ class BidsDataset(
 
         - a path (``str`` or :pathlib.Path:`pathlib.Path <>`) to a NIfTI image: the same mask is used for all
           the (participant, session) pairs.
-        - a :py:class:`~clinicadl.io.bids.BidsFileType`: the mask is subject- and session-specific and the
+        - a :py:class:`~clinicadl.io.bids.BidsFileType`: the mask is participant- and session-specific and the
           pattern to find the mask in the ``bids`` is given via the ``BidsFileType``.
         - a tuple (PathType | :py:class:`~clinicadl.io.bids.Bids`, :py:class:`~clinicadl.io.bids.BidsFileType`):
-          the mask is subject- and session-specific but is not in the same BIDS dataset as the image. So, here
+          the mask is participant- and session-specific but is not in the same BIDS dataset as the image. So, here
           the BIDS where to look for the mask must be passed in the first element of the tuple.
 
     Raises
@@ -307,14 +307,14 @@ class BidsDataset(
                 masks={
                     "head": BidsFileType(
                         data_type="anat", suffix="mask", with_entities={"label": "head"}
-                    ),    # subject- and session-specific mask that is in the same BIDS
+                    ),    # participant- and session-specific mask that is in the same BIDS
                     "brain": (
                         "bids/derivatives/masks",
                         BidsFileType(
                             data_type="anat", suffix="mask", with_entities={"label": "brain"}
-                        ),    # subject- and session-specific mask that is in another BIDS
+                        ),    # participant- and session-specific mask that is in another BIDS
                     ),
-                    "mni": "bids/derivatives/registration/space-MNI152NLin2009cSym_mask.nii.gz",    # same mask for all (subject, session)
+                    "mni": "bids/derivatives/registration/space-MNI152NLin2009cSym_mask.nii.gz",    # same mask for all (participant, session)
                 },
             )
         >>> dataset[0]

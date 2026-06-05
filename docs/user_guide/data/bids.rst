@@ -175,7 +175,7 @@ A few arguments shape what a ``BidsDataset`` contains and will output:
     Masks to load alongside each image, passed as a dictionary. The keys become the
     mask names in the ``Sample``; the values describe where to find each mask — a
     single shared NIfTI file or a :py:class:`~clinicadl.io.bids.BidsFileType` (for a
-    subject- and session-specific mask in the same BIDS).
+    participant- and session-specific mask in the same BIDS).
 
     .. code-block:: text
 

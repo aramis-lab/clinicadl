@@ -543,7 +543,7 @@ def _compare_subject_specific_images(
     name: Optional[str] = None,
 ) -> None:
     """
-    To compare images or subject-specific masks.
+    To compare images or participant-specific masks.
     """
     add_str = f"the mask '{name}' in " if name else ""
     if old[1] != new[1]:
