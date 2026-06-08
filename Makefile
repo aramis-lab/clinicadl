@@ -40,7 +40,7 @@ env.conda:
 
 .PHONY: env.dev
 env.dev:
-	@$(POETRY) install
+	@$(POETRY) install --with dev
 
 .PHONY: env.doc
 env.doc:
