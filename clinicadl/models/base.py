@@ -225,10 +225,13 @@ class Model(JsonReaderWriter, ABC, nn.Module):
 
     def reset(self) -> None:
         """
-        Resets the neural network's weights.
+        Resets randomly the neural network's weights and removes all the accumulated
+        gradients.
 
-        Only the trainable (i.e. with ``requires_grad=True``) weights will be reset.
+        **Only the trainable (i.e. with ``requires_grad=True``) weights will be reset.**
         """
+        self.zero_grad()
+
         for module in self.modules():
             has_trainable_params = any(
                 (p.requires_grad for p in module.parameters(recurse=False))
