@@ -41,7 +41,7 @@ class DataLoaderConfig(ObjectConfig):
     drop_last: bool
     prefetch_factor: Optional[NonNegativeInt]
     persistent_workers: bool
-    collate_fn: Optional[CollateFn] = Field(reader=_read_collate)
+    collate_fn: Optional[CollateFn] = Field(json_schema_extra={"reader": _read_collate})
 
     @model_validator(mode="after")
     def _validate_worker_parameters(self):

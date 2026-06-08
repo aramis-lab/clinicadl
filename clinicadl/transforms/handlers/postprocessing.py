@@ -24,7 +24,9 @@ class PostprocessingHandlerConfig(ObjectConfig["PostprocessingHandler"]):
     """Config class for ``PostprocessingHandler``."""
 
     transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
-        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(get_transform_from_dict)
+        }
     )
 
     @field_validator("transforms", mode="before")

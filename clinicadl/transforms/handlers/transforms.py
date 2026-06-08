@@ -28,15 +28,23 @@ DataPointT = TypeVar("DataPointT", bound="DataPoint")
 class TransformsHandlerConfig(ObjectConfig["TransformsHandler"]):
     """Config class for ``TransformsHandler``."""
 
-    extraction: Extraction = Field(reader=get_extraction_from_dict)
+    extraction: Extraction = Field(
+        json_schema_extra={"reader": get_extraction_from_dict}
+    )
     image_transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
-        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(get_transform_from_dict)
+        }
     )
     sample_transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
-        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(get_transform_from_dict)
+        }
     )
     augmentations: SequenceOfObjects[Transform, TransformConfig] = Field(
-        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(get_transform_from_dict)
+        }
     )
 
     @field_validator(

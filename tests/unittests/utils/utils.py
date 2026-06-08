@@ -14,8 +14,8 @@ class Obj(JsonReaderWriter, Serializable):
 
 
 class ObjAConfig(ObjectConfig[Obj]):
-    a: int = Field(reader=lambda x: int(x))
-    b: int = Field(reader=lambda x: int(x))
+    a: int = Field(json_schema_extra={"reader": lambda x: int(x)})
+    b: int = Field(json_schema_extra={"reader": lambda x: int(x)})
 
     @classmethod
     def _get_class(cls):
@@ -79,5 +79,5 @@ class ImplementedNamedConfig(str, Enum):
 
 
 class SimpleConfig(ClinicaDLConfig):
-    a: int = Field(reader=lambda x: int(x))
-    b: int = Field(reader=lambda x: int(x))
+    a: int = Field(json_schema_extra={"reader": lambda x: int(x)})
+    b: int = Field(json_schema_extra={"reader": lambda x: int(x)})

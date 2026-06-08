@@ -119,9 +119,11 @@ class BidsTypeDatasetConfig(ClinicaDLConfig):
     Base config class for datasets that inherit from ``_BidsTypeDataset``.
     """
 
-    data: Optional[DataFrameType] = Field(reader=_read_df)
-    transforms: TransformsHandler = Field(reader=TransformsHandler.from_dict)
-    columns: Optional[ColumnsType] = Field(reader=_read_columns)
+    data: Optional[DataFrameType] = Field(json_schema_extra={"reader": _read_df})
+    transforms: TransformsHandler = Field(
+        json_schema_extra={"reader": TransformsHandler.from_dict}
+    )
+    columns: Optional[ColumnsType] = Field(json_schema_extra={"reader": _read_columns})
 
     @field_serializer("data")
     def _serialize_df(self, df: pd.DataFrame) -> dict:

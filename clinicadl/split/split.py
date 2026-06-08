@@ -32,13 +32,13 @@ class SplitConfig(ObjectConfig["Split"]):
 
     index: NonNegativeInt
     split_dir: Optional[Path]
-    train_dataset: Dataset = Field(reader=get_dataset_from_dict)
-    val_dataset: Dataset = Field(reader=get_dataset_from_dict)
+    train_dataset: Dataset = Field(json_schema_extra={"reader": get_dataset_from_dict})
+    val_dataset: Dataset = Field(json_schema_extra={"reader": get_dataset_from_dict})
     train_loader_config: Optional[DataLoaderConfig] = Field(
-        default=None, reader=_read_dataloader
+        default=None, json_schema_extra={"reader": _read_dataloader}
     )
     val_loader_config: Optional[DataLoaderConfig] = Field(
-        default=None, reader=_read_dataloader
+        default=None, json_schema_extra={"reader": _read_dataloader}
     )
 
     @field_validator("split_dir", mode="after")

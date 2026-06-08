@@ -37,15 +37,19 @@ class VanillaModelConfig:
     """
 
     network: ObjectOrConfig[nn.Module, NetworkConfig] = Field(
-        reader=ObjectOrConfig.build_reader(get_network_from_dict)
+        json_schema_extra={"reader": ObjectOrConfig.build_reader(get_network_from_dict)}
     )
     loss: ObjectOrConfig[Loss, LossConfig] = Field(
-        reader=ObjectOrConfig.build_reader(get_loss_function_from_dict)
+        json_schema_extra={
+            "reader": ObjectOrConfig.build_reader(get_loss_function_from_dict)
+        }
     )
     optimizer: ObjectOrConfig[optim.Optimizer, OptimizerConfig] = Field(
-        reader=ObjectOrConfig.build_reader(get_optimizer_from_dict)
+        json_schema_extra={
+            "reader": ObjectOrConfig.build_reader(get_optimizer_from_dict)
+        }
     )
-    inferer: Inferer = Field(reader=get_inferer_from_dict)
+    inferer: Inferer = Field(json_schema_extra={"reader": get_inferer_from_dict})
 
     @field_validator("network", "loss", "optimizer", mode="before")
     @classmethod

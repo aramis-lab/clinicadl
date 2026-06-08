@@ -25,7 +25,7 @@ class FormatConfig(TransformConfig):
     """
 
     dtype: Optional[DtypeLike] = Field(
-        default=FORMAT_DEFAULTS["dtype"], reader=read_dtype
+        default=FORMAT_DEFAULTS["dtype"], json_schema_extra={"reader": read_dtype}
     )
     squeeze: Union[bool, NonNegativeInt, Sequence[NonNegativeInt]] = FORMAT_DEFAULTS[
         "squeeze"

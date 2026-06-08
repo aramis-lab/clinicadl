@@ -35,7 +35,7 @@ class MetricConfig(ObjectConfig[Metric]):
     pred_key: str = OUTPUT
     label_key: Optional[str] = LABEL
     postprocessing: Union[list[TransformOrConfig], PostprocessingHandler] = Field(
-        default=[], reader=PostprocessingHandler.from_dict
+        default=[], json_schema_extra={"reader": PostprocessingHandler.from_dict}
     )
 
     def get_object(self, **kwargs: Any) -> Metric:

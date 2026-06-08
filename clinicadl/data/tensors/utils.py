@@ -52,7 +52,7 @@ class TensorDescription(ClinicaDLConfig):
     masks: dict[str, tuple[Path, BidsFileType] | Path]
     additional_data: list[str]
     transforms: list[str | Transform | TransformConfig] = Field(
-        reader=lambda x: list(map(_read_transform, x))
+        json_schema_extra={"reader": lambda x: list(map(_read_transform, x))}
     )  # str: to be able to read transforms serialized as a string
     spacing: Optional[tuple[PositiveFloat, PositiveFloat, PositiveFloat]]
     spatial_shape: Optional[tuple[PositiveInt, PositiveInt, PositiveInt]]

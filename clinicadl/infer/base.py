@@ -34,7 +34,7 @@ class BaseInfererConfig(ObjectConfig["BaseInferer"]):
     """Base config class for the inferers implemented in ``ClinicaDL``."""
 
     postprocessing: PostprocessingHandler = Field(
-        reader=PostprocessingHandler.from_dict
+        json_schema_extra={"reader": PostprocessingHandler.from_dict}
     )
     postprocessing_on_cpu: bool
     output_name: str

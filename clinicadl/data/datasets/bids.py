@@ -54,10 +54,12 @@ def _deserialize_masks(serialized_masks: Optional[dict]) -> Optional[MasksType]:
 class BidsDatasetConfig(ObjectConfig["BidsDataset"], BidsTypeDatasetConfig):
     """Config class to check ``BidsDataset`` inputs."""
 
-    bids: Bids = Field(reader=Bids.from_dict)
-    file_type: BidsFileType = Field(reader=BidsFileType.from_dict)
+    bids: Bids = Field(json_schema_extra={"reader": Bids.from_dict})
+    file_type: BidsFileType = Field(
+        json_schema_extra={"reader": BidsFileType.from_dict}
+    )
     masks: Optional[dict[str, Path | BidsFileType | tuple[Bids, BidsFileType]]] = Field(
-        reader=_deserialize_masks
+        json_schema_extra={"reader": _deserialize_masks}
     )
 
     @field_validator("bids", mode="before")

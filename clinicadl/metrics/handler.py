@@ -36,7 +36,7 @@ class MetricsHandlerConfig(ObjectConfig["MetricsHandler"]):
     """
 
     metrics: DictOfObjects[Metric, MetricConfig] = Field(
-        reader=DictOfObjects.build_reader(get_metric_from_dict)
+        json_schema_extra={"reader": DictOfObjects.build_reader(get_metric_from_dict)}
     )
     metrics_on_cpu: bool
 

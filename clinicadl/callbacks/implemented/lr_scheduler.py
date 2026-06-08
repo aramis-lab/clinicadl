@@ -38,7 +38,9 @@ class LRSchedulerCallbackConfig(ObjectConfig["LRSchedulerCallback"]):
     """Config class for ``LRSchedulerCallback``."""
 
     scheduler: ObjectOrConfig[LRScheduler, LRSchedulerConfig] = Field(
-        reader=ObjectOrConfig.build_reader(get_lr_scheduler_from_dict)
+        json_schema_extra={
+            "reader": ObjectOrConfig.build_reader(get_lr_scheduler_from_dict)
+        }
     )
     optimizer_name: str
     scheduler_type: Optional[LRSchedulerType]

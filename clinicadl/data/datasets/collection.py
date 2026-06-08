@@ -30,7 +30,7 @@ class CollectionDatasetConfig(ObjectConfig["CollectionDataset"]):
     """
 
     datasets: tuple[Dataset, ...] = Field(
-        reader=lambda x: tuple(map(_get_dataset_from_dict, x))
+        json_schema_extra={"reader": lambda x: tuple(map(_get_dataset_from_dict, x))}
     )
 
     @classmethod
