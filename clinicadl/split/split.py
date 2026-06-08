@@ -43,12 +43,13 @@ class SplitConfig(ObjectConfig["Split"]):
 
     @field_validator("split_dir", mode="after")
     @classmethod
-    def _check_split_dir(cls, v: Optional[Path]) -> Path:
+    def _check_split_dir(cls, v: Optional[Path]) -> Optional[Path]:
         """
-        Checks that the split dir exists.
+        Checks that the split dir exists and resolves it.
         """
         if v:
             assert v.exists(), f"'split_dir' ({str(v)}) doesn't exist"
+            return v.resolve()
 
         return v
 

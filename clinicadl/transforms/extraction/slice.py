@@ -47,6 +47,12 @@ class SliceConfig(ObjectConfig["Slice"]):
     slice_direction: SliceDirection
     squeeze: bool
 
+    @field_validator("tsv_path", mode="after")
+    @classmethod
+    def _resolve_tsv_path(cls, v: Optional[Path]) -> Optional[Path]:
+        """Resolves 'tsv_path' so it is saved as an absolute path."""
+        return v.resolve() if v is not None else v
+
     @field_validator("borders", mode="before")
     @classmethod
     def _ensure_tuple(
