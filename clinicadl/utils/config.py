@@ -141,7 +141,7 @@ class ClinicaDLConfig(BaseModel):
         dict_ : dict[str, Any]
             The dictionary.
         kwargs
-            Any field to overwrite.
+            Any field to override.
 
         Returns
         -------
@@ -170,7 +170,7 @@ class ClinicaDLConfig(BaseModel):
         json_path : PathType
             Path to the ``JSON`` file.
         kwargs
-            Any field to overwrite.
+            Any field to override.
 
         Returns
         -------

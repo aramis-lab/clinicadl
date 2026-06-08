@@ -342,7 +342,7 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
         dataset : Dataset
             The dataset from which the data are loaded.
         kwargs : Any
-            Any field of the ``json`` to overwrite.
+            Any field of the ``json`` to override.
 
         Returns
         -------
@@ -370,7 +370,7 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
         dataset : Dataset
             The dataset from which the data are loaded.
         kwargs : Any
-            Any field of the dictionary to overwrite.
+            Any field of the dictionary to override.
 
         Returns
         -------

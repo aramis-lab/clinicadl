@@ -1,5 +1,5 @@
 """
-We chose to overwrite MONAI's CumulativeIterationMetric because here
+We chose to override MONAI's CumulativeIterationMetric because here
 we wanted to work with ``DataPoints``, and to be able to compute the metric
 for each element of the batch individually.
 

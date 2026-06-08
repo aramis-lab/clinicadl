@@ -30,7 +30,7 @@ class Model(JsonReaderWriter, ABC, nn.Module):
     - :py:meth:`build_optimizers`: to build the optimizers used for training;
     - :py:meth:`get_loss_functions`: to access the loss functions used during training.
 
-    You can also overwrite :py:meth:`get_summary` to give a description of your neural network(s).
+    You can also override :py:meth:`get_summary` to give a description of your neural network(s).
 
     .. tip::
         Since rewriting all these methods can be tedious, feel free to inherit from an existing ``Model`` with shared logic
