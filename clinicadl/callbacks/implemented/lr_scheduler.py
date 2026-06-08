@@ -239,7 +239,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         if param_groups := self._get_param_groups(self.scheduler.optimizer):
             df.columns = param_groups
 
-        df = df.backfill()
+        df = df.bfill()
 
         maps.training.splits[state.split_idx].logs.learning_rates.mkdir(
             exist_ok=True, parents=True

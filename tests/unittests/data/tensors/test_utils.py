@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 import torchio as tio
@@ -159,7 +160,7 @@ class TestTensorDescription:
             pd.DataFrame(
                 {
                     "conv_id": ["raw", "transform"],
-                    "description": ["raw conversion", None],
+                    "description": ["raw conversion", np.nan],
                     "description_json": [
                         "src-pet_conv-raw_participantsXsessions.tsv",
                         "src-pet_conv-transform_participantsXsessions.tsv",

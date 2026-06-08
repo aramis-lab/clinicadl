@@ -346,7 +346,11 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         if epoch is not None:
             new_df.insert(loc=0, column=EPOCH, value=epoch)
 
-        self._df = pd.concat([self._df, new_df], ignore_index=True)
+        self._df = (
+            new_df.copy()
+            if self._df.empty
+            else pd.concat([self._df, new_df], ignore_index=True)
+        )
 
         if epoch is not None:
             self._df.insert(0, EPOCH, self._df.pop(EPOCH))  # ensure epoch first column
@@ -395,7 +399,11 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         if epoch is not None:
             new_df.insert(loc=0, column=EPOCH, value=epoch)
 
-        self._detailed_df = pd.concat([self._detailed_df, new_df], ignore_index=True)
+        self._detailed_df = (
+            new_df.copy()
+            if self._detailed_df.empty
+            else pd.concat([self._detailed_df, new_df], ignore_index=True)
+        )
 
         if epoch is not None:
             self._detailed_df.insert(
