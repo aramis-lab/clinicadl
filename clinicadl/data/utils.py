@@ -81,8 +81,6 @@ def remove_tensors(description_json: PathType) -> None:
     conversions_tsv_path = tensor_conversion.get_conversions_tsv_path(tensors_dir.path)
     df = pd.read_csv(conversions_tsv_path, sep=TSV_SEP)
     col_name = next(f for f in fields(ConversionRow) if "json" in f.name).name
-    print(description_json.name)
-    print(df[col_name] != description_json.name)
     df = df[df[col_name] != description_json.name]
     df.to_csv(conversions_tsv_path, sep=TSV_SEP, index=False)
 

@@ -344,7 +344,6 @@ class TestDataConsistency:
         self.SPLIT.config.train_loader_config.to_json(
             MAPS.training.data.train.splits[1].dataloader_json, overwrite=True
         )
-        print(self.BAD_DATALOADER)
         with caplog.at_level("WARNING"):
             self.checker.on_train_start(split=self.SPLIT, model=MODEL, maps=MAPS)
         assert caplog.records[0].message == (
