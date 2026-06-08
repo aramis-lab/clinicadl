@@ -1,7 +1,7 @@
 .. _user_guide_workflow_model:
 
-2.1 Defining a model
-====================
+2.1. Defining a model
+=====================
 
 In ClinicaDL, a **model** is more than a neural network. A
 :py:class:`~clinicadl.models.Model` bundles together everything needed to train and
@@ -119,8 +119,8 @@ image — so there is no label to specify:
 
 .. _user_guide_workflow_networks:
 
-2.1.1 Neural networks
----------------------
+2.1.1. Neural networks
+----------------------
 
 :py:mod:`clinicadl.networks.nn` provides a catalogue of neural networks, all
 subclasses of :py:class:`torch.nn.Module`, organised in three families:

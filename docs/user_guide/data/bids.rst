@@ -1,7 +1,7 @@
 .. _user_guide_data_bids:
 
-1.2 Reading BIDS datasets
-=========================
+1.2. Reading BIDS datasets
+==========================
 
 ClinicaDL reads neuroimaging datasets organised in the :term:`BIDS` format (Brain
 Imaging Data Structure), as well as :term:`BIDS derivatives <BIDS derivative>` and
@@ -250,7 +250,7 @@ subset of ``(participant, session)`` pairs with
 
 .. _user_guide_data_bids_tensors:
 
-1.2.1 Converting NIfTI images to tensors
+1.2.1. Converting NIfTI images to tensors
 -----------------------------------------
 
 Opening a NIfTI file is comparatively slow. When you iterate over a dataset many
@@ -298,8 +298,8 @@ To reopen a previously converted dataset, point a
 
 .. _user_guide_data_bids_joining:
 
-1.2.2 Joining multiple datasets
--------------------------------
+1.2.2. Joining multiple datasets
+--------------------------------
 
 You may need to combine several datasets — images coming from different cohorts,
 or different modalities of the same participants. ClinicaDL offers three ways to do
@@ -363,8 +363,8 @@ random association can be re-drawn for each epoch with
 :py:meth:`~clinicadl.data.datasets.UnpairedDataset.set_epoch`, and the ``oversample``
 argument controls how datasets of different sizes are reconciled.
 
-1.2.3 Non-BIDS dataset?
------------------------
+1.2.3. Non-BIDS dataset?
+------------------------
 
 If for some reasons, any of the previous dataset class is able to read your data,
 you can still write your own dataset by inheriting from :py:class:`clinicadl.data.datasets.Dataset`.

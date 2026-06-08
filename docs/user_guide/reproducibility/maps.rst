@@ -1,7 +1,7 @@
 .. _user_guide_reproducibility_maps:
 
-3.2 MAPS
-========
+3.2. MAPS
+=========
 
 A **MAPS** (Model Analysis and Processing Structure) is the cornerstone of experiment
 management in ClinicaDL: a single directory that holds *everything* about an

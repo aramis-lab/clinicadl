@@ -1,6 +1,6 @@
 .. _user_guide_data_structures:
 
-1.1 Data structures
+1.1. Data structures
 ====================
 
 In neuroimaging, an image rarely travels alone: it comes with a participant and a

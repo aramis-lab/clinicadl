@@ -1,7 +1,7 @@
 .. _user_guide_data_splitting:
 
-1.4 Splitting data
-==================
+1.4. Splitting data
+===================
 
 To estimate how well a model generalises, you split your data into a **training**
 set, a **validation** set, and usually a held-out **test** set. In neuroimaging,
@@ -25,8 +25,8 @@ benchmarks.
 
 .. _user_guide_data_splitting_making:
 
-1.4.1 Making a split
---------------------
+1.4.1. Making a split
+---------------------
 
 Two functions create a split from a DataFrame (or a TSV file) listing your
 ``(participant_id, session_id)`` pairs. Both split **participants** and write the
@@ -90,8 +90,8 @@ used, statistics describing how well the variables are balanced:
 
 .. _user_guide_data_splitting_reading:
 
-1.4.2 Reading a split
----------------------
+1.4.2. Reading a split
+----------------------
 
 Once a split exists on disk, you apply it to a :py:class:`~clinicadl.data.datasets.Dataset`
 with one of two reader objects, depending on how the split was made.

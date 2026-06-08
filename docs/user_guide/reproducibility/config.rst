@@ -1,7 +1,7 @@
 .. _user_guide_reproducibility_config:
 
-3.1 Configuration classes
-=========================
+3.1. Configuration classes
+==========================
 
 Throughout this guide we have mostly passed raw objects to ClinicaDL (e.g; TorchIO transforms,
 PyTorch losses and networks). This is convenient, but raw objects have a drawback for

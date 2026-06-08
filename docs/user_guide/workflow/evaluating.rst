@@ -1,7 +1,7 @@
 .. _user_guide_workflow_evaluating:
 
-2.3 Evaluating
-==============
+2.3. Evaluating
+===============
 
 Training tells you whether your model learns; **evaluation** tells you how well it
 performs. ClinicaDL evaluates a model by computing **metrics** on

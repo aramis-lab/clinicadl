@@ -1,7 +1,7 @@
 .. _user_guide_data_transforms:
 
-1.3 Transforming data
-=====================
+1.3. Transforming data
+======================
 
 Raw neuroimaging data is rarely fed to a network as-is: it is normalised, possibly
 cut into patches or slices, resized to fit the network, and — during training —
@@ -44,8 +44,8 @@ transforms automatically applies the augmentations only when it is in training m
 
 .. _user_guide_data_transforms_extraction:
 
-1.3.1 Patches and slices
-------------------------
+1.3.1. Patches and slices
+-------------------------
 
 The ``extraction`` decides what a single element of the dataset is. ClinicaDL
 provides three extractions, in :py:mod:`clinicadl.transforms.extraction`:
@@ -103,8 +103,8 @@ dataset** is the number of images times the number of samples per image (see
 
 .. _user_guide_data_transforms_pipeline:
 
-1.3.2 Preprocessing, augmentation and post-processing
------------------------------------------------------
+1.3.2. Preprocessing, augmentation and post-processing
+------------------------------------------------------
 
 ClinicaDL works with **any callable that takes a**
 :py:class:`~clinicadl.data.structures.DataPoint` **and returns a** ``DataPoint``.

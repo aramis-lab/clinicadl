@@ -1,7 +1,7 @@
 .. _user_guide_workflow_callbacks:
 
-2.4 Callbacks
-=============
+2.4. Callbacks
+==============
 
 A :py:class:`~clinicadl.train.Trainer` always runs the same steps, but at many
 points of that sequence you may want to *do something extra* — log a message, save a

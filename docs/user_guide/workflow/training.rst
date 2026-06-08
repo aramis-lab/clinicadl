@@ -1,7 +1,7 @@
 .. _user_guide_workflow_training:
 
-2.2 Training
-============
+2.2. Training
+=============
 
 Training is orchestrated by the :py:class:`~clinicadl.train.Trainer`. It ties
 together a :py:class:`~clinicadl.models.Model`, the data of a
@@ -93,8 +93,8 @@ etc.). We cover metrics in
 
 .. _user_guide_workflow_resuming:
 
-2.2.1 Resuming an interrupted training
---------------------------------------
+2.2.1. Resuming an interrupted training
+---------------------------------------
 
 Long trainings can be interrupted — a bug, a power cut. As long
 as a :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback` was active (it is one

@@ -1,7 +1,7 @@
 .. _user_guide_data_dataloader:
 
-1.5 Batching data for training
-==============================
+1.5. Batching data for training
+===============================
 
 When training a neural network, you typically feed it multiple images together,
 known as a **batch**. ClinicaDL provides a
