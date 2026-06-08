@@ -4,7 +4,7 @@ version = "2.0.0rc3"
 description = "open-source Python library for reproducible deep learning in neuroimaging"
 license = "MIT"
 authors = ["ARAMIS Lab"]
-maintainers = ["Clinica developers <clinica-user@inria.fr>"]
+maintainers = ["ARAMIS Lab <aramislab.fr@gmail.com>"]
 readme = "README.md"
 homepage = "https://clinicadl.readthedocs.io"
 repository = "https://github.com/aramis-lab/clinicadl.git"
@@ -52,6 +52,7 @@ matplotlib =  "^3.9"
 ipykernel = { version = "^6", optional = true }
 notebook = { version = "^7", optional = true }
 torchinfo = "^1.8.0"
+scikit-image = "^0.25"
 
 [tool.poetry.extras]
 tutorials = ["matplotlib", "ipykernel", "notebook"]
