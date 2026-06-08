@@ -123,7 +123,12 @@ class Slice(Extraction[SliceConfig]):
         ``a`` slices and the last ``b`` slices will be filtered out.\n
         Cannot be used with ``slices`` or ``tsv_path``.
     slice_direction : int | SliceDirection, default=0
-        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
+        The slicing direction. Can be ``0``, ``1`` or ``2``.
+
+        .. warning::
+            Be careful with the orientation of your image. If your image is in :term:`RAS+` (e.g. you used :py:class:`~clinicadl.transforms.config.ToCanonicalConfig`),
+            ``0`` refers to the sagittal direction, ``1`` to the coronal direction, and ``2`` to the axial direction.
+
     squeeze : bool, default=True
         Whether to later squeeze slices to have images with 2 spatial dimensions.
         If ``False``, slices will still have 3 spatial dimensions.
@@ -163,7 +168,7 @@ class Slice(Extraction[SliceConfig]):
         tsv_path: Optional[PathType] = None,
         discarded_slices: Optional[list[int]] = None,
         borders: Optional[Union[int, Tuple[int, int]]] = None,
-        slice_direction: int | SliceDirection = SliceDirection.SAGITTAL,
+        slice_direction: int | SliceDirection = SliceDirection.ZERO,
         squeeze: bool = True,
     ) -> None:
         self.config = SliceConfig(

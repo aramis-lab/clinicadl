@@ -181,8 +181,8 @@ class Sample2D(Sample):
     Besides, there are two additional attributes:
 
     slice_direction : int
-        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal)
-        or ``2`` (axial).
+        The slicing direction (``0``, ``1`` or ``2``).
+
     squeeze : bool
         Whether the tensors will be later squeezed to work with 2D slice, or whether the slices will stay 3D
         (with one dummy dimension). The attribute is useful for some ``ClinicaDL`` operations.

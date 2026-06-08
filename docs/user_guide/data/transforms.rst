@@ -59,8 +59,7 @@ provides three extractions, in :py:mod:`clinicadl.transforms.extraction`:
     ``pad_mode`` and ``pad_value`` control how patches are tiled across the image.
 
 :py:class:`~clinicadl.transforms.extraction.Slice`
-    Each sample is a 2D slice taken along ``slice_direction`` (``0`` sagittal, ``1``
-    coronal, ``2`` axial). Which slices to keep can be chosen with ``slices``,
+    Each sample is a 2D slice taken along the axis specified via ``slice_direction``. Which slices to keep can be chosen with ``slices``,
     ``discarded_slices``, ``borders`` or ``tsv_path``.
 
 The extraction also determines how many samples an image yields, which you can check

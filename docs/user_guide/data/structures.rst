@@ -171,8 +171,7 @@ When you work on 2D slices rather than 3D volumes, a dataset returns a
 :py:class:`~clinicadl.data.structures.Sample2D`, which is a ``Sample`` with two additional
 fields:
 
-- ``slice_direction``: the slicing direction — ``0`` (sagittal), ``1`` (coronal) or
-  ``2`` (axial);
+- ``slice_direction``: the axis along which slicing was performed — ``0``, ``1``, or ``2``;
 - ``squeeze``: whether the slice tensor should be squeezed to two spatial dimensions
   (most ClinicaDL operations work internally with 3D tensors, so the dummy dimension
   is only removed when needed, e.g. right before the data is passed to a 2D neural network).

@@ -28,9 +28,9 @@ class BaseEnum(Enum):
 class SliceDirection(int, Enum):
     """Possible directions for a slice."""
 
-    SAGITTAL = 0
-    CORONAL = 1
-    AXIAL = 2
+    ZERO = 0
+    ONE = 1
+    TWO = 2
 
 
 class TrainerStage(str, Enum):
