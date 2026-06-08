@@ -61,7 +61,7 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
             do not forget to specify ``include=["<output_name>"]`` to apply the postprocessing to
             the output of the neural network.
 
-    output_type : OutputType, default="tensor"
+    output_type : str | OutputType, default="tensor"
         Determines the data type of the output:
 
         - ``"image"``: the output will be converted to a :py:class:`torchio.ScalarImage`;
@@ -105,7 +105,7 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
         output_name: str = OUTPUT,
-        output_type: OutputType = OutputType.TENSOR,
+        output_type: str | OutputType = OutputType.TENSOR,
     ):
         super().__init__(
             slice_direction=slice_direction,

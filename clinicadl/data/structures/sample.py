@@ -113,7 +113,7 @@ class Sample(DataPoint, ABC):
         The :pathlib.Path:`path <>` to the image. If they are multiple images in ``image``
         (i.e. multiple channels), the path of each of them
         is expected.
-    sample_type : SampleType
+    sample_type : str | SampleType
         The type of the sample, among {"image", "slice", "patch"}.
     sample_position : Optional[Union[int, tuple[int, int, int]]]
         The position of the sample in the image if relevant, ``None`` otherwise.
@@ -135,7 +135,7 @@ class Sample(DataPoint, ABC):
         session_id: str,
         file_type: Union[BidsFileType, tuple[BidsFileType, ...]],
         image_path: Union[Path, tuple[Path, ...]],
-        sample_type: SampleType = SampleType.IMAGE,
+        sample_type: str | SampleType = SampleType.IMAGE,
         sample_position: Optional[Union[int, tuple[int, int, int]]] = None,
         **kwargs: Any,
     ):
