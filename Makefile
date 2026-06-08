@@ -1,105 +1,51 @@
-PACKAGES := clinicadl tests
 POETRY ?= poetry
-CONDA ?= conda
-CONDA_ENV ?= "./env"
+
+.DEFAULT_GOAL := help
 
 .PHONY: help
-help: Makefile
-	@echo "Commands:"
-	@sed -n 's/^##//p' $<
+help: ## Show this help message
+	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make \033[36m<target>\033[0m\n"} \
+		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5); next } \
+		/^[a-zA-Z0-9_.-]+:.*## / { printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 .PHONY: check.lock
 check.lock:
 	@$(POETRY) check --lock
 
-## build			: Build the package.
-.PHONY: build
-build:
-	@$(POETRY) build
-
-.PHONY: clean.doc
-clean.doc:
-	@$(RM) -rf site
-
-.PHONY: clean.test
-clean.test:
-	@$(RM) -r .pytest_cache/
-
-## doc			: Build the documentation.
-.PHONY: doc
-doc: clean.doc env.doc
-	@$(POETRY) run mkdocs build
-
-## env			: Bootstrap an environment.
-.PHONY: env
-env: env.dev
-
-.PHONY: env.conda
-env.conda:
-	@$(CONDA) env create -p $(CONDA_ENV) -k
-
-.PHONY: env.dev
-env.dev:
-	@$(POETRY) install --with dev
-
-.PHONY: env.doc
-env.doc:
-	@$(POETRY) install --extras docs
-
-## format			: Format the codebase.
-.PHONY: format
-format: format.black format.isort
-
-.PHONY: format.black
-format.black: env.dev
-	@$(POETRY) run black --quiet $(PACKAGES)
-
-.PHONY: format.isort
-format.isort: env.dev
-	@$(POETRY) run isort --quiet $(PACKAGES)
-
-## lint			: Lint the codebase.
-.PHONY: lint
-lint: lint.black lint.isort
-
-.PHONY: lint.black
-lint.black: env.dev
-	@$(POETRY) run black --check --diff $(PACKAGES)
-
-.PHONY: lint.isort
-lint.isort: env.dev
-	@$(POETRY) run isort --check --diff $(PACKAGES)
-
-## Install
+##@ Install
 .PHONY: install
-install: check.lock
+install: check.lock ## Install the package with its runtime dependencies
 	@$(POETRY) install
 
 .PHONY: install.dev
-install.dev: check.lock
+install.dev: check.lock ## Install with the dev dependency group
+	@$(POETRY) install --with dev
+
+.PHONY: install.dev.only
+install.dev.only: check.lock ## Install only the dev dependency group
 	@$(POETRY) install --only dev
 
 .PHONY: install.doc
-install.doc: check.lock
+install.doc: check.lock ## Install only the docs dependency group
 	@$(POETRY) install --only docs
 
-## tests
+##@ Test
 .PHONY: unit-tests
-unit-tests: install
+unit-tests: install.dev ## Run unit tests (CPU only)
 	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" tests/unittests
 
 .PHONY: gpu-unit-tests
-gpu-unit-tests: install
+gpu-unit-tests: install.dev ## Run unit tests on a single GPU
 	@$(POETRY) run python -m pytest -v -m "gpu" tests/unittests
 
 .PHONY: multi-gpu-unit-tests
-multi-gpu-unit-tests: install
+multi-gpu-unit-tests: install.dev ## Run unit tests on multiple GPUs
 	@$(POETRY) run python -m pytest -v -m "multi_gpu" tests/unittests
 
 .PHONY: functional-tests
-functional-tests: install
+functional-tests: install.dev ## Run functional tests (CPU only)
 	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" --ref /localdrive10TB/users/clinicadl.ci/clinicadl_data_ci/data_ci tests/functional
 
 .PHONY: gpu-functional-tests
-gpu-functional-tests: install
+gpu-functional-tests: install.dev ## Run functional tests on a single GPU
 	@$(POETRY) run python -m pytest -v -m "gpu" --ref /localdrive10TB/users/clinicadl.ci/clinicadl_data_ci/data_ci tests/functional
