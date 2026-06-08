@@ -46,7 +46,7 @@ class PostprocessingHandler(HasConfig[PostprocessingHandlerConfig]):
 
     Parameters
     ----------
-    transforms : list[TransformOrConfig], default=[]
+    transforms : list[TransformOrConfig], default=()
         A list of transformations to apply on the outputs.
     """
 
@@ -54,7 +54,7 @@ class PostprocessingHandler(HasConfig[PostprocessingHandlerConfig]):
 
     def __init__(
         self,
-        transforms: Sequence[TransformOrConfig] = [],
+        transforms: Sequence[TransformOrConfig] = (),
     ):
         self.config = PostprocessingHandlerConfig(
             transforms=transforms,
