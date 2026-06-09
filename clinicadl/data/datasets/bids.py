@@ -124,7 +124,7 @@ class BidsDataset(
         - To avoid confusion, we will use the term "sample" to refer to the actual element of the images we are working on
           (patch, slice or the whole image).
 
-    Finally, you may be interested in :py:meth:`to_tensors`, that will convert your NIfTI images to tensors (saved in ``.pt`` files). Since opening
+    Finally, you may be interested in :py:meth:`to_tensors`, that will convert your :term:`NIfTI` images to tensors (saved in ``.pt`` files). Since opening
     a ``.pt`` file is much faster than opening a NIfTI file, this may speed up data loading.
 
     Parameters
@@ -171,7 +171,7 @@ class BidsDataset(
         The masks are passed via a dictionary, whose names will be the names given to the masks in the output
         :py:class:`~clinicadl.data.structures.Sample`, and whose values can be:
 
-        - a path (``str`` or :pathlib.Path:`pathlib.Path <>`) to a NIfTI image: the same mask is used for all
+        - a path (``str`` or :pathlib.Path:`pathlib.Path <>`) to a :term:`NIfTI` image: the same mask is used for all
           the (participant, session) pairs.
         - a :py:class:`~clinicadl.io.bids.BidsFileType`: the mask is participant- and session-specific and the
           pattern to find the mask in the ``bids`` is given via the ``BidsFileType``.

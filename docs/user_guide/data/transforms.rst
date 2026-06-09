@@ -9,8 +9,8 @@ augmented. In ClinicaDL, this whole pipeline is described by a single object, th
 :py:class:`~clinicadl.transforms.TransformsHandler`, which you pass to a dataset
 through its ``transforms`` argument.
 
-The TransformsHandler
----------------------
+1.3.1. Defining the transformation pipeline
+-------------------------------------------
 
 A :py:class:`~clinicadl.transforms.TransformsHandler` organises transforms into
 **four** stages, applied in this order:
@@ -44,7 +44,7 @@ transforms automatically applies the augmentations only when it is in training m
 
 .. _user_guide_data_transforms_extraction:
 
-1.3.1. Patches and slices
+1.3.2. Patches and slices
 -------------------------
 
 The ``extraction`` decides what a single element of the dataset is. ClinicaDL
@@ -103,7 +103,7 @@ dataset** is the number of images times the number of samples per image (see
 
 .. _user_guide_data_transforms_pipeline:
 
-1.3.2. Preprocessing, augmentation and post-processing
+1.3.3. Preprocessing, augmentation and post-processing
 ------------------------------------------------------
 
 ClinicaDL works with **any callable that takes a**

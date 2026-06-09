@@ -9,8 +9,8 @@ known as a **batch**. ClinicaDL provides a
 :py:class:`~clinicadl.data.datasets.Dataset` and groups its samples into a
 :py:class:`~clinicadl.data.dataloader.Batch`, ready to be turned into tensors.
 
-The DataLoader
---------------
+1.5.1. Iterating over a dataset with a DataLoader
+-------------------------------------------------
 
 :py:class:`~clinicadl.data.dataloader.DataLoader` is a subclass of
 :py:class:`torch.utils.data.DataLoader`, so it behaves like the PyTorch dataloader
@@ -29,7 +29,7 @@ you may already know — with many common parameters (``batch_size``, ``shuffle`
     from clinicadl.data.dataloader import DataLoader
 
     dataset = BidsDataset(
-        "bids",
+        "bids_directory",
         file_type=BidsFileType(data_type="anat", suffix="T1w"),
     )
     loader = DataLoader(dataset, batch_size=3, shuffle=True)
@@ -45,8 +45,8 @@ the name of a column of the dataset's :py:attr:`~clinicadl.data.datasets.Dataset
 whose values are used as sampling probabilities. This is convenient to oversample
 under-represented classes.
 
-The Batch
----------
+1.5.2. Grouping samples in a batch
+----------------------------------
 
 A :py:class:`~clinicadl.data.dataloader.Batch` is a list of
 :py:class:`DataPoints <clinicadl.data.structures.DataPoint>` with a few extra
@@ -76,8 +76,8 @@ network via :py:meth:`~clinicadl.data.dataloader.Batch.add_field`,
 :py:meth:`~clinicadl.data.dataloader.Batch.add_masks` — handy to store a model's
 output back next to its input.
 
-Collating: from samples to batches
------------------------------------
+1.5.3. Collating: from samples to batches
+-----------------------------------------
 
 How individual samples are assembled into a ``Batch`` is decided by a **collate
 function**, passed through the ``collate_fn`` argument and described by the abstract
@@ -128,8 +128,8 @@ To define your own collating behaviour, subclass
 :py:class:`~clinicadl.data.dataloader.CollateFn` and implement its ``__call__``
 method.
 
-Building loaders from a split
------------------------------
+1.5.4. Building loaders from a split
+------------------------------------
 
 In practice you build one loader for the training set and one for the validation
 set. The :py:class:`~clinicadl.split.Split` returned by a splitter (see

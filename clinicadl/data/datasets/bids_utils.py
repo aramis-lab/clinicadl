@@ -164,7 +164,7 @@ T = TypeVar("T")
 
 class BidsNiftiDataset(_BidsTypeDataset):
     """
-    A :py:class:`BidsTypeDataset` that reads NIfTI images.
+    A :py:class:`BidsTypeDataset` that reads :term:`NIfTI` images.
     """
 
     image: Image

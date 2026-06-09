@@ -30,7 +30,7 @@ to the validation loss, and stores model checkpoints every 10 epochs.
     from clinicadl.callbacks import EarlyStoppingCallback, ModelCheckpointCallback
 
     trainer = Trainer(
-        maps="maps",
+        maps="maps_directory",
         model=model,
         metrics={"loss": LossMetricConfig(loss_name="loss")},
         callbacks=[

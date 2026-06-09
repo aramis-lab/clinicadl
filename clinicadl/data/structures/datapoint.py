@@ -81,7 +81,7 @@ class DataPoint(tio.Subject):
     Parameters
     ----------
     image : Union[torchio.ScalarImage, PathType]
-        The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a NIfTI file.
+        The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a :term:`NIfTI` file.
     participant_id : str
         The participant id.
     session_id : str
@@ -371,7 +371,7 @@ class DataPoint(tio.Subject):
         Parameters
         ----------
         image : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The image to add, as a :py:class:`torchio.ScalarImage`, a path to the NIfTI file containing the image,
+            The image to add, as a :py:class:`torchio.ScalarImage`, a path to the :term:`NIfTI` file containing the image,
             or a 4D :py:class:`torch.Tensor` (including one channel dimension). If a ``Tensor`` is passed, the same affine matrix as ``self.image``
             will be used.
         image_name : str
@@ -409,7 +409,7 @@ class DataPoint(tio.Subject):
         Parameters
         ----------
         mask : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the NIfTI file containing the image,
+            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the :term:`NIfTI` file containing the image,
             or a 4D :py:class:`torch.Tensor` (including one channel dimension). If a ``Tensor`` is passed, the same affine matrix as ``self.image```
             will be used.
         mask_name : str

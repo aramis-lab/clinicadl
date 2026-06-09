@@ -21,7 +21,7 @@ Putting together what we built in :doc:`Chapter 1 <../data/index>` and in
     from clinicadl.train import Trainer
 
     # `model` is a Model and `split` a Split (see the previous sections)
-    trainer = Trainer(maps="maps", model=model)
+    trainer = Trainer(maps="maps_directory", model=model)
     trainer.train(split)
 
 The ``Trainer`` writes everything it produces — trained weights, metrics, logs and
@@ -52,7 +52,7 @@ clipping, how often to evaluate — is described by an
     from clinicadl.train import Trainer
 
     trainer = Trainer(
-        maps="maps",
+        maps="maps_directory",
         model=model,
         optimization=OptimizationConfig(
             num_epochs=100,
@@ -113,7 +113,7 @@ session — rebuild it from the :term:`MAPS` first, then resume:
 
     from clinicadl.train import Trainer
 
-    trainer = Trainer.from_maps("maps")
+    trainer = Trainer.from_maps("maps_directory")
     trainer.resume(split_idx=0)
 
 .. important::

@@ -49,7 +49,7 @@ for you from the path you give it (see :doc:`Chapter 2 <../workflow/index>`).
     from clinicadl.callbacks import ModelCheckpointCallback
 
     trainer = Trainer(
-        maps="maps",
+        maps="maps_directory",
         model=model,
         metrics={"loss": LossMetricConfig(), "mse": MSEMetricConfig()},
         callbacks=[ModelCheckpointCallback(metric="loss", epochs=range(1, 100, 10))],
@@ -66,7 +66,7 @@ will produce a MAPS like this:
 
 .. code-block:: text
 
-    maps
+    maps_directory
     ├── environment.txt
     ├── metrics.json
     ├── model.json
@@ -123,7 +123,7 @@ trainer from the configurations stored in the MAPS:
 
 .. code-block:: python
 
-    trainer = Trainer.from_maps("maps")
+    trainer = Trainer.from_maps("maps_directory")
 
 To inspect the folder directly, open it as a :py:class:`~clinicadl.io.maps.Maps`,
 which exposes the path of every file and subdirectory it contains:
@@ -132,13 +132,13 @@ which exposes the path of every file and subdirectory it contains:
 
     from clinicadl.io.maps import Maps
 
-    maps = Maps("maps")
+    maps = Maps("maps_directory")
 
 .. code-block:: python
 
     >>> best_metrics_path = maps.training.splits[0].models.best_models.metrics["loss"].validation_metrics.aggregated_tsv
     >>> best_metrics_path
-    PosixPath('maps/training/split-0/models/best_models/best-loss/validation_metrics/aggregated.tsv')
+    PosixPath('maps_directory/training/split-0/models/best_models/best-loss/validation_metrics/aggregated.tsv')
     >>> maps.open_file(best_metrics_path)
         epoch       mse      loss
     0      42  1.347617  0.853633

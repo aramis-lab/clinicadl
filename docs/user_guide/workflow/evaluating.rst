@@ -24,7 +24,7 @@ these directly: you declare the metrics you want when building the
     from clinicadl.metrics.config import LossMetricConfig, AveragePrecisionMetricConfig
 
     trainer = Trainer(
-        maps="maps",
+        maps="maps_directory",
         model=model,
         metrics={
             "loss": LossMetricConfig(loss_name="loss"),

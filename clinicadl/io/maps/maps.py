@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import subprocess
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +25,7 @@ from clinicadl.utils.dictionary.words import (
     TEST,
     TRAINING,
 )
+from clinicadl.utils.env import dump_environment
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
@@ -34,6 +35,8 @@ from .exec import ExecDir
 from .inference import PredictionDir, TestDir
 from .summary import MapsSummary
 from .training import TrainingDir
+
+logger = logging.getLogger(__name__)
 
 
 class Maps(Directory):
@@ -953,16 +956,19 @@ class Maps(Directory):
         MapsSummary(self.summary_log).create()
 
     def _write_environment_txt(self) -> None:
-        """Writes the installed Python packages (via `pip freeze`) to `environment.txt`."""
+        """
+        Writes a snapshot of the current environment to ``environment.txt``.
+
+        Delegates to :py:func:`clinicadl.utils.env.dump_environment`, which
+        records a ``conda env export`` inside a conda environment (complete with
+        the pip-installed packages) or a ``pip freeze`` otherwise, together with
+        a header describing the Python version and platform. Failures are logged
+        but do not interrupt the creation of the ``MAPS``.
+        """
         try:
-            env_variables = subprocess.check_output("pip freeze", shell=True).decode(
-                "utf-8"
-            )
-            with (self.environment_txt).open(mode="w") as file:
-                file.write(env_variables)
-        except subprocess.CalledProcessError:
-            with (self.environment_txt).open(mode="w") as file:
-                file.write("pip freeze")
+            dump_environment(ENVIRONMENT, self.path)
+        except RuntimeError as exc:
+            logger.warning("Could not capture the environment snapshot: %s", exc)
 
 
 Maps.read.__doc__ = """

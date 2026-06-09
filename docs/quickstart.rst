@@ -81,11 +81,11 @@ together in a single object that moves consistently through the rest of the pipe
     from clinicadl.io.bids import BidsFileType
 
     dataset = BidsDataset(
-        bids="bids",                            # path to your BIDS directory
+        bids="bids_directory",                  # path to your BIDS directory
         file_type=BidsFileType(
             data_type="anat", suffix="T1w"
         ),                                      # type of data to consider in your BIDS
-        data="bids/metadata.tsv",               # (participant, session) pairs + metadata
+        data="bids_directory/metadata.tsv",               # (participant, session) pairs + metadata
         columns=["gender", "age"],              # metadata to carry along the images
         masks={
             "csf": BidsFileType(
@@ -95,7 +95,7 @@ together in a single object that moves consistently through the rest of the pipe
     )
 
 .. code-block:: bash
-    :caption: bids/metadata.tsv
+    :caption: bids_directory/metadata.tsv
 
     participant_id  session_id   age   sex
     sub-001         ses-M000     55.0  M
@@ -116,7 +116,7 @@ It is also possible to extract 3D patches or 2D slices from the 3D images.
 
     # a dataset that loads images and extracts 64x64x64 patches
     dataset = BidsDataset(
-        bids="bids",
+        bids="bids_directory",
         file_type=BidsFileType(
             data_type="anat", suffix="T1w"
         ),
@@ -136,7 +136,7 @@ at the image or the sample level (i.e. on patches or slices).
     import torchio as tio
 
     dataset = BidsDataset(
-        bids="bids",
+        bids="bids_directory",
         file_type=BidsFileType(data_type="anat", suffix="T1w"),
         transforms=TransformsHandler(
             image_transforms=[tio.ToCanonical(), tio.ZNormalization()],   # applied to the whole image
@@ -157,7 +157,7 @@ meaning that all the sessions of a participant stay in the same set, avoiding :t
     from clinicadl.split import make_split, make_kfold, KFold
 
     # split participants in train/validation/test sets
-    split_dir = make_split("bids/metadata.tsv", n_test=0.2, seed=42)
+    split_dir = make_split("bids_directory/metadata.tsv", n_test=0.2, seed=42)
     kfold_dir = make_kfold(split_dir / "training.tsv", n_splits=5, seed=42)
 
     # now split any dataset according to this splitting
@@ -197,7 +197,7 @@ that modifies the non-essential logic of the training (e.g., learning rate sched
     )
 
     trainer = Trainer(
-        maps="maps",
+        maps="maps_directory",
         model=segmentation_model,
         callbacks=[
             EarlyStoppingCallback(metric="loss", patience=10),
@@ -215,6 +215,10 @@ that modifies the non-essential logic of the training (e.g., learning rate sched
 Note in the above example the convenient ``PatchesToImageInferer``, which splits a 3D image into patches,
 passes them through the neural network, and merges the resulting segmentation masks in a single
 3D output.
+
+.. seealso::
+
+    See :ref:`Experiment management <exp_management>` for more details on the argument ``maps``.
 
 Model evaluation
 ~~~~~~~~~~~~~~~~
@@ -234,18 +238,20 @@ saved checkpoint, provide the data to evaluate on, and the metrics to compute.
         model_checkpoint="split-0_final", group_name="test", dataloader=test_loader, metrics=["dice"]
     )
 
+.. _exp_management:
+
 Experiment management
 ~~~~~~~~~~~~~~~~~~~~~
 
-Every outputs, trained weights, metrics, logs and the
-configuration used, are gathered into a single folder, which fully describes your
+All outputs, trained weights, metrics, logs and the
+configuration used, are gathered into a single folder (a :term:`MAPS`), which fully describes your
 experiment. So your results are **easy to share** and your experiments **easy to
 reproduce**. You can re-open a past experiment at any time, for example to
 resume an interrupted training:
 
 .. code-block:: python
 
-    trainer = Trainer.from_maps("maps")
+    trainer = Trainer.from_maps("maps_directory")
     trainer.resume(split_idx=0)
 
 Compatibility with community tools

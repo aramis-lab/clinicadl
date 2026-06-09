@@ -251,7 +251,7 @@ class Sample2D(Sample):
         Parameters
         ----------
         image : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The image to add, as a :py:class:`torchio.ScalarImage``, a path to the NIfTI file containing the image,
+            The image to add, as a :py:class:`torchio.ScalarImage``, a path to the :term:`NIfTI` file containing the image,
             or a :py:class:`torch.Tensor`. In the latter case, it is expected to be a 4D ``Tensor`` (including one channel dimension)
             if ``squeeze=False``, or a 3D ``Tensor`` if ``squeeze=True``.
 
@@ -275,7 +275,7 @@ class Sample2D(Sample):
         Parameters
         ----------
         mask : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the NIfTI file containing the mask,
+            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the :term:`NIfTI` file containing the mask,
             or a :py:class:`torch.Tensor`. In the latter case, it is expected to be a 4D ``Tensor`` (including one channel dimension)
             if ``squeeze=False``, or a 3D ``Tensor`` if ``squeeze=True``.
 

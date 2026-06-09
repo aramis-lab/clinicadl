@@ -28,7 +28,7 @@ Glossary
     **MAPS**
         Model Analysis and Processing Structure — the single directory in which ClinicaDL
         gathers all the outputs and hyperparameters of an experiment. See
-        :ref:`Section 3.2 <user_guide_reproducibility_maps>`.
+        :ref:`Section 3.2 of the User Guide <user_guide_reproducibility_maps>`.
 
     **RAS+**
         A standard anatomical orientation convention for neuroimaging. The
@@ -40,3 +40,8 @@ Glossary
         into training, leading to over-optimistic performance estimates. In neuroimaging,
         it typically happens when different sessions of the same participant are split
         across the training and test sets.
+
+    **NIfTI**
+        Neuroimaging Informatics Technology Initiative - the standard format for storing volumetric
+        data in neuroimaging. You will recognise these files with the extensions ``.nii`` or ``.nii.gz`` (compressed).
+        Neuroimaging data **must** be stored in the NIfTI file format in a :term:`BIDS`.
