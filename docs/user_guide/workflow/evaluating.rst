@@ -8,8 +8,8 @@ performs. ClinicaDL evaluates a model by computing **metrics** on
 a dataset, either during training (on the validation set) or afterwards (on
 validation or held-out test data).
 
-Metrics
--------
+2.3.1. Metrics
+--------------
 
 A metric is described by a :py:class:`~clinicadl.metrics.Metric`, and the set of
 metrics computed during an evaluation phase is gathered in a
@@ -45,8 +45,8 @@ segmentation (Dice, IoU, Hausdorff distance, etc.) — see
 the ones the ``Trainer`` *can* compute; which ones are actually computed is chosen at
 each evaluation call.
 
-Evaluating during and after training
-------------------------------------
+2.3.2. Evaluating during and after training
+-------------------------------------------
 
 During training, the metrics are computed on the validation set at the interval set
 by the :py:class:`~clinicadl.optim.OptimizationConfig` (see :doc:`Training <training>`).
@@ -98,8 +98,8 @@ checkpoint by an explicit name.
 All the results are written to the :term:`MAPS` (see
 :doc:`Chapter 3 <../reproducibility/index>`).
 
-Customising inference
----------------------
+2.3.3. Customising inference
+----------------------------
 
 How an image is fed to the network at evaluation time is governed by an
 :py:class:`~clinicadl.infer.Inferer`, attached to the model through its ``inferer``

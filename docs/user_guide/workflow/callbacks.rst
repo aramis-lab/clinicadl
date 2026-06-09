@@ -39,8 +39,8 @@ to the validation loss, and stores model checkpoints every 10 epochs.
         ],
     )
 
-Available callbacks
--------------------
+2.4.1. Available callbacks
+--------------------------
 
 .. list-table::
     :header-rows: 1
@@ -73,8 +73,8 @@ Available callbacks
     default one. All the callbacks are managed by a
     :py:class:`~clinicadl.callbacks.CallbacksHandler`, in which **order matters**.
 
-Writing your own callback
--------------------------
+2.4.2. Writing your own callback
+--------------------------------
 
 When the built-in callbacks are not enough, you can write your own by subclassing
 :py:class:`~clinicadl.callbacks.Callback` and overriding the ``on_...`` methods

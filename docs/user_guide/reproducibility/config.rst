@@ -10,8 +10,8 @@ parametrised, nor rebuild them later from a saved experiment.
 
 This is the problem **configuration classes** solve.
 
-What is a configuration class?
-------------------------------
+3.1.1. What is a configuration class?
+-------------------------------------
 
 A configuration class is a small dataclass associated with a Python object. It
 holds **only the parameters** of that object, with almost no logic of its own. From a
@@ -45,8 +45,8 @@ configuration of every object it uses, so the whole setup can be rebuilt later (
   You will mostly manipulate configuration classes associated to objects that come
   from external libraries (PyTorch, MONAI, etc.).
 
-Where you can use them
-----------------------
+3.1.2. Where you can use them
+-----------------------------
 
 Wherever ClinicaDL accepts a raw object, it usually also accepts the matching
 configuration class. Configuration classes exist for the main building blocks of the

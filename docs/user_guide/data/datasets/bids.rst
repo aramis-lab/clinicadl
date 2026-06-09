@@ -13,8 +13,8 @@ Reading a BIDS dataset involves three objects:
 - a :py:class:`~clinicadl.data.datasets.BidsDataset`, which ties the two together
   and loads the selected files into :py:class:`Samples <clinicadl.data.structures.Sample>`.
 
-Navigating a BIDS directory: ``Bids``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1.2.1.1. Navigating a BIDS directory: ``Bids``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A :py:class:`~clinicadl.io.bids.Bids` is created from the path to a BIDS-like
 directory. The directory must contain the mandatory
@@ -35,8 +35,8 @@ Most of the time you will not call the methods of ``Bids`` directly, the
 :py:meth:`~clinicadl.io.bids.Bids.get_path` and
 :py:meth:`~clinicadl.io.bids.Bids.has_file_type` locate a specific file.
 
-Describing the files to load: ``BidsFileType``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1.2.1.2. Describing the files to load: ``BidsFileType``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A :py:class:`~clinicadl.io.bids.BidsFileType` defines the :term:`NIfTI` files you are interested
 in. It is expressed in the vocabulary of the BIDS specification: a
@@ -88,8 +88,8 @@ match the output of the most common Clinica pipelines.
     t1 = T1Linear()
     pet = PetLinear(tracer="18FFDG", suvr_reference_region="pons")
 
-The ``BidsDataset``
-^^^^^^^^^^^^^^^^^^^
+1.2.1.3. The ``BidsDataset``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A :py:class:`~clinicadl.data.datasets.BidsDataset` is the object you will use most.
 It reads a BIDS directory, loads the files described by a ``BidsFileType``, and returns

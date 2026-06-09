@@ -8,8 +8,8 @@ management in ClinicaDL: a single directory that holds *everything* about an
 experiment. It is represented in Python by the :py:class:`~clinicadl.io.maps.Maps`
 class.
 
-What a MAPS contains
---------------------
+3.2.1. What a MAPS contains
+---------------------------
 
 Whenever you train, validate or test a model, the
 :py:class:`~clinicadl.train.Trainer` writes to its MAPS:
@@ -36,8 +36,8 @@ once:
         Since the MAPS records the configuration of every object used, an experiment
         can be **rebuilt and run again** from the folder alone.
 
-Creating and reopening a MAPS
------------------------------
+3.2.2. Creating and reopening a MAPS
+------------------------------------
 
 You rarely create a MAPS by hand: a :py:class:`~clinicadl.train.Trainer` creates one
 for you from the path you give it (see :doc:`Chapter 2 <../workflow/index>`).
