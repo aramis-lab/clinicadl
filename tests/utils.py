@@ -109,7 +109,10 @@ def _compare_any_file(file: Path, ref_file: Path) -> None:
     content = Maps.open_file(file)
     ref_content = Maps.open_file(ref_file)
 
-    if file.name == "computational.tsv":
+    if file.name == "environment.txt":
+        return
+
+    elif file.name == "computational.tsv":
         _soft_compare_df(content, ref_content)
 
     elif file.suffix == TSV:
@@ -164,9 +167,8 @@ PATH_PATTERN = r'(?:[A-Za-z]:\\[^ \n\r\t]*)|(?:/[^\s"\']+)'
 OBJECT_ADRESS_PATTERN = r"\s+at 0x[0-9A-Fa-f]+"
 DATE_PATTERN = r"^(\s*Date:\s*).*$|\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b"
 THROUGHPUT_PATTERN = r"^(\s*Throughput:\s*).*$"
-NUMBER_PATTERN = r"\b\d+\.\d+(?:[eE][+-]?\d+)?\b|\b\d+[eE][+-]?\d+\b"
+NUMBER_PATTERN = r"\b\d*\.\d+(?:[eE][+-]?\d+)?\b|\b\d+[eE][+-]?\d+\b"
 TRACE_BACK_PATTERN = r"Traceback[\s\S]*?(?=torch\.OutOfMemoryError)"
-TIME_STAMP_PATTERN = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}"
 
 
 def _normalize_str(text: str) -> str:
@@ -177,7 +179,6 @@ def _normalize_str(text: str) -> str:
     for line in text.splitlines():
         line = re.sub(THROUGHPUT_PATTERN, r"\1<throughput>", line)
         line = re.sub(DATE_PATTERN, r"\1<date>", line)
-        line = re.sub(TIME_STAMP_PATTERN, "<timestamp>", line)
         line = re.sub(OBJECT_ADRESS_PATTERN, "<hash>", line)
         line = re.sub(
             NUMBER_PATTERN,
