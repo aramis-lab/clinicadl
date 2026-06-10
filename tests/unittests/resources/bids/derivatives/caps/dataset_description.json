@@ -1,0 +1,6 @@
+{
+    "Name": "CAPS example",
+    "BIDSVersion": "1.7.0",
+    "CAPSVersion": "1.0.0",
+    "DatasetType": "derivative"
+}

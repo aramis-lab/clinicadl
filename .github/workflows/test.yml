@@ -2,28 +2,110 @@ name: Test
 
 on:
   push:
-    branches: [dev]
+    branches: ["dev", "master"]
   pull_request:
-    branches: [dev]
+    branches: ["dev", "master"]
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  POETRY_VERSION: "1.8.3"
+  PREFERRED_PYTHON_VERSION: "3.12"
+
 jobs:
-  test:
-    name: Test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+  cpu-unit-tests:
+    name: Unit tests on ${{ matrix.os }} with Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
       - uses: actions/checkout@v4
       - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: poetry
       - name: Run unit tests
-        run: make test
+        run: make unit-tests
+
+  gpu-unit-tests:
+    name: GPU unit tests
+    runs-on:
+      - self-hosted
+      - gpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          cache: poetry
+      - name: Run unit tests
+        run: make gpu-unit-tests
+
+  cpu-functional-test:
+    name: Functional tests
+    runs-on:
+      - self-hosted
+      - functional-tests
+    needs: gpu-unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          cache: poetry
+      - name: Run functional tests
+        run: make functional-tests
+
+  gpu-functional-test:
+    name: GPU functional tests
+    runs-on:
+      - self-hosted
+      - functional-tests
+    needs: cpu-functional-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          cache: poetry
+      - name: Run functional tests
+        run: make gpu-functional-tests
+  
+  multi-gpu-unit-tests:
+    name: Multi-GPUs unit tests
+    runs-on:
+      - self-hosted
+      - multi-gpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
+          cache: poetry
+      - name: Cache issue (to solve)
+        run: rm -rf ~/.cache/pypoetry ~/.cache/pip
+      - name: Run unit tests
+        run: make multi-gpu-unit-tests

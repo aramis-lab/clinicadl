@@ -1,35 +1,35 @@
+import logging
 import os
 import random
+from contextlib import contextmanager
+from typing import Generator, Optional
 
 import numpy as np
 import torch
 
+from .computational.ddp import get_rank
 
-def _get_rank() -> int:
-    """Returns 0 unless the environment specifies a rank."""
-    rank_keys = ("RANK", "SLURM_PROCID", "LOCAL_RANK")
-    for key in rank_keys:
-        rank = os.environ.get(key)
-        if rank is not None:
-            return int(rank)
-    return 0
+logger = logging.getLogger(__name__)
 
-
-global_rank = _get_rank()
+MAX_SEED_VALUE = np.iinfo(np.uint32).max
+MIN_SEED_VALUE = np.iinfo(np.uint32).min
+GLOBAL_SEED = "CLINICADL_GLOBAL_SEED"
+DETERMINISTIC = "CLINICADL_DETERMINISTIC"
+PYTHON_HASH_SEED = "PYTHONHASHSEED"
+CUBLAS_CONFIG = "CUBLAS_WORKSPACE_CONFIG"
 
 
-def pl_worker_init_function(worker_id: int) -> None:  # pragma: no cover
+def pl_worker_init_function(worker_id: int) -> None:
     """
-    The worker_init_fn that Lightning automatically adds to your dataloader if you previously set
-    set the seed with ``seed_everything(seed, workers=True)``.
-    See also the PyTorch documentation on
-    `randomness in DataLoaders <https://pytorch.org/docs/stable/notes/randomness.html#dataloader>`_.
+    To handle seeding with multiprocessing.
+
+    From https://pytorch-lightning.readthedocs.io/en/1.7.7/_modules/pytorch_lightning/utilities/seed.html#pl_worker_init_function.
     """
     # implementation notes: https://github.com/pytorch/pytorch/issues/5059#issuecomment-817392562
     process_seed = torch.initial_seed()
-    # back out the base seed so we can use all the bits
+    # back out the base seed so we can use all the bits (https://docs.pytorch.org/docs/stable/data.html#randomness-in-multi-process-data-loading)
     base_seed = process_seed - worker_id
-    ss = np.random.SeedSequence([base_seed, worker_id, global_rank])
+    ss = np.random.SeedSequence([base_seed, worker_id, get_rank()])
     # use 128 bits (4 x 32-bit words)
     np.random.seed(ss.generate_state(4))
     # Spawn distinct SeedSequences for the PyTorch PRNG and the stdlib random module
@@ -44,57 +44,141 @@ def pl_worker_init_function(worker_id: int) -> None:  # pragma: no cover
     random.seed(stdlib_seed)
 
 
-def get_seed(seed: int = None) -> int:
-    max_seed_value = np.iinfo(np.uint32).max
-    min_seed_value = np.iinfo(np.uint32).min
+def seed_everything(seed: Optional[int] = None, deterministic: bool = False) -> None:
+    """
+    To control reproducibility.
 
+    It will seed pseudo-random number generators in: PyTorch, Numpy and Python's random module. The seed
+    can be accessed via the environment variable ``"CLINICADL_GLOBAL_SEED"``.
+
+    Besides, if ``deterministic=True``, PyTorch's operations will be configured in deterministic mode,
+    to the extent possible. In this case, an environment variable ``"CLINICADL_DETERMINISTIC"`` will
+    also be created.
+
+    .. warning:: ``deterministic=True``
+
+        - does not guarantee fully reproducible results; it only ensures determinism within PyTorch’s current limitations;
+        - comes with a cost in computing performances. It is advised to use this parameter only for your final
+          experiments.
+
+    Parameters
+    ----------
+    seed : Optional[int], default=None
+        The seed to use. If ``None``, a random seed will be generated.
+    deterministic : bool, default=False
+        Whether to configure PyTorch's operations in deterministic mode.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.utils.seed import seed_everything
+        import torch
+        import numpy as np
+        import random
+
+    .. code-block::
+
+        >>> seed_everything(0)
+        >>> torch.randn(1), np.random.randn(), random.randint(0, 100)
+        (tensor([1.5410]), 1.764052345967664, 49)
+        >>> seed_everything(0)
+        >>> torch.randn(1), np.random.randn(), random.randint(0, 100)
+        (tensor([1.5410]), 1.764052345967664, 49)
+    """
     if seed is None:
-        seed = random.randint(min_seed_value, max_seed_value)
-
-    return seed
-
-
-def seed_everything(seed, deterministic=False, compensation="memory") -> None:
-    """
-    Function that sets seed for pseudo-random number generators in:
-    pytorch, numpy, python.random
-
-    Adapted from pytorch-lightning
-    https://pytorch-lightning.readthedocs.io/en/latest/_modules/pytorch_lightning/utilities/seed.html#seed_everything
-
-    Args:
-        seed (int): Value of the seed for all pseudo-random number generators
-        deterministic (bool): If set to True will raise an error if non-deterministic behaviour is encountered
-        compensation (str): Chooses which computational aspect is affected when deterministic is set to True.
-            Must be chosen between time and memory.
-
-    Raises:
-        ClinicaDLConfigurationError: if compensation is not in {"time", "memory"}.
-        RuntimeError: if a non-deterministic behaviour was encountered.
-
-    """
-    from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-
-    max_seed_value = np.iinfo(np.uint32).max
-    min_seed_value = np.iinfo(np.uint32).min
-
-    if not (min_seed_value <= seed <= max_seed_value):
-        seed = random.randint(min_seed_value, max_seed_value)
+        seed = random.randint(MIN_SEED_VALUE, MAX_SEED_VALUE)
+    if not (MIN_SEED_VALUE <= seed <= MAX_SEED_VALUE):
+        raise ValueError(
+            f"Seed must be between {MIN_SEED_VALUE} and {MAX_SEED_VALUE}. Got {seed}"
+        )
 
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed_all(
+        seed
+    )  # manual_seed should be ok because one process per GPU
+    os.environ[PYTHON_HASH_SEED] = str(seed)
+
+    os.environ[GLOBAL_SEED] = str(seed)
+    logger.info("Global seed set to %d", seed)
 
     if deterministic:
-        torch.backends.cudnn.benchmark = False
-        if compensation == "memory":
-            os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-        elif compensation == "time":
-            os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
-        else:
-            raise ClinicaDLConfigurationError(
-                f"The compensation for a deterministic CUDA setting "
-                f"must be chosen between 'time' and 'memory'."
-            )
+        os.environ[CUBLAS_CONFIG] = ":4096:8"
         torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+        os.environ[DETERMINISTIC] = "true"
+
+
+@contextmanager
+def seed_everything_context(
+    seed: Optional[int] = None, deterministic: bool = False
+) -> Generator[None, None, None]:
+    """
+    Context manager to control reproducibility.
+
+    Does the same as :py:func:`seed_everything`, but restore all
+    previous random states when exiting the context.
+
+    Parameters
+    ----------
+    seed : Optional[int], default=None
+        The seed to use. If ``None``, a random seed will be generated.
+    deterministic : bool, default=False
+        Whether to configure PyTorch's operations in deterministic mode.
+
+    Examples
+    --------
+    .. code-block::
+
+        from clinicadl.utils.seed import seed_everything_context
+        import torch
+        import numpy as np
+        import random
+
+    .. code-block::
+
+        >>> with seed_everything_context(0): print(torch.randn(1), np.random.randn(), random.randint(0, 100))
+        tensor([1.5410]) 1.764052345967664 49
+        >>> print(torch.randn(1), np.random.randn(), random.randint(0, 100))
+        tensor([0.8120]) 0.5023488957207493 50
+        >>> with seed_everything_context(0): print(torch.randn(1), np.random.randn(), random.randint(0, 100))
+        tensor([1.5410]) 1.764052345967664 49
+    """
+    prev_env = {
+        PYTHON_HASH_SEED: os.environ.get(PYTHON_HASH_SEED),
+        GLOBAL_SEED: os.environ.get(GLOBAL_SEED),
+        DETERMINISTIC: os.environ.get(DETERMINISTIC),
+        CUBLAS_CONFIG: os.environ.get(CUBLAS_CONFIG),
+    }
+
+    py_random_state = random.getstate()
+    np_state = np.random.get_state()
+    torch_cpu_state = torch.get_rng_state()
+    torch_cuda_states = torch.cuda.get_rng_state_all()
+
+    prev_det_algos = torch.are_deterministic_algorithms_enabled()
+    prev_cudnn_deterministic = torch.backends.cudnn.deterministic
+    prev_cudnn_benchmark = torch.backends.cudnn.benchmark
+
+    try:
+        seed_everything(seed, deterministic)
+        yield
+    finally:
+        random.setstate(py_random_state)
+        np.random.set_state(np_state)
+        torch.set_rng_state(torch_cpu_state)
+        torch.cuda.set_rng_state_all(torch_cuda_states)
+
+        torch.use_deterministic_algorithms(prev_det_algos)
+        torch.backends.cudnn.deterministic = prev_cudnn_deterministic
+        torch.backends.cudnn.benchmark = prev_cudnn_benchmark
+
+        for k, v in prev_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v

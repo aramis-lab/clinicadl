@@ -5,8 +5,90 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] – 2026-06-10
 
-## ClinicaDL 1.6.0
+This release marks a **major overhaul** of ClinicaDL, refactoring the entire framework into a **Python API**.
+
+ClinicaDL is **no longer a command-line tool**. The previous `clinicadl ...` CLI and all of its
+sub-commands have been removed and replaced by a **flexible Python API** that lets users build and
+customize deep learning pipelines from high-level building blocks. The goal is to make
+the code more **maintainable**, **scalable**, and **user-extensible**, while preserving the core values of
+ClinicaDL: **reproducibility** and **data leakage prevention**.
+
+> ⚠️ **Breaking change:** Backward compatibility is broken with all 1.x versions. There is **no automatic
+> migration path**. Existing CLI commands and scripts must be rewritten with the new Python API. See the
+> updated documentation and user guide to get started.
+
+### Highlights
+
+- Full **rewrite of the core library**, now object-oriented and modular.
+- **CLI removed**, replaced by **Python API**.
+- Native **BIDS** reading support.
+- Interoperability with popular deep learning tools for medical imaging: **PyTorch**, **MONAI** and **TorchIO**.
+- New **MAPS** architecture for managing model outputs and metadata.
+- Configuration-based design with dedicated **pydantic** config classes, serializable to/from JSON.
+- Extensive and updated **documentation** (API reference, user, installation and contribution guides).
+- Drops Python 3.9; supports **Python 3.10–3.14**.
+
+### Added
+
+**Core modules:**
+
+- `clinicadl.data`: for building PyTorch objects able to manipulate neuroimaging data.
+- `clinicadl.transforms`: for transforming 3D neuroimaging data.
+- `clinicadl.split`: for splitting data into training, validation and test sets.
+- `clinicadl.networks`: for building neural networks.
+- `clinicadl.losses`: for creating a criterion to minimize during training.
+- `clinicadl.optim`: for configuring optimization during training.
+- `clinicadl.models`: for defining models, which encompass neural networks, loss functions, optimizers, and the training and evaluation logic.
+- `clinicadl.train`: for training and evaluating a model.
+- `clinicadl.infer`: for customizing the inference stage, such as performing post-processing or combining outputs from multiple neural networks.
+- `clinicadl.metrics`: for evaluating models.
+- `clinicadl.callbacks`: for monitoring and customizing the training and evaluation phases.
+- `clinicadl.io`: for manipulating the file directories produced and read by ClinicaDL.
+
+**Configuration classes:**
+
+- Use of the serialisable **pydantic** dataclasses to save the configuration of 
+an experiment.
+
+**Interoperability with other tools:**
+
+- Compatible with **TorchIO** transforms.
+- Integration with **MONAI** metrics.
+- Compatible with native **PyTorch** neural networks, optimizers, LR schedulers
+  and loss functions.
+
+**Documentation**
+
+- Rewritten **Sphinx documentation** with a complete **API reference** and new **user**, **installation**, and **contribution** guides.
+
+**Testing**
+
+- **Unit-tests** with a 99% test coverage.
+- Specific tests for **GPU** and **multi-GPU** setups.
+- **Functional tests** covering the API end to end.
+
+### Changed
+
+- Internal architecture redesigned around **independent modules**.
+- All training now goes through `Trainer`.
+
+### Removed
+
+- **The entire command-line interface**, including all `clinicadl ...` commands (e.g. `clinicadl train`, `clinicadl random-search`, `clinicadl preprocessing run`).
+- **Synthetic data generation** (will be restored in a future release).
+- **Quality check** for Clinica's pipelines (will probably be integrated to Clinica).
+- **Random search**.
+- **Interpretation** commands (will be restored in a future release).
+- Support for **Python 3.9**.
+
+### Breaking Changes
+
+- **Backward compatibility is broken** with all 1.x versions.
+
+
+## [1.6.1] - 2024-04-05
 
 ### Fixed
 
@@ -21,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Change black and isort for ruff and codespell,
 * Update type hint and docstring,
 
+
 ### New
 
 * Add `--fsdp` option 
@@ -28,7 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## ClinicaDL 1.6.0
+## [1.6.0] – 2024-02-16
 
 ### Fixed
 
@@ -54,7 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `hugging-face push/pull` pipelines to share models on HuggingFace,
 * Add confidence intervals and metrics 
 
-## ClinicaDL 1.5.1
+## [1.5.1] – 2023-10-07
 
 ### Fixed
 
@@ -71,7 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add the semi-supervised domain adaptation network proposed for the MICCAI DART workshop.
   
 
-## ClinicaDL 1.5.0
+## [1.5.0] – 2023-09-12
 
 ### Fixed
 
@@ -91,7 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 
 
-## ClinicaDL 1.4.0
+## [1.4.0] – 2023-06-09
 
 ### Fixed
 
@@ -119,7 +202,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## ClinicaDL 1.3.1
+## [1.3.1] – 2023-05-15
 
 ### Fixed
 
@@ -134,7 +217,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### New 
 
 * Add `--caps_directory` option in `clinicadl tsvtools get-labels`.
-## ClinicaDL 1.3.0
+
+## [1.3.0] – 2023-04-13
 
 ### New 
 
@@ -157,7 +241,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Update tutorial.
   
 
-## ClinicaDL 1.2.0
+## [1.2.0] – 2023-02-15
 
 ### Changed
 
@@ -179,7 +263,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `quality-check t1-linear` 
 
 
-## ClinicaDL 1.1.1
+## [1.1.1] – 2022-07-28
 
 ### Changed
 
@@ -199,7 +283,7 @@ to visualize the model layers.
 
 - Fix bug when using the `clinicadl train list_models` command.
 
-## ClinicaDL 1.1.0
+## [1.1.0] – 2022-07-10
 
 ### Changed
 
@@ -238,7 +322,7 @@ to visualize the model layers.
 - Documentation was updated.
 
 
-## ClinicaDL 1.0.4
+## [1.0.4] – 2021-12-6
 
 ### Changed
 
@@ -261,14 +345,14 @@ Fix label code generation
 Remove all occurrences of a group in a MAPS when choosing the `overwriting` option.
 Fix `resume` when the training.tsv file is empty.
 
-## ClinicaDL 1.0.3 (release bugfix)
+## [1.0.3] – 2021-09-21 (release bugfix)
 
 ### Fixed
 
 - Fix import module for VAE architectures.
 
 
-## ClinicaDL 1.0.2
+## [1.0.2] – 2021-09-20
 
 ### Changed
 
@@ -285,7 +369,7 @@ Fix `resume` when the training.tsv file is empty.
 - Replace the `predict` arguments passed through the CLI.
 - Fix issue when using multiple cohorts.
 
-## ClinicaDL 1.0.1
+## [1.0.1] – 2021-08-31
 
 ### Changed
 
@@ -294,7 +378,7 @@ Fix `resume` when the training.tsv file is empty.
 - `extract` improve this functionality with more expressive and easy to understand flags.
 - Change the test for `extract`.
 
-## ClinicaDL 1.0
+## [1.0] – 2021-08-25
 
 Welcome in **ClinicaDL 1.0.0** ! 
 
@@ -400,7 +484,7 @@ discussion](https://github.com/aramis-lab/clinicadl/discussions) instead of
 
 ### Security
 
-## ClinicaDL 0.2.2
+## [0.2.2] – 2021-06-02
 
 ### Added
 
@@ -421,7 +505,7 @@ discussion](https://github.com/aramis-lab/clinicadl/discussions) instead of
   generate` are now defined in `random_search.json`.
 - Remove tensorboardx dependency.
 
-## ClinicaDL 0.2.1
+## [0.2.1] – 2021-05-18
 
 ### Added
 
@@ -438,7 +522,7 @@ discussion](https://github.com/aramis-lab/clinicadl/discussions) instead of
 - Scripts and data related to MedIA publication.
 
 
-## ClinicaDL 0.2.0
+## [0.2.0] – 2021-02-08
 
 ### Added
 

@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "clinicadl"
-version = "1.6.1"
-description = "Framework for the reproducible processing of neuroimaging data with deep learning methods"
+version = "2.0.0"
+description = "open-source Python library for reproducible deep learning in neuroimaging"
 license = "MIT"
 authors = ["ARAMIS Lab"]
-maintainers = ["Clinica developers <clinica-user@inria.fr>"]
+maintainers = ["ARAMIS Lab <aramislab.fr@gmail.com>"]
 readme = "README.md"
 homepage = "https://clinicadl.readthedocs.io"
 repository = "https://github.com/aramis-lab/clinicadl.git"
@@ -14,37 +14,51 @@ keywords = [
     "image processing",
     "deep learning",
     "neuroimaging",
-    "neuroscience"
+    "neuroscience",
+    "reproducibility",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
-    "Topic :: Scientific/Engineering :: Image Processing"
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
-torch = "^2.1.0"
+python = ">=3.10,<=3.14"
+torch = "^2.3.0"
 torchvision = "*"
-tensorboard = "*"
-toml = "*"
-pandas = "^1.2"
-numpy = "^1.17"
-scikit-learn = "^1.0"
-scikit-image = "^0.21"
+pandas = "^2"
+numpy = "^2"
+scikit-learn = "^1"
 joblib = "^1.2.0"
-click = "^8"
-click-option-group = "^0.5"
-pynvml = "*"
-torchio = "^0.18.90"
-urllib3= "<2.0.0"
-nilearn = "^0.9.2"
+torchio = { version = "^0.20", extras = ["plot"]}
+pydantic = "^2.7.0"
+monai = "=1.5.0"
+matplotlib =  "^3.9"
+ipykernel = { version = "^6", optional = true }
+notebook = { version = "^7", optional = true }
+torchinfo = "^1.8.0"
+scikit-image = "^0.25"
 
+[tool.poetry.extras]
+tutorials = ["matplotlib", "ipykernel", "notebook"]
 
+[tool.poetry.group.dev]
+optional = true
 [tool.poetry.group.dev.dependencies]
 pre-commit = "*"
 pytest = "*"
@@ -52,23 +66,18 @@ pytest-timeout = "*"
 pytest-xdist = "*"
 pytest-cov = "^3.0.0"
 
-[tool.poetry.group.tracking]
-optional = true
-[tool.poetry.group.tracking.dependencies]
-wandb = "^0.15.4"
-mlflow = "^2.0.0"
-codecarbon = "^2.3.1"
-
-
 [tool.poetry.group.docs]
 optional = true
 [tool.poetry.group.docs.dependencies]
-mkdocs = "^1.1"
-mkdocs-material = "*"
-pymdown-extensions = "*"
-
-[tool.poetry.scripts]
-clinicadl = "clinicadl.cmdline:cli"
+sphinx = "^7"
+furo = "^2024.8"
+sphinx-design = "^0.6"
+sphinx-autodoc-typehints = "^2"
+sphinxcontrib-bibtex = "^2.6.4"
+sphinx-copybutton = "^0.5.2"
+sphinx-gallery = "^0.19"
+autodoc-pydantic = "^2.2.0"
+myst-parser = "^4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -95,8 +104,11 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 
+[tool.ruff.lint.per-file-ignores]
+"examples/*.py" = ["E402"]  # import not a the beginning
+
 [tool.codespell]
 summary = ''
 skip = ".git,LICENSE.txt,*.m,clinicadl/resources/config/train_config.toml"
 quiet-level = 3
-ignore-words-list = "nd,fwe,commun,fo,te,artic,ressources"
+ignore-words-list = "nd,fwe,commun,fo,te,artic,ressources,adn"

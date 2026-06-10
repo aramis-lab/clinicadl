@@ -1,0 +1,77 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Optional
+
+from clinicadl.utils.dictionary.suffixes import JSON, PT
+from clinicadl.utils.dictionary.words import (
+    CALLBACKS,
+    METRICS,
+    MODEL,
+    OPTIMIZER,
+    SCALER,
+    STATE,
+    VALIDATION,
+)
+
+from ....base import Directory
+from ....utils import mandatory
+from ...utils import EpochsDir, MetricsDir
+
+
+class EpochTmpDir(Directory):
+    def __init__(self, path: Path):
+        super().__init__(path)
+        self._validation_metrics = MetricsDir(
+            path=self.path / f"{VALIDATION}_{METRICS}"
+        )
+
+    @property
+    @mandatory
+    def callbacks(self) -> Path:
+        return self.path / CALLBACKS
+
+    @property
+    @mandatory
+    def validation_metrics(self) -> MetricsDir:
+        return self._validation_metrics
+
+    @property
+    @mandatory
+    def model_pt(self) -> Path:
+        return (self.path / MODEL).with_suffix(PT)
+
+    @property
+    @mandatory
+    def optimizer_pt(self) -> Path:
+        return (self.path / OPTIMIZER).with_suffix(PT)
+
+    @property
+    @mandatory
+    def scaler_pt(self) -> Path:
+        return (self.path / SCALER).with_suffix(PT)
+
+    @property
+    @mandatory
+    def state_json(self) -> Path:
+        return (self.path / STATE).with_suffix(JSON)
+
+
+class TmpDir(EpochsDir[EpochTmpDir]):
+    _dir_type = EpochTmpDir
+
+    def clear(self, except_epoch: Optional[int] = None) -> None:
+        """
+        Clears the tmp directory by removing all epochs
+        except ``except_epoch``.
+
+        Parameters
+        ----------
+        except_epoch : Optional[int], default=None
+            The checkpoint to keep. If ``None``, the whole directory will be cleared.
+        """
+        self._find_item_dirs()
+        for epoch in self.epochs_list:
+            if epoch != except_epoch:
+                self.epochs[epoch].remove(non_empty_ok=True)
+        self._find_item_dirs()

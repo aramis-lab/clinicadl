@@ -1,0 +1,6 @@
+TSV = ".tsv"
+TXT = ".txt"
+JSON = ".json"
+LOG = ".log"
+PT = ".pt"
+YML = ".yml"

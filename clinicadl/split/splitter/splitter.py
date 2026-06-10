@@ -1,0 +1,194 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Optional, Union
+
+import pandas as pd
+from pydantic import model_validator
+from typing_extensions import Self
+
+from clinicadl.data.datasets import Dataset
+from clinicadl.split.split import Split
+from clinicadl.utils.config import ClinicaDLConfig
+from clinicadl.utils.dictionary.suffixes import JSON, TSV
+from clinicadl.utils.dictionary.words import BASELINE, TRAIN
+from clinicadl.utils.typing import PathType
+
+
+class SubjectsSessionsSplit(ClinicaDLConfig):
+    """
+    Dataclass to store training and validation sets for a split.
+    """
+
+    training: pd.DataFrame
+    validation: pd.DataFrame
+
+
+class SplitterConfig(ClinicaDLConfig, ABC):
+    """
+    Base abstract config class for splitters.
+    """
+
+    _training_subset_name: str = TRAIN
+    _json_name: str
+
+    split_dir: Path
+    subset_name: str
+    stratification: Optional[Union[str, list[str]]]
+    longitudinal: bool
+    seed: Optional[int]
+
+    @model_validator(mode="after")
+    def _create_split_dir(self) -> Self:
+        """Creates 'split_dir' if it doesn't exist."""
+        if not self.split_dir.is_dir():
+            self.split_dir.mkdir(parents=True, exist_ok=True)
+
+        return self
+
+    @classmethod
+    def from_split_dir(cls, split_dir: Path) -> Self:
+        """
+        Reads a split directory.
+        """
+        json_path = (split_dir / cls._json_name.default).with_suffix(JSON)
+
+        try:
+            config = cls.from_json(json_path, split_dir=split_dir)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                f"No configuration file found in '{split_dir}'. It was expected at {json_path}. "
+                "Please rerun clinicadl.split.make_split or clinicadl.split.make_kfold "
+                "to have a proper split directory."
+            ) from exc
+
+        config._check_split_dirs()
+
+        return config
+
+    def to_json(self) -> None:  # pylint: disable=arguments-differ
+        """
+        Saves the split configuration in a json file.
+        """
+        out_json_file = (self.split_dir / self._json_name).with_suffix(JSON)
+        super().to_json(out_json_file, exclude="split_dir")
+
+    @abstractmethod
+    def _check_split_dirs(self) -> None:
+        """Checks all subdirectories in the current split directory."""
+
+    def _check_split_dir(self, split_path: Path) -> None:
+        """
+        Checks that a split directory exists and contains the required
+        tsv files.
+        """
+        error_msg = ""
+
+        if not split_path.is_dir():
+            error_msg = f"No such directory: {split_path}."
+
+        else:
+            required_files = [
+                (split_path / f"{self._training_subset_name}_{BASELINE}").with_suffix(
+                    TSV
+                ),
+                (split_path / f"{self.subset_name}_{BASELINE}").with_suffix(TSV),
+                (split_path / f"{self._training_subset_name}").with_suffix(TSV),
+            ]
+            if self.longitudinal:
+                required_files.append(
+                    (split_path / f"{self.subset_name}").with_suffix(TSV)
+                )
+
+            for file in required_files:
+                if not file.is_file():
+                    error_msg = f"Required file missing: {str(file)}."
+                    break
+
+        if error_msg:
+            error_msg += (
+                " Please rerun clinicadl.split.make_split or clinicadl.split.make_kfold to have a proper "
+                "split directory."
+            )
+            raise FileNotFoundError(error_msg)
+
+    @classmethod
+    def _check_dict(cls, dict_: dict[str, Any]) -> dict[str, Any]:
+        dict_.setdefault(
+            "split_dir", None
+        )  # to deceive the check (split_dir is not in the json)
+        return super()._check_dict(dict_)
+
+
+class Splitter(ABC):
+    """
+    Base abstract class for splitters.
+
+    Parameters
+    ----------
+    split_dir : PathType
+        The split directory, returned by :py:func:`clinicadl.split.make_split`
+        or :py:func:`clinicadl.split.make_kfold`.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``split_dir`` does not exist or if a required file is missing in this directory.
+    """
+
+    _config_type: type[SplitterConfig]
+
+    def __init__(self, split_dir: PathType):
+        if not Path(split_dir).is_dir():
+            raise FileNotFoundError(f"No such directory: {str(split_dir)}")
+        self.config = self._config_type.from_split_dir(split_dir)
+        self.subjects_sessions_split = self._read_splits()
+
+    def _get_split(
+        self,
+        dataset: Dataset,
+        eval_dataset: Optional[Dataset] = None,
+        split_id: int = 0,
+    ) -> Split:
+        """
+        Splits a dataset.
+        """
+        subjects_sessions = self.subjects_sessions_split[split_id]
+        return Split(
+            index=split_id,
+            split_dir=self.config.split_dir,
+            train_dataset=dataset.subset(subjects_sessions.training),
+            val_dataset=eval_dataset.subset(subjects_sessions.validation)
+            if eval_dataset
+            else dataset.subset(subjects_sessions.validation),
+        )
+
+    @abstractmethod
+    def _read_splits(self) -> list[SubjectsSessionsSplit]:
+        """
+        Load all splits in 'split_dir' from the tsv files.
+        """
+
+    def _read_split(self, split_path: Path) -> SubjectsSessionsSplit:
+        """
+        Load a single split from the tsv files in 'split_path'.
+        """
+        training_df = pd.read_csv(
+            (split_path / f"{self.config._training_subset_name}").with_suffix(TSV),
+            sep="\t",
+        )
+        if self.config.longitudinal:
+            validation_df = pd.read_csv(
+                (split_path / f"{self.config.subset_name}").with_suffix(TSV), sep="\t"
+            )
+        else:
+            validation_df = pd.read_csv(
+                (split_path / f"{self.config.subset_name}_{BASELINE}").with_suffix(TSV),
+                sep="\t",
+            )
+
+        return SubjectsSessionsSplit(
+            training=training_df,
+            validation=validation_df,
+        )

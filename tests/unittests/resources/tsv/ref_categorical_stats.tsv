@@ -1,0 +1,11 @@
+label	value	statistic	train	test
+sex	F	proportion	0.4	0.4
+sex	F	count	10.0	6.0
+sex	M	proportion	0.6	0.6
+sex	M	count	15.0	9.0
+diagnosis	CN	proportion	0.4	0.4
+diagnosis	CN	count	10.0	6.0
+diagnosis	MCI	proportion	0.36	0.2
+diagnosis	MCI	count	9.0	3.0
+diagnosis	AD	proportion	0.24	0.4
+diagnosis	AD	count	6.0	6.0

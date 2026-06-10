@@ -1,0 +1,147 @@
+from collections.abc import Sequence
+from typing import List, Optional, Tuple
+
+from ..layers.utils import (
+    ConvParameters,
+    NormalizationParameters,
+    NormLayer,
+    PoolingLayer,
+    SingleLayerConvParameter,
+)
+
+__all__ = [
+    "ensure_list_of_tuples",
+    "ensure_tuple",
+    "check_norm_layer",
+    "check_pool_indices",
+]
+
+
+def ensure_list_of_tuples(
+    parameter: ConvParameters, dim: int, n_layers: int, name: str
+) -> List[Tuple[int, ...]]:
+    """
+    Checks spatial parameters (e.g. kernel_size) and returns a list of tuples.
+    Each element of the list corresponds to the parameters of one layer, and
+    each element of the tuple corresponds to the parameters for one dimension.
+    """
+    if isinstance(parameter, int) or isinstance(parameter, tuple):
+        parameter = ensure_tuple(parameter, dim, name)
+        return [parameter] * n_layers
+
+    elif isinstance(parameter, list):
+        if len(parameter) != n_layers:
+            raise ValueError(
+                f"If a list is passed, {name} must contain as many elements as there are layers. "
+                f"There are {n_layers} layers, but got {parameter}"
+            )
+        checked_params = []
+        for param in parameter:
+            checked_params.append(ensure_tuple(param, dim, name))
+        return checked_params
+
+    else:
+        raise ValueError(f"{name} must be an int, a tuple or a list. Got {name}")
+
+
+def ensure_tuple(
+    parameter: SingleLayerConvParameter, dim: int, name: str
+) -> Tuple[int, ...]:
+    """
+    Changes any spatial argument to a tuple of the right dimension.
+    """
+    if isinstance(parameter, int):
+        return (parameter,) * dim
+    elif isinstance(parameter, Sequence):
+        if len(parameter) != dim:
+            raise ValueError(
+                f"If a tuple is passed for {name}, its dimension must be {dim}. Got {parameter}"
+            )
+        return parameter
+    else:
+        raise ValueError(f"{name} must be an int or a tuple. Got {parameter}")
+
+
+def check_norm_layer(
+    norm: Optional[NormalizationParameters],
+) -> Optional[NormalizationParameters]:
+    """
+    Checks that the argument for normalization layers has the right format (i.e.
+    `norm_type` or (`norm_type`, `norm_layer_parameters`)) and checks potential
+    mandatory arguments in `norm_layer_parameters`.
+    """
+    if norm is None:
+        return norm
+
+    if not isinstance(norm, str) and not isinstance(norm, PoolingLayer):
+        if (
+            not isinstance(norm, tuple)
+            or len(norm) != 2
+            or not isinstance(norm[1], dict)
+        ):
+            raise ValueError(
+                "norm must be either the name of the normalization layer or a double with first the name and then the "
+                f"arguments of the layer in a dict. Got {norm}"
+            )
+        norm_mode = NormLayer(norm[0])
+        args = norm[1]
+    else:
+        norm_mode = NormLayer(norm)
+        args = {}
+    if norm_mode == NormLayer.GROUP and "num_groups" not in args:
+        raise ValueError(
+            f"num_groups is a mandatory argument for GroupNorm and must be passed in `norm`. Got `norm`={norm}"
+        )
+
+    return norm
+
+
+def check_adn_ordering(adn: str) -> str:
+    """
+    Checks ADN sequence.
+    """
+    if not isinstance(adn, str):
+        raise ValueError(f"adn_ordering must be a string. Got {adn}")
+
+    for letter in adn:
+        if letter not in {
+            "A",
+            "D",
+            "N",
+        }:
+            raise ValueError(
+                f"adn_ordering must be composed by 'A', 'D' or/and 'N'. Got {letter}"
+            )
+    if len(adn) != len(set(adn)):
+        raise ValueError(f"adn_ordering cannot contain duplicated letter. Got {adn}")
+
+    return adn
+
+
+def check_pool_indices(
+    pooling_indices: Optional[Sequence[int]], n_layers: int
+) -> Sequence[int]:
+    """
+    Checks that the (un)pooling indices are consistent with the number of layers.
+    """
+    if isinstance(pooling_indices, Sequence):
+        if len(pooling_indices) != len(set(pooling_indices)):
+            raise ValueError(
+                f"(un)pooling_indices contains duplicated indices: {pooling_indices}"
+            )
+        for idx in pooling_indices:
+            if idx > n_layers - 1:
+                raise ValueError(
+                    f"indices in (un)pooling_indices must be smaller than len(channels)-1, got (un)pooling_indices={pooling_indices} and len(channels)={n_layers}"
+                )
+            elif idx < -1:
+                raise ValueError(
+                    f"indices in (un)pooling_indices must be greater or equal to -1, got (un)pooling_indices={pooling_indices}"
+                )
+        return sorted(pooling_indices)
+    elif pooling_indices is None:
+        return []
+    else:
+        raise ValueError(
+            f"(un)pooling_indices can be either a sequence or None. Got {pooling_indices}"
+        )
