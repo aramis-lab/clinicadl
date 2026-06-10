@@ -77,6 +77,7 @@ sphinxcontrib-bibtex = "^2.6.4"
 sphinx-copybutton = "^0.5.2"
 sphinx-gallery = "^0.19"
 autodoc-pydantic = "^2.2.0"
+myst-parser = "^4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

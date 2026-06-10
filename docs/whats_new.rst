@@ -3,4 +3,10 @@
 What's new?
 ===========
 
-``ClinicaDL 2.0`` is coming soon...
+Release notes for ClinicaDL.
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   whats_new/*

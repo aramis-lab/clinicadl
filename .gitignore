@@ -46,3 +46,5 @@ clinicadl/notebooks/
 # Mask and other files
 clinicadl/clinicadl/resources/masks/*.nii
 clinicadl/clinicadl/resources/masks/*.nii.gz
+# Auto-generated release notes (built from CHANGELOG.md)
+docs/whats_new/

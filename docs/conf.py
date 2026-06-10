@@ -1,6 +1,8 @@
 import inspect
+import re
 import sys
 from datetime import date
+from pathlib import Path
 from typing import Annotated as AnnotatedAlias
 from typing import get_args, get_origin
 
@@ -21,6 +23,7 @@ version = "2.0"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
@@ -211,6 +214,59 @@ def typehints_formatter(annotation, config):
     return None  # fall back to default
 
 
+# -- Generate "What's new?" pages from CHANGELOG.md -------------------------
+# Each release section in the root CHANGELOG.md ("## [version] - date") is
+# turned into its own Markdown page under docs/whats_new/, rendered natively
+# by myst-parser. whats_new.rst globs that folder; a zero-padded numeric
+# prefix on each file keeps the toctree in CHANGELOG order (newest first).
+_DOCS_DIR = Path(__file__).parent
+_CHANGELOG = _DOCS_DIR.parent / "CHANGELOG.md"
+_WHATS_NEW_DIR = _DOCS_DIR / "whats_new"
+# matches e.g. "## [2.0.0] – 2026-06-10" (en-dash, em-dash or hyphen)
+_RELEASE_RE = re.compile(r"^##\s+\[(?P<version>[^\]]+)\]\s*[–—-]\s*(?P<date>.+?)\s*$")
+
+
+def _split_changelog(text):
+    """Yield (version, date, body) tuples, one per release, in file order."""
+    current = None
+    lines = []
+    for line in text.splitlines():
+        match = _RELEASE_RE.match(line)
+        if match:
+            if current is not None:
+                yield current[0], current[1], "\n".join(lines).strip()
+            current = (match["version"], match["date"])
+            lines = []
+        elif current is not None:
+            lines.append(line)
+    if current is not None:
+        yield current[0], current[1], "\n".join(lines).strip()
+
+
+def _promote_headings(body):
+    """Promote sub-section headings by one level so the page h1 is unique."""
+    return re.sub(r"^(#{2,})\s", lambda m: m.group(1)[1:] + " ", body, flags=re.M)
+
+
+def generate_whats_new(app=None):
+    if not _CHANGELOG.exists():
+        return
+    releases = list(_split_changelog(_CHANGELOG.read_text(encoding="utf-8")))
+    _WHATS_NEW_DIR.mkdir(exist_ok=True)
+
+    for page in _WHATS_NEW_DIR.glob("*.md"):
+        page.unlink()
+
+    width = max(3, len(str(len(releases))))
+    for idx, (version, date_str, body) in enumerate(releases):
+        page = f"# {version}\n\n*Released {date_str}*\n\n{_promote_headings(body)}\n"
+        release_id = re.sub(r"[^0-9A-Za-z.]+", "-", version)
+        (_WHATS_NEW_DIR / f"{idx:0{width}d}-release-{release_id}.md").write_text(
+            page, encoding="utf-8"
+        )
+
+
 def setup(app):
     app.connect("autodoc-skip-member", skip_overload_members)
     app.connect("autodoc-skip-member", skip_pydantic_methods)
+    app.connect("config-inited", lambda app, config: generate_whats_new(app))
