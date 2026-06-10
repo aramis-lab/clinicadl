@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -31,8 +32,13 @@ def test_maps(tmp_path: Path):
     maps = Maps(maps_path)
 
     maps.create()
-    assert (maps_path / "summary.log").is_file()
-    assert (maps_path / "environment.txt").is_file()
+    assert maps.summary_log == (maps_path / "summary.log")
+
+    assert maps.env.environment_txt == (maps_path / "env" / "environment.txt")
+    assert maps.env.environment_yml == (maps_path / "env" / "environment.yml")
+    assert maps.env.environment_portable_yml == (
+        maps_path / "env" / "environment_portable.yml"
+    )
 
     assert maps.architecture_log == (maps_path / "architecture.log")
     assert maps.model_json == (maps_path / "model.json")
@@ -459,13 +465,20 @@ def test_maps(tmp_path: Path):
     assert not maps_path.exists()
 
 
-def test_create(tmp_path: Path):
+@patch("clinicadl.utils.env._conda_prefix", return_value="/opt/conda/envs/x")
+@patch("clinicadl.utils.env._freeze_packages", return_value="numpy==2.1.0\n")
+@patch("clinicadl.utils.env._export_conda_environment", return_value="name: env\n")
+def test_create(mock_export, mock_freeze, mock_conda_prefix, tmp_path: Path):
+    # mock the env-capture internals so the test never spawns a real `conda`/`pip`
+    # subprocess (conda is absent on the macOS CI runner, see .github/workflows/test.yml)
     maps_path = tmp_path / "maps"
     maps = Maps(maps_path)
 
     maps.create()
     assert maps.summary_log.is_file()
-    assert maps.environment_txt.is_file()
+    assert maps.env.environment_txt.is_file()
+    assert maps.env.environment_yml.is_file()
+    assert maps.env.environment_portable_yml.is_file()
 
     maps.training.data.create()
     with open(maps.training.data.data_tsv, "w", encoding="utf-8") as f:

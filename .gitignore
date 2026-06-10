@@ -2,6 +2,8 @@
 build/
 dist/
 env/
+!tests/unittests/resources/maps_minimal/env/
+!tests/unittests/resources/maps_example/env/
 tests/data
 examples/external-data
 clinicadl.egg-info

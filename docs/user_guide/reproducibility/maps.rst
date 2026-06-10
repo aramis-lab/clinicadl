@@ -149,6 +149,63 @@ which exposes the path of every file and subdirectory it contains:
     **raw object** that has no configuration class (a custom transform, an external
     network, etc.), ClinicaDL may not be able to rebuild it. Prefer configuration classes whenever one exists.
 
+.. _reproduce_env:
+
+3.2.3. Reproducing a Python environment
+---------------------------------------
+
+When a MAPS is created, ClinicaDL records the current Python environment and saves it inside the
+``env`` subdirectory. Up to three files are written, each starting with a commented header
+(Python version, platform, etc.):
+
+- ``environment.txt`` — always written, the output of ``pip freeze``;
+- ``environment.yml`` — only inside a conda environment, the output of ``conda env export``
+  (exact versions and build strings);
+- ``environment_portable.yml`` — only inside a conda environment, the output of
+  ``conda env export --no-builds --ignore-channels``. It is a less faithful copy of the
+  environment than ``environment.yml``, but it makes the environment more likely to be recreated
+  on another machine without errors 
+
+To recreate the environment on another machine, pick the file that matches your setup:
+
+.. code-block:: bash
+
+    # with pip
+    pip install -r maps_directory/env/environment.txt
+
+    # with conda
+    conda env create -f maps_directory/env/environment.yml
+
+    # with conda, if the previous command fails (e.g. different OS)
+    conda env create -f maps_directory/env/environment_portable.yml
+
+.. admonition:: Limitations
+    :class: warning
+
+    None of these files guarantees a strictly identical environment: the GPU driver and the operating
+    system live below the package level and are never captured.
+
+    ``environment.txt`` only lists the packages seen by ``pip``: it captures neither the Python
+    interpreter nor any non-Python, system-level library (CUDA, BLAS, etc.). In addition, when the
+    MAPS was created inside a conda environment, packages installed by ``conda`` may appear in a form
+    that ``pip`` cannot reinstall, so prefer the ``.yml`` files in that case.
+
+    The ``.yml`` files are more complete: ``conda env export`` also pins the Python interpreter and the
+    system-level libraries that conda manages. However, ``environment.yml``
+    is tied to the operating system and architecture it was exported on, whereas
+    ``environment_portable.yml`` relaxes this but may still need manual edits to be reproduced on a
+    different OS.
+
+.. admonition:: Tip for maximum reproducibility
+    :class: tip
+
+    A more reliable way to reproduce an environment is to use a **lock file**
+    (e.g., ``poetry.lock`` or ``uv.lock``). A lock file pins the whole dependency graph,
+    with hashes, so the environment can be rebuilt more precisely (e.g. ``poetry install`` or
+    ``uv sync``). If you manage your project with `Poetry <https://python-poetry.org/>`_
+    or `uv <https://docs.astral.sh/uv/>`_, we recommend **keeping a copy of the lock file in the**
+    ``env`` **directory of your MAPS**.
+
 ----
 
 This closes Chapter 3. The :doc:`final chapter <../customising/index>` shows how to
