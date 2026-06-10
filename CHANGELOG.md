@@ -5,112 +5,87 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0rc3] – 2026-02-13
+## [2.0.0] – 2026-06-10
 
-### Fixed
+This release marks a **major overhaul** of ClinicaDL, refactoring the entire framework into a **Python API**.
 
-* `Callbacks` are now functional and tested.
+ClinicaDL is **no longer a command-line tool**. The previous `clinicadl ...` CLI and all of its
+sub-commands have been removed and replaced by a **flexible Python API** that lets users build and
+customize deep learning pipelines from high-level building blocks. The goal is to make
+the code more **maintainable**, **scalable**, and **user-extensible**, while preserving the core values of
+ClinicaDL: **reproducibility** and **data leakage prevention**.
 
-### New
-
-* `Inferers` for customizing the inference stage, such as performing post-processing or
-combining outputs from multiple neural networks.
-* `Trainer`: the core class to manage model **training**, **evaluation**, and **prediction**.
-
-## [2.0.0rc2] – 2025-09-25
-
-### Fixed
-
-* Slice squeezing when getting the tensors from a `Batch`.
-
-### Changed
-
-* `Slice` extraction now accepts a TSV file as input,
-* `MetricsHandler` is adapted to new metrics.
-
-### New
-
-* Add `postprocessing` argument to `MetricConfig`,
-* LRScheduler callback to perform learning rate scheduling,
-* `get_field` in `Batch`,
-* `to` in `Batch`,
-* GPU and Multi-GPUs tests,
-* `ClinicaDLModel` to define the neural network and the training and evaluation logic,
-* Checkpoints saved during training.
-
-## [2.0.0rc1] – 2025-07-24
-
-This release marks a **major overhaul** of ClinicaDL, refactoring the entire framework into a **modular, API-first design**.
-
-Previously centered around the command line, ClinicaDL now provides a **flexible Python API** that allows users to build and customize deep learning pipelines with high-level configuration objects. The goal is to make the code more **maintainable**, **scalable**, and **user-extensible**, while preserving the core values of ClinicaDL: **reproducibility**, **robust support for neuroimaging**, and **data leakage prevention**.
-
-This is the first release candidate for version 2.0.0, with the final release planned for **September 2025**.
+> ⚠️ **Breaking change:** Backward compatibility is broken with all 1.x versions. There is **no automatic
+> migration path**. Existing CLI commands and scripts must be rewritten with the new Python API. See the
+> updated documentation and user guide to get started.
 
 ### Highlights
 
-- Full **rewrite of the core library** — now fully object-oriented and modular.
-- New modules (see next section)
+- Full **rewrite of the core library**, now object-oriented and modular.
+- **CLI removed**, replaced by **Python API**.
+- Native **BIDS** reading support.
+- Interoperability with popular deep learning tools for medical imaging: **PyTorch**, **MONAI** and **TorchIO**.
 - New **MAPS** architecture for managing model outputs and metadata.
-- Clear configuration-based design with JSON files and dedicated config classes based on **pydantic**.
-- Modern deep learning tooling: **PyTorch**, **MONAI**, **TorchIO**, **HuggingFace**, **MLflow**, and **Weights & Biases** support.
-- Extensive and fully updated **documentation**.
-
+- Configuration-based design with dedicated **pydantic** config classes, serializable to/from JSON.
+- Extensive and updated **documentation** (API reference, user, installation and contribution guides).
+- Drops Python 3.9; supports **Python 3.10–3.14**.
 
 ### Added
 
-**Core Modules:**
+**Core modules:**
 
-- `Trainer`: high-level training controller managing full model lifecycle.
-- `ClinicaDLModel`: flexible base class to define and extend custom architectures.
-- `CapsDataset`: redesigned dataset class in the new `dataset` module, tailored for CAPS/MAPS.
-- `Splitter`: new module for managing train/val/test split logic.
-- `Maps`: a structured and reproducible representation of model outputs and metadata.
+- `clinicadl.data`: for building PyTorch objects able to manipulate neuroimaging data.
+- `clinicadl.transforms`: for transforming 3D neuroimaging data.
+- `clinicadl.split`: for splitting data into training, validation and test sets.
+- `clinicadl.networks`: for building neural networks.
+- `clinicadl.losses`: for creating a criterion to minimize during training.
+- `clinicadl.optim`: for configuring optimization during training.
+- `clinicadl.models`: for defining models, which encompass neural networks, loss functions, optimizers, and the training and evaluation logic.
+- `clinicadl.train`: for training and evaluating a model.
+- `clinicadl.infer`: for customizing the inference stage, such as performing post-processing or combining outputs from multiple neural networks.
+- `clinicadl.metrics`: for evaluating models.
+- `clinicadl.callbacks`: for monitoring and customizing the training and evaluation phases.
+- `clinicadl.io`: for manipulating the file directories produced and read by ClinicaDL.
 
-**Configuration Classes:**
+**Configuration classes:**
 
-- `OptimizationConfig`, `DataloaderConfig`, `LossConfig`, `TransformConfig`, `MetricConfig`, etc.
-- Designed to be composable and readable using TOML files.
-- Stored alongside results to ensure **experiment traceability**.
+- Use of the serialisable **pydantic** dataclasses to save the configuration of 
+an experiment.
 
-**Integration with Modern Tools:**
+**Interoperability with other tools:**
 
-- **Transforms**: use of `torchio` and `monai.transforms` for preprocessing and data augmentation.
-- **Metrics**: integration with MONAI metrics and support for custom metrics.
-- **Networks**: fully compatible with native PyTorch models.
-- **Logging**: support for **MLflow** and **Weights & Biases (W&B)** out of the box.
-- **HuggingFace**: integration point for loading pretrained models and tokenizers.
+- Compatible with **TorchIO** transforms.
+- Integration with **MONAI** metrics.
+- Compatible with native **PyTorch** neural networks, optimizers, LR schedulers
+  and loss functions.
 
-**Documentation:**
+**Documentation**
 
-- Fully rewritten **Sphinx documentation** with improved structure and usage examples.
-- Interactive object documentation and visual MAPS structure navigation.
+- Rewritten **Sphinx documentation** with a complete **API reference** and new **user**, **installation**, and **contribution** guides.
 
----
+**Testing**
+
+- **Unit-tests** with a 99% test coverage.
+- Specific tests for **GPU** and **multi-GPU** setups.
+- **Functional tests** covering the API end to end.
 
 ### Changed
 
-- All pipelines removed and replaced by a **unified API-driven interface**.
-- Internal architecture redesigned for **independent modules** that can be combined or extended.
-- CLI options replaced by TOML configuration — reducing duplication and increasing clarity.
-- All training now done through `Trainer`, using configuration objects and custom hooks.
-
----
+- Internal architecture redesigned around **independent modules**.
+- All training now goes through `Trainer`.
 
 ### Removed
 
-- All legacy CLI commands (e.g., `clinicadl train`, `clinicadl random-search`, etc.).
-- Old pipelines (`train_from_json`, `preprocessing run`, etc.).
-- JSON-based configuration files.
-- Hardcoded command-line flags and argparse logic.
-
----
+- **The entire command-line interface**, including all `clinicadl ...` commands (e.g. `clinicadl train`, `clinicadl random-search`, `clinicadl preprocessing run`).
+- **Synthetic data generation** (will be restored in a future release).
+- **Quality check** for Clinica's pipelines (will probably be integrated to Clinica).
+- **Random search**.
+- **Interpretation** commands (will be restored in a future release).
+- Support for **Python 3.9**.
 
 ### Breaking Changes
 
 - **Backward compatibility is broken** with all 1.x versions.
-- You must migrate to the new API and TOML-based configuration system.
-
----
 
 
 ## [1.6.1] - 2024-04-05
