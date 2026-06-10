@@ -3,7 +3,7 @@
 What's new?
 ===========
 
-Release notes for ClinicaDL.
+Release notes.
 
 .. toctree::
    :maxdepth: 1
