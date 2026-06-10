@@ -22,7 +22,7 @@ To access the full documentation of the project, follow [this link](https://clin
 
 ## Installation
 
-See the [installation guidelines](https://clinicadl.readthedocs.io/en/stable/installation.html)
+See the [installation guidelines](https://clinicadl.readthedocs.io/en/stable/installation.html).
 
 ## Getting started
 
@@ -40,5 +40,5 @@ See the [contribution guidelines](https://clinicadl.readthedocs.io/en/stable/con
 
 ## Citing us
 
-- Thibeau-Sutre, E., Díaz, M., Hassanaly, R., Routier, A., Dormont, D., Colliot, O., Burgos, N.: *ClinicaDL: an open-source deep learning software for reproducible neuroimaging processing*, 2021. [hal-03351976](https://hal.inria.fr/hal-03351976)
+- Thibeau-Sutre, E., Díaz, M., Hassanaly, R., Routier, A., Dormont, D., Colliot, O., Burgos, N.: *ClinicaDL: an open-source deep learning software for reproducible neuroimaging processing*, 2021. [doi:10.1016/j.cmpb.2022.106818](https://doi.org/10.1016/j.cmpb.2022.106818)
 - Routier, A., Burgos, N., Díaz, M., Bacci, M., Bottani, S., El-Rifai O., Fontanella, S., Gori, P., Guillon, J., Guyot, A., Hassanaly, R., Jacquemont, T.,  Lu, P., Marcoux, A.,  Moreau, T., Samper-González, J., Teichmann, M., Thibeau-Sutre, E., Vaillant G., Wen, J., Wild, A., Habert, M.-O., Durrleman, S., and Colliot, O.: *Clinica: An Open Source Software Platform for Reproducible Clinical Neuroscience Studies*, 2021. [doi:10.3389/fninf.2021.689675](https://doi.org/10.3389/fninf.2021.689675) [Open Access version](https://hal.inria.fr/hal-02308126)
