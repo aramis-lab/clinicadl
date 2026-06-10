@@ -1,45 +1,45 @@
-cff-version: 2.0.0rc3
+cff-version: 2.0.0
 message: If you use this software, please cite it as below.
 authors: 
   - family-names: de Varax
     given-names: Thibault
   - family-names: Brianceau
     given-name: Camille
-  - family-names: Solal
-    given-names: Maëlys
-  - family-names: Roy
-    given-names: Hugues
-  - family-names: Heffernan
-    given-names: Manon
-  - family-names: Godard
-    given-names: Charlotte
-  - family-names: Thibeau-Sutre
-    given-names: Elina
-  - family-names: Diaz
-    given-names: Mauricio
-  - family-names: Hassanaly
-    given-names: Ravi
-  - family-names: Routier
-    given-names:  Alexandre
-  - family-names: Dormont
-    given-names: Didier
-  - family-names: Colliot
-    given-names: Olivier
   - family-names: Burgos
     given-names: Ninon
+  - family-names: Cassereau
+    given-names: Nathan
+  - family-names: Colliot
+    given-names: Olivier
+  - family-names: Diaz
+    given-names: Mauricio
+  - family-names: Dormont
+    given-names: Didier
+  - family-names: Gensollen
+    given-names: Nicolas
+  - family-names: Hassanaly
+    given-names: Ravi
+  - family-names: Heffernan
+    given-names: Manon
+  - family-names: Joubert
+    given-names: Alice
+  - family-names: Loizillon
+    given-names: Sophie
+  - family-names: Routier
+    given-names:  Alexandre
+  - family-names: Roy
+    given-names: Hugues
+  - family-names: Solal
+    given-names: Maëlys
+  - family-names: Thibeau-Sutre
+    given-names: Elina
   - family-names: Vaillant
     given-names: Ghislain
   - family-names: Wen
     given-names: Junhao
-  - family-names: Loizillon
-    given-names: Sophie
-  - family-names: Cassereau
-    given-names: Nathan
-  - family-names: Gensollen
-    given-names: Nicolas
 title: " ClinicaDL: an open-source Python library for reproducible deep learning in neuroimaging."
-version: 2.0.0rc2
+version: 2.0.0
 doi: 10.1016/j.cmpb.2022.106818
 license: MIT
-date-released: 2023-06-09
+date-released: 2026-06-10
 url: "https://github.com/aramis-lab/clinicadl"
