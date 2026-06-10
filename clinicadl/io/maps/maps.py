@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -8,11 +7,13 @@ import pandas as pd
 from torch import load as torch_load
 from torch import save as torch_save
 
+from clinicadl.io.maps.env import EnvDir
 from clinicadl.utils.dictionary.suffixes import JSON, LOG, PT, TSV, TXT
 from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.dictionary.words import (
     ARCHITECTURE,
     CALLBACKS,
+    ENV,
     ENVIRONMENT,
     EXEC,
     METRICS,
@@ -25,6 +26,7 @@ from clinicadl.utils.dictionary.words import (
     TEST,
     TRAINING,
 )
+from clinicadl.utils.env import dump_environment
 from clinicadl.utils.json import read_json, write_json
 from clinicadl.utils.typing import PathType
 
@@ -63,12 +65,6 @@ class Maps(Directory):
 
             Details on the neural network architecture.
 
-        .. dropdown:: environment.txt → ``maps.environment_txt``
-            :icon: file
-            :color: light
-
-            The Python environment when the ``Maps`` was created.
-
         .. dropdown:: callbacks.json → ``maps.callbacks_json``
             :icon: file
             :color: light
@@ -98,6 +94,36 @@ class Maps(Directory):
             :color: light
 
             Summary of the ``Maps`` directory.
+
+        .. dropdown:: **env**
+            :icon: file-directory
+            :color: muted
+
+            A snapshot of the Python environment, captured automatically when the MAPS is created, so that
+            it can be recreated later. More information in the :ref:`user guide <reproduce_env>`.
+
+            .. dropdown:: environment.txt → ``maps.env.environment_txt``
+                :icon: file
+                :color: light
+
+                Output of a ``pip freeze`` command. Always generated. It pins every package installed with ``pip`` to its
+                exact version.
+
+            .. dropdown:: environment.yml → ``maps.env.environment_yml``
+                :icon: file
+                :color: light
+
+                Output of a ``conda env export`` command. Generated only when ``ClinicaDL`` runs **inside a conda
+                environment**. It pins exact versions and build strings, making it the most faithful copy for
+                reproducing the environment on the same machine.
+
+            .. dropdown:: environment_portable.yml → ``maps.env.environment_portable_yml``
+                :icon: file
+                :color: light
+
+                Output of a ``conda env export --no-builds --ignore-channels`` command. Generated only **inside a
+                conda environment**. Dropping the build strings and channels makes the environment more likely to be recreated
+                on another machine without errors.
 
         .. dropdown:: **training**
             :icon: file-directory
@@ -673,6 +699,7 @@ class Maps(Directory):
         self._test = TestDir(path=self.path / TEST)
         self._prediction = PredictionDir(path=self.path / PREDICTION)
         self._exec = ExecDir(path=self.path / EXEC)
+        self._env = EnvDir(path=self.path / ENV)
 
     @property
     @mandatory
@@ -686,6 +713,10 @@ class Maps(Directory):
     @property
     def prediction(self) -> PredictionDir:
         return self._prediction
+
+    @property
+    def env(self) -> EnvDir:
+        return self._env
 
     @property
     def exec(self) -> ExecDir:
@@ -704,11 +735,6 @@ class Maps(Directory):
     @mandatory
     def metrics_json(self) -> Path:
         return (self.path / METRICS).with_suffix(JSON)
-
-    @property
-    @mandatory
-    def environment_txt(self) -> Path:
-        return (self.path / ENVIRONMENT).with_suffix(TXT)
 
     @property
     def summary_log(self) -> Path:
@@ -735,7 +761,7 @@ class Maps(Directory):
             If the directory already exists and ``overwrite=False``, the function succeeds when ``exist_ok=True``.
         """
         super().create(overwrite=overwrite, exist_ok=exist_ok)
-        self._write_environment_txt()
+        dump_environment(ENVIRONMENT, root=self.env.path)
         self._create_summary_log()
 
     @staticmethod
@@ -951,18 +977,6 @@ class Maps(Directory):
     def _create_summary_log(self):
         """Create a summary log file."""
         MapsSummary(self.summary_log).create()
-
-    def _write_environment_txt(self) -> None:
-        """Writes the installed Python packages (via `pip freeze`) to `environment.txt`."""
-        try:
-            env_variables = subprocess.check_output("pip freeze", shell=True).decode(
-                "utf-8"
-            )
-            with (self.environment_txt).open(mode="w") as file:
-                file.write(env_variables)
-        except subprocess.CalledProcessError:
-            with (self.environment_txt).open(mode="w") as file:
-                file.write("pip freeze")
 
 
 Maps.read.__doc__ = """
