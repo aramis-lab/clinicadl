@@ -1,6 +1,9 @@
 <h1 align="center">
   <a href="https://clinicadl.readthedocs.io/en/stable/">
-    <img src="docs/_static/logos/white_logo.png" alt="ClinicaDL Logo" width="120" height="120">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/_static/logos/white_logo.png">
+      <img src="docs/_static/logos/black_logo.png" alt="ClinicaDL Logo" width="120" height="120">
+    </picture>
   </a>
   <br/>
   ClinicaDL
