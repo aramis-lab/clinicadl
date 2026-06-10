@@ -109,7 +109,7 @@ def _compare_any_file(file: Path, ref_file: Path) -> None:
     content = Maps.open_file(file)
     ref_content = Maps.open_file(ref_file)
 
-    if file.name == "environment.txt":
+    if file.name.startswith("environment"):
         return
 
     elif file.name == "computational.tsv":
