@@ -15,7 +15,7 @@ from .data import TrainingDataDir
 from .splits import TrainingSplitDir
 from .splits.models import BestModelsDir, CheckpointsDir, TrainingModelDir
 
-SEPARATOR = "_"
+TSV_SEPARATOR = "_"
 
 
 class TrainingDir(SplitsDir[TrainingSplitDir]):
@@ -113,7 +113,7 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
         """
         if checkpoint_name.startswith(self._item_key):
             try:
-                split, name = checkpoint_name.split(SEPARATOR)
+                split, name = checkpoint_name.split(TSV_SEPARATOR)
             except ValueError:
                 pass
             else:
@@ -133,7 +133,7 @@ class TrainingDir(SplitsDir[TrainingSplitDir]):
 
         raise ValueError(
             "The name of the checkpoint must be like "
-            f"'{self._item_key}{self._separator}...{SEPARATOR}{BestModelsDir._item_key}{BestModelsDir._separator}...', "
-            f"'{self._item_key}{self._separator}...{SEPARATOR}{CheckpointsDir._item_key}{CheckpointsDir._separator}...' "
-            f"or '{self._item_key}{self._separator}...{SEPARATOR}{FINAL}'. Got: {checkpoint_name}"
+            f"'{self._item_key}{self._separator}...{TSV_SEPARATOR}{BestModelsDir._item_key}{BestModelsDir._separator}...', "
+            f"'{self._item_key}{self._separator}...{TSV_SEPARATOR}{CheckpointsDir._item_key}{CheckpointsDir._separator}...' "
+            f"or '{self._item_key}{self._separator}...{TSV_SEPARATOR}{FINAL}'. Got: {checkpoint_name}"
         )

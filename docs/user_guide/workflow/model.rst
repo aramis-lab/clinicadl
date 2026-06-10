@@ -1,7 +1,7 @@
 .. _user_guide_workflow_model:
 
-2.1 Defining a model
-====================
+2.1. Defining a model
+=====================
 
 In ClinicaDL, a **model** is more than a neural network. A
 :py:class:`~clinicadl.models.Model` bundles together everything needed to train and
@@ -10,8 +10,8 @@ that defines how a batch flows forward, how gradients are computed, how the weig
 are optimized, and how the model is evaluated. By gathering this logic in one object, ClinicaDL can offer a generic
 :py:class:`~clinicadl.train.Trainer` that works with any model.
 
-The Model class
----------------
+2.1.1. The ``Model`` class
+--------------------------
 
 Every model in ClinicaDL inherits from the base :py:class:`~clinicadl.models.Model`,
 which is itself a :py:class:`torch.nn.Module`. ``Model`` defines the interface that the
@@ -35,8 +35,8 @@ models that already define this logic for the most common cases —
 different behaviour, you can subclass one of them (or ``Model`` itself) and override only
 the relevant method, as covered in :doc:`Chapter 4 <../customising/index>`.
 
-The SupervisedModel
--------------------
+2.1.1.1. The ``SupervisedModel``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :py:class:`~clinicadl.models.SupervisedModel` is the model for usual **supervised**
 tasks — classification, regression and segmentation. You give it a network, a loss
@@ -92,8 +92,8 @@ inference patch-by-patch or slice-by-slice instead, pass an
 :py:class:`~clinicadl.infer.Inferer` via the ``inferer`` argument — this is covered
 in :doc:`Evaluating <evaluating>`.
 
-The ReconstructionModel
------------------------
+2.1.1.2. The ``ReconstructionModel``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :py:class:`~clinicadl.models.ReconstructionModel` is the counterpart for **image
 reconstruction**, e.g. with an autoencoder. It works just like a
@@ -119,8 +119,8 @@ image — so there is no label to specify:
 
 .. _user_guide_workflow_networks:
 
-2.1.1 Neural networks
----------------------
+2.1.2. Neural networks
+----------------------
 
 :py:mod:`clinicadl.networks.nn` provides a catalogue of neural networks, all
 subclasses of :py:class:`torch.nn.Module`, organised in three families:
@@ -131,9 +131,8 @@ specifications:
 - :py:class:`~clinicadl.networks.nn.MLP` — a multilayer perceptron;
 - :py:class:`~clinicadl.networks.nn.ConvEncoder` / :py:class:`~clinicadl.networks.nn.ConvDecoder`
   — convolutional encoders and decoders;
-- :py:class:`~clinicadl.networks.nn.CNN` — a convolutional network for prediction
-  (encoder + MLP);
-- :py:class:`~clinicadl.networks.nn.Generator` — an MLP followed by a decoder (the symmetric of ``CNN``);
+- :py:class:`~clinicadl.networks.nn.CNN` — a convolutional encoder followed by a MLP;
+- :py:class:`~clinicadl.networks.nn.Generator` — an MLP followed by a convolutional decoder (the symmetric of ``CNN``);
 - :py:class:`~clinicadl.networks.nn.AutoEncoder` and :py:class:`~clinicadl.networks.nn.VAE`.
 
 **Common architectures** — well-known networks, configurable in their depth and width:

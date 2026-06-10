@@ -17,8 +17,6 @@ from clinicadl.metrics.config import LossMetricConfig, MetricConfig, MSEMetricCo
 from clinicadl.metrics.handler import MetricsHandler
 from clinicadl.utils.exceptions import (
     CannotReadJsonFieldError,
-    ClinicaDLArgumentError,
-    ClinicaDLConfigurationError,
 )
 
 
@@ -32,8 +30,8 @@ MODEL = Model()
 DATAPOINTS = [
     DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
-        participant=f"sub-{i}",
-        session=f"ses-{i}",
+        participant_id=f"sub-{i}",
+        session_id=f"ses-{i}",
         label=float(gt),
         output=float(pred),
     )
@@ -115,7 +113,7 @@ def test_init_metrics():
     )
 
     with pytest.raises(
-        ClinicaDLArgumentError,
+        ValueError,
         match="In LossMetricConfig, loss_name='loss_' but there is no such loss*",
     ):
         metrics.init_metrics(MODEL)
@@ -128,7 +126,7 @@ def test_init_metrics():
     )
 
     with pytest.raises(
-        ClinicaDLConfigurationError,
+        RuntimeError,
         match="First, call 'init_metrics' to instantiate the metrics.",
     ):
         metrics(BATCH_1)

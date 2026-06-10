@@ -1,7 +1,7 @@
 .. _user_guide_data_transforms:
 
-1.3 Transforming data
-=====================
+1.3. Transforming data
+======================
 
 Raw neuroimaging data is rarely fed to a network as-is: it is normalised, possibly
 cut into patches or slices, resized to fit the network, and — during training —
@@ -9,8 +9,8 @@ augmented. In ClinicaDL, this whole pipeline is described by a single object, th
 :py:class:`~clinicadl.transforms.TransformsHandler`, which you pass to a dataset
 through its ``transforms`` argument.
 
-The TransformsHandler
----------------------
+1.3.1. Defining the transformation pipeline
+-------------------------------------------
 
 A :py:class:`~clinicadl.transforms.TransformsHandler` organises transforms into
 **four** stages, applied in this order:
@@ -44,8 +44,8 @@ transforms automatically applies the augmentations only when it is in training m
 
 .. _user_guide_data_transforms_extraction:
 
-1.3.1 Patches and slices
-------------------------
+1.3.2. Patches and slices
+-------------------------
 
 The ``extraction`` decides what a single element of the dataset is. ClinicaDL
 provides three extractions, in :py:mod:`clinicadl.transforms.extraction`:
@@ -59,8 +59,7 @@ provides three extractions, in :py:mod:`clinicadl.transforms.extraction`:
     ``pad_mode`` and ``pad_value`` control how patches are tiled across the image.
 
 :py:class:`~clinicadl.transforms.extraction.Slice`
-    Each sample is a 2D slice taken along ``slice_direction`` (``0`` sagittal, ``1``
-    coronal, ``2`` axial). Which slices to keep can be chosen with ``slices``,
+    Each sample is a 2D slice taken along the axis specified via ``slice_direction``. Which slices to keep can be chosen with ``slices``,
     ``discarded_slices``, ``borders`` or ``tsv_path``.
 
 The extraction also determines how many samples an image yields, which you can check
@@ -104,8 +103,8 @@ dataset** is the number of images times the number of samples per image (see
 
 .. _user_guide_data_transforms_pipeline:
 
-1.3.2 Preprocessing, augmentation and post-processing
------------------------------------------------------
+1.3.3. Preprocessing, augmentation and post-processing
+------------------------------------------------------
 
 ClinicaDL works with **any callable that takes a**
 :py:class:`~clinicadl.data.structures.DataPoint` **and returns a** ``DataPoint``.
@@ -157,7 +156,7 @@ derived from the image:
 .. code-block:: python
 
     >>> add_foreground_mask(data)
-    Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session', 'foreground'); images: 3)
+    Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id', 'foreground'); images: 3)
 
 However, it is advised to inherit from :py:class:`torchio.Transform` to create
 your own transforms.

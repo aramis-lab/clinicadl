@@ -81,8 +81,8 @@ class BidsFileType(ClinicaDLConfig):
     def match(
         self,
         path: str | Path,
-        participant: Optional[str] = None,
-        session: Optional[str] = None,
+        participant_id: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> bool:
         """
         Checks whether the input path matches the current ``BidsFileType``, for the
@@ -95,9 +95,9 @@ class BidsFileType(ClinicaDLConfig):
         ----------
         path : str | Path
             The path to check.
-        participant : Optional[str], default=None
+        participant_id : Optional[str], default=None
             The participant id (e.g., "sub-xxx").
-        session : Optional[str], default=None
+        session_id : Optional[str], default=None
             The session id (e.g., "ses-xxx").
 
         Returns
@@ -119,29 +119,29 @@ class BidsFileType(ClinicaDLConfig):
                     with_entities={"space": r"MNI152.*", "res": "1x1x1"},
                     without_entities={"desc": "Crop"},
                 )
-            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             True
-            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             True    # 'space' still matches the pattern
-            >>> file_type.match("anat/sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-001_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             False   # not the right subject
-            >>> file_type.match("anat/sub-000_ses-M001_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M001_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             False   # not the right session
-            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_run-1_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_run-1_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             True    # 'run' is not in without_entities, so its presence is not disqualifying
-            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_FLAIR.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_FLAIR.nii.gz", participant_id="sub-000", session_id="ses-M000")
             False   # not the right suffix
-            >>> file_type.match("mri/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("mri/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             False   # not the right data_type
-            >>> file_type.match("sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             False   # not the right data_type
-            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii", participant_id="sub-000", session_id="ses-M000")
             False   # not the right extension
-            >>> file_type.match("anat/sub-000_ses-M000_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M000_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             False   # 'space' is missing
-            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-2x2x2_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_res-2x2x2_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             False   # not the right value for 'res'
-            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz", participant="sub-000", session="ses-M000")
+            >>> file_type.match("anat/sub-000_ses-M000_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz", participant_id="sub-000", session_id="ses-M000")
             False   # contains an entity that is in without_entities
 
         .. code-block::
@@ -191,12 +191,12 @@ class BidsFileType(ClinicaDLConfig):
 
         with_entities = copy(self.with_entities) or {}
 
-        if participant is not None:
-            sub = Subject(participant)
+        if participant_id is not None:
+            sub = Subject(participant_id)
             with_entities[sub.key] = re.compile(sub.value)
 
-        if session is not None:
-            ses = Session(session)
+        if session_id is not None:
+            ses = Session(session_id)
             with_entities[ses.key] = re.compile(ses.value)
 
         for key, value in with_entities.items():

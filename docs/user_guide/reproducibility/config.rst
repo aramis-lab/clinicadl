@@ -1,7 +1,7 @@
 .. _user_guide_reproducibility_config:
 
-3.1 Configuration classes
-=========================
+3.1. Configuration classes
+==========================
 
 Throughout this guide we have mostly passed raw objects to ClinicaDL (e.g; TorchIO transforms,
 PyTorch losses and networks). This is convenient, but raw objects have a drawback for
@@ -10,10 +10,10 @@ parametrised, nor rebuild them later from a saved experiment.
 
 This is the problem **configuration classes** solve.
 
-What is a configuration class?
-------------------------------
+3.1.1. What is a configuration class?
+-------------------------------------
 
-A configuration class is a small dataclass associated with a ClinicaDL object. It
+A configuration class is a small dataclass associated with a Python object. It
 holds **only the parameters** of that object, with almost no logic of its own. From a
 configuration object, you obtain the actual object with its ``get_object`` method.
 
@@ -40,8 +40,13 @@ This is exactly what makes an experiment reproducible: ClinicaDL stores the
 configuration of every object it uses, so the whole setup can be rebuilt later (see
 :doc:`MAPS <maps>`).
 
-Where you can use them
-----------------------
+.. note::
+  The objects implemented in ClinicaDL have internal configuration classes that are not directly visible to the user.
+  You will mostly manipulate configuration classes associated to objects that come
+  from external libraries (PyTorch, MONAI, etc.).
+
+3.1.2. Where you can use them
+-----------------------------
 
 Wherever ClinicaDL accepts a raw object, it usually also accepts the matching
 configuration class. Configuration classes exist for the main building blocks of the

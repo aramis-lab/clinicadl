@@ -12,13 +12,13 @@ BATCH = Batch(
     [
         DataPoint(
             image=tio.ScalarImage(tensor=torch.randn(1, 5, 5, 5)),
-            participant="sub-0",
-            session="ses-0",
+            participant_id="sub-0",
+            session_id="ses-0",
         ),
         DataPoint(
             image=tio.ScalarImage(tensor=torch.randn(1, 5, 5, 5)),
-            participant="sub-1",
-            session="ses-1",
+            participant_id="sub-1",
+            session_id="ses-1",
         ),
     ]
 )

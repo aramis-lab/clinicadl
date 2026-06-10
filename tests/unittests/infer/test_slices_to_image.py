@@ -42,8 +42,8 @@ def test_inferer():
         image=tio.ScalarImage(
             tensor=torch.randn(2, 5, 5, 5), affine=np.diag([1.2, 1.1, 1, 1])
         ),
-        participant="abc",
-        session="abc",
+        participant_id="abc",
+        session_id="abc",
         image_path="abc.nii.gz",
         file_type=BidsFileType(data_type="abc", suffix="abc"),
     )
@@ -136,8 +136,8 @@ def test_inferer():
     # errors
     sample = Sample2D(
         image=tio.ScalarImage(tensor=torch.randn(2, 5, 1, 5)),
-        participant="abc",
-        session="abc",
+        participant_id="abc",
+        session_id="abc",
         image_path="abc.nii.gz",
         file_type=BidsFileType(data_type="abc", suffix="abc"),
         sample_position=0,
@@ -179,8 +179,8 @@ def test_from_to_dict():
 def test_gpu():
     dp = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(2, 3, 3, 3)),
-        participant="abc",
-        session="abc",
+        participant_id="abc",
+        session_id="abc",
     )
     network = nn.Conv2d(2, 4, 3)
 

@@ -18,7 +18,7 @@ def extract_baseline(
 ) -> pd.DataFrame:
     """
     From a dataframe, returns the baseline dataframe, i.e. the dataframe with
-    only the first session for each subject.
+    only the first session for each participant.
 
     Parameters
     ----------
@@ -137,7 +137,7 @@ def _retrieve_longitudinal(
     all_df: pd.DataFrame, baselin_df: pd.DataFrame
 ) -> pd.DataFrame:
     """
-    Gets a longitudinal subset of 'all_df' from the subjects in 'baseline_df'.
+    Gets a longitudinal subset of 'all_df' from the participants in 'baseline_df'.
     """
     longitudinal_df = (
         all_df.set_index([PARTICIPANT_ID]).loc[baselin_df[PARTICIPANT_ID]].reset_index()

@@ -36,8 +36,8 @@ def test_DataPoint():
     # first basic test
     data_point = DataPoint(
         image_path,
-        participant="sub-000",
-        session="ses-M000",
+        participant_id="sub-000",
+        session_id="ses-M000",
         mask_1=mask,
         other=0,
     )
@@ -74,8 +74,8 @@ def test_DataPoint():
     assert (data_point["mask_3"].tensor == mask.tensor).all()
     np.testing.assert_allclose(data_point["mask_4"].affine, image.affine)
 
-    assert data_point.participant == "sub-000"
-    assert data_point.session == "ses-M000"
+    assert data_point.participant_id == "sub-000"
+    assert data_point.session_id == "ses-M000"
 
     # affine, voxel spacing and shapes
     with pytest.raises(RuntimeError):
@@ -113,28 +113,30 @@ def test_DataPoint():
     # get other fields
     assert data_point.get_non_images_dict() == {
         "other": 0,
-        "participant": "sub-000",
-        "session": "ses-M000",
+        "participant_id": "sub-000",
+        "session_id": "ses-M000",
     }
     assert set(
-        data_point.get_non_images_dict(include=["participant", "session"]).keys()
-    ) == {"participant", "session"}
-    assert set(data_point.get_non_images_dict(exclude=["participant"]).keys()) == {
-        "session",
+        data_point.get_non_images_dict(include=["participant_id", "session_id"]).keys()
+    ) == {"participant_id", "session_id"}
+    assert set(data_point.get_non_images_dict(exclude=["participant_id"]).keys()) == {
+        "session_id",
         "other",
     }
 
     # get_keys
     assert sorted(data_point.get_keys()) == sorted(list(data_point.keys()))
-    assert sorted(data_point.get_keys(include=["participant", "image"])) == [
+    assert sorted(data_point.get_keys(include=["participant_id", "image"])) == [
         "image",
-        "participant",
+        "participant_id",
     ]
-    assert sorted(data_point.get_keys(exclude=["participant", "image"])) == sorted(
-        [key for key in data_point.keys() if key not in ["participant", "image"]]
+    assert sorted(data_point.get_keys(exclude=["participant_id", "image"])) == sorted(
+        [key for key in data_point.keys() if key not in ["participant_id", "image"]]
     )
     assert sorted(
-        data_point.get_keys(include=["participant", "image"], exclude=["participant"])
+        data_point.get_keys(
+            include=["participant_id", "image"], exclude=["participant_id"]
+        )
     ) == ["image"]
 
     # test copy
@@ -142,15 +144,15 @@ def test_DataPoint():
     c = copy(data_point)
     assert isinstance(c, SubDataPoint)
     assert isinstance(c.image, tio.ScalarImage)
-    assert c.participant == "sub-000"
-    assert c.session == "ses-M000"
+    assert c.participant_id == "sub-000"
+    assert c.session_id == "ses-M000"
     assert isinstance(c["mask_3"], tio.LabelMap)
 
     # other attributes
     data_point = DataPoint(
         image=image,
-        participant="sub-000",
-        session="ses-M000",
+        participant_id="sub-000",
+        session_id="ses-M000",
         age=1,
     )
     data_point["x"] = np.array([1])
@@ -163,8 +165,8 @@ def test_DataPoint():
     # spacing, shape
     data_point = DataPoint(
         image,
-        participant="sub-000",
-        session="ses-M00",
+        participant_id="sub-000",
+        session_id="ses-M00",
     )
     data_point.add_mask(mask_path, "mask")
     assert data_point.spacing == (1.3, 1.2, 1.1)

@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
 from clinicadl.transforms.extraction import Slice
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from clinicadl.utils.exceptions import DataFrameError
 
 TSV_DIR = Path(__file__).parents[2] / "resources" / "tsv"
 SLICE_TSV = TSV_DIR / "extract_slices_test.tsv"
@@ -33,7 +33,7 @@ def test_args():
     ):
         Slice(tsv_path=SLICE_TSV, borders=1)
     with pytest.raises(
-        ClinicaDLTSVError,
+        DataFrameError,
         match="TSV must contain columns: 'participant_id', 'session_id', 'slice_idx'",
     ):
         Slice(tsv_path=BAD_SLICE_TSV_1)
@@ -47,8 +47,8 @@ def test_num_samples_per_image():
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor, affine=affine),
         label=tio.LabelMap(tensor=label, affine=affine),
-        participant="sub-000",
-        session="ses-M000",
+        participant_id="sub-000",
+        session_id="ses-M000",
         image_path="abc.nii.gz",
     )
 
@@ -92,8 +92,8 @@ def test_extract_sample():
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor, affine=affine),
         label=tio.LabelMap(tensor=label, affine=affine),
-        participant="sub-000",
-        session="ses-M000",
+        participant_id="sub-000",
+        session_id="ses-M000",
         image_path="abc.nii.gz",
     )
     extracted_data = slice(data_point, sample_index=3)
@@ -105,8 +105,8 @@ def test_extract_sample():
     assert np.isclose(extracted_data.image.affine, affine).all()
     assert np.isclose(extracted_data.label.affine, affine).all()
 
-    assert extracted_data.participant == "sub-000"
-    assert extracted_data.session == "ses-M000"
+    assert extracted_data.participant_id == "sub-000"
+    assert extracted_data.session_id == "ses-M000"
     assert extracted_data["image_path"] == "abc.nii.gz"
     assert extracted_data["slice_direction"] == 2
     assert extracted_data["sample_position"] == 5
@@ -123,8 +123,8 @@ def test_extract_sample():
     # other tests
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor),
-        participant="sub-000",
-        session="ses-M000",
+        participant_id="sub-000",
+        session_id="ses-M000",
         label=1,
     )
     extracted_data = slice(data_point, sample_index=1)
@@ -154,8 +154,8 @@ def test_extract_sample():
     data_point = DataPoint(
         image=tio.ScalarImage(tensor=image_tensor, affine=affine),
         label=tio.LabelMap(tensor=label, affine=affine),
-        participant="sub-000",
-        session="ses-M000",
+        participant_id="sub-000",
+        session_id="ses-M000",
         image_path="abc.nii.gz",
     )
 
@@ -166,7 +166,7 @@ def test_extract_sample():
     assert isinstance(extracted_data.label, tio.LabelMap)
     assert (extracted_data.label.tensor == label[:, :, :, 1:2]).all()
 
-    data_point.session = "ses-M001"
+    data_point.session_id = "ses-M001"
     with pytest.raises(
         ValueError,
         match="No slices found in TSV for participant=sub-000, session=ses-M001.",

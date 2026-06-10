@@ -24,7 +24,9 @@ class PostprocessingHandlerConfig(ObjectConfig["PostprocessingHandler"]):
     """Config class for ``PostprocessingHandler``."""
 
     transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
-        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(get_transform_from_dict)
+        }
     )
 
     @field_validator("transforms", mode="before")
@@ -44,7 +46,7 @@ class PostprocessingHandler(HasConfig[PostprocessingHandlerConfig]):
 
     Parameters
     ----------
-    transforms : list[TransformOrConfig], default=[]
+    transforms : list[TransformOrConfig], default=()
         A list of transformations to apply on the outputs.
     """
 
@@ -52,7 +54,7 @@ class PostprocessingHandler(HasConfig[PostprocessingHandlerConfig]):
 
     def __init__(
         self,
-        transforms: Sequence[TransformOrConfig] = [],
+        transforms: Sequence[TransformOrConfig] = (),
     ):
         self.config = PostprocessingHandlerConfig(
             transforms=transforms,

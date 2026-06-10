@@ -41,10 +41,14 @@ class ObjectTestConfig(ObjectConfig[ObjectTest]):
 class ReaderWriterConfig(ObjectConfig["ReaderWriter"]):
     a: int
     obj: ObjectOrConfig[ObjectTest, ObjectTestConfig] = Field(
-        reader=ObjectOrConfig.build_reader(ObjectTestConfig.from_dict)
+        json_schema_extra={
+            "reader": ObjectOrConfig.build_reader(ObjectTestConfig.from_dict)
+        }
     )
     seq: SequenceOfObjects[ObjectTest, ObjectTestConfig] = Field(
-        reader=SequenceOfObjects.build_reader(ObjectTestConfig.from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(ObjectTestConfig.from_dict)
+        }
     )
 
     @field_validator("obj", mode="before")

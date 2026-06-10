@@ -118,7 +118,9 @@ class AsDiscreteConfig(MonaiTransformConfig):
     to_onehot: Optional[PositiveInt] = AS_DISCRETE_MONAI_DEFAULTS["to_onehot"]
     threshold: Optional[float] = AS_DISCRETE_MONAI_DEFAULTS["threshold"]
     rounding: Optional[Rounding] = AS_DISCRETE_MONAI_DEFAULTS["rounding"]
-    dtype: torch.dtype = Field(default=torch.float, reader=read_dtype)
+    dtype: torch.dtype = Field(
+        default=torch.float, json_schema_extra={"reader": read_dtype}
+    )
     dim: NonNegativeInt = 0
 
     @model_validator(mode="after")
@@ -209,7 +211,9 @@ class SobelGradientsConfig(MonaiTransformConfig):
     normalize_kernels: bool = SOBEL_MONAI_DEFAULTS["normalize_kernels"]
     normalize_gradients: bool = SOBEL_MONAI_DEFAULTS["normalize_gradients"]
     padding_mode: SobelPaddingMode = SOBEL_MONAI_DEFAULTS["padding_mode"]
-    dtype: torch.dtype = Field(default=SOBEL_MONAI_DEFAULTS["dtype"], reader=read_dtype)
+    dtype: torch.dtype = Field(
+        default=SOBEL_MONAI_DEFAULTS["dtype"], json_schema_extra={"reader": read_dtype}
+    )
 
     @field_validator("kernel_size", mode="after")
     @classmethod

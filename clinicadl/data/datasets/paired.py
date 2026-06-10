@@ -270,7 +270,7 @@ class PairedDataset(CollectionDataset):
             )
 
         merged = (
-            concat_df.stack(dropna=False)
+            concat_df.stack(future_stack=True)
             .apply(_resolve, axis=1)
             .unstack(2)
             .reset_index()

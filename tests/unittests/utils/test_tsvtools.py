@@ -8,7 +8,7 @@ from clinicadl.utils.exceptions import DataFrameError
 from clinicadl.utils.tsvtools import (
     create_participants_sessions_df,
     df_to_tsv,
-    read_data,
+    read_df,
 )
 
 
@@ -32,12 +32,12 @@ BIDS = Path(__file__).parents[1] / "resources" / "bids"
 
 class TestReadData:
     def test_path(self):
-        df = read_data(BIDS / "participantsXsessions.tsv")
+        df = read_df(BIDS / "participantsXsessions.tsv")
         assert len(df) == 8
 
     def test_empty(self):
         with pytest.raises(DataFrameError, match="The dataframe is empty!"):
-            read_data(pd.DataFrame())
+            read_df(pd.DataFrame())
 
     def test_protected_names(self):
         with pytest.raises(
@@ -46,7 +46,7 @@ class TestReadData:
                 "The dataframe contains some protected column names. Please do not use names in ['abc']"
             ),
         ):
-            read_data(
+            read_df(
                 pd.DataFrame(
                     {
                         "participant_id": ["sub-000"],
@@ -62,7 +62,7 @@ class TestReadData:
             DataFrameError,
             match=r"The dataframe contains duplicated \(participant, session\) pairs:.*",
         ):
-            read_data(
+            read_df(
                 pd.DataFrame(
                     {
                         "participant_id": ["sub-000", "sub-000"],
@@ -70,7 +70,7 @@ class TestReadData:
                     }
                 ),
             )
-        read_data(
+        read_df(
             pd.DataFrame(
                 {
                     "participant_id": ["sub-000", "sub-000"],
@@ -102,7 +102,7 @@ class TestReadData:
                 "The dataframe is not in the correct format. Columns should include ('participant_id', 'session_id')"
             ),
         ):
-            read_data(df)
+            read_df(df)
 
 
 class TestDfToTsv:

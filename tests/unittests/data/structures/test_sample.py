@@ -24,8 +24,8 @@ SESSION = "ses-000"
 def test_sample():
     sample = Sample(
         image=IMAGE,
-        participant=PARTICIPANT,
-        session=SESSION,
+        participant_id=PARTICIPANT,
+        session_id=SESSION,
         file_type=FILE_TYPE,
         image_path=PATH,
         age=AGE,
@@ -33,8 +33,8 @@ def test_sample():
     )
     assert sample.image is IMAGE
     assert sample["image"] is IMAGE
-    assert sample.participant is PARTICIPANT
-    assert sample.session is SESSION
+    assert sample.participant_id is PARTICIPANT
+    assert sample.session_id is SESSION
     assert sample["age"] == AGE
     assert sample["mask"] is MASK
     assert sample.file_type[0] is FILE_TYPE
@@ -44,8 +44,8 @@ def test_sample():
 
     sample = Sample(
         image=IMAGE,
-        participant=PARTICIPANT,
-        session=SESSION,
+        participant_id=PARTICIPANT,
+        session_id=SESSION,
         file_type=FILE_TYPE,
         image_path=PATH,
         sample_type="patch",
@@ -56,8 +56,8 @@ def test_sample():
 
     sample = Sample(
         image=DOUBLE_IMAGE,
-        participant=PARTICIPANT,
-        session=SESSION,
+        participant_id=PARTICIPANT,
+        session_id=SESSION,
         file_type=FILE_TYPE,
         image_path=PATH,
     )
@@ -66,8 +66,8 @@ def test_sample():
 
     sample = Sample(
         image=DOUBLE_IMAGE,
-        participant=PARTICIPANT,
-        session=SESSION,
+        participant_id=PARTICIPANT,
+        session_id=SESSION,
         file_type=(FILE_TYPE, FILE_TYPE),
         image_path=(PATH, PATH),
     )
@@ -78,8 +78,8 @@ def test_sample():
     ):
         Sample(
             image=IMAGE,
-            participant=PARTICIPANT,
-            session=SESSION,
+            participant_id=PARTICIPANT,
+            session_id=SESSION,
             file_type=(FILE_TYPE, FILE_TYPE),
             image_path=(PATH,),
         )
@@ -90,8 +90,8 @@ def test_sample():
     ):
         Sample(
             image=IMAGE,
-            participant=PARTICIPANT,
-            session=SESSION,
+            participant_id=PARTICIPANT,
+            session_id=SESSION,
             file_type=(FILE_TYPE,),
             image_path=(PATH, PATH),
         )
@@ -99,8 +99,8 @@ def test_sample():
     with pytest.raises(ValidationError):
         Sample(
             image=IMAGE,
-            participant=PARTICIPANT,
-            session=SESSION,
+            participant_id=PARTICIPANT,
+            session_id=SESSION,
             file_type=FILE_TYPE,
             image_path=PATH,
             sample_type="patch",
@@ -110,8 +110,8 @@ def test_sample():
     with pytest.raises(ValidationError):
         Sample(
             image=IMAGE,
-            participant=PARTICIPANT,
-            session=SESSION,
+            participant_id=PARTICIPANT,
+            session_id=SESSION,
             file_type=FILE_TYPE,
             image_path=PATH,
             sample_type="slice",
@@ -121,8 +121,8 @@ def test_sample():
     with pytest.raises(ValidationError):
         Sample(
             image=IMAGE,
-            participant=PARTICIPANT,
-            session=SESSION,
+            participant_id=PARTICIPANT,
+            session_id=SESSION,
             file_type=FILE_TYPE,
             image_path=PATH,
             sample_type="image",
@@ -137,8 +137,8 @@ def test_sample_2d():
     ):
         Sample2D(
             image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 3), affine=AFFINE),
-            participant=PARTICIPANT,
-            session=SESSION,
+            participant_id=PARTICIPANT,
+            session_id=SESSION,
             file_type=FILE_TYPE,
             image_path=PATH,
             sample_position=2,
@@ -148,8 +148,8 @@ def test_sample_2d():
 
     sample = Sample2D(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 1, 3), affine=AFFINE),
-        participant=PARTICIPANT,
-        session=SESSION,
+        participant_id=PARTICIPANT,
+        session_id=SESSION,
         mask=tio.LabelMap(tensor=torch.randn(2, 3, 1, 3), affine=AFFINE),
         file_type=FILE_TYPE,
         image_path=PATH,
@@ -157,7 +157,7 @@ def test_sample_2d():
         squeeze=False,
         slice_direction=1,
     )
-    assert sample.session is SESSION
+    assert sample.session_id is SESSION
     assert sample.sample_position == 1
     assert not sample.squeeze
     assert sample.slice_direction == 1

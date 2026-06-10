@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 import torchio as tio
@@ -9,7 +10,7 @@ from clinicadl.data.tensors import TensorDescription
 from clinicadl.io.bids import BidsFileType
 from clinicadl.transforms.config import CropConfig, PadConfig
 from clinicadl.utils.json import read_json, write_json
-from clinicadl.utils.tsvtools import read_data
+from clinicadl.utils.tsvtools import read_df
 
 BIDS = Path(__file__).parents[2] / "resources" / "bids"
 
@@ -89,7 +90,7 @@ class TestTensorDescription:
         assert f"Tensor conversion description saved in {tensors_dir / 'src-pet_conv-raw_description.json'}"
         assert f"(participant, session) pairs converted saved in {tensors_dir / 'src-pet_conv-raw_participantsXsessions.tsv'}"
         pd.testing.assert_frame_equal(
-            read_data(tensors_dir / "src-pet_conv-raw_participantsXsessions.tsv"),
+            read_df(tensors_dir / "src-pet_conv-raw_participantsXsessions.tsv"),
             tensor_description.participants_sessions,
         )
         json = read_json(tensors_dir / "src-pet_conv-raw_description.json")
@@ -159,7 +160,7 @@ class TestTensorDescription:
             pd.DataFrame(
                 {
                     "conv_id": ["raw", "transform"],
-                    "description": ["raw conversion", None],
+                    "description": ["raw conversion", np.nan],
                     "description_json": [
                         "src-pet_conv-raw_participantsXsessions.tsv",
                         "src-pet_conv-transform_participantsXsessions.tsv",

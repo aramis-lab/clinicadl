@@ -1,7 +1,7 @@
 .. _user_guide_data_splitting:
 
-1.4 Splitting data
-==================
+1.4. Splitting data
+===================
 
 To estimate how well a model generalises, you split your data into a **training**
 set, a **validation** set, and usually a held-out **test** set. In neuroimaging,
@@ -25,8 +25,8 @@ benchmarks.
 
 .. _user_guide_data_splitting_making:
 
-1.4.1 Making a split
---------------------
+1.4.1. Making a split
+---------------------
 
 Two functions create a split from a DataFrame (or a TSV file) listing your
 ``(participant_id, session_id)`` pairs. Both split **participants** and write the
@@ -46,7 +46,7 @@ resulting TSV files to a directory, which they return.
     from clinicadl.split import make_split, make_kfold
 
     # a single 80/20 split
-    split_dir = make_split("bids/metadata.tsv", n_test=0.2)
+    split_dir = make_split("bids_directory/metadata.tsv", n_test=0.2)
 
     # a 5-fold partition
     kfold_dir = make_kfold(split_dir / "training.tsv", n_splits=5)
@@ -68,7 +68,7 @@ Both functions support two important options:
 .. code-block:: python
 
     split_dir = make_split(
-        "bids/metadata.tsv",
+        "bids_directory/metadata.tsv",
         n_test=0.2,
         stratification=["age", "sex"],
         longitudinal=True,
@@ -90,8 +90,8 @@ used, statistics describing how well the variables are balanced:
 
 .. _user_guide_data_splitting_reading:
 
-1.4.2 Reading a split
----------------------
+1.4.2. Reading a split
+----------------------
 
 Once a split exists on disk, you apply it to a :py:class:`~clinicadl.data.datasets.Dataset`
 with one of two reader objects, depending on how the split was made.
@@ -108,9 +108,9 @@ with one of two reader objects, depending on how the split was made.
         from clinicadl.io.bids import BidsFileType
 
         dataset = BidsDataset(
-            "bids",
+            "bids_directory",
             file_type=BidsFileType(data_type="anat", suffix="T1w"),
-            data="bids/metadata.tsv",
+            data="bids_directory/metadata.tsv",
         )
 
         split = SingleSplit(split_dir).get_split(dataset)
@@ -155,15 +155,15 @@ pass the patch dataset as the main argument and the image dataset as ``eval_data
     from clinicadl.transforms import TransformsHandler, extraction
 
     train_dataset = BidsDataset(
-        "bids",
+        "bids_directory",
         file_type=BidsFileType(data_type="anat", suffix="T1w"),
-        data="bids/metadata.tsv",
+        data="bids_directory/metadata.tsv",
         transforms=TransformsHandler(extraction=extraction.Patch(patch_size=64)),
     )
     eval_dataset = BidsDataset(
-        "bids",
+        "bids_directory",
         file_type=BidsFileType(data_type="anat", suffix="T1w"),
-        data="bids/metadata.tsv",
+        data="bids_directory/metadata.tsv",
     )
 
     split = SingleSplit(split_dir).get_split(train_dataset, eval_dataset=eval_dataset)

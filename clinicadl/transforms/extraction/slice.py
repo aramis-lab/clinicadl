@@ -24,7 +24,7 @@ from clinicadl.utils.dictionary.words import (
     SQUEEZE,
 )
 from clinicadl.utils.enum import SliceDirection
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from clinicadl.utils.exceptions import DataFrameError
 from clinicadl.utils.typing import PathType
 
 from .base import Extraction, ImplementedExtraction
@@ -46,6 +46,12 @@ class SliceConfig(ObjectConfig["Slice"]):
     borders: Optional[Tuple[PositiveInt, PositiveInt]]
     slice_direction: SliceDirection
     squeeze: bool
+
+    @field_validator("tsv_path", mode="after")
+    @classmethod
+    def _resolve_tsv_path(cls, v: Optional[Path]) -> Optional[Path]:
+        """Resolves 'tsv_path' so it is saved as an absolute path."""
+        return v.resolve() if v is not None else v
 
     @field_validator("borders", mode="before")
     @classmethod
@@ -123,7 +129,12 @@ class Slice(Extraction[SliceConfig]):
         ``a`` slices and the last ``b`` slices will be filtered out.\n
         Cannot be used with ``slices`` or ``tsv_path``.
     slice_direction : int | SliceDirection, default=0
-        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
+        The slicing direction. Can be ``0``, ``1`` or ``2``.
+
+        .. warning::
+            Be careful with the orientation of your image. If your image is in :term:`RAS+` (e.g. you used :py:class:`~clinicadl.transforms.config.ToCanonicalConfig`),
+            ``0`` refers to the sagittal direction, ``1`` to the coronal direction, and ``2`` to the axial direction.
+
     squeeze : bool, default=True
         Whether to later squeeze slices to have images with 2 spatial dimensions.
         If ``False``, slices will still have 3 spatial dimensions.
@@ -163,7 +174,7 @@ class Slice(Extraction[SliceConfig]):
         tsv_path: Optional[PathType] = None,
         discarded_slices: Optional[list[int]] = None,
         borders: Optional[Union[int, Tuple[int, int]]] = None,
-        slice_direction: int | SliceDirection = SliceDirection.SAGITTAL,
+        slice_direction: int | SliceDirection = SliceDirection.ZERO,
         squeeze: bool = True,
     ) -> None:
         self.config = SliceConfig(
@@ -282,7 +293,7 @@ class Slice(Extraction[SliceConfig]):
         slice_col = cols.get("slice_idx")
 
         if not subj_col or not sess_col or not slice_col:
-            raise ClinicaDLTSVError(
+            raise DataFrameError(
                 "TSV must contain columns: 'participant_id', 'session_id', 'slice_idx'"
             )
 
@@ -301,7 +312,7 @@ class Slice(Extraction[SliceConfig]):
         if self._map is None:
             raise RuntimeError("Called _slices_for but no TSV was provided.")
 
-        key = (data_point.participant, data_point.session)
+        key = (data_point.participant_id, data_point.session_id)
         if key not in self._map:
             raise ValueError(
                 f"No slices found in TSV for participant={key[0]}, session={key[1]}."

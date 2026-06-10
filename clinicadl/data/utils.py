@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from clinicadl.io.bids import Bids
-from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.enum import BaseEnum
 from clinicadl.utils.exceptions import add_note
 from clinicadl.utils.typing import PathType
@@ -79,12 +79,10 @@ def remove_tensors(description_json: PathType) -> None:
     description_json.unlink()
 
     conversions_tsv_path = tensor_conversion.get_conversions_tsv_path(tensors_dir.path)
-    df = pd.read_csv(conversions_tsv_path, sep=SEP)
+    df = pd.read_csv(conversions_tsv_path, sep=TSV_SEP)
     col_name = next(f for f in fields(ConversionRow) if "json" in f.name).name
-    print(description_json.name)
-    print(df[col_name] != description_json.name)
     df = df[df[col_name] != description_json.name]
-    df.to_csv(conversions_tsv_path, sep=SEP, index=False)
+    df.to_csv(conversions_tsv_path, sep=TSV_SEP, index=False)
 
 
 class SpatialCheck(str, BaseEnum):
@@ -201,7 +199,7 @@ def _check_intra_sample_consistency(data_point: DataPoint, attr: str, desc: str)
     except RuntimeError as exc:
         add_note(
             exc,
-            f"\nAn error occurred when checking ({data_point.participant}, {data_point.session}) (see above). "
+            f"\nAn error occurred when checking ({data_point.participant_id}, {data_point.session_id}) (see above). "
             f"If you don't care about {desc} consistency and want to ignore this error, please modify 'spatial_checks'.",
         )
         raise
@@ -223,7 +221,7 @@ def _check_dataset_consistency(
     if not np.isclose(attr_value, ref_attr_value, rtol=tolerance).all():
         raise RuntimeError(
             f"Different {desc} found in the dataset: "
-            f"for example, {desc} is {attr_value} for ({data_point.participant}, {data_point.session}), "
-            f"but {ref_attr_value} for ({ref_data_point.participant}, {ref_data_point.session}).\n"
+            f"for example, {desc} is {attr_value} for ({data_point.participant_id}, {data_point.session_id}), "
+            f"but {ref_attr_value} for ({ref_data_point.participant_id}, {ref_data_point.session_id}).\n"
             f"If you don't care about {desc} consistency and want to ignore this error, please modify 'spatial_checks'."
         )

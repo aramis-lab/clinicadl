@@ -39,20 +39,20 @@ class ToBatchesCollate(ImplementedCollateFn, HasConfig[ToBatchesCollateConfig]):
         from clinicadl.data.dataloader import ToBatchesCollate
         from clinicadl.data.structures.examples import Colin27Sample
 
-        sample_1 = Colin27Sample(participant="sub-001")
-        sample_2 = Colin27Sample(participant="sub-002")
-        sample_3 = Colin27Sample(participant="sub-003")
-        sample_4 = Colin27Sample(participant="sub-004")
+        sample_1 = Colin27Sample(participant_id="sub-001")
+        sample_2 = Colin27Sample(participant_id="sub-002")
+        sample_3 = Colin27Sample(participant_id="sub-003")
+        sample_4 = Colin27Sample(participant_id="sub-004")
         batch = ToBatchesCollate()([(sample_1, sample_2), (sample_3, sample_4)])
 
     .. code-block::
 
         >>> batch[0]
-        [Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2),
-         Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 2)]
-        >>> batch[0][0].participant
+        [Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 2),
+         Colin27Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 2)]
+        >>> batch[0][0].participant_id
         'sub-001'
-        >>> batch[0][1].participant
+        >>> batch[0][1].participant_id
         'sub-003'
 
     See Also

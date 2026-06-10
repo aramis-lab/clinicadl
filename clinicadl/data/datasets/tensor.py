@@ -142,7 +142,7 @@ class TensorDataset(
                 columns=["age"],
             )
         >>> dataset[0]
-        Sample(Keys: ('head', 'mni', 'age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 3)
+        Sample(Keys: ('head', 'mni', 'age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 3)
         >>> dataset[0].spatial_shape
         (169, 208, 179)
 
@@ -156,7 +156,7 @@ class TensorDataset(
                 to_load=["head"],
             )
         >>> dataset[0]
-        Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 3)
+        Sample(Keys: ('head', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 3)
         >>> dataset[0].spatial_shape
         (64, 64, 64)
 

@@ -15,8 +15,8 @@ class DataPointConfig(ClinicaDLConfig):
     """To check ``DataPoint`` inputs."""
 
     image: tio.ScalarImage
-    participant: str
-    session: str
+    participant_id: str
+    session_id: str
 
     @field_validator("image", mode="before")
     @classmethod
@@ -39,8 +39,8 @@ class DataPoint(tio.Subject):
 
     A DataPoint has the following attributes:
         - ``image``: the image, in a :py:class:`torchio.ScalarImage`;
-        - ``participant``: the id of the participant, in a ``str``;
-        - ``session``: the id of the session, in a ``str``.
+        - ``participant_id``: the id of the participant, in a ``str``;
+        - ``session_id``: the id of the session, in a ``str``.
 
     You can easily access these elements using the attribute notation:
 
@@ -51,10 +51,10 @@ class DataPoint(tio.Subject):
         >>> import numpy as np
         >>> datapoint = DataPoint(
                 image=tio.ScalarImage(tensor=torch.randn(1, 10, 10, 10), affine=np.eye(4)),
-                participant="sub-001",
-                session="ses-M000",
+                participant_id="sub-001",
+                session_id="ses-M000",
             )
-        >>> datapoint.session
+        >>> datapoint.session_id
         'ses-M000'
 
     To add, modify, or delete any other field, you can use the standard dictionary syntax:
@@ -81,30 +81,30 @@ class DataPoint(tio.Subject):
     Parameters
     ----------
     image : Union[torchio.ScalarImage, PathType]
-        The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a NIfTI file.
-    participant : str
+        The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a :term:`NIfTI` file.
+    participant_id : str
         The participant id.
-    session : str
+    session_id : str
         The session id.
     kwargs : Any
         Any other information to store in the ``DataPoint``.
     """
 
     image: tio.ScalarImage
-    participant: str
-    session: str
+    participant_id: str
+    session_id: str
 
     def __init__(
         self,
         image: Union[tio.ScalarImage, PathType],
-        participant: str,
-        session: str,
+        participant_id: str,
+        session_id: str,
         **kwargs: Any,
     ) -> None:
         config = DataPointConfig(
             image=image,
-            participant=participant,
-            session=session,
+            participant_id=participant_id,
+            session_id=session_id,
         )
         kwargs.update(config.to_raw_dict())
 
@@ -288,7 +288,7 @@ class DataPoint(tio.Subject):
         >>> from clinicadl.data.structures.examples import Colin27DataPoint
         >>> datapoint = Colin27DataPoint()
         >>> datapoint.get_non_images_dict()
-        {'participant': 'sub-colin', 'session': 'ses-M000'}
+        {'participant_id': 'sub-colin', 'session_id': 'ses-M000'}
 
         See Also
         --------
@@ -346,9 +346,9 @@ class DataPoint(tio.Subject):
         >>> from clinicadl.data.structures.examples import Colin27DataPoint
         >>> datapoint = Colin27DataPoint()
         >>> datapoint.get_keys()
-        ['image', 'head', 'participant', 'session']
+        ['image', 'head', 'participant_id', 'session_id']
         >>> datapoint.get_keys(exclude=["image"])
-        ['head', 'participant', 'session']
+        ['head', 'participant_id', 'session_id']
         >>> datapoint.get_keys(include=["image"])
         ['image']
         """
@@ -371,7 +371,7 @@ class DataPoint(tio.Subject):
         Parameters
         ----------
         image : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The image to add, as a :py:class:`torchio.ScalarImage`, a path to the NIfTI file containing the image,
+            The image to add, as a :py:class:`torchio.ScalarImage`, a path to the :term:`NIfTI` file containing the image,
             or a 4D :py:class:`torch.Tensor` (including one channel dimension). If a ``Tensor`` is passed, the same affine matrix as ``self.image``
             will be used.
         image_name : str
@@ -382,10 +382,10 @@ class DataPoint(tio.Subject):
         >>> from clinicadl.data.structures.examples import Colin27DataPoint
         >>> datapoint = Colin27DataPoint()
         >>> datapoint
-        Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
+        Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id'); images: 2)
         >>> datapoint.add_image(datapoint.image, "image_duplicate")
         >>> datapoint
-        Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session', 'image_duplicate'); images: 3)
+        Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id', 'image_duplicate'); images: 3)
         >>> datapoint["image_duplicate"]
         ScalarImage(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)
 
@@ -409,7 +409,7 @@ class DataPoint(tio.Subject):
         Parameters
         ----------
         mask : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the NIfTI file containing the image,
+            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the :term:`NIfTI` file containing the image,
             or a 4D :py:class:`torch.Tensor` (including one channel dimension). If a ``Tensor`` is passed, the same affine matrix as ``self.image```
             will be used.
         mask_name : str
@@ -420,10 +420,10 @@ class DataPoint(tio.Subject):
         >>> from clinicadl.data.structures.examples import Colin27DataPoint
         >>> datapoint = Colin27DataPoint()
         >>> datapoint
-        Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session'); images: 2)
+        Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id'); images: 2)
         >>> datapoint.add_mask(datapoint["head"], "head_duplicate")
         >>> datapoint
-        Colin27DataPoint(Keys: ('head', 'image', 'participant', 'session', 'head_duplicate'); images: 3)
+        Colin27DataPoint(Keys: ('head', 'image', 'participant_id', 'session_id', 'head_duplicate'); images: 3)
         >>> datapoint["head_duplicate"]
         LabelMap(shape: (1, 181, 217, 181); spacing: (1.00, 1.00, 1.00); orientation: RAS+; path: ...)
 

@@ -91,7 +91,7 @@ class Trainer:
     model : Model
         The model to train or evaluate.
 
-    metrics : Union[dict[str, MetricOrConfig], MetricsHandler], default={"loss": LossMetricConfig(loss_name="loss")}
+    metrics : Optional[Union[dict[str, MetricOrConfig], MetricsHandler]], default=None
         Dictionary of metric names and metric instances for monitoring model performance.
         Metric instances can be passed via a :py:class:`clinicadl.metrics.Metric` or a
         :py:mod:`configuration class <clinicadl.metrics.config>`.
@@ -106,9 +106,10 @@ class Trainer:
         By default, only the loss returned by :py:meth:`Model.get_loss_functions <clinicadl.models.Model.get_loss_functions>`
         will be monitored (it is expected to be called ``"loss"``).
 
-    optimization : OptimizationConfig, default=OptimizationConfig()
+    optimization : Optional[OptimizationConfig], default=None
         Configuration for the optimization of the neural network during training
-        (e.g., the number of epochs).
+        (e.g., the number of epochs). If ``None``, the default parameters or
+        :py:class:`~clinicadl.optim.OptimizationConfig` will be used.
 
     callbacks : Optional[Union[list[Callback], CallbacksHandler]], default=None
         List of :py:class:`~clinicadl.callbacks.Callback` to customize the trainer.
@@ -125,10 +126,8 @@ class Trainer:
         self,
         maps: Union[PathType, Maps],
         model: Model,
-        metrics: Union[dict[str, MetricOrConfig], MetricsHandler] = {
-            "loss": LossMetricConfig(loss_name="loss")
-        },
-        optimization: OptimizationConfig = OptimizationConfig(),
+        metrics: Optional[Union[dict[str, MetricOrConfig], MetricsHandler]] = None,
+        optimization: Optional[OptimizationConfig] = None,
         callbacks: Optional[Union[list[Callback], CallbacksHandler]] = None,
         overwrite: bool = False,
     ) -> None:
@@ -184,9 +183,9 @@ class Trainer:
         self,
         maps: Maps,
         model: Model,
-        metrics: Union[dict[str, MetricOrConfig], MetricsHandler],
-        optimization: OptimizationConfig = OptimizationConfig(),
-        callbacks: Optional[Union[list[Callback], CallbacksHandler]] = None,
+        metrics: Optional[Union[dict[str, MetricOrConfig], MetricsHandler]],
+        optimization: Optional[OptimizationConfig],
+        callbacks: Optional[Union[list[Callback], CallbacksHandler]],
     ) -> None:
         """
         Defines the Trainer's attributes.
@@ -194,10 +193,15 @@ class Trainer:
         self._maps = maps
         self._model = model
 
+        if not optimization:
+            optimization = OptimizationConfig()
+
         self._initial_state_dict = None
         if not optimization.reset_model:
             self._initial_state_dict = deepcopy(self._model.cpu().state_dict())
 
+        if metrics is None:
+            metrics = {"loss": LossMetricConfig(loss_name="loss")}
         if isinstance(metrics, MetricsHandler):
             self._metrics = metrics
         else:
@@ -207,7 +211,7 @@ class Trainer:
         if isinstance(callbacks, CallbacksHandler):
             self._callbacks = callbacks
         else:
-            self._callbacks = CallbacksHandler(callbacks=callbacks if callbacks else [])
+            self._callbacks = CallbacksHandler(callbacks=callbacks or ())
 
         self._optim_config = optimization
 

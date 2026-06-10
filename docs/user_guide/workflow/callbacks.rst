@@ -1,7 +1,7 @@
 .. _user_guide_workflow_callbacks:
 
-2.4 Callbacks
-=============
+2.4. Callbacks
+==============
 
 A :py:class:`~clinicadl.train.Trainer` always runs the same steps, but at many
 points of that sequence you may want to *do something extra* — log a message, save a
@@ -30,7 +30,7 @@ to the validation loss, and stores model checkpoints every 10 epochs.
     from clinicadl.callbacks import EarlyStoppingCallback, ModelCheckpointCallback
 
     trainer = Trainer(
-        maps="maps",
+        maps="maps_directory",
         model=model,
         metrics={"loss": LossMetricConfig(loss_name="loss")},
         callbacks=[
@@ -39,8 +39,8 @@ to the validation loss, and stores model checkpoints every 10 epochs.
         ],
     )
 
-Available callbacks
--------------------
+2.4.1. Available callbacks
+--------------------------
 
 .. list-table::
     :header-rows: 1
@@ -73,8 +73,8 @@ Available callbacks
     default one. All the callbacks are managed by a
     :py:class:`~clinicadl.callbacks.CallbacksHandler`, in which **order matters**.
 
-Writing your own callback
--------------------------
+2.4.2. Writing your own callback
+--------------------------------
 
 When the built-in callbacks are not enough, you can write your own by subclassing
 :py:class:`~clinicadl.callbacks.Callback` and overriding the ``on_...`` methods

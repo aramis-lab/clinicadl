@@ -41,7 +41,7 @@ class JsonReaderWriter:
         json_path : PathType
             Path to the ``json`` file.
         kwargs : Any
-            Any field of the ``json`` to overwrite.
+            Any field of the ``json`` to override.
 
         Returns
         -------
@@ -49,7 +49,7 @@ class JsonReaderWriter:
             The object instantiated from the file.
         """
         raise NotImplementedError(
-            "Overwrite 'from_json' to create instance from a json file."
+            "Override 'from_json' to create instance from a json file."
         )
 
 
@@ -71,7 +71,7 @@ class Serializable:
             The converted object.
         """
         raise NotImplementedError(
-            "Overwrite 'to_dict' to convert instances to dictionaries."
+            "Override 'to_dict' to convert instances to dictionaries."
         )
 
     @classmethod
@@ -85,7 +85,7 @@ class Serializable:
         config_dict : dict[str, Any]
             The input dictionary.
         kwargs : Any
-            Any field of the dictionary to overwrite.
+            Any field of the dictionary to override.
 
         Returns
         -------
@@ -93,7 +93,7 @@ class Serializable:
             The object instantiated from the dictionary.
         """
         raise NotImplementedError(
-            "Overwrite 'from_dict' to create instance from a dictionary."
+            "Override 'from_dict' to create instance from a dictionary."
         )
 
 

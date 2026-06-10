@@ -38,7 +38,9 @@ class LRSchedulerCallbackConfig(ObjectConfig["LRSchedulerCallback"]):
     """Config class for ``LRSchedulerCallback``."""
 
     scheduler: ObjectOrConfig[LRScheduler, LRSchedulerConfig] = Field(
-        reader=ObjectOrConfig.build_reader(get_lr_scheduler_from_dict)
+        json_schema_extra={
+            "reader": ObjectOrConfig.build_reader(get_lr_scheduler_from_dict)
+        }
     )
     optimizer_name: str
     scheduler_type: Optional[LRSchedulerType]
@@ -237,7 +239,7 @@ class LRSchedulerCallback(Callback, HasConfig[LRSchedulerConfig]):
         if param_groups := self._get_param_groups(self.scheduler.optimizer):
             df.columns = param_groups
 
-        df = df.backfill()
+        df = df.bfill()
 
         maps.training.splits[state.split_idx].logs.learning_rates.mkdir(
             exist_ok=True, parents=True

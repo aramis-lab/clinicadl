@@ -33,8 +33,12 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
 
     Parameters
     ----------
-    slice_direction : SliceDirection, default=0
-        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal) or ``2`` (axial).
+    slice_direction : str | SliceDirection, default=0
+        The slicing direction. Can be ``0``, ``1`` or ``2``.
+
+        .. warning::
+            Be careful with the orientation of your image. If your image is in :term:`RAS+` (e.g. you used :py:class:`~clinicadl.transforms.config.ToCanonicalConfig`),
+            ``0`` refers to the sagittal direction, ``1`` to the coronal direction, and ``2`` to the axial direction.
 
     batch_size : int, default=1
         The size of the batch passed to the neural network. If you pass a batch of images to
@@ -61,7 +65,7 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
             do not forget to specify ``include=["<output_name>"]`` to apply the postprocessing to
             the output of the neural network.
 
-    output_type : OutputType, default="tensor"
+    output_type : str | OutputType, default="tensor"
         Determines the data type of the output:
 
         - ``"image"``: the output will be converted to a :py:class:`torchio.ScalarImage`;
@@ -105,7 +109,7 @@ class SlicesToImageInferer(Batched3DTo3DInferer, HasConfig[SlicesToImageInfererC
         postprocessing: Optional[Sequence[TransformOrConfig]] = None,
         postprocessing_on_cpu: bool = False,
         output_name: str = OUTPUT,
-        output_type: OutputType = OutputType.TENSOR,
+        output_type: str | OutputType = OutputType.TENSOR,
     ):
         super().__init__(
             slice_direction=slice_direction,

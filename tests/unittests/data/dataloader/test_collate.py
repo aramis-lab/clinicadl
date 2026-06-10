@@ -24,8 +24,8 @@ FILE_TYPE_BIS = BidsFileType(data_type="anat", suffix="FLAIR")
 SAMPLE_1 = Sample(
     image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3), affine=np.eye(4)),
     mask=tio.LabelMap(tensor=torch.randn(1, 3, 3, 3), affine=np.eye(4)),
-    participant=str(1),
-    session=str(1),
+    participant_id=str(1),
+    session_id=str(1),
     file_type=FILE_TYPE,
     image_path=Path("abc"),
     np_field=np.array([1, 2]),
@@ -37,8 +37,8 @@ SAMPLE_1 = Sample(
 SAMPLE_1_BIS = Sample(
     image=tio.ScalarImage(tensor=torch.randn(2, 3, 3, 3), affine=np.eye(4)),
     mask=tio.LabelMap(tensor=torch.randn(3, 3, 3, 3), affine=np.eye(4)),
-    participant=str(1),
-    session=str(1),
+    participant_id=str(1),
+    session_id=str(1),
     file_type=FILE_TYPE_BIS,
     image_path=Path("bcd"),
     np_field=np.array([2, 3]),
@@ -47,12 +47,12 @@ SAMPLE_1_BIS = Sample(
     diff_field=[1, 1],
 )
 SAMPLE_2 = copy(SAMPLE_1)
-SAMPLE_2["participant"] = str(2)
-SAMPLE_2["session"] = str(2)
+SAMPLE_2["participant_id"] = str(2)
+SAMPLE_2["session_id"] = str(2)
 SAMPLE_2D = Sample2D(
     image=tio.ScalarImage(tensor=torch.randn(2, 1, 3, 3), affine=np.eye(4)),
-    participant=str(1),
-    session=str(1),
+    participant_id=str(1),
+    session_id=str(1),
     file_type=FILE_TYPE_BIS,
     image_path=Path("bcd"),
     sample_position=0,
@@ -67,8 +67,8 @@ def test_to_batch():
     collate = ToBatchCollate()
     batch = collate([SAMPLE_1, SAMPLE_2])
     assert len(batch) == 2
-    assert batch[0].participant == "1"
-    assert batch[0].session == "1"
+    assert batch[0].participant_id == "1"
+    assert batch[0].session_id == "1"
 
 
 def test_to_batches():
@@ -76,8 +76,8 @@ def test_to_batches():
     batch = collate([(SAMPLE_1, SAMPLE_2), (SAMPLE_1, SAMPLE_2), (SAMPLE_1, SAMPLE_2)])
     assert len(batch[0]) == 3
     assert len(batch[1]) == 3
-    assert batch[0][0].participant == "1"
-    assert batch[1][0].participant == "2"
+    assert batch[0][0].participant_id == "1"
+    assert batch[1][0].participant_id == "2"
 
 
 @patch(
@@ -90,8 +90,8 @@ def test_merge_batches(merge_numerics_mock):
     assert len(batch) == 2
     assert batch[0].image.shape == (3, 3, 3, 3)
     assert batch[0].mask.shape == (4, 3, 3, 3)
-    assert batch[0].participant == "1"
-    assert batch[0].session == "1"
+    assert batch[0].participant_id == "1"
+    assert batch[0].session_id == "1"
     assert batch[0].image_path == (Path("abc"), Path("bcd"), Path("bcd"))
     assert batch[0].file_type == (
         FILE_TYPE,
@@ -107,17 +107,19 @@ def test_merge_batches(merge_numerics_mock):
     assert merge_numerics_mock.call_count == 18
 
     ###
-    with pytest.raises(RuntimeError, match="Got different values for 'participant':.*"):
+    with pytest.raises(
+        RuntimeError, match="Got different values for 'participant_id':.*"
+    ):
         collate([(SAMPLE_1, SAMPLE_2), (SAMPLE_1, SAMPLE_2)])
 
     sample_2 = copy(SAMPLE_2)
-    sample_2["participant"] = str(1)
-    with pytest.raises(RuntimeError, match="Got different values for 'session':.*"):
+    sample_2["participant_id"] = str(1)
+    with pytest.raises(RuntimeError, match="Got different values for 'session_id':.*"):
         collate([(SAMPLE_1, sample_2), (SAMPLE_1, sample_2)])
 
     ###
-    collate = MergeBatchesCollate(ignore=["other_field", "participant"])
-    assert batch[0].participant == "1"
+    collate = MergeBatchesCollate(ignore=["other_field", "participant_id"])
+    assert batch[0].participant_id == "1"
     assert "other_field" not in batch
 
     ###

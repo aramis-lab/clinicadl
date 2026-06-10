@@ -41,7 +41,7 @@ class DataLoaderConfig(ObjectConfig):
     drop_last: bool
     prefetch_factor: Optional[NonNegativeInt]
     persistent_workers: bool
-    collate_fn: Optional[CollateFn] = Field(reader=_read_collate)
+    collate_fn: Optional[CollateFn] = Field(json_schema_extra={"reader": _read_collate})
 
     @model_validator(mode="after")
     def _validate_worker_parameters(self):
@@ -178,9 +178,9 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
 
         >>> batch = next(iter(dataloader))
         >>> batch
-        [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)]
+        [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)]
 
     Now, let's see what happens with a :py:class:`~clinicadl.data.datasets.PairedDataset`:
 
@@ -193,12 +193,12 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
 
         >>> batch = next(iter(dataloader))
         >>> batch
-        ([Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)],
-            [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1),
-            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)])
+        ([Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)],
+            [Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1),
+            Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)])
 
     Because, the default behavior is to use :py:class:`~clinicadl.data.dataloader.ToBatchesCollate` to collate batches,
     we obtain here a tuple of :math:`n` batches, where :math:`n` is the number of datasets that we paired.
@@ -342,7 +342,7 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
         dataset : Dataset
             The dataset from which the data are loaded.
         kwargs : Any
-            Any field of the ``json`` to overwrite.
+            Any field of the ``json`` to override.
 
         Returns
         -------
@@ -370,7 +370,7 @@ class DataLoader(HasConfig["DataLoaderConfig"], TorchDataLoader[SampleT]):
         dataset : Dataset
             The dataset from which the data are loaded.
         kwargs : Any
-            Any field of the dictionary to overwrite.
+            Any field of the dictionary to override.
 
         Returns
         -------

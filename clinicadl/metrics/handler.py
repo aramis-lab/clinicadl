@@ -9,17 +9,15 @@ from pydantic import Field, ValidationError, ValidationInfo, field_validator
 from typing_extensions import Self
 
 from clinicadl.utils.config import DictOfObjects, ObjectConfig
-from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.dictionary.words import (
     CPU,
     EPOCH,
     METRICS,
-    PARTICIPANT,
     PARTICIPANT_ID,
-    SESSION,
     SESSION_ID,
 )
-from clinicadl.utils.exceptions import CannotReadFieldError, ClinicaDLConfigurationError
+from clinicadl.utils.exceptions import CannotReadFieldError
 from clinicadl.utils.objects import HasConfig
 
 from .base import Metric
@@ -38,7 +36,7 @@ class MetricsHandlerConfig(ObjectConfig["MetricsHandler"]):
     """
 
     metrics: DictOfObjects[Metric, MetricConfig] = Field(
-        reader=DictOfObjects.build_reader(get_metric_from_dict)
+        json_schema_extra={"reader": DictOfObjects.build_reader(get_metric_from_dict)}
     )
     metrics_on_cpu: bool
 
@@ -339,9 +337,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         :py:meth:`monai.metrics.Cumulative.aggregate`
         """
         if self.metrics is None:
-            raise ClinicaDLConfigurationError(
-                "First, call 'init_metrics' to instantiate the metrics."
-            )
+            raise RuntimeError("First, call 'init_metrics' to instantiate the metrics.")
 
         values = {name: metric.aggregate() for name, metric in self.metrics.items()}
 
@@ -350,7 +346,11 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         if epoch is not None:
             new_df.insert(loc=0, column=EPOCH, value=epoch)
 
-        self._df = pd.concat([self._df, new_df], ignore_index=True)
+        self._df = (
+            new_df.copy()
+            if self._df.empty
+            else pd.concat([self._df, new_df], ignore_index=True)
+        )
 
         if epoch is not None:
             self._df.insert(0, EPOCH, self._df.pop(EPOCH))  # ensure epoch first column
@@ -383,15 +383,13 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             The metrics for all the images in the batch.
         """
         if self.metrics is None:
-            raise ClinicaDLConfigurationError(
-                "First, call 'init_metrics' to instantiate the metrics."
-            )
+            raise RuntimeError("First, call 'init_metrics' to instantiate the metrics.")
 
         if self.config.metrics_on_cpu:
             batch.to(device=CPU)
 
-        participants = batch.get_field(PARTICIPANT)
-        sessions = batch.get_field(SESSION)
+        participants = batch.get_field(PARTICIPANT_ID)
+        sessions = batch.get_field(SESSION_ID)
         values = {PARTICIPANT_ID: participants, SESSION_ID: sessions}
 
         values.update({name: metric(batch) for name, metric in self.metrics.items()})
@@ -401,7 +399,11 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         if epoch is not None:
             new_df.insert(loc=0, column=EPOCH, value=epoch)
 
-        self._detailed_df = pd.concat([self._detailed_df, new_df], ignore_index=True)
+        self._detailed_df = (
+            new_df.copy()
+            if self._detailed_df.empty
+            else pd.concat([self._detailed_df, new_df], ignore_index=True)
+        )
 
         if epoch is not None:
             self._detailed_df.insert(
@@ -509,9 +511,9 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             The path where to save :py:attr:`detailed_df`.
             If ``None``, this DataFrame will not be saved.
         """
-        self._df.to_csv(path, sep=SEP, index=False)
+        self._df.to_csv(path, sep=TSV_SEP, index=False)
         if details_path:
-            self._detailed_df.to_csv(details_path, sep=SEP, index=False)
+            self._detailed_df.to_csv(details_path, sep=TSV_SEP, index=False)
 
     def merge(self, path: Path, details_path: Optional[Path] = None) -> None:
         """
@@ -525,17 +527,17 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         details_path: Optional[Path], default=None
             The path to the DataFrame to merge with :py:attr:`detailed_df`.
         """
-        old_df = pd.read_csv(path, sep=SEP)
+        old_df = pd.read_csv(path, sep=TSV_SEP)
         try:
             new_df = pd.merge(old_df, self._df, how="outer")
         except pd.errors.MergeError:
             new_df = pd.concat([old_df, self._df], axis=1)
-        new_df.to_csv(path, sep=SEP, index=False)
+        new_df.to_csv(path, sep=TSV_SEP, index=False)
 
         if details_path:
-            old_df = pd.read_csv(details_path, sep=SEP)
+            old_df = pd.read_csv(details_path, sep=TSV_SEP)
             new_df = pd.merge(old_df, self._detailed_df, how="outer")
-            new_df.to_csv(details_path, sep=SEP, index=False)
+            new_df.to_csv(details_path, sep=TSV_SEP, index=False)
 
     def load(self, path: Path, details_path: Optional[Path] = None) -> None:
         """
@@ -549,7 +551,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
             The path to the DataFrame with the detailed results.
             If ``None``, this DataFrame will not be loaded.
         """
-        df = pd.read_csv(path, sep=SEP)
+        df = pd.read_csv(path, sep=TSV_SEP)
 
         expected_columns = set(self.config.metric_names)
         assert (
@@ -559,7 +561,7 @@ class MetricsHandler(HasConfig[MetricsHandlerConfig]):
         self._df = df
 
         if details_path:
-            detailed_df = pd.read_csv(details_path, sep=SEP)
+            detailed_df = pd.read_csv(details_path, sep=TSV_SEP)
 
             expected_columns = expected_columns.union({PARTICIPANT_ID, SESSION_ID})
             assert (

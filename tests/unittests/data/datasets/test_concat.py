@@ -45,8 +45,8 @@ class MyDataset(Dataset):
 
     def __getitem__(self, idx):
         return Sample(
-            participant=self.df.iloc[idx]["participant_id"],
-            session=self.df.iloc[idx]["session_id"],
+            participant_id=self.df.iloc[idx]["participant_id"],
+            session_id=self.df.iloc[idx]["session_id"],
             image=tio.ScalarImage(
                 tensor=torch.randn(
                     1, self.image_shape, self.image_shape, self.image_shape
@@ -198,9 +198,9 @@ def test__getitem__():
         suffix="flair",
     )
     multimodal_dataset = ConcatDataset([bids_1, bids_2])
-    assert multimodal_dataset[0].participant == "sub-000"
+    assert multimodal_dataset[0].participant_id == "sub-000"
     assert multimodal_dataset[0].file_type[0].suffix.pattern == "T1w"
-    assert multimodal_dataset[2].participant == "sub-999"
+    assert multimodal_dataset[2].participant_id == "sub-999"
     assert multimodal_dataset[2].file_type[0].suffix.pattern == "flair"
 
 
@@ -287,8 +287,8 @@ def test_from_json_to_json(tmp_path):
     multimodal_dataset = ConcatDataset.from_json(tmp_path / "dataset.json")
 
     assert len(multimodal_dataset) == 4
-    assert multimodal_dataset[3].participant == "sub-010"
-    assert multimodal_dataset[3].session == "ses-M003"
+    assert multimodal_dataset[3].participant_id == "sub-010"
+    assert multimodal_dataset[3].session_id == "ses-M003"
 
     bids = MyDataset(
         [

@@ -187,7 +187,7 @@ class TestBidsReader:
         ):
             caps.get_path(
                 T1Linear(use_uncropped_image=False),
-                session="ses-M000",
+                session_id="ses-M000",
             )
 
         with pytest.raises(

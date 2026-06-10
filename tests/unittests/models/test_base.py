@@ -58,16 +58,23 @@ def test_reset():
     ref_param_1 = next(
         iter(model.network.convolutions.layer1.conv.parameters())
     ).clone()
-    model(torch.ones(1, 1, 10, 10, 10))
+    out = model(torch.ones(1, 1, 10, 10, 10))
+    out.mean().backward()
     assert not torch.equal(
         model.network.convolutions.layer0.adn.N.running_mean, torch.zeros(1)
     )
     assert not torch.equal(
         model.network.convolutions.layer1.adn.N.running_mean, torch.zeros(1)
     )
+    assert (
+        next(iter(model.network.convolutions.layer1.conv.parameters())).grad
+    ) is not None
 
     model.reset()
 
+    assert (
+        next(iter(model.network.convolutions.layer1.conv.parameters())).grad
+    ) is None
     new_param_0 = next(iter(model.network.convolutions.layer0.conv.parameters()))
     new_param_1 = next(iter(model.network.convolutions.layer1.conv.parameters()))
     torch.testing.assert_close(ref_param_0, new_param_0)

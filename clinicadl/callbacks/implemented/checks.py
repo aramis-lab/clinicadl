@@ -20,7 +20,7 @@ from clinicadl.utils.exceptions import (
     DataFrameError,
     DataLeakageError,
 )
-from clinicadl.utils.tsvtools import read_data
+from clinicadl.utils.tsvtools import read_df
 
 from ..base import Callback
 
@@ -225,7 +225,7 @@ class _CheckDataFrames:
         Checks that "participant_id" and "session_id" are in the DataFrame.
         """
         try:
-            df = read_data(df, check_duplicates=False)
+            df = read_df(df, check_duplicates=False)
         except DataFrameError as e:
             raise DataFrameError(
                 "The DataFrame of your clinicadl.data.dataset.Dataset is not valid."
@@ -234,7 +234,7 @@ class _CheckDataFrames:
 
 class _CheckDataLeakage:
     """
-    Checks data leakage, i.e. that evaluation subjects were not seen during training.
+    Checks data leakage, i.e. that evaluation participants were not seen during training.
     """
 
     def on_train_start(self, *, split: Split, **kwargs) -> None:

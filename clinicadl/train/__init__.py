@@ -1,5 +1,5 @@
 """
-For training, evaluating and predicting with a model.
+For training and evaluating a model.
 """
 
 from .computational import ComputationalConfig

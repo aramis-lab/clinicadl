@@ -45,7 +45,9 @@ class CallbacksHandlerConfig(ObjectConfig["CallbacksHandler"]):
     """
 
     callbacks: list[Callback] = Field(
-        reader=lambda callbacks: [get_callback_from_dict(c) for c in callbacks]
+        json_schema_extra={
+            "reader": lambda callbacks: [get_callback_from_dict(c) for c in callbacks]
+        }
     )
 
     @field_validator("callbacks", mode="after")

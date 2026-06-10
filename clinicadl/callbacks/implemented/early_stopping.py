@@ -152,9 +152,11 @@ class EarlyStoppingCallbackConfig(ObjectConfig["EarlyStoppingCallback"]):
     """Config class for ``EarlyStoppingCallback``."""
 
     stoppers: Sequence[OneMetricEarlyStoppingConfig] = Field(
-        reader=lambda stoppers: list(
-            map(OneMetricEarlyStoppingConfig.from_dict, stoppers)
-        )
+        json_schema_extra={
+            "reader": lambda stoppers: list(
+                map(OneMetricEarlyStoppingConfig.from_dict, stoppers)
+            )
+        }
     )
 
     @classmethod

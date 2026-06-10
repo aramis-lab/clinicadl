@@ -50,8 +50,8 @@ class MyDataset(Dataset):
 
     def __getitem__(self, idx):
         return Sample(
-            participant=self.df.iloc[idx]["participant_id"],
-            session=self.df.iloc[idx]["session_id"],
+            participant_id=self.df.iloc[idx]["participant_id"],
+            session_id=self.df.iloc[idx]["session_id"],
             image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
             image_path="x",
             file_type=BidsFileType(data_type="anat", suffix=self.suffix),
@@ -249,9 +249,9 @@ def test__getitem__():
         suffix="flair",
     )
     paired = PairedDataset([bids_1, bids_2])
-    assert paired[1][0].participant == "sub-010"
+    assert paired[1][0].participant_id == "sub-010"
     assert paired[1][0].file_type[0].suffix.pattern == "T1w"
-    assert paired[1][1].participant == "sub-010"
+    assert paired[1][1].participant_id == "sub-010"
     assert paired[1][1].file_type[0].suffix.pattern == "flair"
 
 
@@ -301,7 +301,7 @@ def test_from_json_to_json(tmp_path):
     paired = PairedDataset.from_json(tmp_path / "dataset.json")
 
     assert len(paired) == 2
-    assert paired[1][0].participant == "sub-010"
+    assert paired[1][0].participant_id == "sub-010"
 
     bids = MyDataset(
         [

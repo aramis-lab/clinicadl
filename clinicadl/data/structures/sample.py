@@ -101,9 +101,9 @@ class Sample(DataPoint, ABC):
     ----------
     image : torchio.ScalarImage
         The image, in a :py:class:`torchio.ScalarImage`.
-    participant : str
-        The id of the participant.
-    session : str
+    participant_id : str
+        The id of the participant_id.
+    session_id : str
         The id of the session.
     file_type : tuple[BidsFileType, ...]
         The :py:class:`~clinicadl.io.bids.BidsFileType`. If they are multiple images in ``image``
@@ -113,7 +113,7 @@ class Sample(DataPoint, ABC):
         The :pathlib.Path:`path <>` to the image. If they are multiple images in ``image``
         (i.e. multiple channels), the path of each of them
         is expected.
-    sample_type : SampleType
+    sample_type : str | SampleType
         The type of the sample, among {"image", "slice", "patch"}.
     sample_position : Optional[Union[int, tuple[int, int, int]]]
         The position of the sample in the image if relevant, ``None`` otherwise.
@@ -131,18 +131,18 @@ class Sample(DataPoint, ABC):
     def __init__(
         self,
         image: Union[tio.ScalarImage, PathType],
-        participant: str,
-        session: str,
+        participant_id: str,
+        session_id: str,
         file_type: Union[BidsFileType, tuple[BidsFileType, ...]],
         image_path: Union[Path, tuple[Path, ...]],
-        sample_type: SampleType = SampleType.IMAGE,
+        sample_type: str | SampleType = SampleType.IMAGE,
         sample_position: Optional[Union[int, tuple[int, int, int]]] = None,
         **kwargs: Any,
     ):
         config = SampleConfig(
             image=image,
-            participant=participant,
-            session=session,
+            participant_id=participant_id,
+            session_id=session_id,
             file_type=file_type,
             image_path=image_path,
             sample_type=sample_type,
@@ -181,8 +181,8 @@ class Sample2D(Sample):
     Besides, there are two additional attributes:
 
     slice_direction : int
-        The slicing direction. Can be ``0`` (sagittal direction), ``1`` (coronal)
-        or ``2`` (axial).
+        The slicing direction (``0``, ``1`` or ``2``).
+
     squeeze : bool
         Whether the tensors will be later squeezed to work with 2D slice, or whether the slices will stay 3D
         (with one dummy dimension). The attribute is useful for some ``ClinicaDL`` operations.
@@ -195,8 +195,8 @@ class Sample2D(Sample):
     def __init__(
         self,
         image: Union[tio.ScalarImage, PathType],
-        participant: str,
-        session: str,
+        participant_id: str,
+        session_id: str,
         file_type: BidsFileType,
         image_path: Path,
         sample_position: int,
@@ -206,8 +206,8 @@ class Sample2D(Sample):
     ):
         config = Sample2DConfig(
             image=image,
-            participant=participant,
-            session=session,
+            participant_id=participant_id,
+            session_id=session_id,
             file_type=file_type,
             image_path=image_path,
             sample_position=sample_position,
@@ -251,7 +251,7 @@ class Sample2D(Sample):
         Parameters
         ----------
         image : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The image to add, as a :py:class:`torchio.ScalarImage``, a path to the NIfTI file containing the image,
+            The image to add, as a :py:class:`torchio.ScalarImage``, a path to the :term:`NIfTI` file containing the image,
             or a :py:class:`torch.Tensor`. In the latter case, it is expected to be a 4D ``Tensor`` (including one channel dimension)
             if ``squeeze=False``, or a 3D ``Tensor`` if ``squeeze=True``.
 
@@ -275,7 +275,7 @@ class Sample2D(Sample):
         Parameters
         ----------
         mask : Union[tio.ScalarImage, PathType, torch.Tensor]
-            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the NIfTI file containing the mask,
+            The mask to add, as a :py:class:`torchio.LabelMap`, a path to the :term:`NIfTI` file containing the mask,
             or a :py:class:`torch.Tensor`. In the latter case, it is expected to be a 4D ``Tensor`` (including one channel dimension)
             if ``squeeze=False``, or a 3D ``Tensor`` if ``squeeze=True``.
 

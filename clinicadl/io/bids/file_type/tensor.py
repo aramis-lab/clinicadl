@@ -94,7 +94,6 @@ def _entities_intersection(entities: Iterable[dict[str, str]]) -> dict[str, str]
     inter_keys = set.intersection(*[set(e.keys()) for e in entities])
     common_entities = {}
     for key in inter_keys:
-        print(entities)
         if (unique := _unique_alphanum([e[key] for e in entities])) is not None:
             common_entities[key] = unique
 

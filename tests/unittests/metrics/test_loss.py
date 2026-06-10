@@ -10,7 +10,6 @@ from torch.nn import MSELoss
 from clinicadl.data.structures import DataPoint
 from clinicadl.metrics.config import LossMetricConfig
 from clinicadl.metrics.monai_wrapper import MonaiMetricWrapper
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 class Batch(list):
@@ -37,7 +36,7 @@ MODEL_BIS = ModelBis()
 def test_loss_metric():
     config = LossMetricConfig(loss_name="loss_", reduction="mean")
     with pytest.raises(
-        ClinicaDLArgumentError,
+        ValueError,
         match=(
             re.escape(
                 "In LossMetricConfig, loss_name='loss_' but there is no such loss (returned by the 'get_loss_functions' method of you Model). "
@@ -58,8 +57,8 @@ def test_loss_metric():
                 label=float(i),
                 output=float(i + 1),
                 output_image=tio.ScalarImage(tensor=torch.ones(1, 2, 2, 2) + 3),
-                participant=str(i),
-                session=str(i),
+                participant_id=str(i),
+                session_id=str(i),
             )
             for i in range(3)
         ]
@@ -82,7 +81,7 @@ def test_loss_metric():
 
     config = LossMetricConfig(loss_name="loss", reduction="mean", label_key=None)
     with pytest.raises(
-        ClinicaDLArgumentError,
+        RuntimeError,
         match=re.escape(
             "The loss 'loss' (returned by the 'get_loss_functions' method of you Model) "
             "doesn't have a 'reduction' attribute, so ClinicaDL can't compute the validation loss at the image level.",

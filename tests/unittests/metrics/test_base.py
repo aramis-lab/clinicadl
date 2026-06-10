@@ -16,8 +16,8 @@ BATCH = [
         image=tio.ScalarImage(tensor=torch.randn(1, 2, 2, 2)),
         label=np.array(gt),
         output=torch.tensor(pred),
-        participant="abc",
-        session="abc",
+        participant_id="abc",
+        session_id="abc",
     )
     for pred, gt in zip(PREDS, GTS)
 ]

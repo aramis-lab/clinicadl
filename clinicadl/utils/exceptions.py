@@ -17,68 +17,20 @@ def add_note(exc: Exception, note: str) -> Exception:
     return exc
 
 
-class DownloadError(Exception):
-    """Base class for download errors exceptions."""
-
-
-class ClinicaDLArgumentError(ValueError):
-    """Base class for ClinicaDL CLI Arguments error."""
-
-
-class ClinicaDLConfigurationError(ValueError):
-    """Base class for ClinicaDL configurations error."""
-
-
 class ClinicaDLException(Exception):
     """Base class for ClinicaDL exceptions."""
-
-
-class MAPSError(ClinicaDLException):
-    """Base class for MAPS exceptions."""
-
-
-class ClinicaDLNetworksError(ClinicaDLException):
-    """Base class for Networks exceptions."""
 
 
 class DataLeakageError(ClinicaDLException):
     """Base class for data leakage exceptions."""
 
 
-class ClinicaDLTSVError(ClinicaDLException):
-    """Base class for tsv files exceptions."""
-
-
 class DataFrameError(ClinicaDLException):
     """Base class for exceptions on the DataFrames."""
 
 
-class ClinicaDLBIDSError(ClinicaDLException):
-    """Base class for tsv files exceptions."""
-
-
-class ClinicaDLCAPSError(ClinicaDLException):
-    """Base class for tsv files exceptions."""
-
-
 class TensorConversionError(ClinicaDLException):
     """Base class for tsv files exceptions."""
-
-
-class ClinicaDLTrainingException(ClinicaDLException):
-    """Base class for training exceptions."""
-
-
-class MetricsHandlerError(ClinicaDLException):
-    """Base class for training exceptions."""
-
-
-class ClinicaDLMAPSError(ClinicaDLException):
-    """Base class for training exceptions."""
-
-
-class ClinicaDLTestingError(ClinicaDLException):
-    """Base class for testing exceptions."""
 
 
 class NotInterpretableJsonError(ClinicaDLException):

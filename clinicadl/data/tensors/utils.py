@@ -13,9 +13,9 @@ from clinicadl.transforms.factory import get_transform_from_dict
 from clinicadl.transforms.types import Transform
 from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.dictionary.suffixes import JSON, TSV
-from clinicadl.utils.dictionary.utils import SEP
+from clinicadl.utils.dictionary.utils import TSV_SEP
 from clinicadl.utils.names import camel_to_snake, snake_to_camel
-from clinicadl.utils.tsvtools import df_to_tsv, read_data
+from clinicadl.utils.tsvtools import df_to_tsv, read_df
 
 logger = getLogger(__name__)
 
@@ -52,7 +52,7 @@ class TensorDescription(ClinicaDLConfig):
     masks: dict[str, tuple[Path, BidsFileType] | Path]
     additional_data: list[str]
     transforms: list[str | Transform | TransformConfig] = Field(
-        reader=lambda x: list(map(_read_transform, x))
+        json_schema_extra={"reader": lambda x: list(map(_read_transform, x))}
     )  # str: to be able to read transforms serialized as a string
     spacing: Optional[tuple[PositiveFloat, PositiveFloat, PositiveFloat]]
     spatial_shape: Optional[tuple[PositiveInt, PositiveInt, PositiveInt]]
@@ -195,7 +195,7 @@ class TensorDescription(ClinicaDLConfig):
             .replace(JSON, TSV)
             .replace("_description.", "_participantsXsessions.")
         )
-        df = read_data(tsv)
+        df = read_df(tsv)
         return cls.from_json(
             description_json, participants_sessions=df
         )  # transforms may be impossible to read and is not needed
@@ -209,7 +209,7 @@ class TensorDescription(ClinicaDLConfig):
         if not tsv_path.exists():
             df = pd.DataFrame()
         else:
-            df = pd.read_csv(tsv_path, sep=SEP)
+            df = pd.read_csv(tsv_path, sep=TSV_SEP)
 
         df = pd.concat(
             [
@@ -227,7 +227,7 @@ class TensorDescription(ClinicaDLConfig):
                 ),
             ]
         )
-        df.to_csv(tsv_path, sep=SEP, index=False)
+        df.to_csv(tsv_path, sep=TSV_SEP, index=False)
 
     @classmethod
     def _check_dict(

@@ -89,9 +89,9 @@ class ConcatDataset(OneSampleDataset, CollectionDataset, CheckableDataset):
         8
         >>> len(full_dataset)
         12
-        >>> full_dataset[0].participant, full_dataset[0].session
+        >>> full_dataset[0].participant_id, full_dataset[0].session_id
         ('sub-001', 'ses-M000')
-        >>> full_dataset[4].participant, full_dataset[4].session
+        >>> full_dataset[4].participant_id, full_dataset[4].session_id
         ('sub-A', 'ses-M003')
     """
 

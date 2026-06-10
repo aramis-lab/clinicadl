@@ -27,15 +27,15 @@ class SubjectSpecificImage(Generic[ImageT]):
         self.bids = bids
         self.file_type = file_type
 
-    def get(self, participant: str, session: str) -> ImageT:
+    def get(self, participant_id: str, session_id: str) -> ImageT:
         """
         Loads the image associated to the (participant, session) pair.
 
         Parameters
         ----------
-        participant : str
+        participant_id : str
             The participant id (e.g., "sub-xxx").
-        session : str
+        session_id : str
             The session id (e.g., "ses-xxx").
 
         Returns
@@ -44,7 +44,7 @@ class SubjectSpecificImage(Generic[ImageT]):
             The image in a :py:class:`torchio.Image`.
         """
         path = self.bids.get_path(
-            self.file_type, participant=participant, session=session
+            self.file_type, participant_id=participant_id, session_id=session_id
         )
 
         return self.image_type(path=path)
@@ -125,7 +125,7 @@ class TensorContent:
             images=data_point.get_images_dict(include=include),
             masks=data_point.get_masks_dict(include=include),
             additional_data=data_point.get_non_images_dict(
-                include=include, exclude=["participant", "session"]
+                include=include, exclude=["participant_id", "session_id"]
             ),
             paths=[
                 image.path
@@ -211,9 +211,9 @@ class Tensor(SubjectSpecificImage[DataPoint]):
         super().__init__(bids, file_type)
         self.to_load = to_load
 
-    def get(self, participant: str, session: str) -> DataPoint:
+    def get(self, participant_id: str, session_id: str) -> DataPoint:
         path = self.bids.get_path(
-            self.file_type, participant=participant, session=session
+            self.file_type, participant_id=participant_id, session_id=session_id
         )
 
         tensors = TensorContent.load(path)
@@ -231,8 +231,8 @@ class Tensor(SubjectSpecificImage[DataPoint]):
 
         return DataPoint(
             **to_keep,
-            participant=participant,
-            session=session,
+            participant_id=participant_id,
+            session_id=session_id,
             image_path=path,
             file_type=self.file_type,
         )

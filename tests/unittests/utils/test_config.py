@@ -75,14 +75,22 @@ class MainConfigTest(ClinicaDLConfig):
     sub_test: ConfigTest
     object_or_config: Union[ObjectTest, ObjectTestConfig]
     object_or_config_bis: ObjectOrConfig[ObjectTest, ObjectTestConfig] = Field(
-        reader=ObjectOrConfig.build_reader(ObjectTestConfig.from_dict)
+        json_schema_extra={
+            "reader": ObjectOrConfig.build_reader(ObjectTestConfig.from_dict)
+        }
     )
-    object: ClinicaDLObjectTest = Field(reader=ClinicaDLObjectTest.from_dict)
+    object: ClinicaDLObjectTest = Field(
+        json_schema_extra={"reader": ClinicaDLObjectTest.from_dict}
+    )
     list_configs: SequenceOfObjects[ObjectTest, ObjectTestConfig] = Field(
-        reader=SequenceOfObjects.build_reader(ObjectTestConfig.from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(ObjectTestConfig.from_dict)
+        }
     )
     dict_configs: DictOfObjects[ObjectTest, ObjectTestConfig] = Field(
-        reader=DictOfObjects.build_reader(ObjectTestConfig.from_dict)
+        json_schema_extra={
+            "reader": DictOfObjects.build_reader(ObjectTestConfig.from_dict)
+        }
     )
 
     @field_validator("object_or_config_bis", mode="before")
@@ -103,13 +111,19 @@ class MainConfigTest(ClinicaDLConfig):
 
 class CollectionTestConfig(ObjectConfig[CollectionTest]):
     object: ObjectOrConfig[ObjectTest, ObjectTestConfig] = Field(
-        reader=ObjectOrConfig.build_reader(ObjectTestConfig.from_dict)
+        json_schema_extra={
+            "reader": ObjectOrConfig.build_reader(ObjectTestConfig.from_dict)
+        }
     )
     list_objects: SequenceOfObjects[ObjectTest, ObjectTestConfig] = Field(
-        reader=SequenceOfObjects.build_reader(ObjectTestConfig.from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(ObjectTestConfig.from_dict)
+        }
     )
     dict_objects: DictOfObjects[ObjectTest, ObjectTestConfig] = Field(
-        reader=DictOfObjects.build_reader(ObjectTestConfig.from_dict)
+        json_schema_extra={
+            "reader": DictOfObjects.build_reader(ObjectTestConfig.from_dict)
+        }
     )
 
     @field_validator("object", mode="before")

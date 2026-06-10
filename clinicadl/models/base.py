@@ -30,7 +30,7 @@ class Model(JsonReaderWriter, ABC, nn.Module):
     - :py:meth:`build_optimizers`: to build the optimizers used for training;
     - :py:meth:`get_loss_functions`: to access the loss functions used during training.
 
-    You can also overwrite :py:meth:`get_summary` to give a description of your neural network(s).
+    You can also override :py:meth:`get_summary` to give a description of your neural network(s).
 
     .. tip::
         Since rewriting all these methods can be tedious, feel free to inherit from an existing ``Model`` with shared logic
@@ -225,10 +225,13 @@ class Model(JsonReaderWriter, ABC, nn.Module):
 
     def reset(self) -> None:
         """
-        Resets the neural network's weights.
+        Resets randomly the neural network's weights and removes all the accumulated
+        gradients.
 
-        Only the trainable (i.e. with ``requires_grad=True``) weights will be reset.
+        **Only the trainable (i.e. with ``requires_grad=True``) weights will be reset.**
         """
+        self.zero_grad()
+
         for module in self.modules():
             has_trainable_params = any(
                 (p.requires_grad for p in module.parameters(recurse=False))

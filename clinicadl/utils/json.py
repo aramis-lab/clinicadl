@@ -1,5 +1,4 @@
 import enum
-import inspect
 import json
 from collections import OrderedDict
 from copy import deepcopy
@@ -45,50 +44,6 @@ def write_json(
 
     with open(json_path, "w", encoding="utf-8") as json_file:
         json.dump(data, json_file, indent=4, default=path_encoder)
-
-
-def update_json(json_path: PathType, new_data: Dict[str, Any]) -> None:
-    """
-    Updates the JSON file with the serialized config class.
-    """
-    json_path = Path(json_path)
-
-    # Lire le contenu existent du fichier
-    existing_data = read_json(json_path)
-
-    # Fusionner les nouvelles données
-    existing_data.update(new_data)
-
-    # Écrire les données mises à jour dans le fichier
-    write_json(json_path, existing_data, overwrite=True)
-
-
-def is_path_key(key: str) -> bool:
-    """Check if a key is likely to refer to a path."""
-    path_keywords = ("tsv", "dir", "directory", "path", "json", "location")
-    return any(key.lower().endswith(suffix) for suffix in path_keywords)
-
-
-def serialize_callable(callable_obj):
-    cls = callable_obj.__class__
-    cls_name = cls.__name__
-
-    # Get the signature of the class __init__
-    try:
-        sig = inspect.signature(cls.__init__)
-    except (ValueError, TypeError):
-        return {"class": cls_name, "params": {}}
-
-    # Get arguments that were actually set
-    params = {}
-    for name, param in sig.parameters.items():
-        if name == "self":
-            continue
-        # Some attributes might not be set, so we check
-        if hasattr(callable_obj, name):
-            params[name] = getattr(callable_obj, name)
-
-    return {"name": cls_name, "params": params}
 
 
 def path_encoder(obj):

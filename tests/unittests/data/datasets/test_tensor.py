@@ -71,8 +71,8 @@ class TestTensorDataset:
 
         sample = dataset[3]
         assert isinstance(sample, Sample2D)
-        assert sample.participant == "sub-010"
-        assert sample.session == "ses-M003"
+        assert sample.participant_id == "sub-010"
+        assert sample.session_id == "ses-M003"
         assert sample.sample_position == 1
         assert sample.file_type[0].with_entities == {
             "src": re.compile("T1w"),
@@ -176,9 +176,9 @@ class TestTensorDataset:
                 }
             ),
         )
-        assert dataset[0].participant == "sub-999"
+        assert dataset[0].participant_id == "sub-999"
         dataset.sort()
-        assert dataset[0].participant == "sub-100"
+        assert dataset[0].participant_id == "sub-100"
 
     def test_from_to_json(self, tmp_path):
         dataset = TensorDataset(

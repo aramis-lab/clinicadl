@@ -1,7 +1,7 @@
 .. _user_guide_workflow_training:
 
-2.2 Training
-============
+2.2. Training
+=============
 
 Training is orchestrated by the :py:class:`~clinicadl.train.Trainer`. It ties
 together a :py:class:`~clinicadl.models.Model`, the data of a
@@ -10,8 +10,8 @@ and takes care of the training loop — moving data to the GPU, mixed precision,
 gradient accumulation, evaluation, checkpointing, etc. — so that you only provide the
 pieces specific to your experiment.
 
-A first training
-----------------
+2.2.1. A first training
+-----------------------
 
 Putting together what we built in :doc:`Chapter 1 <../data/index>` and in
 :doc:`Defining a model <model>`:
@@ -21,7 +21,7 @@ Putting together what we built in :doc:`Chapter 1 <../data/index>` and in
     from clinicadl.train import Trainer
 
     # `model` is a Model and `split` a Split (see the previous sections)
-    trainer = Trainer(maps="maps", model=model)
+    trainer = Trainer(maps="maps_directory", model=model)
     trainer.train(split)
 
 The ``Trainer`` writes everything it produces — trained weights, metrics, logs and
@@ -39,8 +39,8 @@ splits:
         split.build_val_loader(batch_size=8)
         trainer.train(split)
 
-Configuring the optimization
-----------------------------
+2.2.2. Configuring the optimization
+-----------------------------------
 
 How the optimization is run — the number of epochs, gradient accumulation, gradient
 clipping, how often to evaluate — is described by an
@@ -52,7 +52,7 @@ clipping, how often to evaluate — is described by an
     from clinicadl.train import Trainer
 
     trainer = Trainer(
-        maps="maps",
+        maps="maps_directory",
         model=model,
         optimization=OptimizationConfig(
             num_epochs=100,
@@ -61,8 +61,8 @@ clipping, how often to evaluate — is described by an
         ),
     )
 
-Controlling the hardware
-------------------------
+2.2.3. Controlling the hardware
+-------------------------------
 
 Computational aspects — GPU, :term:`AMP`, memory format, and the seed for
 reproducibility — are set per training run through a
@@ -84,8 +84,8 @@ reproducibility — are set per training run through a
     A global seed can also be set once with
     :py:func:`clinicadl.utils.seed.seed_everything` or :py:func:`clinicadl.utils.seed.seed_everything_context`.
 
-Monitoring the training
------------------------
+2.2.4. Monitoring the training
+------------------------------
 
 Monitoring the training is done through **metrics** and **callbacks** (logging, early stopping,
 etc.). We cover metrics in
@@ -93,8 +93,8 @@ etc.). We cover metrics in
 
 .. _user_guide_workflow_resuming:
 
-2.2.1 Resuming an interrupted training
---------------------------------------
+2.2.5. Resuming an interrupted training
+---------------------------------------
 
 Long trainings can be interrupted — a bug, a power cut. As long
 as a :py:class:`~clinicadl.callbacks.TrainingCheckpointCallback` was active (it is one
@@ -113,7 +113,7 @@ session — rebuild it from the :term:`MAPS` first, then resume:
 
     from clinicadl.train import Trainer
 
-    trainer = Trainer.from_maps("maps")
+    trainer = Trainer.from_maps("maps_directory")
     trainer.resume(split_idx=0)
 
 .. important::

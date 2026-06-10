@@ -132,18 +132,18 @@ class UnpairedDataset(CollectionDataset):
 
     .. code-block:: python
 
-        >>> bids_t1[2].participant, bids_t1[2].session,
+        >>> bids_t1[2].participant_id, bids_t1[2].session_id,
         ('sub-002', 'ses-M000')
 
-        >>> bids_pet[0].participant, bids_pet[0].session
+        >>> bids_pet[0].participant_id, bids_pet[0].session_id
         ('sub-A', 'ses-M000')
 
         >>> sample = stacked[0]
         >>> len(sample)
         2
-        >>> sample[0].participant, sample[0].session
+        >>> sample[0].participant_id, sample[0].session_id
         ('sub-002', 'ses-M000')
-        >>> sample[1].participant, sample[1].session
+        >>> sample[1].participant_id, sample[1].session_id
         ('sub-A', 'ses-M000')
 
     Now we can change the random mapping with :py:meth:`~UnpairedDataset.set_epoch`:
@@ -160,7 +160,7 @@ class UnpairedDataset(CollectionDataset):
                 3	3	0
 
         >>> sample = stacked[0]
-        >>> sample[1].participant, sample[1].session
+        >>> sample[1].participant_id, sample[1].session_id
         ('sub-B', 'ses-M000')
 
     Finally, if ``oversample=False``:

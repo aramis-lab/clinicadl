@@ -25,7 +25,7 @@ from clinicadl.utils.dictionary.words import (
     SESSION_ID,
 )
 from clinicadl.utils.exceptions import add_note
-from clinicadl.utils.tsvtools import read_data
+from clinicadl.utils.tsvtools import read_df
 from clinicadl.utils.typing import DataFrameType
 
 from ..structures.sample import SAMPLE_FIELDS, Sample, Sample2D, SampleType
@@ -124,18 +124,18 @@ class _MultiSamplesDataset(OneSampleDataset):
 
         return idx
 
-    def _get_image_info(self, participant: str, session: str, column: str) -> Any:
+    def _get_image_info(self, participant_id: str, session_id: str, column: str) -> Any:
         """
         Returns the value of a column for a (participant, session).
         """
         self._check_column(column)
 
         return self.df.set_index([PARTICIPANT_ID, SESSION_ID]).at[
-            (participant, session), column
+            (participant_id, session_id), column
         ]
 
     def _get_indices_associated_to(
-        self, participant: str, session: str
+        self, participant_id: str, session_id: str
     ) -> tuple[int, int]:
         """
         Returns the value of the range of indices associated to the image.
@@ -143,8 +143,8 @@ class _MultiSamplesDataset(OneSampleDataset):
         self._check_has_len()
 
         cumsum = self.df.set_index([PARTICIPANT_ID, SESSION_ID])[N_SAMPLES].cumsum()
-        min_idx = cumsum.shift(1).fillna(0).at[(participant, session)]
-        max_idx = max(cumsum.at[(participant, session)] - 1, 0)
+        min_idx = cumsum.shift(1).fillna(0).at[(participant_id, session_id)]
+        max_idx = max(cumsum.at[(participant_id, session_id)] - 1, 0)
 
         return int(min_idx), int(max_idx)
 
@@ -189,12 +189,12 @@ class SamplerDataset(_MultiSamplesDataset):
         --------
         .. code-block:: python
 
-            >>> dataset[0].participant
+            >>> dataset[0].participant_id
             'sub-001'
-            >>> dataset[1].participant
+            >>> dataset[1].participant_id
             'sub-000'
             >>> dataset.sort()
-            >>> dataset[0].participant
+            >>> dataset[0].participant_id
             'sub-000'
         """
         self.df.sort_values([PARTICIPANT_ID, SESSION_ID], inplace=True)
@@ -226,15 +226,15 @@ class SamplerDataset(_MultiSamplesDataset):
         return participant, session, index_in_image
 
     @abstractmethod
-    def _get_data(self, participant: str, session: str) -> DataPoint:
+    def _get_data(self, participant_id: str, session_id: str) -> DataPoint:
         """
         Returns that data for a (participant, session) in a :py:class:`~clinicadl.data.structures.DataPoint`.
 
         Parameters
         ----------
-        participant : str
+        participant_id : str
             The id of the participant.
-        session : str
+        session_id : str
             The id of the session.
 
         Returns
@@ -278,11 +278,11 @@ class SamplerDataset(_MultiSamplesDataset):
                     )
                     raise
 
-    def _count_in_image(self, participant: str, session: str) -> int:
+    def _count_in_image(self, participant_id: str, session_id: str) -> int:
         """
         Gets the number of samples in an image.
         """
-        data = self._get_data(participant, session)
+        data = self._get_data(participant_id, session_id)
 
         data = self.transforms.apply_image_transforms(data)
 
@@ -322,7 +322,7 @@ class MultimodalSamplerDataset(SamplerDataset):
         """
         Validates the input DataFrame.
         """
-        df = read_data(data)
+        df = read_df(data)
 
         return deepcopy(df)
 
@@ -379,19 +379,19 @@ class MultimodalSamplerDataset(SamplerDataset):
                     "Make sure that this function takes as input a Pandas Series, and returns a Pandas Series."
                 ) from e
 
-    def _get_data(self, participant: str, session: str) -> DataPoint:
+    def _get_data(self, participant_id: str, session_id: str) -> DataPoint:
         """
         Returns that data for a (participant, session) in a DataPoint.
         """
-        datapoint = self._get_images(participant, session)
+        datapoint = self._get_images(participant_id, session_id)
 
         for col in self.columns:
-            datapoint[col] = self._get_image_info(participant, session, col)
+            datapoint[col] = self._get_image_info(participant_id, session_id, col)
 
         return datapoint
 
     @abstractmethod
-    def _get_images(self, participant: str, session: str) -> DataPoint:
+    def _get_images(self, participant_id: str, session_id: str) -> DataPoint:
         """
         Loads the image and the masks.
         """

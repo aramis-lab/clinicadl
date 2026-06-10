@@ -16,9 +16,7 @@ from clinicadl.io.bids import Bids, TensorType
 from clinicadl.io.bids.reader import DatasetDescription
 from clinicadl.transforms.config import TransformConfig
 from clinicadl.utils.dictionary.words import (
-    PARTICIPANT,
     PARTICIPANT_ID,
-    SESSION,
     SESSION_ID,
 )
 from clinicadl.utils.exceptions import TensorConversionError
@@ -300,25 +298,25 @@ class TensorConversion:
             self.tensor_description.write(self.tensors_dir.path)
 
     ### to process (participant, session) individually ###
-    def _transform_and_save_images(self, participant: str, session: str) -> None:
+    def _transform_and_save_images(self, participant_id: str, session_id: str) -> None:
         """
         The processing function called for each (participant, session).
         It loads all the images associated to the (participant, session)
         (the image and the masks), applies image transforms, and saves them
         in a .pt file.
         """
-        logger.debug("Conversion of (%s, %s).", participant, session)
+        logger.debug("Conversion of (%s, %s).", participant_id, session_id)
 
         pt_path = self.tensors_dir.build_path(
-            self.tensor_type, participant=participant, session=session
+            self.tensor_type, participant_id=participant_id, session_id=session_id
         )
 
-        images = self.dataset._get_images(participant, session)
+        images = self.dataset._get_images(participant_id, session_id)
         images = self._transform(images)
         self._spatial_check(images)
         self._save_images_as_tensors(images, pt_path)
 
-        self._participants_sessions_converted.add((participant, session))
+        self._participants_sessions_converted.add((participant_id, session_id))
 
     def _transform(self, images: DataPoint) -> DataPoint:
         """
@@ -356,7 +354,7 @@ class TensorConversion:
         path.parent.mkdir(exist_ok=True, parents=True)
 
         for key in images.get_non_images_dict():
-            if key in set(SAMPLE_FIELDS) - {PARTICIPANT, SESSION}:
+            if key in set(SAMPLE_FIELDS) - {PARTICIPANT_ID, SESSION_ID}:
                 del images[key]
 
         content = TensorContent.from_datapoint(images)
@@ -501,8 +499,8 @@ class TensorConversion:
         spacing = list(old_conversion_info.spacing or (1.0, 1.0, 1.0))
         affine = np.diag(spacing + [1.0])
         ref_sample = DataPoint(
-            participant=ref_participant,
-            session=ref_session,
+            participant_id=ref_participant,
+            session_id=ref_session,
             image=tio.ScalarImage(
                 tensor=torch.zeros((1, *spatial_shape)),
                 affine=affine,
@@ -545,7 +543,7 @@ def _compare_subject_specific_images(
     name: Optional[str] = None,
 ) -> None:
     """
-    To compare images or subject-specific masks.
+    To compare images or participant-specific masks.
     """
     add_str = f"the mask '{name}' in " if name else ""
     if old[1] != new[1]:

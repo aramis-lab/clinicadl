@@ -36,10 +36,10 @@ With ``conda``:
     conda create -n clinicadl python=3.12
     conda activate clinicadl
 
-2. Install clinicadl with pip
+2. Install ClinicaDL with pip
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Execute the following command in the in the proper Python environment:
+Execute the following command in the proper Python environment:
 
 .. code-block:: bash
 
@@ -48,4 +48,4 @@ Execute the following command in the in the proper Python environment:
 Install in development mode
 ---------------------------
 
-Find development setup instructions in the :doc:`contribution guide <contributing>`.
+Find development setup instructions in the :ref:`contribution guide <setup_dev>`.

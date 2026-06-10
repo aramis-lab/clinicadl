@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, Sequence, TypeVar
 
 import torchio as tio
 from pydantic import Field, ValidationInfo, field_validator
@@ -28,15 +28,23 @@ DataPointT = TypeVar("DataPointT", bound="DataPoint")
 class TransformsHandlerConfig(ObjectConfig["TransformsHandler"]):
     """Config class for ``TransformsHandler``."""
 
-    extraction: Extraction = Field(reader=get_extraction_from_dict)
+    extraction: Extraction = Field(
+        json_schema_extra={"reader": get_extraction_from_dict}
+    )
     image_transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
-        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(get_transform_from_dict)
+        }
     )
     sample_transforms: SequenceOfObjects[Transform, TransformConfig] = Field(
-        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(get_transform_from_dict)
+        }
     )
     augmentations: SequenceOfObjects[Transform, TransformConfig] = Field(
-        reader=SequenceOfObjects.build_reader(get_transform_from_dict)
+        json_schema_extra={
+            "reader": SequenceOfObjects.build_reader(get_transform_from_dict)
+        }
     )
 
     @field_validator(
@@ -75,19 +83,19 @@ class TransformsHandler(HasConfig[TransformsHandlerConfig]):
 
     Parameters
     ----------
-    extraction : Extraction, default=Image()
-        The extraction applied. See :py:mod:`clinicadl.transforms.extraction`. Default is
-        that no extraction is applied.
-    image_transforms : Sequence[TransformOrConfig], default=[]
+    extraction : Optional[Extraction], default=None
+        The extraction applied. See :py:mod:`clinicadl.transforms.extraction`. If ``None``,
+        :py:class:`~clinicadl.transforms.extraction.Image` is used (which is equivalent to no extraction).
+    image_transforms : Sequence[TransformOrConfig], default=()
         A sequence of transforms to apply on the whole image, **before extraction**.
         Passed as callables that take as input and return a :py:class:`~clinicadl.data.structures.DataPoint`,
         or :py:mod:`configuration class <clinicadl.transforms.config>`.
-    sample_transforms : Sequence[TransformOrConfig], default=[]
+    sample_transforms : Sequence[TransformOrConfig], default=()
         A sequence of transforms to apply on samples (patches or slices).
         Passed as callables that take as input and return a :py:class:`~clinicadl.data.structures.DataPoint`,
         or :py:mod:`configuration class <clinicadl.transforms.config>`.
 
-    augmentations : Sequence[TransformOrConfig], default=[]
+    augmentations : Sequence[TransformOrConfig], default=()
         A sequence of augmentation transforms, to apply on samples, only during training.
         Passed as callables that take as input and return a :py:class:`~clinicadl.data.structures.DataPoint`,
         or :py:mod:`configuration class <clinicadl.transforms.config>`.
@@ -113,11 +121,14 @@ class TransformsHandler(HasConfig[TransformsHandlerConfig]):
 
     def __init__(
         self,
-        extraction: Extraction = Image(),
-        image_transforms: Sequence[TransformOrConfig] = [],
-        sample_transforms: Sequence[TransformOrConfig] = [],
-        augmentations: Sequence[TransformOrConfig] = [],
+        extraction: Optional[Extraction] = None,
+        image_transforms: Sequence[TransformOrConfig] = (),
+        sample_transforms: Sequence[TransformOrConfig] = (),
+        augmentations: Sequence[TransformOrConfig] = (),
     ):
+        if not extraction:
+            extraction = Image()
+
         self.config = TransformsHandlerConfig(
             extraction=extraction,
             image_transforms=image_transforms,

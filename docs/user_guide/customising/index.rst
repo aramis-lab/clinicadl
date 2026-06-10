@@ -8,8 +8,8 @@ One of its core principles — **flexibility** — ensures that most built-in ob
 *extended* to meet specific or unforeseen needs. This short chapter highlights the main extension points
 so you can adapt ClinicaDL to your own experiments.
 
-Using external objects
-----------------------
+4.1. Using external objects
+---------------------------
 
 Before extending ClinicaDL, it is worth remembering that at
 many points ClinicaDL accepts objects coming from the wider ecosystem —
@@ -42,8 +42,8 @@ yourself, as long as they follow the expected interface.
         :torchio:`TorchIO transform <transforms>`), given to a
         :py:class:`~clinicadl.transforms.TransformsHandler`.
 
-Callbacks
----------
+4.2. Callbacks
+--------------
 
 The lightest way to alter the behaviour of a training run is to add a
 :py:class:`~clinicadl.callbacks.Callback`. Callbacks let you run arbitrary,
@@ -52,8 +52,8 @@ logging, checkpointing, early stopping, or anything you implement yourself — w
 touching the rest of the pipeline. Callbacks are covered in
 :doc:`Section 2.4 <../workflow/callbacks>`.
 
-Subclassing ClinicaDL objects
------------------------------
+4.3. Subclassing ClinicaDL objects
+----------------------------------
 
 ClinicaDL is built with object-oriented programming in mind: most of its base classes
 are designed to be **inherited from**. By subclassing one of them and overriding a

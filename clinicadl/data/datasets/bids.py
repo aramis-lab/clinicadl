@@ -54,10 +54,12 @@ def _deserialize_masks(serialized_masks: Optional[dict]) -> Optional[MasksType]:
 class BidsDatasetConfig(ObjectConfig["BidsDataset"], BidsTypeDatasetConfig):
     """Config class to check ``BidsDataset`` inputs."""
 
-    bids: Bids = Field(reader=Bids.from_dict)
-    file_type: BidsFileType = Field(reader=BidsFileType.from_dict)
+    bids: Bids = Field(json_schema_extra={"reader": Bids.from_dict})
+    file_type: BidsFileType = Field(
+        json_schema_extra={"reader": BidsFileType.from_dict}
+    )
     masks: Optional[dict[str, Path | BidsFileType | tuple[Bids, BidsFileType]]] = Field(
-        reader=_deserialize_masks
+        json_schema_extra={"reader": _deserialize_masks}
     )
 
     @field_validator("bids", mode="before")
@@ -122,7 +124,7 @@ class BidsDataset(
         - To avoid confusion, we will use the term "sample" to refer to the actual element of the images we are working on
           (patch, slice or the whole image).
 
-    Finally, you may be interested in :py:meth:`to_tensors`, that will convert your NIfTI images to tensors (saved in ``.pt`` files). Since opening
+    Finally, you may be interested in :py:meth:`to_tensors`, that will convert your :term:`NIfTI` images to tensors (saved in ``.pt`` files). Since opening
     a ``.pt`` file is much faster than opening a NIfTI file, this may speed up data loading.
 
     Parameters
@@ -169,12 +171,12 @@ class BidsDataset(
         The masks are passed via a dictionary, whose names will be the names given to the masks in the output
         :py:class:`~clinicadl.data.structures.Sample`, and whose values can be:
 
-        - a path (``str`` or :pathlib.Path:`pathlib.Path <>`) to a NIfTI image: the same mask is used for all
+        - a path (``str`` or :pathlib.Path:`pathlib.Path <>`) to a :term:`NIfTI` image: the same mask is used for all
           the (participant, session) pairs.
-        - a :py:class:`~clinicadl.io.bids.BidsFileType`: the mask is subject- and session-specific and the
+        - a :py:class:`~clinicadl.io.bids.BidsFileType`: the mask is participant- and session-specific and the
           pattern to find the mask in the ``bids`` is given via the ``BidsFileType``.
         - a tuple (PathType | :py:class:`~clinicadl.io.bids.Bids`, :py:class:`~clinicadl.io.bids.BidsFileType`):
-          the mask is subject- and session-specific but is not in the same BIDS dataset as the image. So, here
+          the mask is participant- and session-specific but is not in the same BIDS dataset as the image. So, here
           the BIDS where to look for the mask must be passed in the first element of the tuple.
 
     Raises
@@ -260,12 +262,12 @@ class BidsDataset(
                 columns=["age"],
             )
         >>> dataset[0]
-        Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 1)
+        Sample(Keys: ('age', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)
         >>> dataset[0].spatial_shape
         (169, 208, 179)    # full image
         >>> len(dataset)
         50    # 50 lines in the metadata.tsv
-        >>> dataset[0].participant, dataset[0].session, dataset[0].age
+        >>> dataset[0].participant_id, dataset[0].session_id, dataset[0].age
         'sub-001', 'ses-M000', 55.0
 
     .. code-block:: python
@@ -307,18 +309,18 @@ class BidsDataset(
                 masks={
                     "head": BidsFileType(
                         data_type="anat", suffix="mask", with_entities={"label": "head"}
-                    ),    # subject- and session-specific mask that is in the same BIDS
+                    ),    # participant- and session-specific mask that is in the same BIDS
                     "brain": (
                         "bids/derivatives/masks",
                         BidsFileType(
                             data_type="anat", suffix="mask", with_entities={"label": "brain"}
-                        ),    # subject- and session-specific mask that is in another BIDS
+                        ),    # participant- and session-specific mask that is in another BIDS
                     ),
-                    "mni": "bids/derivatives/registration/space-MNI152NLin2009cSym_mask.nii.gz",    # same mask for all (subject, session)
+                    "mni": "bids/derivatives/registration/space-MNI152NLin2009cSym_mask.nii.gz",    # same mask for all (participant, session)
                 },
             )
         >>> dataset[0]
-        Sample(Keys: ('head', 'brain', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 4)
+        Sample(Keys: ('head', 'brain', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 4)
         >>> len(dataset)
         60    # all the (participant, session) that have T1w images. Not only the ones in metadata.tsv
 
@@ -566,7 +568,7 @@ class BidsDataset(
         .. code-block:: python
 
             >>> tensor_dataset[0]
-            Sample(Keys: ('head', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant', 'session'); images: 3)
+            Sample(Keys: ('head', 'mni', 'file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 3)
 
 
         """

@@ -119,9 +119,11 @@ class BidsTypeDatasetConfig(ClinicaDLConfig):
     Base config class for datasets that inherit from ``_BidsTypeDataset``.
     """
 
-    data: Optional[DataFrameType] = Field(reader=_read_df)
-    transforms: TransformsHandler = Field(reader=TransformsHandler.from_dict)
-    columns: Optional[ColumnsType] = Field(reader=_read_columns)
+    data: Optional[DataFrameType] = Field(json_schema_extra={"reader": _read_df})
+    transforms: TransformsHandler = Field(
+        json_schema_extra={"reader": TransformsHandler.from_dict}
+    )
+    columns: Optional[ColumnsType] = Field(json_schema_extra={"reader": _read_columns})
 
     @field_serializer("data")
     def _serialize_df(self, df: pd.DataFrame) -> dict:
@@ -162,7 +164,7 @@ T = TypeVar("T")
 
 class BidsNiftiDataset(_BidsTypeDataset):
     """
-    A :py:class:`BidsTypeDataset` that reads NIfTI images.
+    A :py:class:`BidsTypeDataset` that reads :term:`NIfTI` images.
     """
 
     image: Image
@@ -209,18 +211,18 @@ class BidsNiftiDataset(_BidsTypeDataset):
         for mask in self.common_masks.values():
             assert mask.file.path.exists(), f"Cannot find the mask in {mask.file.path}"
 
-    def _get_images(self, participant: str, session: str) -> DataPoint:
-        img = self.image.get(participant, session)
+    def _get_images(self, participant_id: str, session_id: str) -> DataPoint:
+        img = self.image.get(participant_id, session_id)
         masks = {
-            name: mask.get(participant, session)
+            name: mask.get(participant_id, session_id)
             for name, mask in self.individual_masks.items()
         }
         masks.update({name: mask.get() for name, mask in self.common_masks.items()})
 
         return DataPoint(
             image=img,
-            participant=participant,
-            session=session,
+            participant_id=participant_id,
+            session_id=session_id,
             image_path=img.path,
             file_type=self.image.file_type,
             **masks,
@@ -264,5 +266,5 @@ class BidsTensorDataset(_BidsTypeDataset):
             columns=columns,
         )
 
-    def _get_images(self, participant: str, session: str) -> DataPoint:
-        return self.image.get(participant, session)
+    def _get_images(self, participant_id: str, session_id: str) -> DataPoint:
+        return self.image.get(participant_id, session_id)

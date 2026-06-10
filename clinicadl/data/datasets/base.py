@@ -11,7 +11,7 @@ from typing_extensions import Self
 
 from clinicadl.utils.dictionary.words import PARTICIPANT_ID, SESSION_ID
 from clinicadl.utils.objects import JsonReaderWriter
-from clinicadl.utils.tsvtools import read_data
+from clinicadl.utils.tsvtools import read_df
 from clinicadl.utils.typing import DataFrameType
 
 from ..structures import Sample
@@ -83,7 +83,7 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         return set(zip(self.df[PARTICIPANT_ID], self.df[SESSION_ID]))
 
     def subset(
-        self, particpants_sessions: Union[DataFrameType, Iterable[tuple[str, str]]]
+        self, participants_sessions: Union[DataFrameType, Iterable[tuple[str, str]]]
     ) -> Self:
         """
         To get a subset of the dataset from a list of (participant, session) pairs.
@@ -103,11 +103,15 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         Self
             A subset of the original dataset, restricted to the (participant, session) pairs mentioned in ``data``.
         """
-        if isinstance(particpants_sessions, (str, Path)):
-            new_df = read_data(particpants_sessions)
+        if isinstance(participants_sessions, (str, Path)):
+            new_df = read_df(participants_sessions)
+        elif isinstance(participants_sessions, pd.DataFrame):
+            new_df = participants_sessions[
+                [PARTICIPANT_ID, SESSION_ID]
+            ].drop_duplicates()
         else:
-            new_df = pd.DataFrame.from_records(
-                particpants_sessions, columns=[PARTICIPANT_ID, SESSION_ID]
+            new_df = pd.DataFrame(
+                participants_sessions, columns=[PARTICIPANT_ID, SESSION_ID]
             ).drop_duplicates()
 
         new_df = new_df.set_index([PARTICIPANT_ID, SESSION_ID])

@@ -6,7 +6,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 
 from clinicadl.split.splitter.kfold import KFoldConfig
 from clinicadl.utils.dictionary.words import FOLD, VALIDATION
-from clinicadl.utils.tsvtools import read_data
+from clinicadl.utils.tsvtools import read_df
 from clinicadl.utils.typing import DataFrameType, PathType
 
 from .utils import (
@@ -135,7 +135,7 @@ def make_kfold(
     >>> len(val_baseline)
     8
     """
-    df = read_data(data, check_duplicates=False)
+    df = read_df(data, check_duplicates=False)
 
     if isinstance(data, (str, Path)):
         output_dir = output_dir or Path(data).parent
