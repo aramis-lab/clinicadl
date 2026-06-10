@@ -1,7 +1,7 @@
 ClinicaDL
 =========
 
-An open-source Python library for reproducible deep learning in neuroimaging.
+Open-source Python library for reproducible deep learning in neuroimaging.
 
 .. grid::
 
