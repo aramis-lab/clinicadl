@@ -11,18 +11,6 @@
 
 <p align="center"><strong>Open-source Python library for reproducible deep learning in neuroimaging</strong></p>
 
-<p align="center">
-  <a href="https://badge.fury.io/py/clinicadl">
-    <img src="https://badge.fury.io/py/clinicadl.svg" alt="PyPI version">
-  </a>
-  <a href='https://clinicadl.readthedocs.io/en/latest/?badge=latest'>
-    <img src='https://readthedocs.org/projects/clinicadl/badge/?version=latest' alt='Documentation Status' />
-  </a>
-  <a href='https://pepy.tech/project/clinicadl'>
-    <img src='https://static.pepy.tech/badge/clinicadl/month' alt='Downloads' />
-  </a>
-</p>
-
 
 ## About the project
 
