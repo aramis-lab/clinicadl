@@ -466,7 +466,11 @@ def test_maps(tmp_path: Path):
 
 
 @patch("clinicadl.utils.env._conda_prefix", return_value="/opt/conda/envs/x")
-def test_create(mock_conda_prefix, tmp_path: Path):
+@patch("clinicadl.utils.env._freeze_packages", return_value="numpy==2.1.0\n")
+@patch("clinicadl.utils.env._export_conda_environment", return_value="name: env\n")
+def test_create(mock_export, mock_freeze, mock_conda_prefix, tmp_path: Path):
+    # mock the env-capture internals so the test never spawns a real `conda`/`pip`
+    # subprocess (conda is absent on the macOS CI runner, see .github/workflows/test.yml)
     maps_path = tmp_path / "maps"
     maps = Maps(maps_path)
 
