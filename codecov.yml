@@ -15,7 +15,7 @@ coverage:
         informational: false  # fail the status check on a larger drop
     patch:
       default:
-        target: 90%           # new/changed lines must be 80% covered
+        target: 90%           # new/changed lines must be 90% covered
         threshold: 0%         # no tolerance, it is 90%
         informational: false
 
