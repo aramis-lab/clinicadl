@@ -47,7 +47,7 @@ scikit-learn = "^1"
 joblib = "^1.2.0"
 torchio = { version = "^0.20", extras = ["plot"]}
 pydantic = "^2.7.0"
-monai = "=1.5.0"
+monai = "=1.5.2rc1"
 matplotlib =  "^3.9"
 ipykernel = { version = "^6", optional = true }
 notebook = { version = "^7", optional = true }

@@ -2341,9 +2341,10 @@ files = [
 name = "mistune"
 version = "3.2.1"
 description = "A sane and fast Markdown parser with useful plugins and renderers"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
+markers = "extra == \"tutorials\""
 files = [
     {file = "mistune-3.2.1-py3-none-any.whl", hash = "sha256:78cdb0ba5e938053ccf63651b352508d2efa9411dc8810bfb05f2dc5140c0048"},
     {file = "mistune-3.2.1.tar.gz", hash = "sha256:7c8e5501d38bac1582e067e46c8343f17d57ea1aaa735823f3aba1fd59c88a28"},
@@ -2354,22 +2355,22 @@ typing-extensions = {version = "*", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "monai"
-version = "1.5.0"
+version = "1.5.2rc1"
 description = "AI Toolkit for Healthcare Imaging"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "monai-1.5.0-py3-none-any.whl", hash = "sha256:93259cfa8b68fbf006dea7c78376a46ce38f369bf8b20b36f74ab1d3f484d37b"},
-    {file = "monai-1.5.0.tar.gz", hash = "sha256:8c5e4555839812fe060e13da34d9b3342d750d8ad5934f1b79f9b08eb6b35d64"},
+    {file = "monai-1.5.2rc1-py3-none-any.whl", hash = "sha256:ad0e974cb3b67f9ef15a7d880f812c02c647ba9937bc8714bc93dabef831dae8"},
+    {file = "monai-1.5.2rc1.tar.gz", hash = "sha256:4cbcbaa51bd240a7c4941ba33b2108b031cdbc53145b9ddf688a81dde099e953"},
 ]
 
 [package.dependencies]
 numpy = ">=1.24,<3.0"
-torch = ">=2.4.1,<2.7.0"
+torch = ">=2.4.1"
 
 [package.extras]
-all = ["clearml (>=1.10.0rc0)", "cucim-cu12 ; platform_system == \"Linux\" and python_version >= \"3.9\" and python_version <= \"3.10\"", "einops", "fire", "gdown (>=4.7.3)", "h5py", "huggingface-hub", "imagecodecs ; platform_system == \"Linux\" or platform_system == \"Darwin\"", "itk (>=5.2)", "jsonschema", "lmdb", "lpips (==0.1.4)", "matplotlib (>=3.6.3)", "mlflow (>=2.12.2)", "nibabel", "ninja", "nni ; platform_system == \"Linux\" and \"arm\" not in platform_machine and \"aarch\" not in platform_machine", "nvidia-ml-py", "onnx (>=1.13.0)", "onnxruntime ; python_version <= \"3.10\"", "openslide-bin", "openslide-python", "optuna", "pandas", "pillow", "psutil", "pyamg (>=5.0.0)", "pydicom", "pynrrd", "pytorch-ignite (==0.4.11)", "pyyaml", "scikit-image (>=0.14.2)", "scipy (>=1.12.0) ; python_version >= \"3.9\"", "tensorboard", "tensorboardX", "tifffile ; platform_system == \"Linux\" or platform_system == \"Darwin\"", "torchio", "torchvision", "tqdm (>=4.47.0)", "transformers (>=4.36.0,<4.41.0) ; python_version <= \"3.10\"", "zarr"]
+all = ["clearml (>=1.10.0rc0)", "cucim-cu12 ; platform_system == \"Linux\" and python_version >= \"3.9\" and python_version <= \"3.10\"", "einops", "fire", "gdown (>=4.7.3)", "h5py", "huggingface-hub", "imagecodecs ; platform_system == \"Linux\" or platform_system == \"Darwin\"", "itk (>=5.2)", "jsonschema", "lmdb", "lpips (==0.1.4)", "matplotlib (>=3.6.3)", "mlflow (>=2.12.2)", "nibabel", "ninja", "nni ; platform_system == \"Linux\" and \"arm\" not in platform_machine and \"aarch\" not in platform_machine", "nvidia-ml-py", "onnx (>=1.13.0)", "onnxruntime ; python_version <= \"3.10\"", "openslide-bin", "openslide-python", "optuna", "pandas", "pillow", "psutil", "pyamg (>=5.0.0,<5.3.0)", "pydicom", "pynrrd", "pytorch-ignite (==0.4.11)", "pyyaml", "scikit-image (>=0.14.2)", "scipy (>=1.12.0) ; python_version >= \"3.9\"", "tensorboard", "tensorboardX", "tifffile ; platform_system == \"Linux\" or platform_system == \"Darwin\"", "torchio", "torchvision", "tqdm (>=4.47.0)", "transformers (>=4.36.0,<4.41.0) ; python_version <= \"3.10\"", "zarr"]
 clearml = ["clearml"]
 cucim = ["cucim-cu12 ; platform_system == \"Linux\" and python_version >= \"3.9\" and python_version <= \"3.10\""]
 einops = ["einops"]
@@ -2396,7 +2397,7 @@ pandas = ["pandas"]
 pillow = ["pillow (!=8.3.0)"]
 polygraphy = ["polygraphy"]
 psutil = ["psutil"]
-pyamg = ["pyamg (>=5.0.0)"]
+pyamg = ["pyamg (>=5.0.0,<5.3.0)"]
 pydicom = ["pydicom"]
 pynrrd = ["pynrrd"]
 pynvml = ["nvidia-ml-py"]
@@ -5557,4 +5558,4 @@ tutorials = ["ipykernel", "matplotlib", "notebook"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<=3.14"
-content-hash = "7901382bdccafd10d215da051b97bf8cdf23783a25e529753383a95b2172b2e3"
+content-hash = "1009d41081b5f768efab2efc3c417a434c6a32bc0858dba19161a3d18170a0c1"
