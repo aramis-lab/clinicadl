@@ -28,6 +28,7 @@ clinicadl_debug.log
 
 # Code coverage and crash log files
 .coverage*
+coverage.xml
 crash*
 
 # Pytest files

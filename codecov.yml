@@ -1,0 +1,36 @@
+codecov:
+  notify:
+    # Wait for every coverage upload before finalizing the status.
+    # Each matrix cell counts as one upload:
+    #   cpu-unit (2 OS x 5 Python) = 10, gpu-unit = 1, multi-gpu = 1,
+    #   cpu-functional = 1, gpu-functional = 1  ->  14 total.
+    after_n_builds: 14
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto          # compare against the base commit
+        threshold: 1%         # allow a small drop without failing
+        informational: false  # fail the status check on a larger drop
+    patch:
+      default:
+        target: 90%           # new/changed lines must be 80% covered
+        threshold: 0%         # no tolerance, it is 90%
+        informational: false
+
+# Flags let Codecov merge the separate uploads from each test job and
+# carry the last known coverage forward when a job does not run on a PR.
+flag_management:
+  default_rules:
+    carryforward: true
+
+comment:
+  layout: "header, diff, flags, components"
+  require_changes: false
+
+# Files that should not count toward coverage.
+ignore:
+  - "tests/**"
+  - "docs/**"
+  - "examples/**"
