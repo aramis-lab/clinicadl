@@ -30,22 +30,24 @@ install.doc: check.lock ## Install only the docs dependency group
 	@$(POETRY) install --only docs
 
 ##@ Test
+COV ?= --cov=clinicadl --cov-report=xml --cov-report=term
+
 .PHONY: unit-tests
 unit-tests: install.dev ## Run unit tests (CPU only)
-	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" tests/unittests
+	@$(POETRY) run python -m pytest -v $(COV) -m "not gpu and not multi_gpu" tests/unittests
 
 .PHONY: gpu-unit-tests
 gpu-unit-tests: install.dev ## Run unit tests on a single GPU
-	@$(POETRY) run python -m pytest -v -m "gpu" tests/unittests
+	@$(POETRY) run python -m pytest -v $(COV) -m "gpu" tests/unittests
 
 .PHONY: multi-gpu-unit-tests
 multi-gpu-unit-tests: install.dev ## Run unit tests on multiple GPUs
-	@$(POETRY) run python -m pytest -v -m "multi_gpu" tests/unittests
+	@$(POETRY) run python -m pytest -v $(COV) -m "multi_gpu" tests/unittests
 
 .PHONY: functional-tests
 functional-tests: install.dev ## Run functional tests (CPU only)
-	@$(POETRY) run python -m pytest -v -m "not gpu and not multi_gpu" --ref /localdrive10TB/users/clinicadl.ci/clinicadl_data_ci/data_ci tests/functional
+	@$(POETRY) run python -m pytest -v $(COV) -m "not gpu and not multi_gpu" --ref /localdrive10TB/users/clinicadl.ci/clinicadl_data_ci/data_ci tests/functional
 
 .PHONY: gpu-functional-tests
 gpu-functional-tests: install.dev ## Run functional tests on a single GPU
-	@$(POETRY) run python -m pytest -v -m "gpu" --ref /localdrive10TB/users/clinicadl.ci/clinicadl_data_ci/data_ci tests/functional
+	@$(POETRY) run python -m pytest -v $(COV) -m "gpu" --ref /localdrive10TB/users/clinicadl.ci/clinicadl_data_ci/data_ci tests/functional

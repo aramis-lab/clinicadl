@@ -18,6 +18,9 @@ Open-source Python library for reproducible deep learning in neuroimaging
     <a href='https://github.com/aramis-lab/clinicadl/actions/workflows/test.yml'>
         <img src='https://github.com/aramis-lab/clinicadl/actions/workflows/test.yml/badge.svg' alt='CI tests status' />
     </a>
+    <a href='https://app.codecov.io/gh/aramis-lab/clinicadl'>
+        <img src='https://codecov.io/gh/aramislab/clinicadl/dev/graph/badge.svg' alt='CI tests status' />
+    </a>
     <a href='https://opensource.org/licenses/MIT'>
         <img src='https://img.shields.io/badge/License-MIT-yellow.svg' alt='License' />
     </a>
