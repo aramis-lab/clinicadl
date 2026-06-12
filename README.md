@@ -11,6 +11,24 @@
 
 <p align="center"><strong>Open-source Python library for reproducible deep learning in neuroimaging</strong></p>
 
+<p align="center">
+  <a href="https://pypi.org/project/clinicadl/">
+    <img src="https://img.shields.io/pypi/v/clinicadl" alt="PyPI version">
+  </a>
+  <a href="https://img.shields.io/pypi/pyversions/clinicadl">
+    <img src="https://img.shields.io/pypi/pyversions/clinicadl" alt="Python versions">
+  </a>
+  <a href='https://clinicadl.readthedocs.io/en/stable/'>
+    <img src='https://readthedocs.org/projects/clinicadl/badge/?version=latest' alt='Documentation Status' />
+  </a>
+  <a href='https://github.com/aramis-lab/clinicadl/actions/workflows/test.yml'>
+    <img src='https://github.com/aramis-lab/clinicadl/actions/workflows/test.yml/badge.svg' alt='CI tests status' />
+  </a>
+  <a href='https://opensource.org/licenses/MIT'>
+    <img src='https://img.shields.io/badge/License-MIT-yellow.svg' alt='License' />
+  </a>
+</p>
+
 
 ## About the project
 
