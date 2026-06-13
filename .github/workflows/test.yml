@@ -37,6 +37,14 @@ jobs:
           cache: poetry
       - name: Run unit tests
         run: make unit-tests
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: unittests
+          name: unittests-${{ matrix.os }}-py${{ matrix.python-version }}
+          fail_ci_if_error: false
 
   gpu-unit-tests:
     name: GPU unit tests
@@ -54,6 +62,14 @@ jobs:
           cache: poetry
       - name: Run unit tests
         run: make gpu-unit-tests
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: gpu-unittests
+          name: gpu-unittests
+          fail_ci_if_error: false
 
   cpu-functional-test:
     name: Functional tests
@@ -72,6 +88,14 @@ jobs:
           cache: poetry
       - name: Run functional tests
         run: make functional-tests
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: functional
+          name: functional
+          fail_ci_if_error: false
 
   gpu-functional-test:
     name: GPU functional tests
@@ -90,7 +114,15 @@ jobs:
           cache: poetry
       - name: Run functional tests
         run: make gpu-functional-tests
-  
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: gpu-functional
+          name: gpu-functional
+          fail_ci_if_error: false
+
   multi-gpu-unit-tests:
     name: Multi-GPUs unit tests
     runs-on:
@@ -109,3 +141,11 @@ jobs:
         run: rm -rf ~/.cache/pypoetry ~/.cache/pip
       - name: Run unit tests
         run: make multi-gpu-unit-tests
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: multi-gpu-unittests
+          name: multi-gpu-unittests
+          fail_ci_if_error: false

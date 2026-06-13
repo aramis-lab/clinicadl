@@ -107,6 +107,14 @@ line-ending = "auto"
 [tool.ruff.lint.per-file-ignores]
 "examples/*.py" = ["E402"]  # import not a the beginning
 
+[tool.coverage.run]
+source = ["clinicadl"]
+parallel = true
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
 [tool.codespell]
 summary = ''
 skip = ".git,LICENSE.txt,*.m,clinicadl/resources/config/train_config.toml"
