@@ -1,11 +1,18 @@
 import pytest
 import torch.nn as nn
+from monai import losses as monai_losses
 from pydantic import ValidationError
 
 from clinicadl.losses.config import (
     BCELossConfig,
     BCEWithLogitsLossConfig,
     CrossEntropyLossConfig,
+    DiceCELossConfig,
+    DiceFocalLossConfig,
+    DiceLossConfig,
+    FocalLossConfig,
+    GeneralizedDiceFocalLossConfig,
+    GeneralizedDiceLossConfig,
     HuberLossConfig,
     ImplementedLoss,
     KLDivLossConfig,
@@ -14,6 +21,7 @@ from clinicadl.losses.config import (
     MultiMarginLossConfig,
     NLLLossConfig,
     SmoothL1LossConfig,
+    TverskyLossConfig,
 )
 
 BAD_INPUTS = [
@@ -172,3 +180,61 @@ def test_name():
         config = globals()[f"{name.value}Config"]
         c = config()
         assert c.name_ == name.value
+
+
+@pytest.mark.parametrize(
+    "config,loss",
+    [
+        (DiceLossConfig, monai_losses.DiceLoss),
+        (DiceCELossConfig, monai_losses.DiceCELoss),
+        (DiceFocalLossConfig, monai_losses.DiceFocalLoss),
+        (GeneralizedDiceLossConfig, monai_losses.GeneralizedDiceLoss),
+        (
+            GeneralizedDiceFocalLossConfig,
+            monai_losses.GeneralizedDiceFocalLoss,
+        ),
+        (FocalLossConfig, monai_losses.FocalLoss),
+        (TverskyLossConfig, monai_losses.TverskyLoss),
+    ],
+)
+def test_get_monai_object(config, loss):
+    assert isinstance(config().get_object(), loss)
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        DiceLossConfig,
+        DiceCELossConfig,
+        DiceFocalLossConfig,
+        GeneralizedDiceLossConfig,
+        GeneralizedDiceFocalLossConfig,
+        TverskyLossConfig,
+    ],
+)
+def test_monai_loss_rejects_multiple_activations(config):
+    with pytest.raises(ValidationError, match="Only one"):
+        config(sigmoid=True, softmax=True)
+
+
+@pytest.mark.parametrize(
+    "config,kwargs",
+    [
+        (DiceCELossConfig, {"label_smoothing": 1.1}),
+        (DiceFocalLossConfig, {"alpha": 1.1}),
+        (FocalLossConfig, {"alpha": 1.1}),
+        (DiceFocalLossConfig, {"gamma": -1}),
+        (GeneralizedDiceFocalLossConfig, {"lambda_gdl": -1}),
+        (GeneralizedDiceLossConfig, {"w_type": "invalid"}),
+        (TverskyLossConfig, {"smooth_dr": -1}),
+    ],
+)
+def test_bad_monai_inputs(config, kwargs):
+    with pytest.raises(ValidationError):
+        config(**kwargs)
+
+
+def test_monai_weight_list_is_converted_to_tensor():
+    loss = FocalLossConfig(weight=[1, 2]).get_object()
+    assert loss.class_weight is not None
+    assert loss.class_weight.tolist() == [1, 2]
