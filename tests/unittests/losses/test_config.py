@@ -21,6 +21,7 @@ from clinicadl.losses.config import (
     MultiMarginLossConfig,
     NLLLossConfig,
     SmoothL1LossConfig,
+    SoftclDiceLossConfig,
     TverskyLossConfig,
 )
 
@@ -195,6 +196,7 @@ def test_name():
         ),
         (FocalLossConfig, monai_losses.FocalLoss),
         (TverskyLossConfig, monai_losses.TverskyLoss),
+        (SoftclDiceLossConfig, monai_losses.SoftclDiceLoss),
     ],
 )
 def test_get_monai_object(config, loss):
@@ -227,6 +229,7 @@ def test_monai_loss_rejects_multiple_activations(config):
         (GeneralizedDiceFocalLossConfig, {"lambda_gdl": -1}),
         (GeneralizedDiceLossConfig, {"w_type": "invalid"}),
         (TverskyLossConfig, {"smooth_dr": -1}),
+        (SoftclDiceLossConfig, {"iter_": -1}),
     ],
 )
 def test_bad_monai_inputs(config, kwargs):

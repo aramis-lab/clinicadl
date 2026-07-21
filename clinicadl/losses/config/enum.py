@@ -23,6 +23,7 @@ class ImplementedLoss(str, Enum):
     GENERALIZED_DICE_FOCAL = "GeneralizedDiceFocalLoss"
     FOCAL = "FocalLoss"
     TVERSKY = "TverskyLoss"
+    SOFT_DICE = "SoftclDiceLoss"
 
     @classmethod
     def _missing_(cls, value):

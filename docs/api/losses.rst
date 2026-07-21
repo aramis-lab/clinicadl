@@ -58,3 +58,4 @@ MONAI Segmentation
    GeneralizedDiceFocalLossConfig
    FocalLossConfig
    TverskyLossConfig
+   SoftclDiceLossConfig

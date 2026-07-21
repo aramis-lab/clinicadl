@@ -25,6 +25,7 @@ from clinicadl.utils.json import read_json
         GeneralizedDiceFocalLossConfig,
         FocalLossConfig,
         TverskyLossConfig,
+        SoftclDiceLossConfig,
     ],
 )
 def test_get_loss_function_from_dict(config, tmp_path):

@@ -4,7 +4,12 @@ from typing import Callable, Optional, Union
 
 import monai.losses
 import torch
-from pydantic import NonNegativeFloat, field_validator, model_validator
+from pydantic import (
+    NonNegativeFloat,
+    NonNegativeInt,
+    field_validator,
+    model_validator,
+)
 
 from clinicadl.utils.factories import get_defaults_from
 
@@ -20,6 +25,7 @@ __all__ = [
     "GeneralizedDiceFocalLossConfig",
     "FocalLossConfig",
     "TverskyLossConfig",
+    "SoftclDiceLossConfig",
 ]
 
 DICE_MONAI_DEFAULTS = get_defaults_from(monai.losses.DiceLoss)
@@ -31,6 +37,7 @@ GENERALIZED_DICE_FOCAL_MONAI_DEFAULTS = get_defaults_from(
 )
 FOCAL_MONAI_DEFAULTS = get_defaults_from(monai.losses.FocalLoss)
 TVERSKY_MONAI_DEFAULTS = get_defaults_from(monai.losses.TverskyLoss)
+SOFT_CL_DICE_MONAI_DEFAULTS = get_defaults_from(monai.losses.SoftclDiceLoss)
 
 SerializableWeight = Optional[Union[NonNegativeFloat, list[NonNegativeFloat]]]
 
@@ -164,3 +171,10 @@ class TverskyLossConfig(_OverlapLossConfig):
     alpha: NonNegativeFloat = TVERSKY_MONAI_DEFAULTS["alpha"]
     beta: NonNegativeFloat = TVERSKY_MONAI_DEFAULTS["beta"]
     soft_label: bool = TVERSKY_MONAI_DEFAULTS["soft_label"]
+
+
+class SoftclDiceLossConfig(MonaiLossConfig):
+    """Config class for :py:class:`monai.losses.SoftclDiceLoss`."""
+
+    iter_: NonNegativeInt = SOFT_CL_DICE_MONAI_DEFAULTS["iter_"]
+    smooth: float = SOFT_CL_DICE_MONAI_DEFAULTS["smooth"]
