@@ -37,6 +37,8 @@ authors:
     given-names: Ghislain
   - family-names: Wen
     given-names: Junhao
+  - family-names: Son
+    given-names: Colin
 title: " ClinicaDL: an open-source Python library for reproducible deep learning in neuroimaging."
 version: 2.0.0
 doi: 10.1016/j.cmpb.2022.106818
