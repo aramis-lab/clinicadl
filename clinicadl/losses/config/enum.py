@@ -25,6 +25,8 @@ class ImplementedLoss(str, Enum):
     TVERSKY = "TverskyLoss"
     SOFT_CL_DICE = "SoftclDiceLoss"
 
+    SSIM = "SSIMLoss"
+
     @classmethod
     def _missing_(cls, value):
         raise ValueError(

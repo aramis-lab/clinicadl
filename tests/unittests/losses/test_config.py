@@ -22,6 +22,7 @@ from clinicadl.losses.config import (
     NLLLossConfig,
     SmoothL1LossConfig,
     SoftclDiceLossConfig,
+    SSIMLossConfig,
     TverskyLossConfig,
 )
 
@@ -179,28 +180,30 @@ def test_get_object(config, loss):
 def test_name():
     for name in ImplementedLoss:
         config = globals()[f"{name.value}Config"]
-        c = config()
+        c = config(spatial_dims=3)  # spatial_dims only for SSIMLossConfig
         assert c.name_ == name.value
 
 
 @pytest.mark.parametrize(
-    "config,loss",
+    "config,loss,mandatory_args",
     [
-        (DiceLossConfig, monai_losses.DiceLoss),
-        (DiceCELossConfig, monai_losses.DiceCELoss),
-        (DiceFocalLossConfig, monai_losses.DiceFocalLoss),
-        (GeneralizedDiceLossConfig, monai_losses.GeneralizedDiceLoss),
+        (DiceLossConfig, monai_losses.DiceLoss, {}),
+        (DiceCELossConfig, monai_losses.DiceCELoss, {}),
+        (DiceFocalLossConfig, monai_losses.DiceFocalLoss, {}),
+        (GeneralizedDiceLossConfig, monai_losses.GeneralizedDiceLoss, {}),
         (
             GeneralizedDiceFocalLossConfig,
             monai_losses.GeneralizedDiceFocalLoss,
+            {},
         ),
-        (FocalLossConfig, monai_losses.FocalLoss),
-        (TverskyLossConfig, monai_losses.TverskyLoss),
-        (SoftclDiceLossConfig, monai_losses.SoftclDiceLoss),
+        (FocalLossConfig, monai_losses.FocalLoss, {}),
+        (TverskyLossConfig, monai_losses.TverskyLoss, {}),
+        (SoftclDiceLossConfig, monai_losses.SoftclDiceLoss, {}),
+        (SSIMLossConfig, monai_losses.SSIMLoss, {"spatial_dims": 3}),
     ],
 )
-def test_get_monai_object(config, loss):
-    assert isinstance(config().get_object(), loss)
+def test_get_monai_object(config, loss, mandatory_args):
+    assert isinstance(config(**mandatory_args).get_object(), loss)
 
 
 @pytest.mark.parametrize(
@@ -230,6 +233,7 @@ def test_monai_loss_rejects_multiple_activations(config):
         (GeneralizedDiceLossConfig, {"w_type": "invalid"}),
         (TverskyLossConfig, {"smooth_dr": -1}),
         (SoftclDiceLossConfig, {"iter_": -1}),
+        (SSIMLossConfig, {"spatial_dims": 1}),
     ],
 )
 def test_bad_monai_inputs(config, kwargs):

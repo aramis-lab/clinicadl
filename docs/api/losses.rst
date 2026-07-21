@@ -59,3 +59,14 @@ MONAI Segmentation
    FocalLossConfig
    TverskyLossConfig
    SoftclDiceLossConfig
+
+
+MONAI Reconstruction
+^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/config_object.rst
+
+   SSIMLossConfig

@@ -7,10 +7,14 @@ import torch
 from pydantic import (
     NonNegativeFloat,
     NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
     field_validator,
     model_validator,
 )
 
+from clinicadl.metrics.config.enum import Kernel
+from clinicadl.metrics.config.reconstruction import BaseSSIMConfig
 from clinicadl.utils.factories import get_defaults_from
 
 from .configs import LossConfig
@@ -26,6 +30,7 @@ __all__ = [
     "FocalLossConfig",
     "TverskyLossConfig",
     "SoftclDiceLossConfig",
+    "SSIMLossConfig",
 ]
 
 DICE_MONAI_DEFAULTS = get_defaults_from(monai.losses.DiceLoss)
@@ -38,6 +43,7 @@ GENERALIZED_DICE_FOCAL_MONAI_DEFAULTS = get_defaults_from(
 FOCAL_MONAI_DEFAULTS = get_defaults_from(monai.losses.FocalLoss)
 TVERSKY_MONAI_DEFAULTS = get_defaults_from(monai.losses.TverskyLoss)
 SOFT_CL_DICE_MONAI_DEFAULTS = get_defaults_from(monai.losses.SoftclDiceLoss)
+SSIM_MONAI_DEFAULTS = get_defaults_from(monai.losses.SSIMLoss)
 
 SerializableWeight = Optional[Union[NonNegativeFloat, list[NonNegativeFloat]]]
 
@@ -178,3 +184,20 @@ class SoftclDiceLossConfig(MonaiLossConfig):
 
     iter_: NonNegativeInt = SOFT_CL_DICE_MONAI_DEFAULTS["iter_"]
     smooth: float = SOFT_CL_DICE_MONAI_DEFAULTS["smooth"]
+
+
+class SSIMLossConfig(MonaiLossConfig, BaseSSIMConfig):
+    """Config class for :py:class:`monai.losses.ssim_loss.SSIMLoss`."""
+
+    spatial_dims: PositiveInt
+    data_range: PositiveFloat = SSIM_MONAI_DEFAULTS["data_range"]
+    kernel_type: Kernel = SSIM_MONAI_DEFAULTS["kernel_type"]
+    win_size: Union[PositiveInt, tuple[PositiveInt, ...]] = SSIM_MONAI_DEFAULTS[
+        "win_size"
+    ]
+    kernel_sigma: Union[PositiveFloat, tuple[PositiveFloat, ...]] = SSIM_MONAI_DEFAULTS[
+        "kernel_sigma"
+    ]
+    k1: NonNegativeFloat = SSIM_MONAI_DEFAULTS["k1"]
+    k2: NonNegativeFloat = SSIM_MONAI_DEFAULTS["k2"]
+    reduction: Reduction = SSIM_MONAI_DEFAULTS["reduction"]

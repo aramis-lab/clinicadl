@@ -6,30 +6,31 @@ from clinicadl.utils.json import read_json
 
 
 @pytest.mark.parametrize(
-    "config",
+    "config,mandatory_args",
     [
-        BCELossConfig,
-        BCEWithLogitsLossConfig,
-        CrossEntropyLossConfig,
-        HuberLossConfig,
-        KLDivLossConfig,
-        L1LossConfig,
-        MSELossConfig,
-        MultiMarginLossConfig,
-        NLLLossConfig,
-        SmoothL1LossConfig,
-        DiceLossConfig,
-        DiceCELossConfig,
-        DiceFocalLossConfig,
-        GeneralizedDiceLossConfig,
-        GeneralizedDiceFocalLossConfig,
-        FocalLossConfig,
-        TverskyLossConfig,
-        SoftclDiceLossConfig,
+        (BCELossConfig, {}),
+        (BCEWithLogitsLossConfig, {}),
+        (CrossEntropyLossConfig, {}),
+        (HuberLossConfig, {}),
+        (KLDivLossConfig, {}),
+        (L1LossConfig, {}),
+        (MSELossConfig, {}),
+        (MultiMarginLossConfig, {}),
+        (NLLLossConfig, {}),
+        (SmoothL1LossConfig, {}),
+        (DiceLossConfig, {}),
+        (DiceCELossConfig, {}),
+        (DiceFocalLossConfig, {}),
+        (GeneralizedDiceLossConfig, {}),
+        (GeneralizedDiceFocalLossConfig, {}),
+        (FocalLossConfig, {}),
+        (TverskyLossConfig, {}),
+        (SoftclDiceLossConfig, {}),
+        (SSIMLossConfig, {"spatial_dims": 3}),
     ],
 )
-def test_get_loss_function_from_dict(config, tmp_path):
-    c = config()
+def test_get_loss_function_from_dict(config, mandatory_args, tmp_path):
+    c = config(**mandatory_args)
     c.to_json(tmp_path / "config.json")
     dict_ = read_json(tmp_path / "config.json")
     c = get_loss_function_from_dict(dict_)
