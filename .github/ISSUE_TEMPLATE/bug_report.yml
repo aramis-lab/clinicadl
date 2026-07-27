@@ -8,8 +8,8 @@ body:
 
 - type: markdown
   attributes:
-    value: |
-      '#### Please fill in the following information to the best of your ability.'
+    value: >
+      #### Please fill in the following information to the best of your ability.
 
 - type: checkboxes
   attributes:
@@ -59,7 +59,8 @@ body:
 - type: textarea
   attributes:
     label: Operating system version
-    value: |
+    description: Please give information about your OS and its version.
+    placeholder: |
       For example one of the following:
       - Linux Ubuntu 22.04
       - Mac OS Version 12 "monterey"
