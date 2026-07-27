@@ -1,6 +1,6 @@
 name: Feature request
 title: '[ENH] '
-description: Suggest an idea for this project
+description: Got an idea for a new feature, or changing an existing one?
 labels: ['enhancement', 'triage']
 type: Enhancement
 
@@ -25,20 +25,20 @@ body:
     label: Is your feature request related to a problem?
     description: |
       A clear and concise description of what the problem is.
-    validations:
-      required: false
+  validations:
+    required: false
 
 - type: textarea
   attributes:
     label: Describe your proposed enhancement in detail
-    validations:
-      required: true
+  validations:
+    required: false
 
 - type: textarea
   attributes:
     label: Benefits to the change
-    validations:
-      required: true
+  validations:
+    required: false
 
 - type: textarea
   attributes:
@@ -47,5 +47,5 @@ body:
       ```python
       Your code/pseudocode
       ```
-    validations:
-      required: false
+  validations:
+    required: false
