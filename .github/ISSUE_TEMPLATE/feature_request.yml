@@ -9,7 +9,7 @@ body:
 - type: markdown
   attributes:
     value: >
-      #### Provide a brief description what you would like to change and why.
+      #### Provide a brief description what you would like to add/change and why.
 
 - type: checkboxes
   attributes:
@@ -38,9 +38,9 @@ body:
 
 - type: textarea
   attributes:
-    label: Benefits to the change
+    label: Benefits to the enhancement
     description: |
-      How would this change benefit you and the community?
+      How would this enhancement benefit you and the community?
   validations:
     required: true
 
@@ -48,7 +48,7 @@ body:
   attributes:
     label: Interest in implementing/modifying the feature
     description: |
-      Would you be interested in working on a PR to implement/change this feature?
+      Would you be interested in working on a PR to make the suggested changes?
       And if you already have an idea, please explain your strategy for a possible implementation.
   validations:
     required: false
