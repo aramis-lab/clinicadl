@@ -46,7 +46,7 @@ body:
 
 - type: textarea
   attributes:
-    label: Interest in implementing the feature
+    label: Interest in implementing/modifying the feature
     description: |
       Would you be interested in working on a PR to implement/change this feature?
       And if you already have an idea, please explain your strategy for a possible implementation.
