@@ -34,3 +34,8 @@ body:
       Tell us how we could improve the documentation in this regard.
   validations:
     required: false
+
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing! 🚀
