@@ -1,20 +1,51 @@
----
 name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
-assignees: ''
+title: '[ENH] '
+description: Suggest an idea for this project
+labels: ['enhancement', 'triage']
+type: feature
 
----
+body:
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+- type: markdown
+  attributes:
+    value: |
+      '#### Provide a brief description what you would like to change and why.'
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+- type: checkboxes
+  attributes:
+    label: Is there an existing issue for this?
+    description: |
+      Please search through [the past issues](https://github.com/aramis-lab/clinicadl/issues) to see if an issue already exists for the feature you want.
+    options:
+      - label: I have searched the existing issues
+        required: true
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+- type: textarea
+  attributes:
+    label: Is your feature request related to a problem?
+    description: |
+      A clear and concise description of what the problem is.
+    validations:
+      required: false
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+- type: textarea
+  attributes:
+    label: Describe your proposed enhancement in detail
+    validations:
+      required: true
+
+- type: textarea
+  attributes:
+    label: Benefits to the change
+    validations:
+      required: true
+
+- type: textarea
+  attributes:
+    label: Pseudocode for the new behavior, if applicable
+    value: |
+      ```python
+      Your code/pseudocode
+      ```
+    validations:
+      required: false
