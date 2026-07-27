@@ -23,14 +23,14 @@ body:
 - type: textarea
   attributes:
     label: Describe the bug
-    description: >
+    description: |
       A clear and concise description of what the bug is.
   validations:
     required: false
 
 - type: textarea
   attributes:
-    label: Code to Reproduce
+    label: Code to reproduce
     description: |
       Please add a [minimal code example](https://stackoverflow.com/help/minimal-reproducible-example) that can reproduce the error when running it. Be as succinct as possible, **do not depend on external data files**: instead you can use [clinicadl.data.structures.examples](https://clinicadl.readthedocs.io/en/stable/api/data/structures.html#module-clinicadl.data.structures.examples) or a few lines of Python code. We **need to be able to quickly copy-paste your code** to run it without modification and we expect to get the same result as you.
     placeholder: |
@@ -42,7 +42,7 @@ body:
 
 - type: textarea
   attributes:
-    label: Expected Results
+    label: Expected results
     description: |
       Please paste or describe the expected results.
   validations:
@@ -72,7 +72,7 @@ body:
     label: ClinicaDL version
     render: shell
     description: |
-      What version of Nilearn are you using?
+      What version of ClinicaDL are you using?
 
       You can check this by entering `python -c "import clinicadl; print(clinicadl.__version__)"` in the command line.
   validations:
@@ -83,7 +83,7 @@ body:
     label: Python version
     render: shell
     description: |
-      What version of Nilearn are you using?
+      What version of Python are you using?
 
       You can check this by entering `python -V` in the command line.
   validations:
