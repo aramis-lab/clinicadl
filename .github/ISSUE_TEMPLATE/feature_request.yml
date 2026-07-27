@@ -2,7 +2,7 @@ name: Feature request
 title: '[ENH] '
 description: Suggest an idea for this project
 labels: ['enhancement', 'triage']
-type: feature
+type: Enhancement
 
 body:
 
