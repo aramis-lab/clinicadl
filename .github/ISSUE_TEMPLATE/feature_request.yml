@@ -1,8 +1,8 @@
 name: Feature request
 title: '[ENH] '
 description: Got an idea for a new feature, or changing an existing one?
-labels: ['enhancement', 'triage']
-type: Enhancement
+labels: ['triage']
+type: Feature
 
 body:
 
