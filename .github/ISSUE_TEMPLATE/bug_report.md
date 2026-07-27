@@ -1,38 +1,104 @@
----
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+name: Bug Report
+title: '[BUG] '
+description: Create a report to help us reproduce and correct the bug
+labels: ['bug', 'triage']
+type: bug
 
----
+body:
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+- type: markdown
+  attributes:
+    value: |
+      '#### Please fill in the following information to the best of your ability.'
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+- type: checkboxes
+  attributes:
+    label: Is there an existing issue for this?
+    description: |
+      Please search through [the past issues](https://github.com/aramis-lab/clinicadl/issues) to see if an issue already exists for the bug you encountered.
+    options:
+      - label: I have searched the existing issues
+        required: true
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+- type: textarea
+  attributes:
+    label: Describe the bug
+    description: >
+      A clear and concise description of what the bug is.
+  validations:
+    required: false
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+- type: textarea
+  attributes:
+    label: Code to Reproduce
+    description: |
+      Please add a [minimal code example](https://stackoverflow.com/help/minimal-reproducible-example) that can reproduce the error when running it. Be as succinct as possible, **do not depend on external data files**: instead you can use [clinicadl.data.structures.examples](https://clinicadl.readthedocs.io/en/stable/api/data/structures.html#module-clinicadl.data.structures.examples) or a few lines of Python code. We **need to be able to quickly copy-paste your code** to run it without modification and we expect to get the same result as you.
+    placeholder: |
+      ```python
+      Sample code to reproduce the problem
+      ```
+  validations:
+    required: true
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+- type: textarea
+  attributes:
+    label: Expected Results
+    description: |
+      Please paste or describe the expected results.
+  validations:
+    required: true
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+- type: textarea
+  attributes:
+    label: Actual Results
+    description: |
+      Please paste or describe the results you observe instead of the expected results. If you observe an error, please paste the error message including the **full traceback** of the exception.
+  validations:
+    required: true
 
-**Additional context**
-Add any other context about the problem here.
+- type: textarea
+  attributes:
+    label: Operating system version
+    value: |
+      For example one of the following:
+      - Linux Ubuntu 22.04
+      - Mac OS Version 12 "monterey"
+      - Windows 11
+  validations:
+    required: false
+
+- type: textarea
+  attributes:
+    label: ClinicaDL version
+    render: shell
+    description: |
+      What version of Nilearn are you using?
+
+      You can check this by entering `python -c "import clinicadl; print(clinicadl.__version__)"` in the command line.
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: Python version
+    render: shell
+    description: |
+      What version of Nilearn are you using?
+
+      You can check this by entering `python -V` in the command line.
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: Interest in fixing the bug
+    description: |
+      Would you be interested in working on a PR to resolve the bug?
+      And if you already have an idea, please explain your analysis of the root cause of the bug and a strategy for a possible fix.
+  validations:
+    required: false
+
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing! 🚀
