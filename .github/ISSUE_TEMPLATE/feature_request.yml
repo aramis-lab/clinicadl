@@ -32,7 +32,7 @@ body:
   attributes:
     label: Describe your proposed enhancement in detail
     description: |
-      Feel free to add examples of what this new feature might look like. Don't go into the details of the implementation here, but focused on the user experience.
+      Feel free to add examples of what this new/changed feature might look like. Don't go into the details of the implementation here, but please focus on the user experience.
   validations:
     required: true
 
