@@ -7,8 +7,8 @@ body:
 
 - type: markdown
   attributes:
-    value: |
-      '#### Describe what improvement you would like to see in the documentation.'
+    value: >
+      #### Describe what improvement you would like to see in the documentation.
 
 - type: checkboxes
   attributes:
@@ -34,3 +34,8 @@ body:
       Tell us how we could improve the documentation in this regard.
   validations:
     required: false
+
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing! 🚀

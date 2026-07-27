@@ -8,8 +8,8 @@ body:
 
 - type: markdown
   attributes:
-    value: |
-      '#### Provide a brief description what you would like to change and why.'
+    value: >
+      #### Provide a brief description what you would like to change and why.
 
 - type: checkboxes
   attributes:
@@ -31,21 +31,29 @@ body:
 - type: textarea
   attributes:
     label: Describe your proposed enhancement in detail
+    description: |
+      Feel free to add examples of what this new/changed feature might look like. Don't go into the details of the implementation here, but please focus on the user experience.
   validations:
-    required: false
+    required: true
 
 - type: textarea
   attributes:
     label: Benefits to the change
+    description: |
+      How would this change benefit you and the community?
   validations:
-    required: false
+    required: true
 
 - type: textarea
   attributes:
-    label: Pseudocode for the new behavior, if applicable
-    value: |
-      ```python
-      Your code/pseudocode
-      ```
+    label: Interest in implementing/modifying the feature
+    description: |
+      Would you be interested in working on a PR to implement/change this feature?
+      And if you already have an idea, please explain your strategy for a possible implementation.
   validations:
     required: false
+
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing! 🚀
