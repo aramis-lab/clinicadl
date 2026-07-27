@@ -40,7 +40,7 @@ body:
   attributes:
     label: Benefits to the change
     description: |
-      Why this change would be useful for you and the community?
+      How would this change benefit you and the community?
   validations:
     required: true
 
