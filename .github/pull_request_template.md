@@ -28,7 +28,7 @@ is merged. See https://github.com/blog/1506-closing-issues-via-pull-requests
 - [ ] Changes involving multi-GPU features
 
 ### Checklist
-<!---
+<!--
 Put an `x` in all the boxes that apply.
 It is ok to open a PR even if you don't check all the boxes
 (e.g. you don't have the necessary hardware to carry out GPU tests)!
