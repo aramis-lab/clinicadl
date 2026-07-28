@@ -49,4 +49,4 @@ I used AI assistance for:
 - [ ] Research and understanding
 
 ### Any other comments?
-<!--Thanks for contributing! 🚀 -->
+<!-- Thanks for contributing! 🚀 -->
