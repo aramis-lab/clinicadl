@@ -21,7 +21,10 @@ env:
 jobs:
   cpu-unit-tests:
     name: Unit tests on ${{ matrix.os }} with Python ${{ matrix.python-version }}
-    if: github.event.action != 'ready_for_review'
+    if: >
+      github.event.action != 'ready_for_review' &&
+      !contains(github.event.head_commit.message, '[only doc]') &&
+      !contains(github.event.head_commit.message, '[skip tests]')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -50,7 +53,10 @@ jobs:
 
   gpu-unit-tests:
     name: GPU unit tests
-    if: github.event.action != 'ready_for_review'
+    if: >
+      github.event.action != 'ready_for_review' &&
+      !contains(github.event.head_commit.message, '[only doc]') &&
+      !contains(github.event.head_commit.message, '[skip tests]')
     runs-on:
       - self-hosted
       - gpu
@@ -81,7 +87,10 @@ jobs:
       (
         github.event_name == 'pull_request' &&
         github.event.pull_request.draft == false
-      )
+      ) &&
+      !contains(github.event.head_commit.message, '[only doc]') &&
+      !contains(github.event.head_commit.message, '[skip tests]') &&
+      !contains(github.event.head_commit.message, '[skip functional-tests]')
     runs-on:
       - self-hosted
       - functional-tests
@@ -112,7 +121,10 @@ jobs:
       (
         github.event_name == 'pull_request' &&
         github.event.pull_request.draft == false
-      )
+      ) &&
+      !contains(github.event.head_commit.message, '[only doc]') &&
+      !contains(github.event.head_commit.message, '[skip tests]') &&
+      !contains(github.event.head_commit.message, '[skip functional-tests]')
     runs-on:
       - self-hosted
       - functional-tests
@@ -138,7 +150,10 @@ jobs:
 
   multi-gpu-unit-tests:
     name: Multi-GPUs unit tests
-    if: github.event.action != 'ready_for_review'
+    if: >
+      github.event.action != 'ready_for_review' &&
+      !contains(github.event.head_commit.message, '[only doc]') &&
+      !contains(github.event.head_commit.message, '[skip tests]')
     runs-on:
       - self-hosted
       - multi-gpu
