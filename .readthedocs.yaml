@@ -11,6 +11,14 @@ build:
   tools:
     python: "3.12"
   jobs:
+    post_checkout:
+      - |
+        COMMIT_MSG=$(git --no-pager log --pretty="format:%s %b" -1)
+        echo "Commit message: $COMMIT_MSG"
+        if echo "$COMMIT_MSG" | grep -Eiq "\[skip ci\]|\[skip doc\]|\[only tests\]"; then
+          echo "Skipping build due to commit flag."
+          exit 183
+        fi
     post_install:
       - pip install poetry
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
