@@ -73,6 +73,7 @@ jobs:
 
   cpu-functional-test:
     name: Functional tests
+    if: github.event.pull_request.draft == false
     runs-on:
       - self-hosted
       - functional-tests
@@ -99,6 +100,7 @@ jobs:
 
   gpu-functional-test:
     name: GPU functional tests
+    if: github.event.pull_request.draft == false
     runs-on:
       - self-hosted
       - functional-tests
