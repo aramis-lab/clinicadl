@@ -26,6 +26,7 @@ is merged. See https://github.com/blog/1506-closing-issues-via-pull-requests
 - [ ] Breaking changes (fix or new feature that would cause existing functionality to change)
 - [ ] Changes involving GPU features
 - [ ] Changes involving multi-GPU features
+- [ ] No code-related changes (e.g. documentation only)
 
 ### Checklist
 <!--
