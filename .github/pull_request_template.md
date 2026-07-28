@@ -21,7 +21,7 @@ is merged. See https://github.com/blog/1506-closing-issues-via-pull-requests
 -
 
 ### Type of changes
-<!--- Put an `x` in all the boxes that apply. -->
+<!-- Put an `x` in all the boxes that apply. -->
 - [ ] Non-breaking changes (fix or new feature that would not break existing functionality)
 - [ ] Breaking changes (fix or new feature that would cause existing functionality to change)
 - [ ] Changes involving GPU features
