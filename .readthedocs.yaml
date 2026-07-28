@@ -11,10 +11,6 @@ build:
   tools:
     python: "3.12"
   jobs:
-    post_checkout:
-      # Skip the build if the latest commit message contains
-      # "[skip ci]", "[skip doc]", or "[only tests]".
-      - (git --no-pager log --pretty="tformat:%s -- %b" -1 | paste -s -d " " | grep -Eviq "\[skip ci\]|\[skip doc\]|\[only tests\]") || exit 183
     post_install:
       - pip install poetry
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs
