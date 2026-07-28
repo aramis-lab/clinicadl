@@ -5,6 +5,7 @@ on:
     branches: ["dev", "master"]
   pull_request:
     branches: ["dev", "master"]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -20,6 +21,7 @@ env:
 jobs:
   cpu-unit-tests:
     name: Unit tests on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    if: github.event.action != 'ready_for_review'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -48,6 +50,7 @@ jobs:
 
   gpu-unit-tests:
     name: GPU unit tests
+    if: github.event.action != 'ready_for_review'
     runs-on:
       - self-hosted
       - gpu
@@ -73,11 +76,15 @@ jobs:
 
   cpu-functional-test:
     name: Functional tests
-    if: github.event.pull_request.draft == false
+    if: >
+      github.event_name == 'push' ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.draft == false
+      )
     runs-on:
       - self-hosted
       - functional-tests
-    needs: gpu-unit-tests
     steps:
       - uses: actions/checkout@v6
       - uses: snok/install-poetry@v1
@@ -100,11 +107,15 @@ jobs:
 
   gpu-functional-test:
     name: GPU functional tests
-    if: github.event.pull_request.draft == false
+    if: >
+      github.event_name == 'push' ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.draft == false
+      )
     runs-on:
       - self-hosted
       - functional-tests
-    needs: cpu-functional-test
     steps:
       - uses: actions/checkout@v6
       - uses: snok/install-poetry@v1
@@ -127,6 +138,7 @@ jobs:
 
   multi-gpu-unit-tests:
     name: Multi-GPUs unit tests
+    if: github.event.action != 'ready_for_review'
     runs-on:
       - self-hosted
       - multi-gpu
