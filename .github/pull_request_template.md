@@ -8,25 +8,25 @@ https://clinicadl.readthedocs.io/en/stable/contributing.html
 If there is other information that would be helpful to include, please don't hesitate to add it!
 -->
 
-### Related Issue
+### Related issues
 <!--
 Example: Closes #1234. See also #3456.
 Please use keywords (e.g., 'closes') to create links to the issues
 you resolved, so that they will automatically be closed when your pull request
-is merged. See https://github.com/blog/1506-closing-issues-via-pull-requests
+is merged. See https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue
 -->
 
-### Key Changes Made
+### Key changes made
 <!-- Brief bullet list of key changes -->
 -
 
 ### Type of changes
 <!-- Put an `x` in all the boxes that apply. -->
-- [ ] Non-breaking changes (fix or new feature that would not break existing functionality)
-- [ ] Breaking changes (fix or new feature that would cause existing functionality to change)
-- [ ] Changes involving GPU features
-- [ ] Changes involving multi-GPU features
-- [ ] No code-related changes (e.g. documentation only)
+- [ ] **Non-breaking** changes (fix or new feature that would not break existing functionality)
+- [ ] **Breaking** changes (fix or new feature that would cause existing functionality to change)
+- [ ] Changes involving **GPU** features
+- [ ] Changes involving **multi-GPU** features
+- [ ] **No code-related** changes (e.g. documentation only)
 
 ### Checklist
 <!--
@@ -38,7 +38,7 @@ It is ok to open a PR even if you don't check all the boxes
 - [ ] **Unit tests added** to cover the changes
 - [ ] **Unit tests passed** locally (`make unit-tests`; and `make gpu-unit-tests`/`make multi-gpu-unit-tests`
       if the changes involve (multi-)GPU features)
-- [ ] **Documentation** updated (if required) and tested (`cd docs && make html`)
+- [ ] **Documentation** updated and tested (`cd docs && make html`) (if required)
 - [ ] **CI database** updated (if required)
 
 ### AI usage disclosure
