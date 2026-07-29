@@ -78,6 +78,7 @@ sphinx-copybutton = "^0.5.2"
 sphinx-gallery = "^0.19"
 autodoc-pydantic = "^2.2.0"
 myst-parser = "^4"
+nbsphinx = "^0.9.8"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

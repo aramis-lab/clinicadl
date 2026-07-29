@@ -100,6 +100,7 @@ Open-source Python library for reproducible deep learning in neuroimaging
    api/index
    glossary
    auto_examples/index
+   tutorials/index
 
 .. toctree::
    :maxdepth: 1

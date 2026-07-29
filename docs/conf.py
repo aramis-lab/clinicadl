@@ -1,5 +1,6 @@
 import inspect
 import re
+import shutil
 import sys
 from datetime import date
 from pathlib import Path
@@ -24,6 +25,7 @@ version = "2.0"
 
 extensions = [
     "myst_parser",
+    "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
@@ -50,7 +52,6 @@ napoleon_custom_sections = [("Returns", "params_style"), ("Attributes", "params_
 
 
 templates_path = ["_templates"]
-exclude_patterns = []
 autodoc_member_order = "bysource"
 
 autodoc_typehints = "description"
@@ -99,6 +100,19 @@ extlinks = {
 language = "en"
 # pygments_style = "friendly"
 
+
+# -- Copy tutorials dir to docs -----------------------------------------------
+_docs_dir = Path(__file__).parent
+_tutorials_src = _docs_dir.parent / "tutorials"
+_tutorials_dst = _docs_dir / "tutorials"
+
+if _tutorials_src.exists():
+    if _tutorials_dst.exists():
+        shutil.rmtree(_tutorials_dst)
+    shutil.copytree(_tutorials_src, _tutorials_dst)
+
+
+# -- Sphinx Gallery (small examples) -----------------------------------------
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to scripts
     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
@@ -108,6 +122,11 @@ sphinx_gallery_conf = {
     ),  # generate mini-galleries for all the objects in clinicadl
     "download_all_examples": False,  # disabling download button of all scripts
 }
+
+# -- nbsphinx (tutorials) -----------------------------------------------------
+# Don't execute notebooks during doc build (they're pre-run)
+nbsphinx_execute = "never"
+exclude_patterns = ["auto_examples/*.ipynb", "auto_examples/**/*.ipynb"]
 
 # sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]
