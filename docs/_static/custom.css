@@ -2,3 +2,13 @@
 .sidebar-logo {
     max-width: 80%;
 }
+
+/* Remove the header not of Sphinx Gallery examples */
+.sphx-glr-download-link-note {
+    display: none;
+}
+
+/* Hide only the zip source download for Sphinx Gallery examples */
+.sphx-glr-download-zip {
+    display: none;
+}

@@ -33,7 +33,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.viewcode",
     "sphinxcontrib.bibtex",
-    # "sphinx_gallery.gen_gallery",
+    "sphinx_gallery.gen_gallery",
     "sphinx_design",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
@@ -99,14 +99,15 @@ extlinks = {
 language = "en"
 # pygments_style = "friendly"
 
-# sphinx_gallery_conf = {
-#     "examples_dirs": "../examples",  # path to scripts
-#     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
-#     "backreferences_dir": Path("generated"),  # where mini-galleries are stored
-#     "doc_module": (
-#         "clinicadl",
-#     ),  # generate mini-galleries for all the objects in clinicadl
-# }
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",  # path to scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    "backreferences_dir": Path("generated"),  # where mini-galleries are stored
+    "doc_module": (
+        "clinicadl",
+    ),  # generate mini-galleries for all the objects in clinicadl
+    "download_all_examples": False,  # disabling download button of all scripts
+}
 
 # sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]
