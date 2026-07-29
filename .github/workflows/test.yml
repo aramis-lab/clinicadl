@@ -19,13 +19,32 @@ env:
   PREFERRED_PYTHON_VERSION: "3.12"
 
 jobs:
+  # ------------------------------------------------------------------ #
+  #  Read the HEAD commit message (works for both push and PR events)  #
+  # ------------------------------------------------------------------ #
+  check-commit:
+    name: Check commit message
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.commit.outputs.message }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: commit
+        run: |
+          {
+            echo 'message<<EOF'
+            git log -1 --format=%B
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
   cpu-unit-tests:
     name: Unit tests on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    needs: check-commit
     if: >
       github.event.action != 'ready_for_review' &&
-      !contains(github.event.head_commit.message, '[only doc]') &&
-      !contains(github.event.head_commit.message, '[skip tests]') &&
-      !contains(github.event.head_commit.message, '[only gpu]')
+      !contains(needs.check-commit.outputs.message, '[only doc]') &&
+      !contains(needs.check-commit.outputs.message, '[skip tests]') &&
+      !contains(needs.check-commit.outputs.message, '[only gpu]')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -54,11 +73,12 @@ jobs:
 
   gpu-unit-tests:
     name: GPU unit tests
+    needs: check-commit
     if: >
       github.event.action != 'ready_for_review' &&
-      !contains(github.event.head_commit.message, '[only doc]') &&
-      !contains(github.event.head_commit.message, '[skip tests]') &&
-      !contains(github.event.head_commit.message, '[skip gpu]')
+      !contains(needs.check-commit.outputs.message, '[only doc]') &&
+      !contains(needs.check-commit.outputs.message, '[skip tests]') &&
+      !contains(needs.check-commit.outputs.message, '[skip gpu]')
     runs-on:
       - self-hosted
       - gpu
@@ -84,16 +104,19 @@ jobs:
 
   cpu-functional-test:
     name: Functional tests
+    needs: check-commit
     if: >
-      github.event_name == 'push' ||
       (
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.draft == false
+        github.event_name == 'push' ||
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.draft == false
+        )
       ) &&
-      !contains(github.event.head_commit.message, '[only doc]') &&
-      !contains(github.event.head_commit.message, '[skip tests]') &&
-      !contains(github.event.head_commit.message, '[skip functional-tests]') &&
-      !contains(github.event.head_commit.message, '[only gpu]')
+      !contains(needs.check-commit.outputs.message, '[only doc]') &&
+      !contains(needs.check-commit.outputs.message, '[skip tests]') &&
+      !contains(needs.check-commit.outputs.message, '[skip functional-tests]') &&
+      !contains(needs.check-commit.outputs.message, '[only gpu]')
     runs-on:
       - self-hosted
       - functional-tests
@@ -119,16 +142,19 @@ jobs:
 
   gpu-functional-test:
     name: GPU functional tests
+    needs: check-commit
     if: >
-      github.event_name == 'push' ||
       (
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.draft == false
+        github.event_name == 'push' ||
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.draft == false
+        )
       ) &&
-      !contains(github.event.head_commit.message, '[only doc]') &&
-      !contains(github.event.head_commit.message, '[skip tests]') &&
-      !contains(github.event.head_commit.message, '[skip functional-tests]') &&
-      !contains(github.event.head_commit.message, '[skip gpu]')
+      !contains(needs.check-commit.outputs.message, '[only doc]') &&
+      !contains(needs.check-commit.outputs.message, '[skip tests]') &&
+      !contains(needs.check-commit.outputs.message, '[skip functional-tests]') &&
+      !contains(needs.check-commit.outputs.message, '[skip gpu]')
     runs-on:
       - self-hosted
       - functional-tests
@@ -154,11 +180,12 @@ jobs:
 
   multi-gpu-unit-tests:
     name: Multi-GPUs unit tests
+    needs: check-commit
     if: >
       github.event.action != 'ready_for_review' &&
-      !contains(github.event.head_commit.message, '[only doc]') &&
-      !contains(github.event.head_commit.message, '[skip tests]') &&
-      !contains(github.event.head_commit.message, '[skip gpu]')
+      !contains(needs.check-commit.outputs.message, '[only doc]') &&
+      !contains(needs.check-commit.outputs.message, '[skip tests]') &&
+      !contains(needs.check-commit.outputs.message, '[skip gpu]')
     runs-on:
       - self-hosted
       - multi-gpu
