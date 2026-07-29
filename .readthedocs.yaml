@@ -15,7 +15,7 @@ build:
       - |
         COMMIT_MSG=$(git --no-pager log --pretty="format:%s %b" -1)
         echo "Commit message: $COMMIT_MSG"
-        if echo "$COMMIT_MSG" | grep -Eiq "\[skip ci\]|\[skip doc\]|\[only tests\]"; then
+        if echo "$COMMIT_MSG" | grep -Eiq "\[skip ci\]|\[skip doc\]|\[only tests\]|\[only gpu\]"; then
           echo "Skipping build due to commit flag."
           exit 183
         fi
