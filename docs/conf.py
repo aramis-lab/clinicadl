@@ -127,6 +127,83 @@ sphinx_gallery_conf = {
 # Don't execute notebooks during doc build (they're pre-run)
 nbsphinx_execute = "never"
 exclude_patterns = ["auto_examples/*.ipynb", "auto_examples/**/*.ipynb"]
+nbsphinx_prolog = r"""
+{% set docname = env.doc2path(env.docname, base=None) %}
+
+.. raw:: html
+
+    <style>
+        .nbsphinx-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin: 2em 0 1.5em 0;
+            flex-wrap: wrap;
+        }
+
+        .nbsphinx-buttons a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 180px;
+            height: 32px;
+            text-decoration: none !important;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .nbsphinx-buttons .colab-btn {
+            background-color: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .nbsphinx-buttons .colab-btn img {
+            height: 32px;
+            width: 180px;
+            object-fit: contain;
+        }
+
+        .nbsphinx-buttons .download-btn {
+            background-color: var(--sg-download-a-background-color);
+            background-image: var(--sg-download-a-background-image);
+            border-radius: 4px;
+            border: 1px solid var(--sg-download-a-border-color);
+            color: var(--sg-download-a-color) !important;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 0 14px;
+        }
+
+        .nbsphinx-buttons .download-btn:hover {
+            box-shadow: inset 0 1px 0 var(--sg-download-a-hover-box-shadow-1),
+                        0 1px 5px var(--sg-download-a-hover-box-shadow-2);
+            text-decoration: none !important;
+            background-image: none;
+            background-color: var(--sg-download-a-hover-background-color);
+        }
+
+        .nbsphinx-buttons .download-btn::before {
+            content: "\2913\00a0";
+            font-size: 14px;
+        }
+    </style>
+
+    <div class="nbsphinx-buttons">
+        <a class="colab-btn"
+           href="https://colab.research.google.com/github/aramis-lab/clinicadl/blob/dev/{{ docname }}"
+           target="_blank" rel="noopener noreferrer">
+            <img src="https://colab.research.google.com/assets/colab-badge.svg"
+                 alt="Open In Colab"/>
+        </a>
+        <a class="download-btn"
+           href="https://raw.githubusercontent.com/aramis-lab/clinicadl/dev/{{ docname }}"
+           download>
+            Download Notebook
+        </a>
+    </div>
+"""
 
 # sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]
