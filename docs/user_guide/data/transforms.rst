@@ -110,7 +110,7 @@ ClinicaDL works with **any callable that takes a**
 :py:class:`~clinicadl.data.structures.DataPoint` **and returns a** ``DataPoint``.
 This means you can use, as a transform:
 
-- any :torchio:`TorchIO transform <transforms/transforms.html>` — they operate on a
+- any :torchio:`TorchIO transform <transforms/>` — they operate on a
   :py:class:`torchio.Subject`, of which a ``DataPoint`` is a subclass;
 - any of your own functions following the same signature;
 - the two transforms ClinicaDL ships in :py:mod:`clinicadl.transforms`,

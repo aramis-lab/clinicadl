@@ -6,7 +6,7 @@ from clinicadl.utils.enum import BaseEnum
 class ImplementedTransform(str, BaseEnum):
     """
     Implemented transforms in ClinicaDL.
-    see: https://torchio.readthedocs.io/transforms/transforms.html
+    see: https://docs.torchio.org/latest/transforms/
     """
 
     RESCALE_INTENSITY = "RescaleIntensity"
@@ -61,7 +61,7 @@ class ImplementedTransform(str, BaseEnum):
 class AnatomicalLabel(str, Enum):
     """
     Anatomical regions provided by TorchIO.
-    see: https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.preprocessing.intensity.NormalizationTransform
+    see: https://docs.torchio.org/latest/transforms/preprocessing/#torchio.transforms.preprocessing.intensity.NormalizationTransform
     """
 
     LEFT = "Left"
@@ -75,7 +75,7 @@ class AnatomicalLabel(str, Enum):
 class InterpolationMode(str, BaseEnum):
     """
     Supported interpolation modes in TorchIO.
-    see: https://torchio.readthedocs.io/transforms/transforms.html#interpolation
+    see: https://docs.torchio.org/latest/transforms/#interpolation
     """
 
     NEAREST = "nearest"
@@ -94,7 +94,7 @@ class InterpolationMode(str, BaseEnum):
 class EnsureShapeMultipleMode(str, BaseEnum):
     """
     Supported modes for TorchIO's EnsureShapeMultiple.
-    see: https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.EnsureShapeMultiple
+    see: https://docs.torchio.org/latest/transforms/preprocessing/EnsureShapeMultiple/
     """
 
     CROP = "crop"
@@ -104,7 +104,7 @@ class EnsureShapeMultipleMode(str, BaseEnum):
 class PaddingMode(str, BaseEnum):
     """
     Supported padding modes for TorchIO's Pad.
-    see: https://torchio.readthedocs.io/transforms/preprocessing.html#torchio.transforms.Pad
+    see: https://docs.torchio.org/latest/transforms/preprocessing/Pad/
     """
 
     EDGE = "edge"
@@ -121,7 +121,7 @@ class PaddingMode(str, BaseEnum):
 class CenterMode(str, BaseEnum):
     """
     Supported options for the parameter 'center' in TorchIO's RandomAffine.
-    see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomAffine
+    see: https://docs.torchio.org/latest/transforms/augmentation/RandomAffine/
     """
 
     IMAGE = "image"
@@ -131,7 +131,7 @@ class CenterMode(str, BaseEnum):
 class RandomAffinePaddingMode(str, BaseEnum):
     """
     Supported options for the parameter 'default_pad_value' in TorchIO's RandomAffine.
-    see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomAffine
+    see: https://docs.torchio.org/latest/transforms/augmentation/RandomAffine/
     """
 
     MINIMUM = "minimum"
@@ -142,7 +142,7 @@ class RandomAffinePaddingMode(str, BaseEnum):
 class AnatomicalAxis(str, BaseEnum):
     """
     Supported names for anatomical axes in TorchIO.
-    see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomFlip
+    see: https://docs.torchio.org/latest/transforms/augmentation/RandomFlip/
     """
 
     LEFT_RIGHT = "LR"
@@ -163,7 +163,7 @@ class NumericalAxis(int, BaseEnum):
 class LockedBordersMode(int, BaseEnum):
     """
     Modes for 'locked_borders' argument in RandomElasticDeformation.
-    see: https://torchio.readthedocs.io/transforms/augmentation.html#torchio.transforms.RandomElasticDeformation
+    see: https://docs.torchio.org/latest/transforms/augmentation/RandomElasticDeformation/
     """
 
     ZERO = 0
