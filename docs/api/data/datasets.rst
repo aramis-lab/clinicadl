@@ -18,3 +18,18 @@
     ConcatDataset
     PairedDataset
     UnpairedDataset
+
+:mod:`clinicadl.data.datasets.examples`
+---------------------------------------
+
+.. automodule:: clinicadl.data.datasets.examples
+
+.. currentmodule:: clinicadl.data.datasets.examples
+
+.. autosummary::
+    :toctree: ../generated/
+    :nosignatures:
+    :template: autosummary/class.rst
+
+    BidsStroke
+    BidsStrokeSmall

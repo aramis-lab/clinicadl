@@ -23,7 +23,7 @@ coverage:
 # carry the last known coverage forward when a job does not run on a PR.
 flag_management:
   default_rules:
-    carryforward: true
+    carryforward: false
 
 comment:
   layout: "header, diff, flags, components"

@@ -1,8 +1,0 @@
-participant_id	session_id	age	sex	diagnosis
-sub-001	ses-M000	55	M	CN
-sub-001	ses-M003	55	M	AD
-sub-002	ses-M000	62	F	MCI
-sub-002	ses-M003	62	F	AD
-sub-003	ses-M000	67	F	CN
-sub-003	ses-M006	68	F	CN
-sub-004	ses-M000	59	M	AD
