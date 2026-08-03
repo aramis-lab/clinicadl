@@ -51,7 +51,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
@@ -82,7 +82,7 @@ jobs:
       - self-hosted
       - gpu
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
@@ -120,7 +120,7 @@ jobs:
       - self-hosted
       - functional-tests
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
@@ -158,7 +158,7 @@ jobs:
       - self-hosted
       - functional-tests
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
@@ -189,7 +189,7 @@ jobs:
       - self-hosted
       - multi-gpu
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
