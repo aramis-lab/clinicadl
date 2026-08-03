@@ -55,7 +55,7 @@ jobs:
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: poetry
@@ -86,7 +86,7 @@ jobs:
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
@@ -124,7 +124,7 @@ jobs:
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
@@ -162,7 +162,7 @@ jobs:
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
@@ -193,7 +193,7 @@ jobs:
       - uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PREFERRED_PYTHON_VERSION }}
           cache: poetry
