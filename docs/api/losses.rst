@@ -41,3 +41,32 @@ Regression / Reconstruction
    SmoothL1LossConfig
    HuberLossConfig
    KLDivLossConfig
+
+
+MONAI Segmentation
+^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/config_object.rst
+
+   DiceLossConfig
+   DiceCELossConfig
+   DiceFocalLossConfig
+   GeneralizedDiceLossConfig
+   GeneralizedDiceFocalLossConfig
+   FocalLossConfig
+   TverskyLossConfig
+   SoftclDiceLossConfig
+
+
+MONAI Reconstruction
+^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+   :toctree: ../generated/
+   :nosignatures:
+   :template: autosummary/config_object.rst
+
+   SSIMLossConfig

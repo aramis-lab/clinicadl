@@ -16,6 +16,17 @@ class ImplementedLoss(str, Enum):
     SMOOTH_L1 = "SmoothL1Loss"
     KLDIV = "KLDivLoss"
 
+    DICE = "DiceLoss"
+    DICE_CE = "DiceCELoss"
+    DICE_FOCAL = "DiceFocalLoss"
+    GENERALIZED_DICE = "GeneralizedDiceLoss"
+    GENERALIZED_DICE_FOCAL = "GeneralizedDiceFocalLoss"
+    FOCAL = "FocalLoss"
+    TVERSKY = "TverskyLoss"
+    SOFT_CL_DICE = "SoftclDiceLoss"
+
+    SSIM = "SSIMLoss"
+
     @classmethod
     def _missing_(cls, value):
         raise ValueError(
@@ -36,3 +47,11 @@ class Order(int, Enum):
 
     ONE = 1
     TWO = 2
+
+
+class GeneralizedDiceWeight(str, Enum):
+    """Supported class weighting modes for generalized Dice losses."""
+
+    SQUARE = "square"
+    SIMPLE = "simple"
+    UNIFORM = "uniform"

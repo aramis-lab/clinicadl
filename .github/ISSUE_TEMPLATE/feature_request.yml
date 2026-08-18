@@ -1,0 +1,59 @@
+name: Feature request
+title: '[ENH] '
+description: Got an idea for a new feature, or changing an existing one?
+labels: ['triage']
+type: Feature
+
+body:
+
+- type: markdown
+  attributes:
+    value: >
+      #### Provide a brief description what you would like to add/change and why.
+
+- type: checkboxes
+  attributes:
+    label: Is there an existing issue for this?
+    description: |
+      Please search through [the past issues](https://github.com/aramis-lab/clinicadl/issues) to see if an issue already exists for the feature you want.
+    options:
+      - label: I have searched the existing issues
+        required: true
+
+- type: textarea
+  attributes:
+    label: Is your feature request related to a problem?
+    description: |
+      A clear and concise description of what the problem is.
+  validations:
+    required: false
+
+- type: textarea
+  attributes:
+    label: Describe your proposed enhancement in detail
+    description: |
+      Feel free to add examples of what this new/changed feature might look like. Don't go into the details of the implementation here, but please focus on the user experience.
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: Benefits to the enhancement
+    description: |
+      How would this enhancement benefit you and the community?
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: Interest in implementing/modifying the feature
+    description: |
+      Would you be interested in working on a PR to make the suggested changes?
+      And if you already have an idea, please explain your strategy for a possible implementation.
+  validations:
+    required: false
+
+- type: markdown
+  attributes:
+    value: >
+      Thanks for contributing! 🚀
