@@ -11,6 +11,7 @@ from pydantic import (
 )
 
 from clinicadl.losses.config.enum import Reduction
+from clinicadl.utils.config import ClinicaDLConfig
 from clinicadl.utils.doc import add_suffix_to_doc
 from clinicadl.utils.factories import get_defaults_from
 
@@ -48,7 +49,7 @@ class PSNRMetricConfig(MetricConfig, _GetNotNansConfig):
         return Optimum.MAX
 
 
-class _BaseSSIMConfig(_GetNotNansConfig):
+class BaseSSIMConfig(ClinicaDLConfig):
     "Base config class for SSIM-related metrics."
 
     spatial_dims: PositiveInt
@@ -82,7 +83,7 @@ class _BaseSSIMConfig(_GetNotNansConfig):
 
 
 @add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
-class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
+class SSIMMetricConfig(MetricConfig, BaseSSIMConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.regression.SSIMMetric`.
 
@@ -116,7 +117,7 @@ class SSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
 
 
 @add_suffix_to_doc(DOCUMENT_EXTRA_PARAMETERS)
-class MultiScaleSSIMMetricConfig(MetricConfig, _BaseSSIMConfig):
+class MultiScaleSSIMMetricConfig(MetricConfig, BaseSSIMConfig, _GetNotNansConfig):
     """
     Config class for :py:class:`monai.metrics.MultiScaleSSIMMetric`.
 

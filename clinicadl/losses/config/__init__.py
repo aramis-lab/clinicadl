@@ -2,3 +2,4 @@
 
 from .configs import *
 from .enum import ImplementedLoss
+from .monai import *
