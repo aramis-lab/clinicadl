@@ -1,5 +1,6 @@
 import inspect
 import re
+import shutil
 import sys
 from datetime import date
 from pathlib import Path
@@ -24,6 +25,7 @@ version = "2.0"
 
 extensions = [
     "myst_parser",
+    "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
@@ -33,7 +35,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.viewcode",
     "sphinxcontrib.bibtex",
-    # "sphinx_gallery.gen_gallery",
+    "sphinx_gallery.gen_gallery",
     "sphinx_design",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
@@ -50,7 +52,6 @@ napoleon_custom_sections = [("Returns", "params_style"), ("Attributes", "params_
 
 
 templates_path = ["_templates"]
-exclude_patterns = []
 autodoc_member_order = "bysource"
 
 autodoc_typehints = "description"
@@ -99,14 +100,110 @@ extlinks = {
 language = "en"
 # pygments_style = "friendly"
 
-# sphinx_gallery_conf = {
-#     "examples_dirs": "../examples",  # path to scripts
-#     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
-#     "backreferences_dir": Path("generated"),  # where mini-galleries are stored
-#     "doc_module": (
-#         "clinicadl",
-#     ),  # generate mini-galleries for all the objects in clinicadl
-# }
+
+# -- Copy tutorials dir to docs -----------------------------------------------
+_docs_dir = Path(__file__).parent
+_tutorials_src = _docs_dir.parent / "tutorials"
+_tutorials_dst = _docs_dir / "tutorials"
+
+if _tutorials_src.exists():
+    if _tutorials_dst.exists():
+        shutil.rmtree(_tutorials_dst)
+    shutil.copytree(_tutorials_src, _tutorials_dst)
+
+
+# -- Sphinx Gallery (small examples) -----------------------------------------
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",  # path to scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    "backreferences_dir": Path("generated"),  # where mini-galleries are stored
+    "doc_module": (
+        "clinicadl",
+    ),  # generate mini-galleries for all the objects in clinicadl
+    "download_all_examples": False,  # disabling download button of all scripts
+}
+
+# -- nbsphinx (tutorials) -----------------------------------------------------
+# Don't execute notebooks during doc build (they're pre-run)
+nbsphinx_execute = "never"
+exclude_patterns = ["auto_examples/*.ipynb", "auto_examples/**/*.ipynb"]
+nbsphinx_prolog = r"""
+{% set docname = env.doc2path(env.docname, base=None) %}
+
+.. raw:: html
+
+    <style>
+        .nbsphinx-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin: 2em 0 1.5em 0;
+            flex-wrap: wrap;
+        }
+
+        .nbsphinx-buttons a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 180px;
+            height: 32px;
+            text-decoration: none !important;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .nbsphinx-buttons .colab-btn {
+            background-color: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .nbsphinx-buttons .colab-btn img {
+            height: 32px;
+            width: 180px;
+            object-fit: contain;
+        }
+
+        .nbsphinx-buttons .download-btn {
+            background-color: var(--sg-download-a-background-color);
+            background-image: var(--sg-download-a-background-image);
+            border-radius: 4px;
+            border: 1px solid var(--sg-download-a-border-color);
+            color: var(--sg-download-a-color) !important;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 0 14px;
+        }
+
+        .nbsphinx-buttons .download-btn:hover {
+            box-shadow: inset 0 1px 0 var(--sg-download-a-hover-box-shadow-1),
+                        0 1px 5px var(--sg-download-a-hover-box-shadow-2);
+            text-decoration: none !important;
+            background-image: none;
+            background-color: var(--sg-download-a-hover-background-color);
+        }
+
+        .nbsphinx-buttons .download-btn::before {
+            content: "\2913\00a0";
+            font-size: 14px;
+        }
+    </style>
+
+    <div class="nbsphinx-buttons">
+        <a class="colab-btn"
+           href="https://colab.research.google.com/github/aramis-lab/clinicadl/blob/dev/{{ docname }}"
+           target="_blank" rel="noopener noreferrer">
+            <img src="https://colab.research.google.com/assets/colab-badge.svg"
+                 alt="Open In Colab"/>
+        </a>
+        <a class="download-btn"
+           href="https://raw.githubusercontent.com/aramis-lab/clinicadl/dev/{{ docname }}"
+           download>
+            Download Notebook
+        </a>
+    </div>
+"""
 
 # sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]

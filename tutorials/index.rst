@@ -1,0 +1,6 @@
+Tutorials
+=========
+
+.. nbgallery::
+
+   example
