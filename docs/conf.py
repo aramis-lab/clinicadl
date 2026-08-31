@@ -57,7 +57,7 @@ autodoc_member_order = "bysource"
 autodoc_typehints = "description"
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "torchio": ("https://torchio.readthedocs.io", None),
+    "torchio": ("https://docs.torchio.org/latest/", None),
     "monai": ("https://monai.readthedocs.io/en/stable/", None),
     "torch": ("https://pytorch.org/docs/stable", None),
     "pandas": ("https://pandas.pydata.org/docs", None),
@@ -87,7 +87,7 @@ extlinks = {
         "https://github.com/aramis-lab/clinicadl-zoo/tree/main/%s",
         None,
     ),
-    "torchio": ("https://torchio.readthedocs.io/%s", None),
+    "torchio": ("https://docs.torchio.org/latest/%s", None),
     "torch": ("https://pytorch.org/docs/stable/%s", None),
     "torchvision": ("https://docs.pytorch.org/vision/main/%s", None),
     "monai": ("https://monai.readthedocs.io/en/stable/%s", None),
