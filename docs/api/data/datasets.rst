@@ -29,7 +29,11 @@
 .. autosummary::
     :toctree: ../generated/
     :nosignatures:
-    :template: autosummary/class.rst
+    :template: autosummary/example_dataset.rst
 
     BidsStroke
     BidsStrokeSmall
+    BidsDLBS
+    BidsDLBSSmall
+    CapsDLBS
+    BidsNeuroEmo
