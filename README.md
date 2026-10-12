@@ -35,7 +35,7 @@
 
 ## About the project
 
-ClinicaDL is a Python library to build end-to-end reproducible deep learning pipelines for neuroimaging studies. It works with data following the [BIDS](https://bids.neuroimaging.io/index.html) standard, or preprocessed outputs of [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/).
+ClinicoDL is a Python library to build end-to-end reproducible deep learning pipelines for neuroimaging studies. It works with data following the [BIDS](https://bids.neuroimaging.io/index.html) standard, or preprocessed outputs of [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/).
 
 It relies on the medical imaging frameworks [MONAI](https://project-monai.github.io/) and [TorchIO](https://docs.torchio.org/).
 
