@@ -75,6 +75,8 @@ jobs:
     name: GPU unit tests
     needs: check-commit
     if: >
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.action != 'ready_for_review' &&
       !contains(needs.check-commit.outputs.head-commit-message, '[only doc]') &&
       !contains(needs.check-commit.outputs.head-commit-message, '[skip tests]') &&
@@ -106,6 +108,8 @@ jobs:
     name: Functional tests
     needs: check-commit
     if: >
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
       (
         github.event_name == 'push' ||
         (
@@ -144,6 +148,8 @@ jobs:
     name: GPU functional tests
     needs: check-commit
     if: >
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
       (
         github.event_name == 'push' ||
         (
@@ -182,6 +188,8 @@ jobs:
     name: Multi-GPUs unit tests
     needs: check-commit
     if: >
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.action != 'ready_for_review' &&
       !contains(needs.check-commit.outputs.head-commit-message, '[only doc]') &&
       !contains(needs.check-commit.outputs.head-commit-message, '[skip tests]') &&
