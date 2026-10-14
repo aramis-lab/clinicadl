@@ -14,7 +14,7 @@ jobs:
     #   - https://gh.io/using-larger-runners (GitHub.com only)
     # Consider using larger runners or machines with greater resources for possible analysis time improvements.
     if: >
-      github.actor != 'dependabot[bot]' &&
+      github.event.head_commit.author.name != 'dependabot[bot]' &&
       github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     permissions:
