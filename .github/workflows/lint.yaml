@@ -15,7 +15,7 @@ jobs:
   # ------------------------------------------------------------------ #
   check-commit:
     name: Check commit message
-    if: github.actor != 'dependabot[bot]'
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     outputs:
       head-commit-message: ${{ steps.get_head_commit_message.outputs.headCommitMsg }}
@@ -31,7 +31,7 @@ jobs:
   lint:
     needs: check-commit
     if: >
-      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
       !contains(needs.check-commit.outputs.head-commit-message, '[only doc]') &&
       !contains(needs.check-commit.outputs.head-commit-message, '[only tests]') &&
       !contains(needs.check-commit.outputs.head-commit-message, '[only gpu]')
