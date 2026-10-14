@@ -3,6 +3,7 @@ name: "CodeQL"
 on:
   push:
     branches: [ "dev", "master" ]
+  workflow_dispatch:
 
 jobs:
   analyze:
