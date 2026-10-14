@@ -49,5 +49,12 @@ I used AI assistance for:
 - [ ] Documentation (including examples)
 - [ ] Research and understanding
 
+### Introduce yourself
+<!-- If you are new to the ClinicaDL community, please introduce yourself.
+How do you use ClinicaDL? What prompted you to make this contribution?
+Getting to know you helps us build trust in your judgement and welcome you into the
+community.
+-->
+
 ### Any other comments?
 <!-- Thanks for contributing! 🚀 -->
