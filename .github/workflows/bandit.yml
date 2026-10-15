@@ -2,9 +2,9 @@ name: Bandit Security Analysis
 
 on:
   pull_request:
-    branches: [ "dev", "master", "ci/bandit" ]
+    branches: [ "dev", "master" ]
   push:
-    branches: [ "dev", "master", "ci/bandit" ]
+    branches: [ "dev", "master" ]
   workflow_dispatch:
 
 jobs:
