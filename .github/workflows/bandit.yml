@@ -20,5 +20,5 @@ jobs:
           filter_mode: ${{ github.event_name == 'pull_request' && 'added' || 'nofilter'}}
           level: warning
           fail_level: error
-          bandit_flags: -lll
+          bandit_flags: -ll
           summary: true
