@@ -1,0 +1,23 @@
+name: Bandit Security Analysis
+
+on:
+  pull_request:
+    branches: [ "dev", "master", "ci/bandit" ]
+  push:
+    branches: [ "dev", "master", "ci/bandit" ]
+  workflow_dispatch:
+
+jobs:
+  bandit:
+    name: Run Security Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: brunohaf/action-bandit@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: ${{ github.event_name == 'pull_request' && 'github-pr-review' || 'github-check'}}
+          filter_mode: ${{ github.event_name == 'pull_request' && 'added' || 'nofilter'}}
+          level: warning
+          fail_level: error
+          summary: true
