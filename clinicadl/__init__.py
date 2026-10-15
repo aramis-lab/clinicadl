@@ -4,7 +4,6 @@ __all__ = ["__version__"]
 
 __version__ = version("clinicadl")
 
-import subprocess
+import torch
 
-user_input = input("Enter a filename: ")
-subprocess.call("ls " + user_input, shell=True)
+content = torch.load("path", weights_only=False)
