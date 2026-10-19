@@ -1,6 +1,6 @@
 [config]
-model = "litellm_proxy/anthropic/claude-sonnet-4-5"
-fallback_models = []
+model = "litellm_proxy/anthropic/claude-opus-4-6"
+fallback_models = ["openai/gpt-5.3-codex"]
 
 [pr_reviewer]
 persistent_comment = false
