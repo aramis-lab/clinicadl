@@ -10,9 +10,12 @@ on:
 jobs:
   bandit:
     name: Run Security Check
+    if: >
+      github.event.head_commit.author.name != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: brunohaf/action-bandit@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

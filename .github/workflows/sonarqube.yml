@@ -10,9 +10,10 @@ on:
 jobs:
   analyze:
     name: Analyze
+    if: github.event.head_commit.author.name != 'dependabot[bot]'  # dependabot never opens PR on master
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Cache SonarQube packages
