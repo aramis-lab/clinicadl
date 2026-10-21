@@ -3,7 +3,7 @@ from typing import Any, Optional, Sequence, Union
 
 import torch
 import torchio as tio
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from torch import Tensor
 
 from clinicadl.utils.config import ClinicaDLConfig
@@ -15,8 +15,8 @@ class DataPointConfig(ClinicaDLConfig):
     """To check ``DataPoint`` inputs."""
 
     image: tio.ScalarImage
-    participant_id: str
-    session_id: str
+    participant_id: str = Field(pattern=r"^sub-")
+    session_id: str = Field(pattern=r"^ses-")
 
     @field_validator("image", mode="before")
     @classmethod
@@ -83,9 +83,9 @@ class DataPoint(tio.Subject):
     image : Union[torchio.ScalarImage, PathType]
         The image, as a :py:class:`torchio.ScalarImage` or a ``path`` to a :term:`NIfTI` file.
     participant_id : str
-        The participant id.
+        The participant id, starting with ``"sub-"``.
     session_id : str
-        The session id.
+        The session id, starting with ``"ses-"``.
     kwargs : Any
         Any other information to store in the ``DataPoint``.
     """
