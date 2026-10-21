@@ -12,6 +12,7 @@ import torchio as tio
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
+from clinicadl import __version__
 from clinicadl.io.bids import Bids, TensorType
 from clinicadl.io.bids.reader import DatasetDescription
 from clinicadl.transforms.config import TransformConfig
@@ -76,6 +77,13 @@ class TensorConversion:
                 Name="Conversions to tensors",
                 BIDSVersion=BIDS_VERSION,
                 DatasetType="derivative",
+                GeneratedBy=[
+                    {
+                        "Name": "ClinicaDL",
+                        "Version": __version__,
+                        "CodeURL": f"https://github.com/aramis-lab/clinicadl/releases/tag/v{__version__}",
+                    }
+                ],
             ).to_json(tensors_path / Bids.DATASET_DESC_FILENAME)
 
         return Bids(tensors_path)
