@@ -64,8 +64,8 @@ class TestTensorContent:
                     / "space-MNI152NLin2009cSym_res-1d3x1d2x1d1_label-leftHippocampus_mask.nii"
                 )
             ),
-            participant_id="",
-            session_id="",
+            participant_id="sub-000",
+            session_id="ses-M000",
             other=0,
             other_=1,
         )

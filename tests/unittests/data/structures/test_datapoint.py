@@ -6,12 +6,24 @@ import numpy as np
 import pytest
 import torch
 import torchio as tio
+from pydantic import ValidationError
 
 from clinicadl.data.structures import DataPoint
 
 
 class SubDataPoint(DataPoint):
     pass
+
+
+@pytest.mark.parametrize("field", ["participant_id", "session_id"])
+@pytest.mark.parametrize("invalid_id", ["000", "", "other-000", None, 1])
+def test_DataPoint_invalid_id(field, invalid_id):
+    values = {"participant_id": "sub-000", "session_id": "ses-M000"}
+    values[field] = invalid_id
+    image = tio.ScalarImage(tensor=torch.zeros(1, 2, 2, 2))
+    with pytest.raises(ValidationError) as error:
+        DataPoint(image=image, **values)
+    assert any(item["loc"] == (field,) for item in error.value.errors())
 
 
 def test_DataPoint():
