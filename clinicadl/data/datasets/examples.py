@@ -30,7 +30,7 @@ __all__ = [
 
 class BidsExample(BidsDataset, ABC):
     """
-    Base class for BIDS examples that download data from an URL.
+    Base class for BIDS examples that downloads data from a URL.
     """
 
     def __init__(
