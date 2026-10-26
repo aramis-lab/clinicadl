@@ -75,8 +75,10 @@ t1_caps = CapsDLBS(pet=False, columns=["Sex", "AgeMRI", "HandednessScore"])
 pet_caps = CapsDLBS(pet=True, columns=["Sex", "AgePETAmy", "HandednessScore"])
 
 # %%
+t1_caps[0].image
 
-t1_caps[0].image, pet_caps[0].image
+# %%
+pet_caps[0].image
 
 # %%
 # Notice the shape of the images is now (1, 169, 208, 179), their spacing (1.00, 1.00, 1.00) and their orientation: RAS+
@@ -126,16 +128,17 @@ batch
 sub1_t1, sub1_pet = batch[0]
 sub2_t1, sub2_pet = batch[1]
 
-(
-    sub1_t1.participant_id,
-    sub1_t1,
-    sub1_pet.participant_id,
-    sub1_pet,
-    sub2_t1.participant_id,
-    sub2_t1,
-    sub2_pet.participant_id,
-    sub2_pet,
-)
+# %%
+sub1_t1.participant_id, sub1_t1
+
+# %%
+sub1_pet.participant_id, sub1_pet
+
+# %%
+sub2_t1.participant_id, sub2_t1
+
+# %%
+sub2_pet.participant_id, sub2_pet
 
 # %%
 # ToBatchesCollate
@@ -157,16 +160,17 @@ batch
 sub1_t1, sub2_t1 = batch[0]
 sub1_pet, sub2_pet = batch[1]
 
-(
-    sub1_t1.participant_id,
-    sub1_t1,
-    sub1_pet.participant_id,
-    sub1_pet,
-    sub2_t1.participant_id,
-    sub2_t1,
-    sub2_pet.participant_id,
-    sub2_pet,
-)
+# %%
+sub1_t1.participant_id, sub1_t1
+
+# %%
+sub1_pet.participant_id, sub1_pet
+
+# %%
+sub2_t1.participant_id, sub2_t1
+
+# %%
+sub2_pet.participant_id, sub2_pet
 
 # %%
 # MergeBatchesCollate
@@ -188,11 +192,10 @@ batch
 sub1_t1_pet = batch[0]
 sub2_t1_pet = batch[1]
 
-(
-    sub1_t1_pet.participant_id,
-    sub1_t1_pet.image,
-    sub2_t1_pet.participant_id,
-    sub2_t1_pet.image,
-)
+# %%
+sub1_t1_pet.participant_id, sub1_t1_pet.image
+
+# %%
+sub2_t1_pet.participant_id, sub2_t1_pet.image
 
 # %%
