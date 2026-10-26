@@ -118,6 +118,6 @@ show_missing = true
 
 [tool.codespell]
 summary = ''
-skip = ".git,LICENSE.txt,*.m,clinicadl/resources/config/train_config.toml"
+skip = ".git,LICENSE.txt,*.m,clinicadl/resources/config/train_config.toml,tutorials/*"
 quiet-level = 3
 ignore-words-list = "nd,fwe,commun,fo,te,artic,ressources,adn"
