@@ -3,14 +3,12 @@ Multimodal data example
 =======================
 """
 
-# In this example, we show how to create a dataset and a dataloader for multimodal data.
-
-# We will use the BidsDLBS dataset, which contains T1w and PET images.
+# %%
+# In this example, we show how to create a dataset and a dataloader for multimodal data. We will use the BidsDLBS dataset, which contains T1w and PET images.
 
 # %%
 # T1w dataset
-# ----------
-
+# -----------
 # Let us first create a dataset for the T1w images.
 
 from clinicadl.data.datasets.examples import BidsDLBSSmall
@@ -26,18 +24,18 @@ t1_dataset[0]
 # Get information about the image of the first sample of the T1 dataset:
 t1_dataset[0].image
 
+# %%
 # Notice the shape of the image is (1, 127, 127, 80), its spacing (2.00, 2.00, 2.00), and its orientation PSR+.
 
 # %%
-
 # We can plot the image of the first sample of the T1 dataset:
+
 t1_dataset[0].image.plot()
 
 
 # %%
 # PET dataset
-# ----------
-
+# -----------
 # Let us now create a dataset for the PET images.
 
 pet_dataset = BidsDLBSSmall(pet=True, columns=["Sex", "AgePETAmy", "HandednessScore"])
@@ -45,30 +43,30 @@ pet_dataset = BidsDLBSSmall(pet=True, columns=["Sex", "AgePETAmy", "HandednessSc
 
 # %%
 # Similarly, we can obtain get the first sample of the PET dataset:
+
 pet_dataset[0]
 
 # %%
 # We can also retrieve information about the image of the first sample of this PET dataset:
+
 pet_dataset[0].image
 
+# %%
 # Notice the shape of the image is now (1, 128, 128, 63), its spacing (2.57, 2.57, 2.43), and its orientation LAS+.
 
 # %%
-
 # We can plot the image of the first sample of the PET dataset:
+
 pet_dataset[0].image.plot()
 
 # %%
 # Paired T1w and PET dataset
-# ------------------------
+# --------------------------
 
+# %%
 # Uniformize both datasets
 # ~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-# Since the T1w and PET images have different shapes and orientations, we will need to resample them to the same shape, and change their orientations before feeding them to a model. For this, we would need to co-register the images.
-
-# Thankfully, this was already done in the CapsDLBS dataset, using Clinica, specifically the t1-linear pipeline and the pet-linear pipeline.
+# Since the T1w and PET images have different shapes and orientations, we will need to resample them to the same shape, and change their orientations before feeding them to a model. For this, we would need to co-register the images. Thankfully, this was already done in the CapsDLBS dataset, using Clinica, specifically the t1-linear pipeline and the pet-linear pipeline.
 
 from clinicadl.data.datasets.examples import CapsDLBS
 
@@ -80,6 +78,7 @@ pet_caps = CapsDLBS(pet=True, columns=["Sex", "AgePETAmy", "HandednessScore"])
 
 t1_caps[0].image, pet_caps[0].image
 
+# %%
 # Notice the shape of the images is now (1, 169, 208, 179), their spacing (1.00, 1.00, 1.00) and their orientation: RAS+
 
 # %%
@@ -102,14 +101,15 @@ paired_t1_pet_dataset = PairedDataset(
 # %%
 # Create dataloader
 # ~~~~~~~~~~~~~~~~~
-
 # We can now create a dataloader for the paired T1w and PET dataset.
 
 from clinicadl.data.dataloader import DataLoader
 
+# %%
 # There are multiple ways to collate the data in a batch.
+# %%
 # ToBatchCollate
-# ...............
+# ^^^^^^^^^^^^^^
 from clinicadl.data.dataloader.collate import ToBatchCollate
 
 dataloader = DataLoader(
@@ -120,6 +120,7 @@ batch = next(iter(dataloader))
 
 batch
 
+# %%
 # We now have the following:
 
 sub1_t1, sub1_pet = batch[0]
@@ -137,9 +138,8 @@ sub2_t1, sub2_pet = batch[1]
 )
 
 # %%
-
 # ToBatchesCollate
-# .................
+# ^^^^^^^^^^^^^^^^
 
 from clinicadl.data.dataloader.collate import ToBatchesCollate
 
@@ -151,6 +151,7 @@ batch = next(iter(dataloader))
 
 batch
 
+# %%
 # We now have the following:
 
 sub1_t1, sub2_t1 = batch[0]
@@ -168,9 +169,8 @@ sub1_pet, sub2_pet = batch[1]
 )
 
 # %%
-
 # MergeBatchesCollate
-# ....................
+# ^^^^^^^^^^^^^^^^^^^
 
 from clinicadl.data.dataloader.collate import MergeBatchesCollate
 
@@ -182,6 +182,7 @@ batch = next(iter(dataloader))
 
 batch
 
+# %%
 # We now have the following:
 
 sub1_t1_pet = batch[0]
