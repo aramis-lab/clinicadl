@@ -62,7 +62,7 @@ MONAI Segmentation
 
 
 MONAI Reconstruction
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
    :toctree: ../generated/
