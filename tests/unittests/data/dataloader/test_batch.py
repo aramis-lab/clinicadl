@@ -18,16 +18,16 @@ def test_init():
 def test_typing():
     datapoint = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-        participant_id="abc",
-        session_id="abc",
+        participant_id="sub-abc",
+        session_id="ses-abc",
     )
     batch = Batch([datapoint, datapoint])
-    assert batch[0].participant_id == "abc"
+    assert batch[0].participant_id == "sub-abc"
 
     datapoint = Sample(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 4, 5)),
-        participant_id="abc",
-        session_id="abc",
+        participant_id="sub-abc",
+        session_id="ses-abc",
         image_path="abc.nii.gz",
         file_type=FILE_TYPE,
     )

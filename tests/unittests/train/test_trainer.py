@@ -43,8 +43,8 @@ def _setup_dataloader():
         [
             DataPoint(
                 image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
-                participant_id=str(i),
-                session_id=str(i),
+                participant_id=f"sub-{str(i)}",
+                session_id=f"ses-{str(i)}",
                 label=i,
             )
             for i in range(2)

@@ -57,8 +57,8 @@ def test_loss_metric():
                 label=float(i),
                 output=float(i + 1),
                 output_image=tio.ScalarImage(tensor=torch.ones(1, 2, 2, 2) + 3),
-                participant_id=str(i),
-                session_id=str(i),
+                participant_id=f"sub-{str(i)}",
+                session_id=f"ses-{str(i)}",
             )
             for i in range(3)
         ]

@@ -73,6 +73,9 @@ def read_df(
     DataFrameError
         If the columns ('participant_id', 'session_id') are not found in the DataFrame.
     DataFrameError
+        If participant or session ids are not strings starting with ``"sub-"``
+        or ``"ses-"``, respectively.
+    DataFrameError
         If the DataFrame contains columns in``protected_names``.
     DataFrameError
         If ``check_duplicates`` is ``True`` and the DataFrame contains duplicated (participant, session) pairs.
@@ -105,6 +108,16 @@ def _check_df(
             f"The dataframe is not in the correct format. "
             f"Columns should include {PARTICIPANT_ID, SESSION_ID}"
         )
+
+    for column, prefix in ((PARTICIPANT_ID, "sub-"), (SESSION_ID, "ses-")):
+        valid_ids = df[column].map(
+            lambda value: isinstance(value, str) and value.startswith(prefix)
+        )
+        if not valid_ids.all():
+            raise DataFrameError(
+                f"The '{column}' column must contain strings starting with '{prefix}'."
+            )
+
     if protected_names:
         if len(set(protected_names).intersection(set(df.columns.values))) > 0:
             raise DataFrameError(

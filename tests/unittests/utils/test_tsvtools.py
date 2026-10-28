@@ -31,6 +31,50 @@ BIDS = Path(__file__).parents[1] / "resources" / "bids"
 
 
 class TestReadData:
+    @pytest.mark.parametrize("from_path", [False, True])
+    @pytest.mark.parametrize(
+        "column,prefix", [("participant_id", "sub-"), ("session_id", "ses-")]
+    )
+    @pytest.mark.parametrize("invalid_id", ["000", "", "other-000", None, 1])
+    def test_invalid_id(self, tmp_path, from_path, column, prefix, invalid_id):
+        df = pd.DataFrame(
+            {
+                "participant_id": ["sub-000", "sub-100"],
+                "session_id": ["ses-M000", "ses-M003"],
+            }
+        )
+        df.loc[1, column] = invalid_id
+        data = df
+        if from_path:
+            data = tmp_path / "participants.tsv"
+            df.to_csv(data, sep="\t", index=False)
+
+        with pytest.raises(
+            DataFrameError,
+            match=re.escape(
+                f"The '{column}' column must contain strings starting with '{prefix}'."
+            ),
+        ):
+            read_df(data, check_duplicates=False)
+
+    @pytest.mark.parametrize("from_path", [False, True])
+    def test_valid_ids_unchanged(self, tmp_path, from_path):
+        df = pd.DataFrame(
+            {
+                "participant_id": ["sub-001", "sub-ADNI123"],
+                "session_id": ["ses-M000", "ses-20261021"],
+                "age": [60, 70],
+            }
+        )
+        expected = df.copy(deep=True)
+        data = df
+        if from_path:
+            data = tmp_path / "participants.tsv"
+            df.to_csv(data, sep="\t", index=False)
+
+        pd.testing.assert_frame_equal(read_df(data), expected)
+        pd.testing.assert_frame_equal(df, expected)
+
     def test_path(self):
         df = read_df(BIDS / "participantsXsessions.tsv")
         assert len(df) == 8

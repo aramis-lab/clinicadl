@@ -103,18 +103,16 @@ class Dataset(JsonReaderWriter, ABC, torch.utils.data.Dataset[SampleT]):
         Self
             A subset of the original dataset, restricted to the (participant, session) pairs mentioned in ``data``.
         """
-        if isinstance(participants_sessions, (str, Path)):
-            new_df = read_df(participants_sessions)
-        elif isinstance(participants_sessions, pd.DataFrame):
-            new_df = participants_sessions[
-                [PARTICIPANT_ID, SESSION_ID]
-            ].drop_duplicates()
-        else:
-            new_df = pd.DataFrame(
+        if not isinstance(participants_sessions, (str, Path, pd.DataFrame)):
+            participants_sessions = pd.DataFrame(
                 participants_sessions, columns=[PARTICIPANT_ID, SESSION_ID]
             ).drop_duplicates()
 
-        new_df = new_df.set_index([PARTICIPANT_ID, SESSION_ID])
+        new_df = (
+            read_df(participants_sessions, check_duplicates=False)
+            .drop_duplicates()
+            .set_index([PARTICIPANT_ID, SESSION_ID])
+        )
 
         df = self.df.set_index([PARTICIPANT_ID, SESSION_ID])
         subset_df = df.loc[new_df.index.intersection(df.index)].reset_index()

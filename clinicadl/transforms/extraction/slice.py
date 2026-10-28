@@ -25,6 +25,7 @@ from clinicadl.utils.dictionary.words import (
 )
 from clinicadl.utils.enum import SliceDirection
 from clinicadl.utils.exceptions import DataFrameError
+from clinicadl.utils.tsvtools import read_df
 from clinicadl.utils.typing import PathType
 
 from .base import Extraction, ImplementedExtraction
@@ -267,8 +268,9 @@ class Slice(Extraction[SliceConfig]):
         are the (participant, session) pairs and the values are the list
         of selected slices.
         """
-        df = pd.read_csv(path, sep="\t")
-        df = cls._normalize_cols(df)
+        df = read_df(path, check_duplicates=False)
+        if "slice_idx" not in df.columns:
+            raise DataFrameError("The TSV must contain the column 'slice_idx'")
 
         if not np.issubdtype(df["slice_idx"].dtype, np.integer):
             try:
@@ -281,29 +283,6 @@ class Slice(Extraction[SliceConfig]):
             mapping[(str(sub), str(ses))] = list(map(int, g["slice_idx"].tolist()))
 
         return mapping
-
-    @classmethod
-    def _normalize_cols(cls, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Lowercases the column names and look for 'participant_id', 'session_id', and 'slice_idx'.
-        """
-        cols = {c.lower(): c for c in df.columns}
-        subj_col = cols.get("participant_id")
-        sess_col = cols.get("session_id")
-        slice_col = cols.get("slice_idx")
-
-        if not subj_col or not sess_col or not slice_col:
-            raise DataFrameError(
-                "TSV must contain columns: 'participant_id', 'session_id', 'slice_idx'"
-            )
-
-        return df.rename(
-            columns={
-                subj_col: "participant_id",
-                sess_col: "session_id",
-                slice_col: "slice_idx",
-            }
-        )
 
     def _slices_for(self, data_point: DataPoint) -> list[int]:
         """
