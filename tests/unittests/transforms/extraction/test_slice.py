@@ -34,7 +34,7 @@ def test_args():
         Slice(tsv_path=SLICE_TSV, borders=1)
     with pytest.raises(
         DataFrameError,
-        match="TSV must contain columns: 'participant_id', 'session_id', 'slice_idx'",
+        match="The TSV must contain the column 'slice_idx'",
     ):
         Slice(tsv_path=BAD_SLICE_TSV_1)
 
