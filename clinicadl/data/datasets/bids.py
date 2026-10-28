@@ -188,6 +188,9 @@ class BidsDataset(
         and ``"session_id"``.
     DataFrameError
         If the DataFrame in ``data`` contains duplicated (``participant_id``, ``session_id``) pairs.
+    DataFrameError
+        If the values of the columns ``"participant_id"`` and ``"session_id"`` of ``data`` don't start with
+        the prefix ``sub-`` and ``ses-``, respectively.
     RuntimeError
         If for some (participant, session) pairs, an image corresponding to ``file_type``
         cannot be found in ``bids``.

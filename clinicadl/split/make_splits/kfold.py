@@ -69,6 +69,9 @@ def make_kfold(
         If ``data`` is a :py:class:`pandas.DataFrame` and no ``output_dir`` is passed.
     DataFrameError
         If the DataFrame does not contain the columns ``"participant_id"`` and ``"session_id"``.
+    DataFrameError
+        If the values of the columns ``"participant_id"`` and ``"session_id"`` of ``data`` don't start with
+        the prefix ``sub-`` and ``ses-``, respectively.
     KeyError
         If the stratification column mentioned via ``stratification`` cannot be found in the DataFrame.
     ValueError
