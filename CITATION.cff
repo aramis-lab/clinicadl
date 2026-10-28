@@ -41,6 +41,8 @@ authors:
     given-names: Colin
     website: https://github.com/txmed82
     orcid: https://orcid.org/0000-0002-1782-0537
+  - family-names: OBagnell
+    website: https://github.com/OBagnell
 title: " ClinicaDL: an open-source Python library for reproducible deep learning in neuroimaging."
 version: 2.0.0
 doi: 10.1016/j.cmpb.2022.106818
