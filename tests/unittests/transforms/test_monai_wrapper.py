@@ -17,8 +17,8 @@ X = DataPoint(
     image=tio.ScalarImage(tensor=img),
     label=0.2,
     mask=tio.LabelMap(tensor=img),
-    participant_id="a",
-    session_id="b",
+    participant_id="sub-a",
+    session_id="ses-b",
 )
 X["array"] = tensor.numpy()
 X["tensor"] = tensor

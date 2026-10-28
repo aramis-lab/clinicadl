@@ -28,7 +28,9 @@ def test_apply_transforms():
     image = tio.ScalarImage(tensor=torch.randn(1, 14, 14, 14), affine=affine)
     label = tio.LabelMap(tensor=torch.ones(1, 14, 14, 14) * 2, affine=affine)
     label.tensor[:, :2, :2, :2] = 0
-    data_point = DataPoint(image, label=label, participant_id="abc", session_id="0")
+    data_point = DataPoint(
+        image, label=label, participant_id="sub-abc", session_id="ses-0"
+    )
     transforms = TransformsHandler(
         extraction=Patch(patch_size=4, overlap=0),
         image_transforms=[

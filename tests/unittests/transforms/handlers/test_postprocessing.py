@@ -33,8 +33,8 @@ def test_apply():
     data_point = DataPoint(
         tio.ScalarImage(tensor=torch.randint(0, 3, (1, 2, 2, 2))),
         label=[0, 2],
-        participant_id="abc",
-        session_id="0",
+        participant_id="sub-abc",
+        session_id="ses-0",
     )
     transforms = PostprocessingHandler(
         transforms=[

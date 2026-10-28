@@ -34,8 +34,8 @@ def test_inferer():
     inferer = MyInferer()
     sample = DataPoint(
         image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
-        participant_id="abc",
-        session_id="abc",
+        participant_id="sub-abc",
+        session_id="ses-abc",
     )
     network = NnWrapper(nn.Sequential(nn.Flatten(), nn.Linear(3**3, 1)))
     network.to(dtype=torch.half)
@@ -45,7 +45,7 @@ def test_inferer():
             sample,
             network,
         )
-    assert out.participant_id == "abc"
+    assert out.participant_id == "sub-abc"
     assert out["output"].shape == (1, 1)
     assert out is sample
 
@@ -65,6 +65,6 @@ def test_inferer():
             batch,
             network,
         )
-    assert out[0].participant_id == "abc"
+    assert out[0].participant_id == "sub-abc"
     assert out[0]["output"].shape == (1,)
     assert out[0] is sample

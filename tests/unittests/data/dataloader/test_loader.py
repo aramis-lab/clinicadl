@@ -75,8 +75,8 @@ BIDS_WITHOUT_LABEL = BidsDataset(
 
 SAMPLE = Sample(
     image=tio.ScalarImage(tensor=torch.randn(1, 3, 3, 3)),
-    participant_id="x",
-    session_id="x",
+    participant_id="sub-x",
+    session_id="ses-x",
     file_type=FILE_TYPE,
     image_path="x",
 )
@@ -93,8 +93,8 @@ class MyDataset(Dataset[Sample]):
     def __getitem__(self, idx: int) -> Any:
         return Sample(
             image=tio.ScalarImage(tensor=torch.randn(1, 1, 1, 1)),
-            participant_id=str(idx),
-            session_id="x",
+            participant_id=f"sub-{str(idx)}",
+            session_id="ses-x",
             file_type=FILE_TYPE,
             image_path="x",
         )
@@ -152,7 +152,7 @@ def test_dataloader():
     assert dataloader.sampler.rank == 0
     batch = next(iter(dataloader))
     assert isinstance(batch, Batch)
-    assert batch[0].participant_id == "0"
+    assert batch[0].participant_id == "sub-0"
 
     # check sampler
     dataloader = DataLoader(
@@ -170,7 +170,7 @@ def test_dataloader():
     assert dataloader.sampler.replacement
     batch = next(iter(dataloader))
     assert isinstance(batch, Batch)
-    assert batch[0].participant_id == "6"
+    assert batch[0].participant_id == "sub-6"
 
     # multi batches
     dataloader = DataLoader(
@@ -179,8 +179,8 @@ def test_dataloader():
     )
     batch = next(iter(dataloader))
     assert isinstance(batch, (list, tuple))  # depends on the OS?
-    assert batch[0][0].participant_id == "0"
-    assert batch[1][0].participant_id == "0"
+    assert batch[0][0].participant_id == "sub-0"
+    assert batch[1][0].participant_id == "sub-0"
 
     # checks
     with pytest.raises(
@@ -223,12 +223,12 @@ def test_dataloader():
     dataloader.set_epoch(5)
     batch = next(iter(dataloader))
     assert isinstance(batch, (list, tuple))
-    assert batch[0][0].participant_id == "2"
-    assert batch[0][1].participant_id == "2"
+    assert batch[0][0].participant_id == "sub-2"
+    assert batch[0][1].participant_id == "sub-2"
     dataloader.set_epoch(6)
     batch = next(iter(dataloader))
-    assert batch[0][0].participant_id == "6"
-    assert batch[0][1].participant_id == "5"
+    assert batch[0][0].participant_id == "sub-6"
+    assert batch[0][1].participant_id == "sub-5"
 
 
 def test_dataloader_config():
