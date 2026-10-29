@@ -220,7 +220,9 @@ class TestGenerateDataframe:
     def test_size(
         self, n_participants, n_sessions, exact_n_sessions, seed, expected_n_sessions
     ):
-        df = generate_dataframe(n_participants, n_sessions, exact_n_sessions, seed)
+        df = generate_dataframe(
+            n_participants, n_sessions, exact_n_sessions=exact_n_sessions, seed=seed
+        )
         assert (
             df.groupby(["participant_id"]).count()["session_id"].tolist()
             == expected_n_sessions
