@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -5,8 +6,12 @@ import numpy as np
 import pandas as pd
 
 from clinicadl.utils.dictionary.words import (
+    AGE,
+    DIAGNOSIS,
     PARTICIPANT_ID,
+    SCORE,
     SESSION_ID,
+    SEX,
 )
 from clinicadl.utils.exceptions import DataFrameError
 
@@ -159,4 +164,118 @@ def create_participants_sessions_df(
         )
         .sort_values([PARTICIPANT_ID, SESSION_ID])
         .reset_index(drop=True)
+    )
+
+
+def generate_dataframe(
+    n_participants: int,
+    n_sessions: int = 1,
+    exact_n_sessions: bool = True,
+    score_decline_per_year: tuple[float, float] = (0.01, 0.1),
+    seed: Optional[int] = None,
+) -> pd.DataFrame:
+    """
+    Generates a random but realistic DataFrame.
+
+    The DataFrame contains the following columns:
+
+    - ``participant_id``: (**str**) the participant ids;
+    - ``session_id``: (**str**) the session ids;
+    - ``age``: (**int**) the age of the participants;
+    - ``sex``: (**str**, ``"M"`` or ``"F"``) the sex of the participants;
+    - ``diagnosis``: (**str**, ``"CN"``, ``"AD"`` or ``"MCI"``) the cognitive state of the participants;
+    - ``score``: (**float**) a cognitive score (between 0 and 1) of the participants.
+
+    ``diagnosis`` is determined by ``score``:
+
+    - ``CN``: ``score`` > 0.6
+    - ``MCI``: 0.4 < ``score`` <= 0.6
+    - ``AD``: ``score`` <= 0.4
+
+    Parameters
+    ----------
+    n_participants : int
+        The number of participants to generate.
+    n_sessions : int, default=1
+        The maximum number of sessions per participant.
+    exact_n_sessions : bool, default=True
+        If ``True``, each participant will have exactly ``n_sessions``. Otherwise, the
+        number of sessions for each participant will be randomly sampled between ``1`` and
+        ``n_sessions``.
+    score_decline_per_year : tuple[float, float], default=(0.01, 0.1)
+        Percentage decline in the score each year. The actual decline will be randomly sampled
+        in this interval.
+    seed : Optional[int], default=None
+        A seed to control the randomness of the generation.
+
+    Returns
+    -------
+    pd.DataFrame
+        The DataFrame generated.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        >>> from clinicadl.utils.tsvtools import generate_dataframe
+        >>> generate_dataframe(3, 4, exact_n_sessions=False, score_decline_per_year=(0.1, 0.5), seed=8)
+        participant_id session_id age sex diagnosis score
+        0   sub-1      ses-M000   84  F   MCI       0.42618520092964296
+        1   sub-1      ses-M004   84  F   AD        0.3982946664806757
+        2   sub-2      ses-M000   78  M   AD        0.2603286896781217
+        3   sub-2      ses-M008   78  M   AD        0.213712327652985
+        4   sub-2      ses-M016   79  M   AD        0.1637583203276657
+        5   sub-3      ses-M000   49  M   CN        0.9599623029969878
+        6   sub-3      ses-M007   49  M   CN        0.7100904475751515
+        7   sub-3      ses-M009   49  M   CN        0.6556287812937336
+        8   sub-3      ses-M017   50  M   MCI       0.512899542646471
+
+    """
+    rng = random.Random(seed)
+    session_counts = [
+        rng.randint(n_sessions if exact_n_sessions else 1, n_sessions)
+        for _ in range(n_participants)
+    ]
+
+    diagnoses = ["CN", "MCI", "AD"] * ((n_participants + 2) // 3)
+    diagnoses = diagnoses[:n_participants]
+    rng.shuffle(diagnoses)
+
+    sexes = ["M", "F"] * ((n_participants + 1) // 2)
+    sexes = sexes[:n_participants]
+    rng.shuffle(sexes)
+
+    participant_width = max(1, len(str(n_participants)))
+    score_range = {"CN": (0.61, 1.0), "MCI": (0.41, 0.6), "AD": (0.01, 0.4)}
+    records = []
+    for participant, (n_sub_sessions, diagnosis, sex) in enumerate(
+        zip(session_counts, diagnoses, sexes), start=1
+    ):
+        score = rng.uniform(*score_range[diagnosis])
+        session_months = [0]
+        for _ in range(1, n_sub_sessions):
+            session_months.append(session_months[-1] + rng.randint(1, 12))
+        first_age = rng.randint(20, 90 - session_months[-1] // 12)
+
+        previous_month = 0
+        for month in session_months:
+            if month > previous_month:
+                annual_retention = 1 - rng.uniform(*score_decline_per_year)
+                score *= annual_retention ** ((month - previous_month) / 12)
+                diagnosis = "CN" if score > 0.6 else "MCI" if score > 0.4 else "AD"
+
+            records.append(
+                {
+                    PARTICIPANT_ID: f"sub-{participant:0{participant_width}d}",
+                    SESSION_ID: f"ses-M{month:03d}",
+                    AGE: first_age + month // 12,
+                    SEX: sex,
+                    DIAGNOSIS: diagnosis,
+                    SCORE: score,
+                }
+            )
+            previous_month = month
+
+    return pd.DataFrame(
+        records, columns=[PARTICIPANT_ID, SESSION_ID, AGE, SEX, DIAGNOSIS, SCORE]
     )
