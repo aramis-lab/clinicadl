@@ -1,6 +1,6 @@
 """
-Multimodal data example
-=======================
+Multimodal data manipulation
+============================
 """
 
 # %%
