@@ -3,4 +3,4 @@ Tutorials
 
 .. nbgallery::
 
-   example
+   example_slices_extraction
