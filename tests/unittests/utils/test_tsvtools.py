@@ -3,11 +3,13 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from pandas.api.types import is_float_dtype, is_integer_dtype, is_string_dtype
 
 from clinicadl.utils.exceptions import DataFrameError
 from clinicadl.utils.tsvtools import (
     create_participants_sessions_df,
     df_to_tsv,
+    generate_dataframe,
     read_df,
 )
 
@@ -203,3 +205,121 @@ class TestDfToTsv:
                 }
             ),
         )
+
+
+@pytest.fixture
+def df() -> pd.DataFrame:
+    return generate_dataframe(20, 10)
+
+
+class TestGenerateDataframe:
+    @pytest.mark.parametrize(
+        "n_participants,n_sessions,exact_n_sessions,seed,expected_n_sessions",
+        [(5, 3, True, None, [3] * 5), (5, 3, False, 0, [2, 2, 1, 2, 3])],
+    )
+    def test_size(
+        self, n_participants, n_sessions, exact_n_sessions, seed, expected_n_sessions
+    ):
+        df = generate_dataframe(n_participants, n_sessions, exact_n_sessions, seed)
+        assert (
+            df.groupby(["participant_id"]).count()["session_id"].tolist()
+            == expected_n_sessions
+        )
+
+    def test_max_size(self):
+        df = generate_dataframe(100, 3, exact_n_sessions=False)
+        assert (df.groupby("participant_id")["session_id"].apply(len) <= 3).all()
+
+    @pytest.mark.parametrize(
+        "column", ["participant_id", "session_id", "age", "sex", "score", "diagnosis"]
+    )
+    def test_non_nans(self, column, df):
+        assert df[column].count() == 200
+
+    @pytest.mark.parametrize(
+        "column", ["participant_id", "session_id", "sex", "diagnosis"]
+    )
+    def test_str_columns(self, column, df):
+        assert is_string_dtype(df[column])
+
+    def test_first_session(self, df):
+        assert (
+            df.groupby("participant_id")
+            .head(1)["session_id"]
+            .apply(lambda x: int(x.replace("ses-M", "")))
+            == 0
+        ).all()
+
+    def test_age(self, df):
+        assert is_integer_dtype(df["age"])
+        assert ((20 <= df["age"]) & (df["age"] <= 90)).all()
+
+    def test_sex(self, df):
+        assert set(df["sex"].unique()) == {"M", "F"}
+
+    def test_score(self, df):
+        assert is_float_dtype(df["score"])
+        assert ((0 <= df["score"]) & (df["score"] <= 1)).all()
+
+    def test_diagnosis(self, df):
+        assert set(df["diagnosis"].unique()) == {"CN", "MCI", "AD"}
+
+    def test_score_diagnosis(self, df):
+        assert (
+            (0.4 < df[df["diagnosis"] == "MCI"]["score"])
+            & (df[df["diagnosis"] == "MCI"]["score"] <= 0.6)
+        ).all()
+        assert (df[df["diagnosis"] == "AD"]["score"] <= 0.4).all()
+        assert (0.6 < df[df["diagnosis"] == "CN"]["score"]).all()
+
+    @pytest.mark.parametrize(
+        "column, prefix", [("participant_id", "sub-"), ("session_id", "ses-")]
+    )
+    def test_id_n_digits(self, column, prefix, df):
+        """Test that all the participant/session ids have the same number of digits."""
+        ids_len = df[column].apply(lambda x: len(x.replace(prefix, "")))
+        assert len(ids_len.unique()) == 1
+
+    def test_age_consistency(self, df):
+        """Test that, for every participant, the age is increasing when the session id is increasing."""
+        assert (
+            df.sort_values(["participant_id", "session_id"])
+            .groupby("participant_id")["age"]
+            .is_monotonic_increasing.all()
+        )
+
+    def test_sex_consistency(self, df):
+        """Test that, for every participant, the age is increasing when the session id is increasing."""
+        assert (
+            df.groupby("participant_id")["sex"].apply(lambda x: len(x.unique()) == 1)
+        ).all()
+
+    def test_diagnosis_evolution(self, df):
+        """Test that the diagnosis is not always constant."""
+        assert not (
+            df.groupby("participant_id")["diagnosis"].apply(
+                lambda x: len(x.unique()) == 1
+            )
+        ).all()
+
+    def test_scores_evolution(self, df):
+        """Test that the score is not constant, even with same diagnosis."""
+        assert not (
+            df.groupby(["participant_id", "diagnosis"])["score"].apply(
+                lambda x: len(x.unique()) == 1
+            )
+        ).all()
+
+    def test_ad_stays_ad(self, df):
+        """Test that AD diagnosis does not evolve."""
+        first_session_diagnosis = (
+            df.groupby("participant_id")
+            .apply(lambda x: x.sort_values("session_id").head(1)["diagnosis"])
+            .droplevel(1)
+        )
+        ad_from_beginning = first_session_diagnosis[
+            first_session_diagnosis == "AD"
+        ].index
+        assert (
+            df[df["participant_id"].isin(ad_from_beginning)]["diagnosis"] == "AD"
+        ).all()
