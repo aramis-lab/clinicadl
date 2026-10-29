@@ -115,14 +115,12 @@ samples[1].participant_id, samples[1].session_id, samples[1]
 # ~~~~~~~~~~~~~~~~~~~
 # We can now create a dataloader for the paired T1w-PET dataset.
 
-from clinicadl.data.dataloader import DataLoader
-
 # %%
 # There are multiple ways to collate the data in a batch.
 #
 # ToBatchCollate
 # ^^^^^^^^^^^^^^^^
-from clinicadl.data.dataloader.collate import ToBatchCollate
+from clinicadl.data.dataloader import DataLoader, ToBatchCollate
 
 dataloader = DataLoader(
     paired_t1_pet_dataset, batch_size=3, shuffle=False, collate_fn=ToBatchCollate()
@@ -154,7 +152,7 @@ sub2_pet.participant_id, sub2_pet.session_id, sub2_pet
 # ToBatchesCollate
 # ^^^^^^^^^^^^^^^^
 
-from clinicadl.data.dataloader.collate import ToBatchesCollate
+from clinicadl.data.dataloader import ToBatchesCollate
 
 dataloader = DataLoader(
     paired_t1_pet_dataset, batch_size=3, shuffle=False, collate_fn=ToBatchesCollate()
@@ -190,7 +188,7 @@ sub2_pet.participant_id, sub2_pet.session_id, sub2_pet
 # MergeBatchesCollate
 # ^^^^^^^^^^^^^^^^^^^
 
-from clinicadl.data.dataloader.collate import MergeBatchesCollate
+from clinicadl.data.dataloader import MergeBatchesCollate
 
 dataloader = DataLoader(
     paired_t1_pet_dataset, batch_size=3, shuffle=False, collate_fn=MergeBatchesCollate()
