@@ -4,7 +4,7 @@ Multimodal data example
 """
 
 # %%
-# In this example, we show how to create a dataset and a dataloader for multimodal data. We will use the BidsDLBS dataset, which contains T1w and PET images.
+# In this example, we show how to create a dataset and a dataloader for multimodal data. We will use the :py:class:`~clinicadl.data.datasets.examples.BidsDLBS` dataset, which contains T1w and PET images.
 
 # %%
 # T1w dataset
@@ -42,7 +42,7 @@ pet_dataset = BidsDLBSSmall(pet=True, columns=["Sex", "AgePETAmy", "HandednessSc
 
 
 # %%
-# Similarly, we can obtain get the first sample of the PET dataset:
+# Similarly, we can get the first sample of the PET dataset:
 
 pet_dataset[0]
 
@@ -66,7 +66,7 @@ pet_dataset[0].image.plot()
 # %%
 # Uniformize both datasets
 # ~~~~~~~~~~~~~~~~~~~~~~~~
-# Since the T1w and PET images have different shapes and orientations, we will need to resample them to the same shape, and change their orientations before feeding them to a model. For this, we would need to co-register the images. Thankfully, this was already done in the CapsDLBS dataset, using Clinica, specifically the t1-linear pipeline and the pet-linear pipeline.
+# Since the T1w and PET images have different shapes and orientations, we will need to resample them to the same shape, and change their orientations before feeding them to a model. For this, we would need to co-register the images. Thankfully, this was already done in the :py:class:`~clinicadl.data.datasets.examples.CapsDLBS` dataset, using Clinica, specifically the :clinica:`t1-linear <Pipelines/T1_Linear/>` and the :clinica:`pet-linear <Pipelines/PET_Linear/>` pipelines.
 
 from clinicadl.data.datasets.examples import CapsDLBS
 
@@ -92,7 +92,7 @@ pet_caps[0].image.plot()
 # %%
 # PairedDataset
 # ~~~~~~~~~~~~~
-# Let us now create the paired T1w and PET dataset.
+# Let us now create the paired T1w-PET dataset. The :py:class:`~clinicadl.data.datasets.PairedDataset` provides a convenient way to access simultaneously the T1w and PET images for a (participant, session) couple.
 
 from clinicadl.data.datasets import PairedDataset
 
@@ -100,45 +100,55 @@ paired_t1_pet_dataset = PairedDataset(
     datasets=[t1_caps, pet_caps],
 )
 
+samples = paired_t1_pet_dataset[0]
+
+print(type(samples))
+
 # %%
-# Create dataloader
-# ~~~~~~~~~~~~~~~~~
-# We can now create a dataloader for the paired T1w and PET dataset.
+samples[0].participant_id, samples[0].session_id, samples[0]
+
+# %%
+samples[1].participant_id, samples[1].session_id, samples[1]
+
+# %%
+# Create a dataloader
+# ~~~~~~~~~~~~~~~~~~~
+# We can now create a dataloader for the paired T1w-PET dataset.
 
 from clinicadl.data.dataloader import DataLoader
 
 # %%
 # There are multiple ways to collate the data in a batch.
-# %%
+#
 # ToBatchCollate
-# ^^^^^^^^^^^^^^
+# ^^^^^^^^^^^^^^^^
 from clinicadl.data.dataloader.collate import ToBatchCollate
 
 dataloader = DataLoader(
-    paired_t1_pet_dataset, batch_size=2, shuffle=False, collate_fn=ToBatchCollate()
+    paired_t1_pet_dataset, batch_size=3, shuffle=False, collate_fn=ToBatchCollate()
 )
 
 batch = next(iter(dataloader))
 
-batch
+print(type(batch), f", len: {len(batch)}")
 
 # %%
-# We now have the following:
+# With :py:class:`~clinicadl.data.dataloader.ToBatchCollate`, we simply get a batch of couples of T1w and PET images.
 
 sub1_t1, sub1_pet = batch[0]
 sub2_t1, sub2_pet = batch[1]
 
 # %%
-sub1_t1.participant_id, sub1_t1
+sub1_t1.participant_id, sub1_t1.session_id, sub1_t1
 
 # %%
-sub1_pet.participant_id, sub1_pet
+sub1_pet.participant_id, sub1_pet.session_id, sub1_pet
 
 # %%
-sub2_t1.participant_id, sub2_t1
+sub2_t1.participant_id, sub2_t1.session_id, sub2_t1
 
 # %%
-sub2_pet.participant_id, sub2_pet
+sub2_pet.participant_id, sub2_pet.session_id, sub2_pet
 
 # %%
 # ToBatchesCollate
@@ -147,30 +157,34 @@ sub2_pet.participant_id, sub2_pet
 from clinicadl.data.dataloader.collate import ToBatchesCollate
 
 dataloader = DataLoader(
-    paired_t1_pet_dataset, batch_size=2, shuffle=False, collate_fn=ToBatchesCollate()
+    paired_t1_pet_dataset, batch_size=3, shuffle=False, collate_fn=ToBatchesCollate()
 )
 
 batch = next(iter(dataloader))
 
-batch
+print(type(batch), f", len: {len(batch)}")
 
 # %%
-# We now have the following:
+# With :py:class:`~clinicadl.data.dataloader.ToBatchesCollate`, we get two separates batches, one for T1w images and one for PET images.
 
-sub1_t1, sub2_t1 = batch[0]
-sub1_pet, sub2_pet = batch[1]
-
-# %%
-sub1_t1.participant_id, sub1_t1
+sub1_t1, sub2_t1, sub3_t1 = batch[0]
+sub1_pet, sub2_pet, sub3_pet = batch[1]
 
 # %%
-sub1_pet.participant_id, sub1_pet
+sub1_t1.participant_id, sub1_t1.session_id, sub1_t1
 
 # %%
-sub2_t1.participant_id, sub2_t1
+sub1_pet.participant_id, sub1_pet.session_id, sub1_pet
 
 # %%
-sub2_pet.participant_id, sub2_pet
+sub2_t1.participant_id, sub2_t1.session_id, sub2_t1
+
+# %%
+sub2_pet.participant_id, sub2_pet.session_id, sub2_pet
+
+# %%
+# .. note::
+#   :py:class:`~clinicadl.data.dataloader.ToBatchesCollate` is the default behavior with a :py:class:`~clinicadl.data.datasets.PairedDataset`.
 
 # %%
 # MergeBatchesCollate
@@ -179,23 +193,21 @@ sub2_pet.participant_id, sub2_pet
 from clinicadl.data.dataloader.collate import MergeBatchesCollate
 
 dataloader = DataLoader(
-    paired_t1_pet_dataset, batch_size=2, shuffle=False, collate_fn=MergeBatchesCollate()
+    paired_t1_pet_dataset, batch_size=3, shuffle=False, collate_fn=MergeBatchesCollate()
 )
 
 batch = next(iter(dataloader))
 
-batch
+print(type(batch), f", len: {len(batch)}")
 
 # %%
-# We now have the following:
+# With :py:class:`~clinicadl.data.dataloader.MergeBatchesCollate`, we get a single 1-dimensional batch because T1w and PET images have been stacked along the channel dimension.
 
 sub1_t1_pet = batch[0]
 sub2_t1_pet = batch[1]
 
 # %%
-sub1_t1_pet.participant_id, sub1_t1_pet.image
+sub1_t1_pet.participant_id, sub1_t1_pet.session_id, sub1_t1_pet.image
 
 # %%
-sub2_t1_pet.participant_id, sub2_t1_pet.image
-
-# %%
+sub2_t1_pet.participant_id, sub2_t1_pet.session_id, sub2_t1_pet.image
