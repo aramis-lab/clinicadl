@@ -18,7 +18,7 @@
 Collate functions
 -----------------
 
-.. automodule:: clinicadl.data.dataloader.collate
+.. automodule:: clinicadl.data.dataloader
 
 .. autosummary::
     :toctree: ../generated/
