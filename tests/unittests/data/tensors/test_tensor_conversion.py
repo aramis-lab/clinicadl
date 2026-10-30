@@ -11,6 +11,7 @@ import torch
 import torchio as tio
 from pydantic import ValidationError
 
+from clinicadl import __version__
 from clinicadl.data.structures import DataPoint, TensorContent
 from clinicadl.data.structures.images import CommonMask, Image, IndividualMask
 from clinicadl.data.tensors import (
@@ -520,6 +521,13 @@ class TestToTensors:
         assert "BIDSVersion" in json
         assert json["DatasetType"] == "derivative"
         assert json["Name"] == "Conversions to tensors"
+        assert json["GeneratedBy"] == [
+            {
+                "Name": "ClinicaDL",
+                "Version": __version__,
+                "CodeURL": f"https://github.com/aramis-lab/clinicadl/releases/tag/v{__version__}",
+            }
+        ]
         with pytest.raises(
             ValueError, match="If you pass a conversion name, it cannot be 'raw'."
         ):
