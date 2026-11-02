@@ -305,6 +305,33 @@ You can also run all the checks manually on the whole code base:
 
     pre-commit run --all-files
 
+The hooks also reject malformed JSON (including duplicate keys), except for
+the ``maps_example`` and ``maps_minimal`` test-resource directories, which
+contain intentionally blank JSON placeholders used to test directory layouts.
+The hooks reject newly
+added non-Git-LFS files larger than 500 KB. Existing large research fixtures
+are not rejected by the added-file check. If a new large fixture is necessary,
+discuss how to store it with the maintainers before adding an exception.
+
+GitHub Actions workflows are checked with ``actionlint``. Its Go-based hook
+uses an installed Go toolchain, or pre-commit bootstraps one in its isolated
+hook environment. ShellCheck and Pyflakes integration is disabled, so these
+optional tools are not required. The project's existing self-hosted runner
+labels are declared in ``.github/actionlint.yaml``; a new label must be added
+there when introducing a corresponding runner.
+
+To run just these checks:
+
+.. code-block:: bash
+
+    pre-commit run check-json --all-files
+    pre-commit run check-added-large-files --all-files
+    pre-commit run actionlint --all-files
+
+``check-added-large-files`` checks newly staged files even with ``--all-files``.
+The actionlint hook checks all workflows when a workflow or its configuration
+changes; it does not execute the workflows.
+
 .. _tests:
 
 Tests
