@@ -22,11 +22,37 @@ directory. The directory must contain the mandatory
 file, whose ``"DatasetType"`` key (``"raw"``, ``"derivative"`` or ``"study"``) tells
 ClinicaDL how the directory is organised.
 
+This self-contained example creates toy metadata and empty participant/session
+directories so you can try directory navigation without downloading any scans.
+It is not a complete BIDS dataset and cannot be used to load images or train a
+model.
+
 .. code-block:: python
+
+    import json
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
 
     from clinicadl.io.bids import Bids
 
-    bids = Bids("bids_directory")
+    with TemporaryDirectory() as tmp_dir:
+        bids_directory = Path(tmp_dir)
+        description = {
+            "Name": "Toy directory navigation example",
+            "BIDSVersion": "1.10.0",
+            "DatasetType": "raw",
+        }
+        (bids_directory / "dataset_description.json").write_text(
+            json.dumps(description), encoding="utf-8"
+        )
+        (bids_directory / "sub-01" / "ses-M000").mkdir(parents=True)
+
+        bids = Bids(bids_directory)
+        print(sorted(bids.get_all_participants_sessions()))
+
+This prints ``[('sub-01', 'ses-M000')]``. Keep operations on this toy directory
+inside the ``with`` block: its contents are removed automatically when the block
+ends.
 
 Most of the time you will not call the methods of ``Bids`` directly, the
 ``BidsDataset`` will do it for you. They are however useful for inspecting a dataset:
