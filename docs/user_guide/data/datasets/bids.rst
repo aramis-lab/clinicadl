@@ -142,27 +142,69 @@ Consider a dataset whose metadata are stored in a TSV file:
     ...
 
 The simplest dataset selects the T1 images of the participants listed in the TSV
-file:
+file. This standalone example creates two tiny synthetic images and their metadata
+in a temporary directory, so no scan download is needed. These constant-valued
+images demonstrate loading only; they are not brain scans or training data.
 
 .. code-block:: python
+
+    import json
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    import nibabel as nib
+    import numpy as np
+    import pandas as pd
 
     from clinicadl.data.datasets import BidsDataset
     from clinicadl.io.bids import BidsFileType
 
-    dataset = BidsDataset(
-        bids="bids_directory",
-        file_type=BidsFileType(data_type="anat", suffix="T1w"),
-        data="bids_directory/metadata.tsv",
-    )
+    with TemporaryDirectory() as tmp_dir:
+        bids_directory = Path(tmp_dir)
+        description = {
+            "Name": "Toy image-loading example",
+            "BIDSVersion": "1.10.0",
+            "DatasetType": "raw",
+        }
+        (bids_directory / "dataset_description.json").write_text(
+            json.dumps(description), encoding="utf-8"
+        )
+        metadata = pd.DataFrame(
+            {
+                "participant_id": ["sub-001", "sub-002"],
+                "session_id": ["ses-M000", "ses-M000"],
+                "age": [55.0, 62.0],
+                "diagnosis": ["control", "patient"],
+            }
+        )
+        metadata.to_csv(bids_directory / "metadata.tsv", sep="\t", index=False)
+        for participant in metadata["participant_id"]:
+            anat = bids_directory / participant / "ses-M000" / "anat"
+            anat.mkdir(parents=True)
+            image = nib.Nifti1Image(np.zeros((8, 8, 8), dtype=np.float32), np.eye(4))
+            nib.save(image, anat / f"{participant}_ses-M000_T1w.nii.gz")
 
-.. code-block:: python
+        dataset = BidsDataset(
+            bids=bids_directory,
+            file_type=BidsFileType(data_type="anat", suffix="T1w"),
+            data=bids_directory / "metadata.tsv",
+        )
+        sample = dataset[0]
+        print(len(dataset))
+        print((sample.participant_id, sample.session_id))
+        print(sample.spatial_shape)
 
-    >>> len(dataset)
-    50  # one sample per line of metadata.tsv
-    >>> dataset[0]
-    Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)
-    >>> dataset[0].participant_id, dataset[0].session_id
+This prints:
+
+.. code-block:: text
+
+    2
     ('sub-001', 'ses-M000')
+    (8, 8, 8)
+
+Keep dataset access inside the ``with`` block: the temporary files are removed
+when it ends. The following snippets illustrate options for your own existing
+dataset.
 
 A few arguments shape what a ``BidsDataset`` contains and will output:
 
