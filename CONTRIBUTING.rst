@@ -330,7 +330,7 @@ To run just these checks:
 
 ``check-added-large-files`` checks newly staged files even with ``--all-files``.
 The actionlint hook checks all workflows when a workflow or its configuration
-changes; it does not execute the workflows.
+changes (to ensure consistency between the workflows and the configuration); it does not execute the workflows.
 
 .. _tests:
 
