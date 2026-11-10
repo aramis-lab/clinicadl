@@ -11,7 +11,7 @@ repos:
     rev: v1.7.12
     hooks:
       - id: actionlint
-        # Check all workflows when a workflow or its linter config changes.
+        # Check all workflows when a workflow or its linter config changes (e.g. changing the list of runners should trigger the checks on all workflows).
         files: ^\.github/(workflows/.*\.ya?ml|actionlint\.ya?ml)$
         pass_filenames: false
         args: ["-shellcheck=", "-pyflakes="]
