@@ -29,22 +29,14 @@ model.
 
 .. code-block:: python
 
-    import json
-    from pathlib import Path
-    from tempfile import TemporaryDirectory
+    from clinicadl.io.bids import Bids, TemporaryBidsDir
 
-    from clinicadl.io.bids import Bids
-
-    with TemporaryDirectory() as tmp_dir:
-        bids_directory = Path(tmp_dir)
-        description = {
-            "Name": "Toy directory navigation example",
-            "BIDSVersion": "1.10.0",
-            "DatasetType": "raw",
-        }
-        (bids_directory / "dataset_description.json").write_text(
-            json.dumps(description), encoding="utf-8"
-        )
+    description = {
+        "Name": "Toy directory navigation example",
+        "BIDSVersion": "1.10.0",
+        "DatasetType": "raw",
+    }
+    with TemporaryBidsDir(description, metadata=None) as bids_directory:
         (bids_directory / "sub-01" / "ses-M000").mkdir(parents=True)
 
         bids = Bids(bids_directory)
@@ -148,42 +140,27 @@ images demonstrate loading only; they are not brain scans or training data.
 
 .. code-block:: python
 
-    import json
-    from pathlib import Path
-    from tempfile import TemporaryDirectory
-
-    import nibabel as nib
-    import numpy as np
     import pandas as pd
 
     from clinicadl.data.datasets import BidsDataset
-    from clinicadl.io.bids import BidsFileType
+    from clinicadl.io.bids import BidsFileType, TemporaryBidsDir
 
-    with TemporaryDirectory() as tmp_dir:
-        bids_directory = Path(tmp_dir)
-        description = {
-            "Name": "Toy image-loading example",
-            "BIDSVersion": "1.10.0",
-            "DatasetType": "raw",
+    description = {
+        "Name": "Toy image-loading example",
+        "BIDSVersion": "1.10.0",
+        "DatasetType": "raw",
+    }
+    metadata = pd.DataFrame(
+        {
+            "participant_id": ["sub-001", "sub-002"],
+            "session_id": ["ses-M000", "ses-M000"],
+            "age": [55.0, 62.0],
+            "diagnosis": ["control", "patient"],
         }
-        (bids_directory / "dataset_description.json").write_text(
-            json.dumps(description), encoding="utf-8"
-        )
-        metadata = pd.DataFrame(
-            {
-                "participant_id": ["sub-001", "sub-002"],
-                "session_id": ["ses-M000", "ses-M000"],
-                "age": [55.0, 62.0],
-                "diagnosis": ["control", "patient"],
-            }
-        )
-        metadata.to_csv(bids_directory / "metadata.tsv", sep="\t", index=False)
-        for participant in metadata["participant_id"]:
-            anat = bids_directory / participant / "ses-M000" / "anat"
-            anat.mkdir(parents=True)
-            image = nib.Nifti1Image(np.zeros((8, 8, 8), dtype=np.float32), np.eye(4))
-            nib.save(image, anat / f"{participant}_ses-M000_T1w.nii.gz")
-
+    )
+    with TemporaryBidsDir(
+        description, metadata, with_images={"anat": "T1w"}, image_shape=(1, 8, 8, 8)
+    ) as bids_directory:
         dataset = BidsDataset(
             bids=bids_directory,
             file_type=BidsFileType(data_type="anat", suffix="T1w"),
@@ -203,8 +180,14 @@ This prints:
     (8, 8, 8)
 
 Keep dataset access inside the ``with`` block: the temporary files are removed
-when it ends. The following snippets illustrate options for your own existing
-dataset.
+when it ends. :py:class:`~clinicadl.io.bids.TemporaryBidsDir` writes the description
+and optional metadata, and generates an image for every participant/session pair
+in the metadata. ``image_shape`` follows TorchIO's ``(channels, x, y, z)`` order.
+To generate several image types, including filename entities, use for example
+``with_images={"anat": "res-1x1x1_T1w", "pet": "trc-18FFDG_pet"}``.
+This helper creates toy data, not a fully validated BIDS dataset.
+
+The following snippets illustrate options for your own existing dataset.
 
 A few arguments shape what a ``BidsDataset`` contains and will output:
 
