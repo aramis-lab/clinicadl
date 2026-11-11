@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from clinicadl.callbacks import MonitorCallback
+from clinicadl.callbacks.implemented import monitor as monitor_module
 from clinicadl.callbacks.implemented.monitor import _PhaseMonitor
 from clinicadl.io.maps import Maps
 
@@ -451,6 +452,64 @@ def test_phase_monitor():
     monitor.start()
     monitor.stop()
     assert len(monitor.times) == 0
+
+
+@pytest.mark.parametrize("memory", [False, True])
+def test_phase_monitor_gpu_start_waits_for_previous_work(monkeypatch, memory):
+    clock = [0.0]
+    pending = [10.0]
+    calls = []
+
+    def synchronize():
+        calls.append("synchronize")
+        clock[0] += pending.pop() if pending else 0.0
+
+    def perf_counter():
+        calls.append("clock")
+        return clock[0]
+
+    start_event, end_event = Mock(), Mock()
+    start_event.record.side_effect = lambda: calls.append("start event")
+    end_event.record.side_effect = lambda: calls.append("end event")
+    start_event.elapsed_time.return_value = 2000.0
+    cuda = Mock()
+    cuda.Event.side_effect = [start_event, end_event]
+    cuda.synchronize.side_effect = synchronize
+    cuda.reset_peak_memory_stats.side_effect = lambda: calls.append("reset memory")
+    cuda.max_memory_allocated.return_value = 42
+    monkeypatch.setattr(monitor_module.torch, "cuda", cuda)
+    monkeypatch.setattr(monitor_module, "time", Mock(perf_counter=perf_counter))
+
+    monitor = _PhaseMonitor(gpu=True, memory=memory)
+    monitor.start()
+    expected = ["synchronize"]
+    if memory:
+        expected.append("reset memory")
+    assert calls == expected + ["start event", "clock"]
+
+    # Two seconds of this phase must not include ten seconds of earlier work.
+    clock[0] += 2.0
+    monitor.stop()
+    assert monitor.times == [2.0]
+    assert monitor.gpu_times == [2000.0]
+    assert cuda.synchronize.call_count == 2
+    assert monitor.gpu_max_mem == ([42] if memory else [])
+    assert not monitor.running
+
+
+@pytest.mark.parametrize(
+    "gpu,enabled,exhausted",
+    [(False, True, False), (True, False, False), (True, True, True)],
+)
+def test_phase_monitor_start_without_cuda(monkeypatch, gpu, enabled, exhausted):
+    cuda = Mock()
+    monkeypatch.setattr(monitor_module.torch, "cuda", cuda)
+    monitor = _PhaseMonitor(gpu=gpu, enabled=enabled, num_measurements=1)
+    if exhausted:
+        monitor.n_measured = 1
+    monitor.start()
+    assert cuda.mock_calls == []
+    assert monitor.running is (enabled and not exhausted)
 
 
 @pytest.mark.gpu
