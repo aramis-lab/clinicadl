@@ -485,11 +485,13 @@ def test_phase_monitor_gpu_start_waits_for_previous_work(monkeypatch, memory):
     expected = ["synchronize"]
     if memory:
         expected.append("reset memory")
-    assert calls == expected + ["start event", "clock"]
+    expected += ["start event", "clock"]
+    assert calls == expected
 
     # Two seconds of this phase must not include ten seconds of earlier work.
     clock[0] += 2.0
     monitor.stop()
+    assert calls == expected + ["end event", "synchronize", "clock"]
     assert monitor.times == [2.0]
     assert monitor.gpu_times == [2000.0]
     assert cuda.synchronize.call_count == 2
