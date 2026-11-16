@@ -19,8 +19,8 @@ jobs:
       ) &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on:
-    - self-hosted
-    - agent
+      - self-hosted
+      - agent
     steps:
       - name: Check PR-Agent installation
         run: |
