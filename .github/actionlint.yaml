@@ -3,3 +3,4 @@ self-hosted-runner:
     - gpu
     - functional-tests
     - multi-gpu
+    - agent
