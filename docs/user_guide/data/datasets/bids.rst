@@ -36,7 +36,7 @@ model.
         "BIDSVersion": "1.10.0",
         "DatasetType": "raw",
     }
-    with TemporaryBidsDir(description, metadata=None) as bids_directory:
+    with TemporaryBidsDir(description) as bids_directory:
         (bids_directory / "sub-01" / "ses-M000").mkdir(parents=True)
 
         bids = Bids(bids_directory)
@@ -179,15 +179,12 @@ This prints:
     ('sub-001', 'ses-M000')
     (8, 8, 8)
 
-Keep dataset access inside the ``with`` block: the temporary files are removed
-when it ends. :py:class:`~clinicadl.io.bids.TemporaryBidsDir` writes the description
-and optional metadata, and generates an image for every participant/session pair
-in the metadata. ``image_shape`` follows TorchIO's ``(channels, x, y, z)`` order.
-To generate several image types, including filename entities, use for example
-``with_images={"anat": "res-1x1x1_T1w", "pet": "trc-18FFDG_pet"}``.
-This helper creates toy data, not a fully validated BIDS dataset.
-
-The following snippets illustrate options for your own existing dataset.
+.. note::
+  :py:class:`~clinicadl.io.bids.TemporaryBidsDir` is a helper to create toy data,
+  not a fully validated BIDS dataset. It writes the dataset description
+  and the participants' metadata, and generates an image for every participant/session pair
+  in the metadata. Keep dataset access inside the ``with`` block:
+  the temporary files are removed when it ends.
 
 A few arguments shape what a ``BidsDataset`` contains and will output:
 

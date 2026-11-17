@@ -12,7 +12,7 @@ from clinicadl.utils.tsvtools import read_df
 
 
 class TemporaryBidsDir(TemporaryDirectory):
-    """Create a temporary toy BIDS directory for examples and tests.
+    """Create a temporary toy :term:`BIDS` directory for examples and tests.
 
     The directory is created at initialization and removed on context exit or
     :meth:`cleanup`, just like :class:`tempfile.TemporaryDirectory`. Entering the
@@ -23,23 +23,77 @@ class TemporaryBidsDir(TemporaryDirectory):
     description : dict
         JSON-serializable dataset description, written to
         ``dataset_description.json``.
-    metadata : pandas.DataFrame, optional
+    metadata : Optional[pandas.DataFrame], default=None
         Participant/session metadata, written to ``metadata.tsv``. Must contain
         ``participant_id`` and ``session_id`` columns. Without images, no
-        participant/session directories are created automatically.
-    with_images : dict[str, str], optional
-        Map data types to filename endings, e.g. ``{"anat": "T1w"}`` or
-        ``{"pet": "trc-18FFDG_pet"}``. Creates a zero-valued NIfTI image for
-        every metadata row and data type. Requires metadata. Identifiers, data
-        types and filename endings must use BIDS alphanumeric labels/entities.
+        participant/session directories are created automatically (see ``with_images``).
+    with_images : Optional[dict[str, str]], default=None
+        To generate zero-valued compressed NIfTI images for each participant/session couple in ``metadata``.
+        If ``None``, no images will be generated.
+        This argument maps data types to filename endings, e.g. ``with_images={"anat": "T1w", "pet": "trc-18FFDG_pet"}``
+        will create the files ``sub-<participant_id>/ses-<session_id>/anat/sub-<participant_id>_ses-<session_id>_T1w.nii.gz`` and ``sub-<participant_id>/ses-<session_id>/pet/sub-<participant_id>_ses-<session_id>_trc-18FFDG_pet.nii.gz``.
+        Data types and filename endings must follow the :bids:`BIDS syntax <common-principles.html#filenames>`.
     image_shape : tuple[int, int, int, int], default=(1, 8, 8, 8)
-        Image tensor shape in TorchIO order: ``(channels, x, y, z)``. In particular,
+        When ``with_images`` is passed, image shape with channel dimension first. In particular,
         ``(1, 8, 8, 8)`` produces a scalar image with spatial shape ``(8, 8, 8)``.
 
     Notes
     -----
     These constant-valued images are for demonstrating APIs, not brain scans or
     training data. This helper does not validate a complete BIDS dataset.
+
+    Examples
+    ---------
+    .. code-block:: python
+
+        import pandas as pd
+        import torchio as tio
+        from clinicadl.io.bids import TemporaryBidsDir
+
+        description = {
+            "Name": "Toy image-loading example",
+            "BIDSVersion": "1.10.0",
+            "DatasetType": "raw",
+        }
+        metadata = pd.DataFrame(
+            {
+                "participant_id": ["sub-001", "sub-002"],
+                "session_id": ["ses-M000", "ses-M000"],
+                "age": [55.0, 62.0],
+                "diagnosis": ["control", "patient"],
+            }
+        )
+        with TemporaryBidsDir(
+            description,
+            metadata,
+            with_images={"anat": "T1w", "pet": "trc-18FFDG_pet"},
+            image_shape=(1, 4, 4, 4),
+        ) as bids_directory:
+            print(
+                (
+                    bids_directory
+                    / "sub-001"
+                    / "ses-M000"
+                    / "anat"
+                    / "sub-001_ses-M000_T1w.nii.gz"
+                ).exists()
+            )
+            print(
+                tio.ScalarImage(
+                    path=bids_directory
+                    / "sub-001"
+                    / "ses-M000"
+                    / "pet"
+                    / "sub-001_ses-M000_trc-18FFDG_pet.nii.gz"
+                ).shape
+            )
+
+    Outputs:
+
+    .. code-block:: python
+
+        True
+        (1, 4, 4, 4)
     """
 
     def __init__(
