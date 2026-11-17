@@ -568,6 +568,8 @@ class _PhaseMonitor:
             return
 
         if self.gpu:
+            # Exclude previously queued GPU work from this phase's measurements.
+            torch.cuda.synchronize()
             self._gpu_start_event = torch.cuda.Event(enable_timing=True)
             self._gpu_end_event = torch.cuda.Event(enable_timing=True)
 
