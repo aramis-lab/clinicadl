@@ -1,0 +1,6 @@
+self-hosted-runner:
+  labels:
+    - gpu
+    - functional-tests
+    - multi-gpu
+    - agent
