@@ -7,6 +7,11 @@ repos:
         # MAPS layout fixtures contain intentionally blank JSON placeholders.
         exclude: ^tests/unittests/resources/maps_(example|minimal)/
       - id: check-added-large-files
+      - id: name-tests-test
+        args: [--pytest-test-first]
+        files: ^tests/unittests/.*\.py$
+        # These modules provide helpers rather than tests.
+        exclude: ^tests/unittests/(infer|utils)/utils\.py$
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12
     hooks:

@@ -337,6 +337,11 @@ changes (to ensure consistency between the workflows and the configuration); it 
 Tests
 -----
 
+Name unit test modules ``test_*.py`` so pytest can discover them. The
+``name-tests-test`` pre-commit hook checks Python files under ``tests/unittests``.
+It allows ``__init__.py`` and ``conftest.py`` and excludes the existing
+``infer/utils.py`` and ``utils/utils.py`` helper modules in that directory.
+
 ClinicaDL is tested with `pytest <https://docs.pytest.org/>`_. The tests live in two
 places:
 
