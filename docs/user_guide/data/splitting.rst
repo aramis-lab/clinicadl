@@ -41,15 +41,47 @@ resulting TSV files to a directory, which they return.
     Creates a :math:`K`-fold partition: ``n_splits`` folds, each used in turn as the
     validation set.
 
+This example uses fictional metadata for ten participants, each with two sessions.
+It creates an 80/20 participant split, then five folds from the training participants:
+
 .. code-block:: python
+
+    from tempfile import TemporaryDirectory
+
+    import pandas as pd
 
     from clinicadl.split import make_split, make_kfold
 
-    # a single 80/20 split
-    split_dir = make_split("bids_directory/metadata.tsv", n_test=0.2)
+    metadata = pd.DataFrame(
+        [
+            (f"sub-{participant:02d}", session)
+            for participant in range(1, 11)
+            for session in ("ses-M000", "ses-M006")
+        ],
+        columns=["participant_id", "session_id"],
+    )
+    with TemporaryDirectory() as output_dir:
+        split_dir = make_split(
+            metadata, n_test=0.2, output_dir=output_dir, seed=42
+        )
+        train = pd.read_csv(split_dir / "train.tsv", sep="\t")
+        test = pd.read_csv(split_dir / "test_baseline.tsv", sep="\t")
+        print(train["participant_id"].nunique(), test["participant_id"].nunique())
 
-    # a 5-fold partition
-    kfold_dir = make_kfold(split_dir / "training.tsv", n_splits=5)
+        kfold_dir = make_kfold(split_dir / "train.tsv", n_splits=5, seed=42)
+        print(kfold_dir.is_dir())
+
+This prints:
+
+.. code-block:: text
+
+    8 2
+    True
+
+The training file keeps both sessions of each training participant. With the
+default ``longitudinal=False``, the test file keeps only the baseline session
+of each held-out participant. Use the generated files inside the ``with`` block,
+which removes the temporary directory when it ends.
 
 Both functions support two important options:
 
