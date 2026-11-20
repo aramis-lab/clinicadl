@@ -4,7 +4,7 @@ Installation
 ============
 
 .. warning::
-    ClinicaDL requires Python >=3.10, <=3.14
+    ClinicaDL requires Python >=3.10, <3.15
 
 Install a released version
 --------------------------
