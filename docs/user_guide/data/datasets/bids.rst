@@ -29,22 +29,14 @@ model.
 
 .. code-block:: python
 
-    import json
-    from pathlib import Path
-    from tempfile import TemporaryDirectory
+    from clinicadl.io.bids import Bids, TemporaryBidsDir
 
-    from clinicadl.io.bids import Bids
-
-    with TemporaryDirectory() as tmp_dir:
-        bids_directory = Path(tmp_dir)
-        description = {
-            "Name": "Toy directory navigation example",
-            "BIDSVersion": "1.10.0",
-            "DatasetType": "raw",
-        }
-        (bids_directory / "dataset_description.json").write_text(
-            json.dumps(description), encoding="utf-8"
-        )
+    description = {
+        "Name": "Toy directory navigation example",
+        "BIDSVersion": "1.10.0",
+        "DatasetType": "raw",
+    }
+    with TemporaryBidsDir(description) as bids_directory:
         (bids_directory / "sub-01" / "ses-M000").mkdir(parents=True)
 
         bids = Bids(bids_directory)
@@ -142,27 +134,57 @@ Consider a dataset whose metadata are stored in a TSV file:
     ...
 
 The simplest dataset selects the T1 images of the participants listed in the TSV
-file:
+file. This standalone example creates two tiny synthetic images and their metadata
+in a temporary directory, so no scan download is needed. These constant-valued
+images demonstrate loading only; they are not brain scans or training data.
 
 .. code-block:: python
+
+    import pandas as pd
 
     from clinicadl.data.datasets import BidsDataset
-    from clinicadl.io.bids import BidsFileType
+    from clinicadl.io.bids import BidsFileType, TemporaryBidsDir
 
-    dataset = BidsDataset(
-        bids="bids_directory",
-        file_type=BidsFileType(data_type="anat", suffix="T1w"),
-        data="bids_directory/metadata.tsv",
+    description = {
+        "Name": "Toy image-loading example",
+        "BIDSVersion": "1.10.0",
+        "DatasetType": "raw",
+    }
+    metadata = pd.DataFrame(
+        {
+            "participant_id": ["sub-001", "sub-002"],
+            "session_id": ["ses-M000", "ses-M000"],
+            "age": [55.0, 62.0],
+            "diagnosis": ["control", "patient"],
+        }
     )
+    with TemporaryBidsDir(
+        description, metadata, with_images={"anat": "T1w"}, image_shape=(1, 8, 8, 8)
+    ) as bids_directory:
+        dataset = BidsDataset(
+            bids=bids_directory,
+            file_type=BidsFileType(data_type="anat", suffix="T1w"),
+            data=bids_directory / "metadata.tsv",
+        )
+        sample = dataset[0]
+        print(len(dataset))
+        print((sample.participant_id, sample.session_id))
+        print(sample.spatial_shape)
 
-.. code-block:: python
+This prints:
 
-    >>> len(dataset)
-    50  # one sample per line of metadata.tsv
-    >>> dataset[0]
-    Sample(Keys: ('file_type', 'image_path', 'sample_type', 'sample_position', 'image', 'participant_id', 'session_id'); images: 1)
-    >>> dataset[0].participant_id, dataset[0].session_id
+.. code-block:: text
+
+    2
     ('sub-001', 'ses-M000')
+    (8, 8, 8)
+
+.. note::
+  :py:class:`~clinicadl.io.bids.TemporaryBidsDir` is a helper to create toy data,
+  not a fully validated BIDS dataset. It writes the dataset description
+  and the participants' metadata, and generates an image for every participant/session pair
+  in the metadata. Keep dataset access inside the ``with`` block:
+  the temporary files are removed when it ends.
 
 A few arguments shape what a ``BidsDataset`` contains and will output:
 

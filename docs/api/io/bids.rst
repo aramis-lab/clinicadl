@@ -13,6 +13,7 @@
     :template: autosummary/class.rst
 
     Bids
+    TemporaryBidsDir
 
 File types
 ----------
