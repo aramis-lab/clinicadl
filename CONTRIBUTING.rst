@@ -350,6 +350,33 @@ Most contributions only need the unit tests, which you run with:
 
     make unit-tests
 
+Distributed helper tests
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tests that only need communication between processes can use the CPU backend of
+``tests.utils.ddp_test`` instead of requiring multiple GPUs:
+
+.. code-block:: python
+
+    import torch
+    import torch.distributed as dist
+
+    from tests.utils import ddp_test, ddp_wrapper
+
+    @ddp_wrapper
+    def sum_on_cpu(rank):
+        value = torch.tensor([rank + 1])
+        dist.all_reduce(value)
+        assert value.item() == 3
+
+    def test_sum_on_cpu():
+        ddp_test(sum_on_cpu, world_size=2, use_cuda=False)
+
+Keep worker functions at module level so that spawned processes can import them.
+CPU mode uses Gloo, requires a PyTorch build with Gloo support, and stops unfinished
+workers after 120 seconds by default (including startup). Pass ``timeout`` to
+adjust that limit. CUDA/NCCL remains the default for existing GPU tests.
+
 License
 -------
 
