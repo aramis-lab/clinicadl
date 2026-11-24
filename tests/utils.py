@@ -1,7 +1,10 @@
 import os
 import re
+import sys
+from datetime import timedelta
 from functools import wraps
 from pathlib import Path
+from time import monotonic
 from typing import Any, Optional
 
 import numpy as np
@@ -15,23 +18,29 @@ from clinicadl.utils.dictionary.suffixes import TSV
 from clinicadl.utils.exceptions import add_note
 
 
-def setup_ddp(rank: int, world_size: int, port: int) -> None:
+def setup_ddp(rank: int, world_size: int, port: int, use_cuda: bool = True) -> None:
     """
-    Sets up DDP. Expects of course GPUs.
+    Set up a process group, using Gloo on CPU or NCCL on CUDA.
     """
-    assert torch.cuda.device_count() >= world_size
-    torch.cuda.set_device(rank)
+    if use_cuda:
+        assert torch.cuda.device_count() >= world_size
+        torch.cuda.set_device(rank)
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(port)
-    backend = "nccl"
-    dist.init_process_group(backend, rank=rank, world_size=world_size)
+    backend = "nccl" if use_cuda else "gloo"
+    kwargs = {} if use_cuda else {"timeout": timedelta(seconds=30)}
+    if not use_cuda and sys.platform == "win32":
+        # Windows PyTorch wheels may not include the libuv TCP store backend.
+        kwargs["init_method"] = "env://?use_libuv=0"
+    dist.init_process_group(backend, rank=rank, world_size=world_size, **kwargs)
 
 
 def ddp_cleanup() -> None:
     """
     Stops DDP.
     """
-    dist.destroy_process_group()
+    if dist.is_initialized():
+        dist.destroy_process_group()
 
 
 def ddp_wrapper(func: callable) -> callable:
@@ -41,9 +50,9 @@ def ddp_wrapper(func: callable) -> callable:
     """
 
     @wraps(func)
-    def wrapped(rank, world_size, port, *args, **kwargs):
+    def wrapped(rank, world_size, port, use_cuda=True, *args, **kwargs):
         try:
-            setup_ddp(rank, world_size, port)
+            setup_ddp(rank, world_size, port, use_cuda=use_cuda)
             func(rank, *args, **kwargs)
         finally:
             ddp_cleanup()
@@ -51,12 +60,36 @@ def ddp_wrapper(func: callable) -> callable:
     return wrapped
 
 
-def ddp_test(func: callable, world_size: int) -> None:
+def ddp_test(
+    func: callable, world_size: int, *, use_cuda: bool = True, timeout: float = 120
+) -> None:
     """
-    Selects and random port and launch parallelism.
+    Launch workers. CPU mode is bounded by ``timeout`` seconds, including startup.
     """
     port = np.random.randint(10000, 20000)
-    mp.spawn(func, args=(world_size, port), nprocs=world_size, join=True)
+    if use_cuda:
+        mp.spawn(func, args=(world_size, port), nprocs=world_size, join=True)
+        return
+
+    context = mp.spawn(
+        func, args=(world_size, port, False), nprocs=world_size, join=False
+    )
+    deadline = monotonic() + timeout
+    try:
+        while not context.join(timeout=min(1, max(0, deadline - monotonic()))):
+            if monotonic() >= deadline:
+                raise TimeoutError(
+                    "CPU distributed test workers did not finish in time."
+                )
+    finally:
+        for process in context.processes:
+            if process.is_alive():
+                process.terminate()
+        for process in context.processes:
+            process.join(timeout=5)
+            if process.is_alive():
+                process.kill()
+                process.join()
 
 
 def compare_maps_dir(
@@ -126,9 +159,9 @@ def _compare_anything(content: Any, ref_content: Any) -> None:
     To compare any information that can be found in a MAPS.
     """
     if isinstance(content, dict) and isinstance(ref_content, dict):
-        assert set(content.keys()) == set(
-            ref_content.keys()
-        ), f"OUT: {content.keys()}, REF: {ref_content.keys()}"
+        assert set(content.keys()) == set(ref_content.keys()), (
+            f"OUT: {content.keys()}, REF: {ref_content.keys()}"
+        )
         for key in content:
             try:
                 _compare_anything(content[key], ref_content[key])
