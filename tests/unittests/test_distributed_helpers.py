@@ -22,7 +22,7 @@ def sum_on_cpu(rank):
 def fail_on_cpu(rank):
     if rank == 0:
         raise RuntimeError("intentional worker failure")
-    dist.barrier()
+    time.sleep(60)
 
 
 def wait_forever(rank, world_size, port, use_cuda):
