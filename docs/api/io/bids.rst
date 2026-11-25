@@ -28,3 +28,8 @@ File types
     FlairLinear
     PetLinear
     DwiDti
+
+Matching paths
+~~~~~~~~~~~~~~
+
+.. automethod:: BidsFileType.match
